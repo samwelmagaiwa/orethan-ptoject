@@ -39,7 +39,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
 
         <div className="alert-body-premium">
           <h2>{title}</h2>
-          <p>{message}</p>
+          <p style={{ whiteSpace: 'pre-line' }}>{message}</p>
         </div>
 
         <div className="alert-footer-premium">

@@ -62,6 +62,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/loans/gm', [LoanController::class, 'gmLoans']);
         Route::get('/loans/md', [LoanController::class, 'mdLoans']);
 
+        // FINANCE OFFICER VIEW (Loans approved and awaiting disbursement)
+        Route::get('/loans/finance', [LoanController::class, 'financeLoans']);
+
         // SINGLE LOAN DETAILS
         Route::get('/loans/{id}', [LoanController::class, 'show']);
         Route::put('/loans/{id}', [LoanController::class, 'update']);
@@ -75,6 +78,9 @@ Route::prefix('v1')->group(function () {
 
         // ROUTE YA MUHTASARI WA MALIPO (TOTAL DISBURSED, REPAID, OUTSTANDING)
         Route::get('/repayments/summary', [LoanController::class, 'repaymentSummary']);
+
+        // ROUTE YA KUTENGUA MALIPO (FINANCE OFFICER/CASHIER ONLY, WITH AUTHORIZATION)
+        Route::post('/repayments/{repaymentId}/reverse', [LoanController::class, 'reverseRepayment']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========

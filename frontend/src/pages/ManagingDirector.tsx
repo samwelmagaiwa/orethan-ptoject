@@ -35,7 +35,13 @@ const ManagingDirector = () => {
   const [submitting, setSubmitting] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredLoans = loans.filter(l =>
+    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    l.phone?.includes(searchQuery)
+  );
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -66,19 +72,6 @@ const ManagingDirector = () => {
       console.log(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusStep = (status: string) => {
-    switch (status) {
-      case 'loan_officer': return 0;
-      case 'manager_review': return 1;
-      case 'gm_review': return 2;
-      case 'md_review': return 3;
-      case 'approved': return 4;
-      case 'disbursed':
-      case 'completed': return 5;
-      default: return 0;
     }
   };
 
@@ -198,39 +191,21 @@ const ManagingDirector = () => {
       </div>
 
       <div className="table-container full-width">
-        <div className="table-header-premium">
-          <div className="header-title-group">
-            <h2>Loan Applications (MD Desk)</h2>
-            {loans.length > 0 && (
-              <div className="workflow-stepper header-stepper">
-                {[
-                  { label: 'Officer', role: 'Loan Officer' },
-                  { label: 'LM', role: 'Loan Manager' },
-                  { label: 'GM', role: 'General Manager' },
-                  { label: 'MD', role: 'Managing Director' },
-                  { label: 'Final', role: 'Complete' }
-                ].map((step, i) => {
-                  const targetLoan = selectedLoan || loans[0];
-                  const currentStep = getStatusStep(targetLoan.status);
-                  const isCompleted = i < currentStep;
-                  const isActive = i === currentStep;
-                  const isReturned = targetLoan.status === 'loan_officer' && (targetLoan as any).rejection_metadata;
-
-                  return (
-                    <div key={i} className={`step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`}>
-                      <div className="step-circle" title={step.role}>
-                        {isCompleted ? '✓' : i + 1}
-                      </div>
-                      <div className="step-label">{step.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        <div className="table-header-premium" style={{ justifyContent: 'flex-end' }}>
+          <div className="search-wrapper">
+            <div className="search-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Tafuta mwombaji..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <button className="refresh-btn-header" onClick={fetchLoans}>
+          <button className="refresh-btn-header" onClick={fetchLoans} style={{ marginLeft: '12px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-            Refresh Applications
+            Refresh
           </button>
         </div>
 
@@ -267,17 +242,17 @@ const ManagingDirector = () => {
                     <td style={{ textAlign: 'right' }}><div className="skeleton-bar" style={{ width: '40px', marginLeft: 'auto' }}></div></td>
                   </tr>
                 ))
-              ) : loans.length === 0 ? (
+              ) : filteredLoans.length === 0 ? (
                 <tr>
                   <td colSpan={8}>
                     <div className="empty-state">
-                      <p>No loan requests</p>
-                      <span>No pending applications to review</span>
+                      <p>Hakuna maombi ya mkopo</p>
+                      <span>Hakuna maombi yanayosubiri ukaguzi wako</span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                loans.map((loan, index) => (
+                filteredLoans.map((loan, index) => (
                   <tr
                     key={loan.id}
                     onClick={() => setSelectedLoan(loan)}
@@ -325,8 +300,6 @@ const ManagingDirector = () => {
                                       </span>
                                     ) :
                                       loan.status.replace(/_/g, ' ').toUpperCase()}
-
-
                       </span>
                       {(loan.status !== 'approved' && loan.status !== 'disbursed') && (loan as any).rejection_metadata && (
                         <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
@@ -433,19 +406,16 @@ const ManagingDirector = () => {
                 {submitting ? 'Processing...' : 'Return for Corrections'}
               </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* DETAILS MODAL */}
       <LoanDetailsModal
         show={showDetailsModal}
         loan={selectedLoan}
         onClose={() => setShowDetailsModal(false)}
       />
 
-      {/* History Modal */}
       <HistoryModal
         isOpen={showHistoryModal}
         loan={selectedLoan}
@@ -474,7 +444,7 @@ const ManagingDirector = () => {
           top: 0px;
           z-index: 10;
           background: #f8fafc;
-          padding: 0 0 20px 0;
+          padding: 10px 0 20px 0;
         }
 
         .stat-box {
@@ -521,35 +491,53 @@ const ManagingDirector = () => {
 
         .table-header-premium {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-end;
           align-items: center;
           margin-bottom: 25px;
+          gap: 16px;
         }
 
-        .header-title-group {
+        .search-wrapper {
+          position: relative;
+          width: 320px;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
           display: flex;
           align-items: center;
         }
 
-        .header-stepper {
-           margin-left: 30px;
+        .search-wrapper input {
+          width: 100%;
+          padding: 12px 14px 12px 42px;
+          background: #f8fafc;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 14px;
+          font-size: 14px;
+          color: #0f172a;
+          transition: all 0.2s;
         }
 
-        .table-header-premium h2 {
-          font-size: 18px;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0;
+        .search-wrapper input:focus {
+          outline: none;
+          border-color: #0f172a;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05);
         }
 
         .refresh-btn-header {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 16px;
+          padding: 10px 18px;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border-radius: 12px;
           font-size: 13px;
           font-weight: 600;
           color: #64748b;
@@ -673,7 +661,7 @@ const ManagingDirector = () => {
           border-radius: 12px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
           z-index: 100;
-          width: 160px;
+          width: 170px;
           padding: 8px;
           display: flex;
           flex-direction: column;
@@ -734,97 +722,6 @@ const ManagingDirector = () => {
           border-radius: 30px;
         }
 
-        /* STEPPER STYLES */
-        .workflow-stepper {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .step-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          min-width: 60px;
-        }
-
-        .step-item:not(:last-child)::after {
-          content: '';
-          position: absolute;
-          top: 15px;
-          left: calc(50% + 15px);
-          width: calc(100% - 15px);
-          height: 3px;
-          background: #e2e8f0;
-          z-index: 1;
-        }
-
-        .step-item.completed:not(:last-child)::after {
-          background: #16a34a;
-        }
-
-        .step-item.active:not(:last-child)::after {
-          background: #facc15;
-        }
-
-        .step-circle {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 700;
-          color: #94a3b8;
-          position: relative;
-          z-index: 2;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .step-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #94a3b8;
-          margin-top: 6px;
-          text-transform: uppercase;
-          text-align: center;
-          white-space: nowrap;
-        }
-
-        .step-item.completed .step-circle {
-          background: #16a34a;
-          border-color: #16a34a;
-          color: white;
-          box-shadow: 0 0 15px rgba(22, 163, 74, 0.3);
-        }
-
-        .step-item.completed .step-label {
-          color: #16a34a;
-        }
-
-        .step-item.active .step-circle {
-          border-color: #facc15;
-          color: #854d0e;
-          background: #fef9c3;
-          box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-          transform: scale(1.1);
-        }
-
-        .step-item:not(.completed) .step-circle {
-          border-color: #fde047;
-          background: #fefce8;
-        }
-
-        .step-item.active .step-label {
-          color: #854d0e;
-        }
-
-        /* SKELETON LOADING STYLES */
         .skeleton-row td {
           padding: 16px 20px;
           border-bottom: 1px solid #f1f5f9;
@@ -870,7 +767,6 @@ const ManagingDirector = () => {
           color: #64748b;
         }
 
-        /* PREMIUM REJECT MODAL STYLES */
         .reject-overlay-premium {
           position: fixed;
           inset: 0;
@@ -890,6 +786,104 @@ const ManagingDirector = () => {
           border-radius: 28px;
           padding: 40px;
           box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        .reject-header-premium {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+
+        .reject-icon-box {
+          width: 64px;
+          height: 64px;
+          background: #fef2f2;
+          color: #ef4444;
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 20px;
+        }
+
+        .reject-header-premium h2 {
+          font-size: 22px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 8px;
+        }
+
+        .reject-header-premium p {
+          color: #64748b;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .reject-client-info {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 16px;
+           background: #f8fafc;
+           padding: 16px;
+           border-radius: 16px;
+           margin-bottom: 24px;
+        }
+
+        .info-item span {
+          display: block;
+          font-size: 11px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .info-item strong {
+          font-size: 14px;
+          color: #0f172a;
+        }
+
+        .reject-textarea-premium {
+          width: 100%;
+          padding: 16px;
+          border-radius: 16px;
+          border: 1.5px solid #e2e8f0;
+          font-size: 14px;
+          transition: all 0.2s;
+          margin-bottom: 24px;
+          resize: none;
+        }
+
+        .reject-textarea-premium:focus {
+          outline: none;
+          border-color: #ef4444;
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+        }
+
+        .reject-footer-premium {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .reject-btn-cancel {
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          color: #64748b;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .reject-btn-confirm {
+          padding: 12px;
+          border-radius: 14px;
+          border: none;
+          background: #ef4444;
+          color: white;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
         @keyframes pop {

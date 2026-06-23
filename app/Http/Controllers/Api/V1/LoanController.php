@@ -103,6 +103,17 @@ class LoanController extends Controller
     }
 
 
+    // FINANCE OFFICER / CASHIER VIEW (approved loans awaiting disbursement, plus already disbursed for reference)
+    public function financeLoans()
+    {
+        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+            ->whereIn('status', ['approved', 'disbursed'])
+            ->orderByRaw("FIELD(status, 'approved', 'disbursed')")
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        return response()->json($this->appendBorrowerMetrics($loans));
+    }
+
     /**
      * Helper to append borrower metrics to a collection of loans.
      */
@@ -220,6 +231,11 @@ class LoanController extends Controller
     // DISBURSE LOAN
     public function disburse(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
+            return $this->error('Only Finance Officer/Cashier can disburse loans', 403);
+        }
+
         $data = $request->validate([
             'disbursement_date' => 'required|date',
             'amount' => 'required|numeric|min:1',
@@ -229,7 +245,7 @@ class LoanController extends Controller
 
         try {
             $loan = Loan::findOrFail($id);
-            $updatedLoan = $this->loanService->disburseLoan($loan, $data, $request->user());
+            $updatedLoan = $this->loanService->disburseLoan($loan, $data, $user);
             return $this->success($updatedLoan->fresh(), 'Loan disbursed successfully');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
@@ -401,6 +417,11 @@ class LoanController extends Controller
     // RECORD A REPAYMENT
     public function recordRepayment(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
+            return $this->error('Only Finance Officer/Cashier can record payments', 403);
+        }
+
         $data = $request->validate([
             'amount' => 'required|numeric|min:1',
             'payment_date' => 'required|date',
@@ -411,10 +432,33 @@ class LoanController extends Controller
 
         try {
             $loan = Loan::findOrFail($id);
-            $result = $this->loanService->recordRepayment($loan, $data, $request->user());
+            $result = $this->loanService->recordRepayment($loan, $data, $user);
             return $this->success($result, 'Repayment recorded successfully');
         } catch (\Exception $e) {
             Log::error('recordRepayment error: ' . $e->getMessage());
+            return $this->error($e->getMessage(), 500);
+        }
+    }
+
+    // REVERSE A FAILED REPAYMENT (Finance Officer/Cashier, with authorization note)
+    public function reverseRepayment(Request $request, $repaymentId)
+    {
+        $user = $request->user();
+        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
+            return $this->error('Only Finance Officer/Cashier can reverse transactions', 403);
+        }
+
+        $data = $request->validate([
+            'reason' => 'required|string|min:3',
+            'authorized_by' => 'required|string|min:2',
+        ]);
+
+        try {
+            $repayment = Repayment::findOrFail($repaymentId);
+            $result = $this->loanService->reverseRepayment($repayment, $data, $user);
+            return $this->success($result, 'Repayment reversed successfully');
+        } catch (\Exception $e) {
+            Log::error('reverseRepayment error: ' . $e->getMessage());
             return $this->error($e->getMessage(), 500);
         }
     }

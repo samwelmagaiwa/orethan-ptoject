@@ -20,6 +20,8 @@ class Loan extends Model
         'rejection_reason',
         'approved_by',
         'approved_at',
+        'loan_account_number',
+        'disbursed_at',
         'total_paid',
         'remaining_balance',
         'monthly_payment',
@@ -32,8 +34,19 @@ class Loan extends Model
     protected $casts = [
         'details' => 'array',
         'approved_at' => 'datetime',
+        'disbursed_at' => 'datetime',
         'next_payment_date' => 'date',
     ];
+
+    /**
+     * Build a unique, human-readable loan account number.
+     * Format: ORE-{year}-{zero-padded id}, e.g. ORE-2026-00015
+     */
+    public function generateAccountNumber()
+    {
+        $year = ($this->disbursed_at ?? now())->format('Y');
+        return 'ORE-' . $year . '-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+    }
 
     // Relationships
     public function customer()
@@ -67,7 +80,7 @@ class Loan extends Model
     }
 
     // Auto-generate repayment schedule
-    public function generateSchedule($months = 12, $interestRate = 0.03, $frequency = 'Monthly')
+    public function generateSchedule($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
     {
         $this->schedules()->delete();
 
@@ -82,7 +95,9 @@ class Loan extends Model
         $totalInstallments = max(1, (int) round($months * $installmentsPerMonth));
         $principalPerInstallment = $this->amount / $totalInstallments;
         $balance = $this->amount;
-        $dueDate = $this->approved_at ? \Carbon\Carbon::parse($this->approved_at) : now();
+        $dueDate = $startDate
+            ? \Carbon\Carbon::parse($startDate)
+            : ($this->approved_at ? \Carbon\Carbon::parse($this->approved_at) : now());
 
         for ($i = 1; $i <= $totalInstallments; $i++) {
             $interest = $balance * ($interestRate / $installmentsPerMonth);

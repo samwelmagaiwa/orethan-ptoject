@@ -21,6 +21,10 @@ class Repayment extends Model
         'notes',
         'status',
         'recorded_by',
+        'reversal_reason',
+        'authorized_by',
+        'reversed_by',
+        'reversed_at',
     ];
 
     protected $casts = [
@@ -29,6 +33,7 @@ class Repayment extends Model
         'interest_amount' => 'decimal:2',
         'principal_amount' => 'decimal:2',
         'penalty_amount' => 'decimal:2',
+        'reversed_at' => 'datetime',
     ];
 
     public function loan()

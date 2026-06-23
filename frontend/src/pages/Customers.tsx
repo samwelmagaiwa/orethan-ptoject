@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -44,6 +45,11 @@ interface Loan {
     active_loans_count: number;
     total_remaining_balance: number;
     total_arrears: number;
+    loan_account_number?: string | null;
+    next_payment_date?: string | null;
+    remaining_balance?: number | null;
+    monthly_payment?: number | null;
+    disbursed_at?: string | null;
 }
 
 const Customers: React.FC = () => {
@@ -115,12 +121,15 @@ const Customers: React.FC = () => {
         let endpoint = "loans/manager";
         if (role === "general_manager") endpoint = "loans/gm";
         if (role === "managing_director") endpoint = "loans/md";
+        if (role === "finance_officer") endpoint = "loans/finance";
 
         const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
         const res = await axios.get(`${API_BASE}/${endpoint}`, {
             headers: { Authorization: token ? `Bearer ${token}` : "" }
         });
-        const pendingLoans = res.data.filter((l: any) => l.status !== 'approved' && l.status !== 'disbursed' && l.status !== 'completed');
+        const pendingLoans = role === "finance_officer"
+            ? res.data.filter((l: any) => l.status === 'approved')
+            : res.data.filter((l: any) => l.status !== 'approved' && l.status !== 'disbursed' && l.status !== 'completed');
         setLoans(res.data);
         setLoanStats({
             pending: pendingLoans.length,
@@ -138,24 +147,64 @@ const Customers: React.FC = () => {
         l.phone.includes(searchQuery)
     );
 
+    const renderLoanStatusLabel = (loan: Loan) => {
+        if (loan.status === 'manager_review') {
+            return (loan as any).rejection_metadata?.rejector_role === 'general_manager'
+                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
+                : <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span>;
+        }
+        if (loan.status === 'gm_review') {
+            return (loan as any).rejection_metadata?.rejector_role === 'managing_director'
+                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
+                : (
+                    <span>
+                        <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                        <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
+                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                    </span>
+                );
+        }
+        if (loan.status === 'md_review') {
+            return (
+                <span>
+                    <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
+                    <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
+                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
+                </span>
+            );
+        }
+        if (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') {
+            return <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>;
+        }
+        if (loan.status === 'approved') return 'APPROVED';
+        if (loan.status === 'disbursed') return 'ACTIVE';
+        return loan.status.replace(/_/g, ' ').toUpperCase();
+    };
+
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [dropdownPosition, setDropdownPosition] = useState("dropdown-bottom");
+    const [dropdownCoords, setDropdownCoords] = useState({ top: 0, left: 0 });
     const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
+    const [showDisburseModal, setShowDisburseModal] = useState(false);
+    const [disburseForm, setDisburseForm] = useState({ amount: "", method: "cash", disbursement_date: "", transaction_reference: "" });
 
-    const toggleDropdown = (id: number, e: React.MouseEvent, index: number, total: number) => {
+    const toggleDropdown = (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (activeDropdown === id) {
             setActiveDropdown(null);
         } else {
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const dropdownHeight = 220;
             const spaceBelow = window.innerHeight - rect.bottom;
-            const isBottomRow = (index >= total - 2 && total > 2) || spaceBelow < 220;
-            setDropdownPosition(isBottomRow ? "dropdown-top" : "dropdown-bottom");
+            const openUpward = spaceBelow < dropdownHeight;
+            setDropdownCoords({
+                top: openUpward ? rect.top - dropdownHeight : rect.bottom + 8,
+                left: rect.right - 170,
+            });
             setActiveDropdown(id);
         }
     };
@@ -250,6 +299,103 @@ const Customers: React.FC = () => {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const openDisburseModal = (loan: Loan) => {
+        setSelectedLoan(loan);
+        setDisburseForm({
+            amount: String(loan.amount),
+            method: "cash",
+            disbursement_date: new Date().toISOString().slice(0, 10),
+            transaction_reference: "",
+        });
+        setShowDisburseModal(true);
+        setActiveDropdown(null);
+    };
+
+    const submitDisbursement = async () => {
+        if (!disburseForm.amount || !disburseForm.disbursement_date) {
+            setModalMessage("Tafadhali jaza kiasi na tarehe ya malipo.");
+            setModalType("warning");
+            setShowModal(true);
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const token = localStorage.getItem("token");
+            const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+            const res = await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/disburse`, {
+                amount: disburseForm.amount,
+                method: disburseForm.method,
+                disbursement_date: disburseForm.disbursement_date,
+                transaction_reference: disburseForm.transaction_reference || null,
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const activated = res.data?.data || res.data;
+            const acct = activated?.loan_account_number;
+            const firstDue = activated?.next_payment_date
+                ? new Date(activated.next_payment_date).toLocaleDateString()
+                : "—";
+            setModalMessage(
+                `Mkopo umewashwa (ACTIVE) kikamilifu!\n\n` +
+                `Namba ya Akaunti: ${acct || "—"}\n` +
+                `Deni Lililobaki: TZS ${Number(activated?.remaining_balance ?? selectedLoan?.amount ?? 0).toLocaleString()}\n` +
+                `Tarehe ya Kwanza ya Kulipa: ${firstDue}`
+            );
+            setModalType("success");
+            setShowModal(true);
+            setShowDisburseModal(false);
+            fetchManagerLoans(user!.role);
+        } catch (err: any) {
+            console.error(err);
+            setModalMessage(err?.response?.data?.message || "Imeshindwa kutoa mkopo");
+            setModalType("error");
+            setShowModal(true);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const printVoucher = (loan: Loan) => {
+        setActiveDropdown(null);
+        const win = window.open("", "_blank", "width=480,height=640");
+        if (!win) return;
+        win.document.write(`
+            <html>
+            <head><title>Hati ya Malipo - #${loan.id}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+                h2 { margin-bottom: 4px; }
+                .sub { color: #64748b; font-size: 13px; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                td { padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+                td:first-child { color: #64748b; }
+                td:last-child { text-align: right; font-weight: 700; }
+                .footer { margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; }
+            </style>
+            </head>
+            <body>
+                <h2>Hati ya Malipo / Disbursement Voucher</h2>
+                <div class="sub">Imetolewa: ${new Date().toLocaleString()}</div>
+                <table>
+                    <tr><td>Namba ya Akaunti</td><td>${loan.loan_account_number || "—"}</td></tr>
+                    <tr><td>ID Mkopo</td><td>#${loan.id}</td></tr>
+                    <tr><td>Mwombaji</td><td>${loan.name}</td></tr>
+                    <tr><td>Simu</td><td>${loan.phone || "N/A"}</td></tr>
+                    <tr><td>Aina ya Mkopo</td><td style="text-transform:capitalize">${loan.type}</td></tr>
+                    <tr><td>Kiasi Kilichotolewa</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
+                    <tr><td>Deni Lililobaki</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
+                    <tr><td>Tarehe ya Kwanza ya Kulipa</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
+                    <tr><td>Hali ya Mkopo</td><td style="color:#16a34a;font-weight:700">ACTIVE</td></tr>
+                </table>
+                <div class="footer">Hati hii imetolewa na mfumo wa Orethan Microfinance</div>
+            </body>
+            </html>
+        `);
+        win.document.close();
+        win.focus();
+        win.print();
     };
 
     const deleteLoan = (id: number) => {
@@ -445,7 +591,8 @@ const Customers: React.FC = () => {
                                                             const prefix = user?.role === 'loan_manager' ? 'lm' :
                                                                 user?.role === 'general_manager' ? 'gm' :
                                                                     user?.role === 'managing_director' ? 'md' :
-                                                                        user?.role === 'loan_officer' ? 'officer' : '';
+                                                                        user?.role === 'loan_officer' ? 'officer' :
+                                                                            user?.role === 'finance_officer' ? 'finance' : '';
                                                             window.location.href = prefix ? `/${prefix}/customers/${customer.id}` : `/customers/${customer.id}`;
                                                         }}
                                                     >
@@ -457,7 +604,8 @@ const Customers: React.FC = () => {
                                                             const prefix = user?.role === 'loan_manager' ? 'lm' :
                                                                 user?.role === 'general_manager' ? 'gm' :
                                                                     user?.role === 'managing_director' ? 'md' :
-                                                                        user?.role === 'loan_officer' ? 'officer' : '';
+                                                                        user?.role === 'loan_officer' ? 'officer' :
+                                                                            user?.role === 'finance_officer' ? 'finance' : '';
                                                             window.location.href = prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`;
                                                         }}
                                                     >
@@ -495,36 +643,7 @@ const Customers: React.FC = () => {
                                                     border: (loan.status === 'approved' || loan.status === 'disbursed') ? '1px solid #16a34a' : 'none',
                                                     padding: (loan.status === 'approved' || loan.status === 'disbursed') ? '3px 10px' : '4px 12px'
                                                 }}>
-                                                    {loan.status === 'manager_review' ? (
-                                                        (loan as any).rejection_metadata?.rejector_role === 'general_manager' ? (
-                                                            <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
-                                                        ) : <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span>
-                                                    ) :
-                                                        loan.status === 'gm_review' ? (
-                                                            (loan as any).rejection_metadata?.rejector_role === 'managing_director' ? (
-                                                                <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
-                                                            ) : (
-                                                                <span>
-                                                                    <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
-                                                                    <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                                                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
-                                                                </span>
-                                                            )
-                                                        ) :
-                                                            loan.status === 'md_review' ? (
-                                                                <span>
-                                                                    <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
-                                                                    <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                                                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
-                                                                </span>
-                                                            ) :
-                                                                (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') ? (
-                                                                    <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
-                                                                ) :
-                                                                    loan.status === 'approved' ? 'APPROVED' :
-                                                                        loan.status === 'disbursed' ? 'DISBURSED' :
-                                                                            loan.status.replace(/_/g, ' ').toUpperCase()}
-
+                                                    {renderLoanStatusLabel(loan)}
                                                 </span>
                                                 {loan.rejection_reason && (loan.status === 'loan_officer') && (
                                                     <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: '500' }}>
@@ -533,60 +652,101 @@ const Customers: React.FC = () => {
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'right', position: 'relative' }}>
-                                                <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, index, filteredLoans.length)}>
+                                                <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e)}>
                                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                                                 </button>
 
-                                                {activeDropdown === loan.id && (
-                                                    <div ref={dropdownRef} className={`action-dropdown ${dropdownPosition}`}>
-                                                        {((user?.role === 'admin') ||
-                                                            (user?.role === 'loan_manager' && loan.status === 'manager_review') ||
-                                                            (user?.role === 'general_manager' && loan.status === 'gm_review') ||
-                                                            (user?.role === 'managing_director' && loan.status === 'md_review')) ? (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => approveLoan(loan)}
-                                                                    className={`approve-action ${submitting ? 'muted' : ''}`}
-                                                                    disabled={submitting}
-                                                                >
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                    Approve
-                                                                </button>
-                                                                <button onClick={() => viewDetails(loan)} disabled={submitting}>
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                                                    View Details
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => openRejectModal(loan)}
-                                                                    className={`reject-action ${submitting ? 'muted' : ''}`}
-                                                                    disabled={submitting}
-                                                                >
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                                    Reject
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => deleteLoan(loan.id)}
-                                                                    className={`reject-action ${submitting ? 'muted' : ''}`}
-                                                                    disabled={submitting}
-                                                                    style={{ color: '#ef4444' }}
-                                                                >
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                                                                    Delete Loan
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <button onClick={() => viewDetails(loan)} disabled={submitting}>
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                                                    View Details
-                                                                </button>
-                                                                <button onClick={() => viewHistory(loan)} disabled={submitting}>
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                                                                    Angalia Mapendekezo
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                {activeDropdown === loan.id && createPortal(
+                                                    <div
+                                                        ref={dropdownRef}
+                                                        className="action-dropdown action-dropdown--fixed"
+                                                        style={{ top: dropdownCoords.top, left: dropdownCoords.left }}
+                                                    >
+                                                        {(() => {
+                                                            const isFinance = user?.role === 'finance_officer';
+                                                            const canApproveHere = (user?.role === 'admin') ||
+                                                                (user?.role === 'loan_manager' && loan.status === 'manager_review') ||
+                                                                (user?.role === 'general_manager' && loan.status === 'gm_review') ||
+                                                                (user?.role === 'managing_director' && loan.status === 'md_review');
+
+                                                            if (isFinance) {
+                                                                return (
+                                                                    <>
+                                                                        {loan.status === 'approved' && (
+                                                                            <button
+                                                                                onClick={() => openDisburseModal(loan)}
+                                                                                className={`approve-action ${submitting ? 'muted' : ''}`}
+                                                                                disabled={submitting}
+                                                                            >
+                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
+                                                                                Disburse
+                                                                            </button>
+                                                                        )}
+                                                                        {loan.status === 'disbursed' && (
+                                                                            <button onClick={() => printVoucher(loan)} disabled={submitting}>
+                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+                                                                                Print Voucher
+                                                                            </button>
+                                                                        )}
+                                                                        <button onClick={() => viewDetails(loan)} disabled={submitting}>
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                                            View Details
+                                                                        </button>
+                                                                    </>
+                                                                );
+                                                            }
+
+                                                            if (canApproveHere) {
+                                                                return (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => approveLoan(loan)}
+                                                                            className={`approve-action ${submitting ? 'muted' : ''}`}
+                                                                            disabled={submitting}
+                                                                        >
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                                            Approve
+                                                                        </button>
+                                                                        <button onClick={() => viewDetails(loan)} disabled={submitting}>
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                                            View Details
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => openRejectModal(loan)}
+                                                                            className={`reject-action ${submitting ? 'muted' : ''}`}
+                                                                            disabled={submitting}
+                                                                        >
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                                            Reject
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => deleteLoan(loan.id)}
+                                                                            className={`reject-action ${submitting ? 'muted' : ''}`}
+                                                                            disabled={submitting}
+                                                                            style={{ color: '#ef4444' }}
+                                                                        >
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+                                                                            Delete Loan
+                                                                        </button>
+                                                                    </>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <>
+                                                                    <button onClick={() => viewDetails(loan)} disabled={submitting}>
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                                        View Details
+                                                                    </button>
+                                                                    <button onClick={() => viewHistory(loan)} disabled={submitting}>
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                                                                        Angalia Mapendekezo
+                                                                    </button>
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>,
+                                                    document.body
                                                 )}
                                             </td>
                                         </tr>
@@ -626,6 +786,57 @@ const Customers: React.FC = () => {
                             <button className="btn-secondary" onClick={() => setShowRejectModal(false)} disabled={submitting}>Cancel</button>
                             <button className="btn-danger" onClick={submitRejection} disabled={submitting}>
                                 {submitting ? 'Returning...' : 'Return for Corrections'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Disburse Modal (Finance Officer / Cashier) */}
+            {showDisburseModal && (
+                <div className="modal-overlay" onClick={() => setShowDisburseModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h2>Toa Mkopo (Disburse)</h2>
+                        <div className="modal-info">
+                            <p><strong>Mwombaji:</strong> {selectedLoan?.name}</p>
+                            <p><strong>Kiasi cha Mkopo:</strong> TZS {Number(selectedLoan?.amount).toLocaleString()}</p>
+                        </div>
+                        <label className="disburse-field-label">Kiasi cha Kutoa (TZS)</label>
+                        <input
+                            type="number"
+                            value={disburseForm.amount}
+                            onChange={(e) => setDisburseForm({ ...disburseForm, amount: e.target.value })}
+                            className="disburse-input"
+                        />
+                        <label className="disburse-field-label">Tarehe ya Malipo</label>
+                        <input
+                            type="date"
+                            value={disburseForm.disbursement_date}
+                            onChange={(e) => setDisburseForm({ ...disburseForm, disbursement_date: e.target.value })}
+                            className="disburse-input"
+                        />
+                        <label className="disburse-field-label">Njia ya Malipo</label>
+                        <select
+                            value={disburseForm.method}
+                            onChange={(e) => setDisburseForm({ ...disburseForm, method: e.target.value })}
+                            className="disburse-input"
+                        >
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                        <label className="disburse-field-label">Namba ya Muamala (si lazima)</label>
+                        <input
+                            type="text"
+                            value={disburseForm.transaction_reference}
+                            onChange={(e) => setDisburseForm({ ...disburseForm, transaction_reference: e.target.value })}
+                            className="disburse-input"
+                            placeholder="Mf. TXN12345"
+                        />
+                        <div className="modal-actions">
+                            <button className="btn-secondary" onClick={() => setShowDisburseModal(false)} disabled={submitting}>Ghairi</button>
+                            <button className="btn-primary-disburse" onClick={submitDisbursement} disabled={submitting}>
+                                {submitting ? 'Inatuma...' : 'Thibitisha Kutoa Mkopo'}
                             </button>
                         </div>
                     </div>
@@ -758,35 +969,29 @@ const Customers: React.FC = () => {
                 .table-header-premium {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 24px;
+                    align-items: flex-end;
+                    margin-bottom: 8px;
                     flex-wrap: wrap;
                     gap: 16px;
-                    padding-bottom: 22px;
+                    padding-bottom: 8px;
                     border-bottom: 1px solid #f1f5f9;
                 }
 
-                .header-title-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 30px;
-                }
-
-                .header-stepper {
-                    margin-top: 5px;
-                }
-
-                .table-header-premium h2 {
-                    font-size: 19px;
-                    font-weight: 800;
-                    color: #0f172a;
-                    margin: 0;
-                    letter-spacing: -0.01em;
+                @media (max-width: 900px) {
+                    .table-header-premium {
+                        align-items: stretch;
+                    }
+                    .search-wrapper {
+                        width: 100% !important;
+                        margin-left: 0 !important;
+                    }
                 }
 
                 .search-wrapper {
                     position: relative;
-                    width: 320px;
+                    width: 280px;
+                    margin-left: auto;
+                    flex-shrink: 0;
                 }
 
                 .search-icon {
@@ -823,7 +1028,6 @@ const Customers: React.FC = () => {
 
                 .table-wrapper {
                     overflow-x: auto;
-                    padding-bottom: 120px;
                     min-height: 300px;
                 }
 
@@ -998,29 +1202,18 @@ const Customers: React.FC = () => {
                     color: #1e293b;
                 }
 
-                .action-dropdown {
-                    position: absolute;
-                    right: 0;
+                .action-dropdown--fixed {
+                    position: fixed;
                     background: white;
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
-                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-                    z-index: 100;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
+                    z-index: 10000;
                     width: 170px;
                     padding: 8px;
                     display: flex;
                     flex-direction: column;
                     gap: 4px;
-                }
-
-                .dropdown-bottom {
-                    top: 100%;
-                    margin-top: 8px;
-                }
-
-                .dropdown-top {
-                    bottom: 100%;
-                    margin-bottom: 8px;
                 }
 
                 .action-dropdown button {
@@ -1196,6 +1389,75 @@ const Customers: React.FC = () => {
                     display: flex;
                     justify-content: flex-end;
                     gap: 12px;
+                }
+
+                .btn-secondary, .btn-danger, .btn-primary-disburse {
+                    padding: 10px 18px;
+                    border-radius: 10px;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    border: none;
+                    transition: all 0.2s;
+                }
+
+                .btn-secondary {
+                    background: #f1f5f9;
+                    color: #475569;
+                }
+
+                .btn-secondary:hover:not(:disabled) {
+                    background: #e2e8f0;
+                }
+
+                .btn-danger {
+                    background: #ef4444;
+                    color: white;
+                }
+
+                .btn-danger:hover:not(:disabled) {
+                    background: #dc2626;
+                }
+
+                .btn-primary-disburse {
+                    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                    color: white;
+                    box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.35);
+                }
+
+                .btn-primary-disburse:hover:not(:disabled) {
+                    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+                }
+
+                .btn-secondary:disabled, .btn-danger:disabled, .btn-primary-disburse:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+
+                .disburse-field-label {
+                    display: block;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                    margin: 12px 0 6px 0;
+                }
+
+                .disburse-input {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    outline: none;
+                    box-sizing: border-box;
+                    font-size: 14px;
+                    font-family: inherit;
+                }
+
+                .disburse-input:focus {
+                    border-color: #2563eb;
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
                 }
 
                 /* SKELETON LOADING STYLES */

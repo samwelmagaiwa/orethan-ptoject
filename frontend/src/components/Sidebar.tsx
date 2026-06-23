@@ -74,8 +74,10 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const userRole = user?.role;
   const canAccessLoansForm = userRole === "admin" || userRole === "loan_officer";
   const canAccessUsers = userRole === "admin";
-  const canAccessRepayment = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "loan_officer" || userRole === "managing_director";
-  const canAccessManagement = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
+  const canAccessRepayment = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "loan_officer" || userRole === "managing_director" || userRole === "finance_officer";
+  const canAccessApprovals = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
+  const canAccessManagement = canAccessApprovals;
+  const canAccessFinance = userRole === "admin" || userRole === "finance_officer";
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
@@ -167,8 +169,21 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
+          {/* Finance (Disbursement & Cashiering) */}
+          {canAccessFinance && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? "FINANCE" : "─"}</div>
+              {userRole === "finance_officer" || userRole === "admin" ? (
+                <div className={`sd-item ${isActive("/finance/customers") ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")} title="Disburse & Record Payments">
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">Disburse & Payments</span>}
+                </div>
+              ) : null}
+            </>
+          )}
+
           {/* Management & Approvals */}
-          {canAccessManagement && (
+          {canAccessApprovals && (
             <>
               <div className="sd-sec">{!isCollapsed ? "APPROVALS" : "─"}</div>
               {userRole === "loan_manager" || userRole === "admin" ? (
@@ -200,7 +215,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 const prefix = userRole === 'loan_manager' ? 'lm' :
                   userRole === 'general_manager' ? 'gm' :
                     userRole === 'managing_director' ? 'md' :
-                      userRole === 'loan_officer' ? 'officer' : '';
+                      userRole === 'loan_officer' ? 'officer' :
+                        userRole === 'finance_officer' ? 'finance' : '';
                 navigate(prefix ? `/${prefix}/customers` : "/customers");
               }} title="Wateja">
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>

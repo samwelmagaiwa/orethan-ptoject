@@ -127,34 +127,66 @@ class LoanService
         });
     }
     /**
-     * Handle loan disbursement.
+     * Handle loan disbursement and immediate activation.
+     *
+     * After a Finance Officer/Cashier disburses an MD-approved loan, the loan is
+     * "activated" — we automatically create the disbursement record and generate:
+     *   - Loan Account (unique account number)
+     *   - Repayment Schedule (starting from the disbursement date)
+     *   - First Due Date (next_payment_date)
+     *   - Outstanding Balance (remaining_balance = principal)
+     *   - Status = disbursed (Active)
      */
     public function disburseLoan(Loan $loan, array $data, $user)
     {
         return DB::transaction(function () use ($loan, $data, $user) {
+            // Only MD-approved loans can be disbursed
             if ($loan->status !== 'approved') {
                 throw new \Exception('Only approved loans can be disbursed');
             }
 
-            $loan->status = 'disbursed';
-            $loan->save();
+            // Guard against double disbursement / double activation
+            if ($loan->disbursed_at || $loan->disbursement()->exists()) {
+                throw new \Exception('This loan has already been disbursed');
+            }
 
+            $disbursementDate = $data['disbursement_date'];
+
+            // 1. Record the disbursement transaction
             \App\Models\LoanDisbursement::create([
                 'loan_id' => $loan->id,
-                'disbursement_date' => $data['disbursement_date'],
+                'disbursement_date' => $disbursementDate,
                 'amount' => $data['amount'],
                 'method' => $data['method'],
                 'transaction_reference' => $data['transaction_reference'] ?? null,
                 'disbursed_by' => $user->id ?? 1,
             ]);
 
-            // Generate schedule based on frequency in details
+            // 2. Generate Repayment Schedule from the disbursement date
             $details = $loan->details;
             $months = (int) ($details['kwaTarakimu'] ?? 12);
             $frequency = $details['repayment_frequency'] ?? 'Monthly';
-            $loan->generateSchedule($months, 0.03, $frequency);
+            $loan->generateSchedule($months, 0.03, $frequency, $disbursementDate);
 
-            return $loan;
+            // 3. Activate the loan account
+            $firstSchedule = $loan->schedules()->orderBy('due_date', 'asc')->first();
+
+            $loan->disbursed_at = $disbursementDate;
+            $loan->status = 'disbursed'; // Active
+            $loan->payment_status = 'pending';
+            $loan->total_paid = 0;
+            $loan->remaining_balance = round($loan->amount); // Outstanding Balance = principal
+            $loan->next_payment_date = $firstSchedule?->due_date; // First Due Date
+            $loan->monthly_payment = $firstSchedule ? round($firstSchedule->total_amount) : null;
+            $loan->save();
+
+            // 4. Assign the Loan Account number (needs the persisted id)
+            if (!$loan->loan_account_number) {
+                $loan->loan_account_number = $loan->generateAccountNumber();
+                $loan->save();
+            }
+
+            return $loan->fresh(['schedules', 'disbursement']);
         });
     }
 
@@ -199,6 +231,45 @@ class LoanService
 
             // Update schedules
             $this->updateSchedules($loan, $amount);
+
+            return [
+                'repayment' => $repayment,
+                'loan' => $loan->fresh()
+            ];
+        });
+    }
+
+    /**
+     * Reverse a previously recorded repayment (requires authorization note).
+     */
+    public function reverseRepayment(\App\Models\Repayment $repayment, array $data, $user)
+    {
+        return DB::transaction(function () use ($repayment, $data, $user) {
+            if ($repayment->status === 'reversed') {
+                throw new \Exception('This repayment has already been reversed');
+            }
+
+            $loan = $repayment->loan;
+            $amount = round($repayment->amount);
+
+            $loan->total_paid = max(0, round(($loan->total_paid ?? 0) - $amount));
+            $loan->remaining_balance = round($loan->amount - $loan->total_paid);
+
+            if ($loan->status === 'completed' && $loan->remaining_balance > 0) {
+                $loan->status = 'disbursed';
+                $loan->completed_at = null;
+            }
+            $loan->payment_status = $loan->total_paid > 0 ? 'partial' : 'pending';
+            $loan->save();
+
+            $this->updateSchedules($loan, -$amount);
+
+            $repayment->status = 'reversed';
+            $repayment->reversal_reason = $data['reason'];
+            $repayment->authorized_by = $data['authorized_by'];
+            $repayment->reversed_by = $user->id ?? null;
+            $repayment->reversed_at = now();
+            $repayment->save();
 
             return [
                 'repayment' => $repayment,

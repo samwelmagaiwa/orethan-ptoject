@@ -11,8 +11,12 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('loans', function (Blueprint $table) {
-            $table->string('guarantor_1_photo')->nullable()->after('passport_photo');
-            $table->string('guarantor_2_photo')->nullable()->after('guarantor_1_photo');
+            if (!Schema::hasColumn('loans', 'guarantor_1_photo')) {
+                $table->string('guarantor_1_photo')->nullable()->after('passport_photo');
+            }
+            if (!Schema::hasColumn('loans', 'guarantor_2_photo')) {
+                $table->string('guarantor_2_photo')->nullable()->after('guarantor_1_photo');
+            }
         });
 
     }

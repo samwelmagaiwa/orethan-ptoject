@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->role === 'managing_director';
     }
+
+    public function isFinanceOfficer()
+    {
+        return $this->role === 'finance_officer';
+    }
 }

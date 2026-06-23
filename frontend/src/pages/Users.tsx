@@ -161,6 +161,7 @@ const Users = () => {
       loan_manager: "Loan Manager",
       general_manager: "General Manager",
       managing_director: "Managing Director",
+      finance_officer: "Finance Officer / Cashier",
     };
     return labels[role] || role;
   };
@@ -297,6 +298,7 @@ const Users = () => {
                   <option value="loan_manager">Loan Manager</option>
                   <option value="general_manager">General Manager</option>
                   <option value="managing_director">Managing Director</option>
+                  <option value="finance_officer">Finance Officer / Cashier</option>
                   <option value="admin">Administrator</option>
                 </select>
               </div>

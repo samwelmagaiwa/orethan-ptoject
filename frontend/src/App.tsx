@@ -1084,6 +1084,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/finance/customers"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Customers />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/customers/:id"
@@ -1137,9 +1147,29 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/finance/customers/:id"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CustomerDetails />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/customers/:id/repayments"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <LoanRepayments />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/finance/customers/:id/repayments"
             element={
               <ProtectedRoute>
                 <MainLayout>

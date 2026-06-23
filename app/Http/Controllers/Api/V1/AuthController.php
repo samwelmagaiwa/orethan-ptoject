@@ -17,7 +17,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
-            'role' => 'nullable|string|in:admin,loan_officer,loan_manager,general_manager,managing_director',
+            'role' => 'nullable|string|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
         ]);
 
