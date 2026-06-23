@@ -1,28 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
     User,
-    Wallet,
+    Building2,
     CreditCard,
     Calendar,
-    ShieldCheck,
-    FileText,
-    ChevronRight,
-    Lock,
-    ArrowLeft,
-    Printer,
-    Eye,
-    Zap,
-    Banknote,
-    MessageSquare,
     Calculator,
-    Smartphone,
-    Building2,
+    Banknote,
+    FileText,
     Check,
-    TrendingUp,
     Activity,
-    Shield
+    ShieldCheck,
+    TrendingUp,
+    Smartphone,
+    ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
@@ -30,19 +21,19 @@ import AlertModal from "../components/AlertModal";
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 const PAYMENT_METHODS = [
-    { value: "cash", label: "Cash", icon: <Banknote size={18} /> },
-    { value: "bank_transfer", label: "Bank Transfer", icon: <CreditCard size={18} /> },
-    { value: "mpesa", label: "M-Pesa", icon: <Zap size={18} /> },
-    { value: "airtel_money", label: "Airtel Money", icon: <Zap size={18} /> },
-    { value: "tigo_pesa", label: "Tigo Pesa", icon: <Zap size={18} /> },
-    { value: "halopesa", label: "HaloPesa", icon: <Zap size={18} /> },
-    { value: "cheque", label: "Cheque", icon: <FileText size={18} /> },
+    { value: "cash", label: "Cash" },
+    { value: "bank_transfer", label: "Bank Transfer" },
+    { value: "mpesa", label: "M-Pesa" },
+    { value: "airtel_money", label: "Airtel Money" },
+    { value: "tigo_pesa", label: "Tigo Pesa" },
+    { value: "halopesa", label: "HaloPesa" },
+    { value: "cheque", label: "Cheque" },
 ];
 
 const MOBILE_METHODS = ["mpesa", "airtel_money", "tigo_pesa", "halopesa"];
 
 const fmt = (n: any) => "TZS " + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }) : "—");
+const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—");
 
 const buildAccountNumber = (loan: any, dateStr: string) => {
     if (!loan) return "—";
@@ -66,13 +57,6 @@ const CHECKLIST = [
     { key: "customer_present", label: "Customer Present" },
     { key: "payment_verified", label: "Payment Details Verified" },
 ];
-
-const DataBlock = ({ label, value, icon }: any) => (
-    <div className="p-data-block">
-        <span className="lbl">{icon} {label}</span>
-        <span className="val">{value || "—"}</span>
-    </div>
-);
 
 const DisburseLoan = () => {
     const { id } = useParams();
@@ -218,7 +202,7 @@ const DisburseLoan = () => {
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
             body{font-family:'Inter', sans-serif;padding:60px;color:#0f172a;background:#fff; line-height:1.5}
             .header-info{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;border-bottom:2px solid #0f172a;padding-bottom:20px}
-            h1{font-size:28px;font-weight:800;margin:0;letter-spacing:-0.03em;text-transform:uppercase} 
+            h1{font-size:28px;font-weight:800;margin:0;letter-spacing:-0.03em;text-transform:uppercase}
             .doc-type{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.1em}
             h2{font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:#1e3a8a;margin:40px 0 16px;display:flex;align-items:center;gap:8px;background:#f8fafc;padding:8px 12px;border-radius:8px}
             table{width:100%;border-collapse:collapse;margin-bottom:16px}
@@ -251,51 +235,16 @@ const DisburseLoan = () => {
     };
 
     if (loading) return (
-        <div className="p-v2-loader">
-            <div className="p-v2-loader-content">
-                <motion.div
-                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="p-v2-spinner"
-                >
-                    <Shield size={40} className="p-text-emerald" />
-                </motion.div>
-                <motion.span
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                >
-                    Initializing Secure Portal...
-                </motion.span>
-            </div>
+        <div className="disburse-loader">
+            <div className="spinner"></div>
+            <p>Loading disbursement data...</p>
         </div>
     );
 
-    if (!loan) return <div className="p-v2-loader">Disbursement record not found.</div>;
-
-    const staggerContainer = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemFade = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
-    };
+    if (!loan) return <div className="disburse-loader">Disbursement record not found.</div>;
 
     return (
-        <div className="p-v2-wrapper">
-            {/* DYNAMIC MESH BACKGROUND */}
-            <div className="p-v2-mesh">
-                <div className="mesh-blob blob-1"></div>
-                <div className="mesh-blob blob-2"></div>
-                <div className="mesh-blob blob-3"></div>
-            </div>
-
+        <div className="disburse-wrapper">
             <AlertModal
                 isOpen={alert.isOpen}
                 title={alert.title}
@@ -307,495 +256,628 @@ const DisburseLoan = () => {
                 }}
             />
 
-            <nav className="p-v2-nav">
-                <div className="p-v2-nav-content">
-                    <div className="p-v2-nav-left">
-                        <button className="p-v2-icon-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /></button>
-                        <div className="p-v2-nav-divider"></div>
-                        <span className="p-v2-breadcrumb">OPERATIONS / <strong className="p-text-gold">DISBURSEMENT</strong></span>
+            <div className="disburse-header">
+                <button className="disburse-back-btn" onClick={() => navigate(-1)}>
+                    <ArrowLeft size={18} /> Back
+                </button>
+                <h1>Loan Disbursement</h1>
+            </div>
+
+            <div className="disburse-grid">
+                {/* BORROWER INFORMATION */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <User size={18} /> Borrower Information
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Customer Name:</span>
+                        <span className="card-value">{loan.name}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Customer Number:</span>
+                        <span className="card-value">{preview.customer_number}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Loan Account Number:</span>
+                        <span className="card-value mono">{accountNumber}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Loan Product:</span>
+                        <span className="card-value">{preview.product_name}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Loan Officer:</span>
+                        <span className="card-value">{preview.officer_name}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Branch:</span>
+                        <span className="card-value">{preview.branch}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Loan Status:</span>
+                        <span className="card-value status-ready">{alreadyDisbursed ? "Disbursed" : "Ready for Disbursement"}</span>
                     </div>
                 </div>
-            </nav>
 
-            <motion.div
-                className="p-v2-container"
-                variants={staggerContainer}
-                initial="hidden"
-                animate="show"
-            >
-                {/* HERO SECTION - REFINED */}
-                <motion.header variants={itemFade} className="p-v2-hero">
-                    <div className="p-v2-hero-glass">
-                        <div className="p-v2-hero-left">
-                            <div className="p-v2-badge">
-                                <Activity size={14} className="p-text-emerald" />
-                                <span>{alreadyDisbursed ? 'DISBURSED' : 'READY FOR DISBURSEMENT'}</span>
-                            </div>
-                            <h1 className="p-v2-cust-name">{loan.name}</h1>
-                            <div className="p-v2-acc-ref">
-                                <TrendingUp size={14} className="p-text-slate-400" />
-                                <code>{accountNumber}</code>
-                            </div>
+                {/* LOAN DETAILS */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <TrendingUp size={18} /> Loan Details
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Approved Amount:</span>
+                        <span className="card-value">{fmt(approvedAmount)}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Interest Rate:</span>
+                        <span className="card-value">{summary?.interest_rate}% / monthly</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Loan Period:</span>
+                        <span className="card-value">{summary?.term_months} Months</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Repayment Frequency:</span>
+                        <span className="card-value">{summary?.frequency}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Number of Installments:</span>
+                        <span className="card-value">{summary?.total_installments}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">First Installment Date:</span>
+                        <span className="card-value">{fmtDate(summary?.first_payment_date)}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Maturity Date:</span>
+                        <span className="card-value">{fmtDate(summary?.final_payment_date)}</span>
+                    </div>
+                </div>
+
+                {/* LOAN CHARGES */}
+                <div className="disburse-card full-width">
+                    <h3 className="card-title">
+                        <Calculator size={18} /> Loan Charges
+                    </h3>
+                    <div className="charges-grid">
+                        <div className="charge-row">
+                            <span className="charge-label">Approved Loan Amount:</span>
+                            <span className="charge-value">{fmt(approvedAmount)}</span>
                         </div>
-                        <div className="p-v2-hero-right">
-                            <div className="p-v2-main-stat">
-                                <label>NET DISBURSEMENT</label>
-                                <div className="p-v2-stat-val">
-                                    <span className="p-v2-currency">TZS</span>
-                                    <h2 className="p-v2-amount">{Number(netAmount).toLocaleString()}</h2>
-                                </div>
-                            </div>
+                        <div className="charge-row">
+                            <span className="charge-label">Processing Fee:</span>
+                            <span className="charge-value">{fmt(processingFee)}</span>
+                        </div>
+                        <div className="charge-row">
+                            <span className="charge-label">Insurance Fee:</span>
+                            <span className="charge-value">{fmt(insuranceFee)}</span>
+                        </div>
+                        <div className="charge-row">
+                            <span className="charge-label">Other Charges:</span>
+                            <span className="charge-value">{fmt(otherCharges)}</span>
+                        </div>
+                        <div className="charge-row">
+                            <span className="charge-label">Total Charges:</span>
+                            <span className="charge-value">{fmt(totalCharges)}</span>
+                        </div>
+                        <div className="charge-row highlight">
+                            <span className="charge-label">Net Disbursement Amount:</span>
+                            <span className="charge-value">{fmt(netAmount)}</span>
                         </div>
                     </div>
-                </motion.header>
-
-                <div className="p-v2-layout">
-                    <main className="p-v2-main">
-                        {/* CONTEXT SECTION */}
-                        <motion.section variants={itemFade} className="p-v2-card">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><User size={20} /></div>
-                                <h3>Borrower Identity & Product</h3>
-                            </div>
-                            <div className="p-v2-info-grid cols-3">
-                                <DataBlock label="Customer Name" value={loan.name} icon={<User size={14} />} />
-                                <DataBlock label="Customer Number" value={preview.customer_number} icon={<User size={14} />} />
-                                <DataBlock label="Loan Account Number" value={accountNumber} icon={<CreditCard size={14} />} />
-                                <DataBlock label="Loan Product" value={preview.product_name} icon={<Building2 size={14} />} />
-                                <DataBlock label="Loan Officer" value={preview.officer_name} icon={<User size={14} />} />
-                                <DataBlock label="Branch" value={preview.branch} icon={<Building2 size={14} />} />
-                                <DataBlock label="Loan Status" value={alreadyDisbursed ? "Disbursed" : "Ready for Disbursement"} icon={<Activity size={14} />} />
-                            </div>
-                        </motion.section>
-
-                        {/* LOAN DETAILS */}
-                        <motion.section variants={itemFade} className="p-v2-card">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><TrendingUp size={20} /></div>
-                                <h3>Loan Details</h3>
-                            </div>
-                            <div className="p-v2-info-grid cols-3">
-                                <DataBlock label="Approved Amount" value={fmt(approvedAmount)} icon={<Banknote size={14} />} />
-                                <DataBlock label="Interest Rate" value={`${summary?.interest_rate}% / monthly`} icon={<TrendingUp size={14} />} />
-                                <DataBlock label="Loan Period" value={`${summary?.term_months} Months`} icon={<Calendar size={14} />} />
-                                <DataBlock label="Repayment Frequency" value={summary?.frequency} icon={<Calendar size={14} />} />
-                                <DataBlock label="Number of Installments" value={summary?.total_installments} icon={<Calculator size={14} />} />
-                                <DataBlock label="First Installment Date" value={fmtDate(summary?.first_payment_date)} icon={<Calendar size={14} />} />
-                                <DataBlock label="Maturity Date" value={fmtDate(summary?.final_payment_date)} icon={<Calendar size={14} />} />
-                            </div>
-                        </motion.section>
-
-                        {/* CHARGES SECTION */}
-                        <motion.section variants={itemFade} className="p-v2-card p-v2-card-featured">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><Wallet size={20} /></div>
-                                <h3>Financial Adjustments</h3>
-                                <div className="p-v2-header-badge">EDITABLE</div>
-                            </div>
-                            <div className="p-v2-edit-grid">
-                                <div className="p-v2-input-group">
-                                    <label>Processing Fee</label>
-                                    <div className="p-v2-input-wrapper">
-                                        <input type="number" value={processingFee} onChange={e => setProcessingFee(e.target.value)} />
-                                        <span className="unit">TZS</span>
-                                    </div>
-                                </div>
-                                <div className="p-v2-input-group">
-                                    <label>Insurance Premium</label>
-                                    <div className="p-v2-input-wrapper">
-                                        <input type="number" value={insuranceFee} onChange={e => setInsuranceFee(e.target.value)} />
-                                        <span className="unit">TZS</span>
-                                    </div>
-                                </div>
-                                <div className="p-v2-input-group full">
-                                    <label>Other Statutory Charges</label>
-                                    <div className="p-v2-input-wrapper">
-                                        <input type="number" value={otherCharges} onChange={e => setOtherCharges(e.target.value)} />
-                                        <span className="unit">TZS</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="p-v2-calc-tray">
-                                <div className="p-v2-calc-row">
-                                    <span>Principal Approved</span>
-                                    <span>{fmt(approvedAmount)}</span>
-                                </div>
-                                <div className="p-v2-calc-row text-error">
-                                    <span>Cumulative Deductions</span>
-                                    <span>-{fmt(totalCharges)}</span>
-                                </div>
-                                <div className="p-v2-calc-row p-v2-calc-final">
-                                    <span>Final Net Amount</span>
-                                    <span className="p-text-emerald-glow">{fmt(netAmount)}</span>
-                                </div>
-                            </div>
-                        </motion.section>
-
-                        {/* PAYMENT METHOD */}
-                        <motion.section variants={itemFade} className="p-v2-card">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><CreditCard size={20} /></div>
-                                <h3>Settlement Method</h3>
-                            </div>
-                            <div className="p-v2-method-selector">
-                                {PAYMENT_METHODS.map(m => (
-                                    <button
-                                        key={m.value}
-                                        className={`p-v2-method-btn ${method === m.value ? 'active' : ''}`}
-                                        onClick={() => { setMethod(m.value); setPayDetails({}); }}
-                                    >
-                                        <div className="icon-box">{m.icon}</div>
-                                        <span>{m.label}</span>
-                                        {method === m.value && <motion.div layoutId="v2pill" className="p-v2-method-bg" />}
-                                    </button>
-                                ))}
-                            </div>
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={method}
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.98 }}
-                                    className="p-v2-dynamic-form"
-                                >
-                                    <div className="p-v2-edit-grid">
-                                        {method === "cash" && (
-                                            <>
-                                                <div className="p-v2-input-group">
-                                                    <label>Authorized Cashier</label>
-                                                    <input type="text" value={payDetails.cashier || ""} onChange={e => setDetail("cashier", e.target.value)} placeholder="Name" />
-                                                </div>
-                                                <div className="p-v2-input-group">
-                                                    <label>Drawer / Vault Reference</label>
-                                                    <input type="text" value={payDetails.cash_drawer || ""} onChange={e => setDetail("cash_drawer", e.target.value)} placeholder="e.g. D10" />
-                                                </div>
-                                            </>
-                                        )}
-                                        {(method === "bank_transfer" || method === "cheque") && (
-                                            <>
-                                                <div className="p-v2-input-group">
-                                                    <label>Financial Institution</label>
-                                                    <input type="text" value={payDetails.bank_name || ""} onChange={e => setDetail("bank_name", e.target.value)} />
-                                                </div>
-                                                <div className="p-v2-input-group">
-                                                    <label>Account / Cheque Ref</label>
-                                                    <input type="text" value={payDetails.account_number || payDetails.cheque_number || ""} onChange={e => setDetail(method === "cheque" ? "cheque_number" : "account_number", e.target.value)} />
-                                                </div>
-                                            </>
-                                        )}
-                                        {MOBILE_METHODS.includes(method) && (
-                                            <>
-                                                <div className="p-v2-input-group">
-                                                    <label>Subscriber Wallet</label>
-                                                    <div className="p-v2-field-icon">
-                                                        <Smartphone size={16} />
-                                                        <input type="text" value={payDetails.phone_number || ""} onChange={e => setDetail("phone_number", e.target.value)} placeholder="255..." />
-                                                    </div>
-                                                </div>
-                                                <div className="p-v2-input-group">
-                                                    <label>Transaction ID</label>
-                                                    <input type="text" value={transactionRef} onChange={e => setTransactionRef(e.target.value)} placeholder="Ref" />
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            </AnimatePresence>
-                        </motion.section>
-
-                        {/* DISBURSEMENT INFORMATION */}
-                        <motion.section variants={itemFade} className="p-v2-card">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><Calendar size={20} /></div>
-                                <h3>Disbursement Information</h3>
-                            </div>
-                            <div className="p-v2-edit-grid">
-                                <div className="p-v2-input-group">
-                                    <label>Disbursement Date</label>
-                                    <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} />
-                                </div>
-                                <div className="p-v2-input-group full">
-                                    <label>Narration</label>
-                                    <input type="text" value={narration} onChange={e => setNarration(e.target.value)} placeholder="Loan disbursement narration" />
-                                </div>
-                            </div>
-                            <div className="p-v2-divider"></div>
-                            <div className="p-v2-info-grid">
-                                <DataBlock label="Voucher Number" value="Auto Generated" icon={<FileText size={14} />} />
-                                <DataBlock label="Receipt Number" value="Auto Generated" icon={<FileText size={14} />} />
-                            </div>
-                        </motion.section>
-
-                        {/* REPAYMENT SUMMARY */}
-                        <motion.section variants={itemFade} className="p-v2-card">
-                            <div className="p-v2-card-header">
-                                <div className="p-v2-card-icon"><Calculator size={20} /></div>
-                                <h3>Repayment Summary</h3>
-                            </div>
-                            <div className="p-v2-info-grid cols-3">
-                                <DataBlock label="Total Installments" value={summary?.total_installments} icon={<Calculator size={14} />} />
-                                <DataBlock label="Monthly Installment" value={fmt(summary?.installment_amount)} icon={<Banknote size={14} />} />
-                                <DataBlock label="First Payment Date" value={fmtDate(summary?.first_payment_date)} icon={<Calendar size={14} />} />
-                                <DataBlock label="Final Payment Date" value={fmtDate(summary?.final_payment_date)} icon={<Calendar size={14} />} />
-                            </div>
-                        </motion.section>
-                    </main>
-
-                    <aside className="p-v2-sidebar">
-                        <div className="p-v2-sticky-rail">
-                            {/* SECURITY GATE */}
-                            <motion.div variants={itemFade} className="p-v2-security-card">
-                                <div className="p-v2-security-header">
-                                    <Shield size={22} className="p-text-emerald-glow-icon" />
-                                    <h3>Verification Gate</h3>
-                                </div>
-                                <div className="p-v2-checklist">
-                                    {CHECKLIST.map(c => (
-                                        <label key={c.key} className={`p-v2-check-item ${checks[c.key] ? 'checked' : ''}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={!!checks[c.key]}
-                                                onChange={e => setChecks({ ...checks, [c.key]: e.target.checked })}
-                                            />
-                                            <div className="custom-box">
-                                                {checks[c.key] && <Check size={12} />}
-                                            </div>
-                                            <span>{c.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </motion.div>
-
-                            {/* AUTH CARD */}
-                            <motion.div variants={itemFade} className="p-v2-auth-card">
-                                <div className="p-v2-auth-header">
-                                    <Lock size={18} className="p-text-gold" />
-                                    <span>SYSTEM AUTHORIZATION</span>
-                                </div>
-                                <div className="p-v2-auth-field">
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={e => setPassword(e.target.value)}
-                                        placeholder="Admin PIN Access"
-                                    />
-                                </div>
-                                <label className="p-v2-confirm">
-                                    <input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)} />
-                                    <div className="p-v2-mini-box"></div>
-                                    <span>Funds confirm recorded</span>
-                                </label>
-                                <button
-                                    className={`p-v2-action-btn ${canDisburse ? 'available' : ''}`}
-                                    disabled={!canDisburse || submitting}
-                                    onClick={handleDisburse}
-                                >
-                                    {submitting ? 'VALIDATING...' : 'AUTHORIZE DISBURSEMENT'}
-                                    <ChevronRight size={18} />
-                                </button>
-                            </motion.div>
-
-                            <div className="p-v2-util-grid">
-                                <button className="p-v2-util-btn" onClick={() => printDoc("Voucher", buildVoucherBody())}>PREVIEW VOUCHER</button>
-                                <button className="p-v2-util-btn" onClick={() => printDoc("Agreement", buildAgreementBody())}>PRINT AGREEMENT</button>
-                            </div>
-                        </div>
-                    </aside>
                 </div>
-            </motion.div>
+
+                {/* PAYMENT INFORMATION */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <CreditCard size={18} /> Payment Information
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Payment Method</span>
+                        <select value={method} onChange={(e) => { setMethod(e.target.value); setPayDetails({}); }} className="card-select">
+                            {PAYMENT_METHODS.map((m) => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {method === "cash" && (
+                        <>
+                            <div className="card-row">
+                                <span className="card-label">Cashier</span>
+                                <input type="text" value={payDetails.cashier || ""} onChange={e => setDetail("cashier", e.target.value)} placeholder="Name" className="card-input" />
+                            </div>
+                            <div className="card-row">
+                                <span className="card-label">Cash Drawer</span>
+                                <input type="text" value={payDetails.cash_drawer || ""} onChange={e => setDetail("cash_drawer", e.target.value)} placeholder="e.g. D10" className="card-input" />
+                            </div>
+                        </>
+                    )}
+
+                    {(method === "bank_transfer" || method === "cheque") && (
+                        <>
+                            <div className="card-row">
+                                <span className="card-label">Financial Institution</span>
+                                <input type="text" value={payDetails.bank_name || ""} onChange={e => setDetail("bank_name", e.target.value)} placeholder="Bank name" className="card-input" />
+                            </div>
+                            <div className="card-row">
+                                <span className="card-label">Account / Cheque Ref</span>
+                                <input type="text" value={payDetails.account_number || payDetails.cheque_number || ""} onChange={e => setDetail(method === "cheque" ? "cheque_number" : "account_number", e.target.value)} placeholder="Reference" className="card-input" />
+                            </div>
+                        </>
+                    )}
+
+                    {MOBILE_METHODS.includes(method) && (
+                        <>
+                            <div className="card-row">
+                                <span className="card-label">Subscriber Wallet</span>
+                                <input type="text" value={payDetails.phone_number || ""} onChange={e => setDetail("phone_number", e.target.value)} placeholder="255..." className="card-input" />
+                            </div>
+                            <div className="card-row">
+                                <span className="card-label">Transaction ID</span>
+                                <input type="text" value={transactionRef} onChange={e => setTransactionRef(e.target.value)} placeholder="Ref" className="card-input" />
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* DISBURSEMENT INFORMATION */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <Calendar size={18} /> Disbursement Information
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Disbursement Date</span>
+                        <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} className="card-input" />
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Voucher Number</span>
+                        <span className="card-value">Auto Generated</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Receipt Number</span>
+                        <span className="card-value">Auto Generated</span>
+                    </div>
+                    <div className="card-row full">
+                        <span className="card-label">Narration</span>
+                        <textarea value={narration} onChange={e => setNarration(e.target.value)} className="card-textarea" rows={3}></textarea>
+                    </div>
+                </div>
+
+                {/* REPAYMENT SUMMARY */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <Banknote size={18} /> Repayment Summary
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Total Installments:</span>
+                        <span className="card-value">{summary?.total_installments}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Monthly Installment:</span>
+                        <span className="card-value">{fmt(summary?.installment_amount)}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">First Payment Date:</span>
+                        <span className="card-value">{fmtDate(summary?.first_payment_date)}</span>
+                    </div>
+                    <div className="card-row">
+                        <span className="card-label">Final Payment Date:</span>
+                        <span className="card-value">{fmtDate(summary?.final_payment_date)}</span>
+                    </div>
+                </div>
+
+                {/* VERIFICATION CHECKLIST */}
+                <div className="disburse-card">
+                    <h3 className="card-title">
+                        <ShieldCheck size={18} /> Verification Checklist
+                    </h3>
+                    <div className="checklist">
+                        {CHECKLIST.map((c) => (
+                            <label key={c.key} className="checklist-item">
+                                <input
+                                    type="checkbox"
+                                    checked={!!checks[c.key]}
+                                    onChange={e => setChecks({ ...checks, [c.key]: e.target.checked })}
+                                />
+                                <span>{c.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* CONFIRMATION */}
+                <div className="disburse-card full-width">
+                    <h3 className="card-title">
+                        <FileText size={18} /> Confirmation
+                    </h3>
+                    <div className="card-row">
+                        <span className="card-label">Password / PIN Confirmation</span>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            className="card-input"
+                        />
+                    </div>
+                    <label className="confirmation-check">
+                        <input
+                            type="checkbox"
+                            checked={confirm}
+                            onChange={e => setConfirm(e.target.checked)}
+                        />
+                        <span>I confirm that all loan information has been verified and the customer has received the funds.</span>
+                    </label>
+                </div>
+            </div>
+
+            <div className="disburse-actions">
+                <button className="btn-cancel" onClick={() => navigate(-1)}>Cancel</button>
+                <button className="btn-secondary" onClick={() => printDoc("Voucher", buildVoucherBody())}>Preview Voucher</button>
+                <button className="btn-secondary" onClick={() => printDoc("Agreement", buildAgreementBody())}>Print Agreement</button>
+                <button className={`btn-primary ${canDisburse ? "active" : "disabled"}`} disabled={!canDisburse || submitting} onClick={handleDisburse}>
+                    {submitting ? "Processing..." : "Disburse Loan"}
+                </button>
+            </div>
 
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-                .p-v2-wrapper {
+                .disburse-wrapper {
                     min-height: 100vh;
-                    background: #020617;
-                    font-family: 'Outfit', sans-serif;
-                    color: #fff;
-                    position: relative;
-                    overflow-x: hidden;
-                    padding-bottom: 80px;
+                    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+                    padding: 30px 20px;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 }
 
-                /* MESH BACKGROUND */
-                .p-v2-mesh {
-                    position: fixed;
-                    inset: 0;
-                    z-index: 0;
-                    overflow: hidden;
-                    pointer-events: none;
+                .disburse-header {
+                    max-width: 1200px;
+                    margin: 0 auto 30px;
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
                 }
-                .mesh-blob {
-                    position: absolute;
-                    width: 600px;
-                    height: 600px;
-                    border-radius: 50%;
-                    filter: blur(120px);
-                    opacity: 0.15;
+
+                .disburse-header h1 {
+                    font-size: 32px;
+                    font-weight: 700;
+                    margin: 0;
+                    color: #1a202c;
                 }
-                .blob-1 { background: #1e3a8a; top: -10%; left: -10%; }
-                .blob-2 { background: #064e3b; bottom: -10%; right: -10%; }
-                .blob-3 { background: #312e81; top: 30%; left: 50%; width: 400px; height: 400px; }
 
-                /* NAVIGATION */
-                .p-v2-nav { position: relative; z-index: 10; height: 70px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(2,6,23,0.5); backdrop-filter: blur(10px); display: flex; align-items: center; }
-                .p-v2-nav-content { max-width: 1300px; margin: 0 auto; width: 100%; padding: 0 32px; display: flex; justify-content: space-between; }
-                .p-v2-nav-left { display: flex; align-items: center; gap: 20px; }
-                .p-v2-icon-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: #fff; width: 36px; height: 36px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-                .p-v2-nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
-                .p-v2-breadcrumb { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.15em; }
+                .disburse-back-btn {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #4a5568;
+                    transition: all 0.2s;
+                }
 
-                /* CONTAINER */
-                .p-v2-container { max-width: 1300px; margin: 40px auto 0; padding: 0 32px; position: relative; z-index: 1; }
+                .disburse-back-btn:hover {
+                    background: #f7fafc;
+                    border-color: #cbd5e0;
+                }
 
-                /* HERO */
-                .p-v2-hero { margin-bottom: 40px; }
-                .p-v2-hero-glass { 
-                    background: rgba(255,255,255,0.02); 
-                    backdrop-filter: blur(20px); 
-                    border: 1px solid rgba(255,255,255,0.05);
-                    border-radius: 32px;
-                    padding: 48px;
+                .disburse-grid {
+                    max-width: 1200px;
+                    margin: 0 auto 40px;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+                    gap: 20px;
+                }
+
+                .disburse-card {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 24px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                    transition: all 0.2s;
+                }
+
+                .disburse-card:hover {
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                    border-color: #cbd5e0;
+                }
+
+                .disburse-card.full-width {
+                    grid-column: 1 / -1;
+                }
+
+                .card-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #2d3748;
+                    margin: 0 0 16px 0;
+                    padding-bottom: 16px;
+                    border-bottom: 2px solid #f0f4f8;
+                }
+
+                .card-title svg {
+                    color: #667eea;
+                    flex-shrink: 0;
+                }
+
+                .card-row {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+                    gap: 16px;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #f0f4f8;
                 }
-                .p-v2-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(16,185,129,0.1); color: #10b981; padding: 6px 14px; border-radius: 100px; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 20px; border: 1px solid rgba(16,185,129,0.2); }
-                .p-v2-cust-name { font-size: 48px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.04em; background: linear-gradient(to bottom, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-                .p-v2-acc-ref { display: flex; align-items: center; gap: 10px; opacity: 0.6; }
-                .p-v2-acc-ref code { font-family: ui-monospace, monospace; font-size: 14px; color: #fff; }
 
-                .p-v2-main-stat { text-align: right; }
-                .p-v2-main-stat label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.2em; display: block; margin-bottom: 8px; }
-                .p-v2-stat-val { display: flex; align-items: baseline; gap: 12px; justify-content: flex-end; }
-                .p-v2-currency { font-size: 20px; font-weight: 700; color: #f59e0b; }
-                .p-v2-amount { font-size: 64px; font-weight: 800; margin: 0; letter-spacing: -0.05em; color: #fff; }
-
-                /* LAYOUT */
-                .p-v2-layout { display: grid; grid-template-columns: 1fr 420px; gap: 40px; }
-
-                /* CARDS */
-                .p-v2-card { 
-                    background: rgba(255,255,255,0.02); 
-                    backdrop-filter: blur(12px); 
-                    border: 1px solid rgba(255,255,255,0.05);
-                    border-radius: 24px;
-                    padding: 40px;
-                    margin-bottom: 40px;
-                    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                .card-row:last-child {
+                    border-bottom: none;
                 }
-                .p-v2-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.1); }
-                .p-v2-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
-                .p-v2-card-icon { width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; }
-                .p-v2-card-header h3 { font-size: 20px; font-weight: 700; margin: 0; }
-                .p-v2-header-badge { font-size: 10px; font-weight: 800; background: #f59e0b; color: #020617; padding: 4px 10px; border-radius: 100px; letter-spacing: 0.1em; }
 
-                .p-v2-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-                .p-v2-info-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-                .p-v2-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 32px 0; }
-
-                /* DATA BLOCK */
-                .p-data-block { display: flex; flex-direction: column; gap: 6px; }
-                .p-data-block .lbl { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; }
-                .p-data-block .val { font-size: 15px; font-weight: 600; color: #f8fafc; }
-
-                /* EDIT GRID */
-                .p-v2-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-                .p-v2-edit-grid .full { grid-column: span 2; }
-                .p-v2-input-group { display: flex; flex-direction: column; gap: 10px; }
-                .p-v2-input-group label { font-size: 12px; font-weight: 600; color: #94a3b8; }
-                .p-v2-input-wrapper { position: relative; }
-                .p-v2-input-wrapper input, .p-v2-input-group input { 
-                    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); 
-                    border-radius: 16px; padding: 14px 18px; color: #fff; width: 100%; font-size: 15px; font-weight: 600; outline: none; transition: all 0.3s;
+                .card-row.full {
+                    flex-direction: column;
+                    align-items: flex-start;
                 }
-                .p-v2-input-wrapper input:focus, .p-v2-input-group input:focus { border-color: #3b82f6; box-shadow: 0 0 15px -3px rgba(59,130,246,0.3); background: rgba(0,0,0,0.4); }
-                .p-v2-input-wrapper .unit { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: #475569; }
 
-                .p-v2-calc-tray { margin-top: 40px; background: rgba(0,0,0,0.2); padding: 32px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
-                .p-v2-calc-row { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 14px; font-weight: 600; color: #64748b; }
-                .p-v2-calc-final { border-top: 1px dashed rgba(255,255,255,0.1); margin-top: 24px; padding-top: 24px; color: #fff; }
-                .p-text-emerald-glow { font-size: 28px; font-weight: 800; color: #10b981; text-shadow: 0 0 20px rgba(16,185,129,0.3); }
-
-                /* METHOD SELECTOR */
-                .p-v2-method-selector { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
-                .p-v2-method-btn { 
-                    position: relative; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); 
-                    padding: 14px 20px; border-radius: 18px; color: #94a3b8; display: flex; align-items: center; gap: 12px; 
-                    cursor: pointer; font-family: inherit; transition: all 0.3s; overflow: hidden;
+                .card-label {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #4a5568;
+                    min-width: 140px;
                 }
-                .p-v2-method-btn span { position: relative; z-index: 1; font-size: 13px; font-weight: 700; }
-                .p-v2-method-btn .icon-box { position: relative; z-index: 1; width: 32px; height: 32px; background: rgba(255,255,255,0.03); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-                .p-v2-method-btn.active { color: #fff; border-color: rgba(255,255,255,0.1); }
-                .p-v2-method-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1e3a8a, #0f172a); z-index: 0; }
 
-                .p-v2-dynamic-form { background: rgba(0,0,0,0.15); padding: 32px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.02); }
-
-                /* SIDEBAR */
-                .p-v2-sticky-rail { position: sticky; top: 110px; }
-
-                .p-v2-security-card { 
-                    background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); 
-                    border: 1px solid rgba(255,255,255,0.05); border-radius: 28px; padding: 32px; margin-bottom: 24px;
+                .card-value {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #2d3748;
+                    text-align: right;
                 }
-                .p-v2-security-header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
-                .p-v2-security-header h3 { font-size: 16px; font-weight: 700; margin: 0; opacity: 0.9; }
 
-                .p-v2-checklist { display: flex; flex-direction: column; gap: 12px; }
-                .p-v2-check-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: rgba(255,255,255,0.02); border-radius: 16px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
-                .p-v2-check-item.checked { background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.2); }
-                .p-v2-check-item input { display: none; }
-                .p-v2-check-item .custom-box { width: 22px; height: 22px; border-radius: 7px; border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); color: #10b981; }
-                .p-v2-check-item.checked .custom-box { border-color: #10b981; background: #10b981; color: #fff; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
-                .p-v2-check-item span { font-size: 13px; font-weight: 600; color: #64748b; }
-                .p-v2-check-item.checked span { color: #f8fafc; }
-
-                .p-v2-auth-card { 
-                    background: linear-gradient(165deg, #0f172a, #020617);
-                    border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; padding: 32px; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8);
+                .card-value.mono {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    background: #f7fafc;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    color: #1a202c;
                 }
-                .p-v2-auth-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; font-size: 10px; font-weight: 800; letter-spacing: 0.2em; color: #475569; }
-                .p-v2-auth-field input { 
-                    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); 
-                    width: 100%; border-radius: 16px; padding: 18px; color: #fff; font-size: 16px; text-align: center; letter-spacing: 4px; outline: none; transition: all 0.3s;
+
+                .card-value.status-ready {
+                    background: #e6fffa;
+                    color: #0f766e;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
                 }
-                .p-v2-auth-field input:focus { border-color: #f59e0b; box-shadow: 0 0 20px -5px rgba(245,158,11,0.3); }
 
-                .p-v2-confirm { display: flex; align-items: center; gap: 10px; margin: 24px 0; cursor: pointer; }
-                .p-v2-confirm input { display: none; }
-                .p-v2-mini-box { width: 14px; height: 14px; border: 1.5px solid #334155; border-radius: 4px; }
-                .p-v2-confirm input:checked + .p-v2-mini-box { background: #f59e0b; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.4); }
-                .p-v2-confirm span { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
-
-                .p-v2-action-btn { 
-                    width: 100%; padding: 20px; border-radius: 18px; border: none; background: rgba(255,255,255,0.05); 
-                    color: #475569; font-weight: 800; font-size: 14px; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: not-allowed; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                .card-input, .card-select, .card-textarea {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 1px solid #cbd5e0;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    font-family: inherit;
+                    transition: all 0.2s;
                 }
-                .p-v2-action-btn.available { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; cursor: pointer; box-shadow: 0 15px 30px -10px rgba(245,158,11,0.5); }
-                .p-v2-action-btn.available:hover { transform: scale(1.02); filter: brightness(1.1); }
 
-                .p-v2-util-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
-                .p-v2-util-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; color: #94a3b8; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; }
-                .p-v2-util-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+                .card-input:focus, .card-select:focus, .card-textarea:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    background: #f8fafb;
+                }
 
-                .p-text-gold { color: #f59e0b; }
-                .p-text-emerald { color: #10b981; }
-                .p-text-emerald-glow-icon { color: #10b981; filter: drop-shadow(0 0 8px rgba(16,185,129,0.5)); }
-                .text-error { color: #ef4444; }
+                .card-textarea {
+                    resize: vertical;
+                    min-height: 80px;
+                }
 
-                /* LOADER */
-                .p-v2-loader { height: 100vh; display: flex; align-items: center; justify-content: center; background: #020617; }
-                .p-v2-loader-content { display: flex; flex-direction: column; align-items: center; gap: 24px; color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; }
-                .p-v2-spinner { width: 80px; height: 80px; background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+                .charges-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 16px;
+                }
 
-                @media (max-width: 1100px) {
-                    .p-v2-layout { grid-template-columns: 1fr; }
-                    .p-v2-info-grid.cols-3 { grid-template-columns: 1fr 1fr; }
-                    .p-v2-hero-glass { flex-direction: column; text-align: center; gap: 32px; padding: 40px 24px; }
-                    .p-v2-main-stat { text-align: center; }
-                    .p-v2-stat-val { justify-content: center; }
-                    .p-v2-amount { font-size: 48px; }
+                .charge-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 12px;
+                    background: #f7fafc;
+                    border-radius: 6px;
+                    font-size: 13px;
+                }
+
+                .charge-label {
+                    font-weight: 600;
+                    color: #4a5568;
+                }
+
+                .charge-value {
+                    font-weight: 700;
+                    color: #2d3748;
+                    text-align: right;
+                }
+
+                .charge-row.highlight {
+                    grid-column: 1 / -1;
+                    background: linear-gradient(135deg, #e6f7ff 0%, #e6fffa 100%);
+                    border: 2px solid #667eea;
+                    padding: 16px;
+                }
+
+                .charge-row.highlight .charge-label {
+                    color: #2d3748;
+                    font-weight: 700;
+                }
+
+                .charge-row.highlight .charge-value {
+                    color: #0d5c3f;
+                    font-size: 16px;
+                }
+
+                .checklist {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .checklist-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 10px 12px;
+                    background: #f7fafc;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+
+                .checklist-item:hover {
+                    background: #edf2f7;
+                }
+
+                .checklist-item input {
+                    width: 18px;
+                    height: 18px;
+                    cursor: pointer;
+                    accent-color: #667eea;
+                }
+
+                .checklist-item span {
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: #2d3748;
+                }
+
+                .confirmation-check {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    padding: 12px 0;
+                    cursor: pointer;
+                }
+
+                .confirmation-check input {
+                    width: 18px;
+                    height: 18px;
+                    margin-top: 2px;
+                    cursor: pointer;
+                    accent-color: #667eea;
+                    flex-shrink: 0;
+                }
+
+                .confirmation-check span {
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: #4a5568;
+                    line-height: 1.4;
+                }
+
+                .disburse-actions {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    display: flex;
+                    gap: 12px;
+                    justify-content: flex-end;
+                    padding-top: 20px;
+                    border-top: 2px solid #e2e8f0;
+                }
+
+                .btn-cancel, .btn-secondary, .btn-primary {
+                    padding: 11px 24px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+
+                .btn-cancel {
+                    background: white;
+                    color: #4a5568;
+                    border: 1px solid #cbd5e0;
+                }
+
+                .btn-cancel:hover {
+                    background: #f7fafc;
+                    border-color: #a0aec0;
+                }
+
+                .btn-secondary {
+                    background: #edf2f7;
+                    color: #2d3748;
+                }
+
+                .btn-secondary:hover {
+                    background: #e2e8f0;
+                }
+
+                .btn-primary {
+                    background: #cbd5e0;
+                    color: #718096;
+                    cursor: not-allowed;
+                }
+
+                .btn-primary.active {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    cursor: pointer;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                }
+
+                .btn-primary.active:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+                }
+
+                .btn-primary.disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                .disburse-loader {
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 20px;
+                    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+                    font-size: 16px;
+                    color: #4a5568;
+                    font-weight: 500;
+                }
+
+                .spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 4px solid #e2e8f0;
+                    border-top-color: #667eea;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+
+                @media (max-width: 900px) {
+                    .disburse-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .charges-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .disburse-actions {
+                        flex-wrap: wrap;
+                    }
                 }
             `}</style>
         </div>
