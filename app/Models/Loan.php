@@ -44,7 +44,7 @@ class Loan extends Model
     /**
      * Build a unique loan account number whose prefix reflects the loan category:
      *
-     *   - Group loan                 => GRP-ZKM-D/M/YEAR/00id   (e.g. GRP-ZKM-23/06/2026/00015)
+     *   - Group loan                 => GRP-ZKM-D-M-YEAR-00id   (e.g. GRP-ZKM-23-06-2026-00015)
      *   - Employed applicant (Ndio)  => EMPL-ZKM-D-M-YEAR-00id  (e.g. EMPL-ZKM-23-06-2026-00015)
      *   - Not employed (Hapana)      => BSN-ZKM-D-M-YEAR-00id   (business; default)
      *
@@ -62,9 +62,9 @@ class Loan extends Model
         $type = strtolower((string) $this->type);
         $umeajiriwa = $this->details['umeajiriwa'] ?? null;
 
-        // Group loans: GRP-ZKM-d/m/year/00id
+        // Group loans: GRP-ZKM-d-m-year-00id
         if ($type === 'group') {
-            return strtoupper('GRP-' . self::BRANCH_CODE . '-' . $day . '/' . $month . '/' . $year . '/' . $seq);
+            return strtoupper('GRP-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
         }
 
         // Employed applicant (Ndio): EMPL-ZKM-D-M-YEAR-00id
