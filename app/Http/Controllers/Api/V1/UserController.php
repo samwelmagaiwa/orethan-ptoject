@@ -20,7 +20,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director',
+            'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
         ]);
 
@@ -48,7 +48,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,'.$id,
-            'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director',
+            'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
         ]);
