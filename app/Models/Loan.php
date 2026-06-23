@@ -44,12 +44,12 @@ class Loan extends Model
     /**
      * Build a unique loan account number whose prefix reflects the loan category:
      *
-     *   - Group loan                       => GRP-zkm-d/m/year/00id   (e.g. GRP-zkm-23/06/2026/00015)
-     *   - Personal + employed (Ndio)       => EMPL-ZKM-D-M-YEAR-00id  (e.g. EMPL-ZKM-23-06-2026-00015)
-     *   - Employee loan type               => EMPL-ZKM-D-M-YEAR-00id
-     *   - Personal + not employed (Hapana) => BSN-ZKM-D-M-YEAR-00id   (business; default)
+     *   - Group loan                 => GRP-zkm-d/m/year/00id   (e.g. GRP-zkm-23/06/2026/00015)
+     *   - Employed applicant (Ndio)  => EMPL-ZKM-D-M-YEAR-00id  (e.g. EMPL-ZKM-23-06-2026-00015)
+     *   - Not employed (Hapana)      => BSN-ZKM-D-M-YEAR-00id   (business; default)
      *
-     * "Not employed" (hajaajiriwa) means the loan is for business, hence the BSN prefix.
+     * Employment is the single source of truth: "employed" (Ndio) => EMPL,
+     * "not employed" (hajaajiriwa) => the loan is for business, hence BSN.
      */
     public function generateAccountNumber()
     {
@@ -67,13 +67,13 @@ class Loan extends Model
             return 'GRP-' . strtolower(self::BRANCH_CODE) . '-' . $day . '/' . $month . '/' . $year . '/' . $seq;
         }
 
-        // Employee loan type, or a personal loan where the applicant is employed (Ndio)
-        if ($type === 'employee' || $umeajiriwa === 'Ndio') {
-            return 'EMPL-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq;
+        // Employed applicant (Ndio): EMPL-ZKM-D-M-YEAR-00id
+        if ($umeajiriwa === 'Ndio') {
+            return strtoupper('EMPL-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
         }
 
-        // Personal loan for the self-employed / business (Hapana), and the safe default
-        return 'BSN-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq;
+        // Self-employed / business (Hapana), and the safe default: BSN-ZKM-D-M-YEAR-00id
+        return strtoupper('BSN-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
     }
 
     // Relationships

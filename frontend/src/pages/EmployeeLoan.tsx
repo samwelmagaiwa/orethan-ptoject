@@ -72,6 +72,7 @@ function EmployeeLoan() {
 
           details: {
             employeeId: form.employeeId,
+            umeajiriwa: "Ndio", // employee loans are by definition for employed applicants
           },
         }
       );
