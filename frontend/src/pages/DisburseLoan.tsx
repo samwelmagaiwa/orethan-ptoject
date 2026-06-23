@@ -34,6 +34,7 @@ const DisburseLoan = () => {
     const [processingFee, setProcessingFee] = useState("0");
     const [insuranceFee, setInsuranceFee] = useState("0");
     const [otherCharges, setOtherCharges] = useState("0");
+    const [capturedProcessingFeePercent, setCapturedProcessingFeePercent] = useState("0");
     const [method, setMethod] = useState("cash");
     const [payDetails, setPayDetails] = useState<Record<string, string>>({});
     const [transactionRef, setTransactionRef] = useState("");
@@ -51,6 +52,11 @@ const DisburseLoan = () => {
             const res = await axios.get(`${API_BASE}/loans/${id}/disbursement-preview`);
             setPreview(res.data);
             setNarration(`Loan Disbursement for ${res.data.product_name}`);
+            const feePercent = res.data.loan?.details?.adaYaUchakataji || "0";
+            setCapturedProcessingFeePercent(feePercent);
+            const loanAmount = Number(res.data.loan?.amount || 0);
+            const calculatedFee = Math.round((loanAmount * Number(feePercent)) / 100);
+            setProcessingFee(calculatedFee.toString());
         } catch (err: any) {
             setAlert({ isOpen: true, title: "Error", message: err?.response?.data?.message || "Failed to load loan", type: "error" });
         } finally {
@@ -187,7 +193,7 @@ const DisburseLoan = () => {
                                     <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a" }}>{fmt(approvedAmount)}</span>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Processing Fee</span>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Processing Fee <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>({capturedProcessingFeePercent}%)</span></span>
                                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                         <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 700 }}>TZS</span>
                                         <input type="number" value={processingFee} onChange={e => setProcessingFee(e.target.value)} style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
