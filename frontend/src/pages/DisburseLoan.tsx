@@ -20,6 +20,23 @@ const MOBILE_METHODS = ["mpesa", "airtel_money", "tigo_pesa", "halopesa"];
 const fmt = (n: any) => "TZS " + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
+// Mirrors the backend Loan::generateAccountNumber() so the previewed account
+// number matches exactly what will be persisted on disbursement.
+// dateStr is yyyy-mm-dd (the selected disbursement date).
+const buildAccountNumber = (loan: any, dateStr: string) => {
+    if (!loan) return "—";
+    if (loan.loan_account_number) return loan.loan_account_number; // already disbursed
+    const [y, m, d] = (dateStr || "").split("-");
+    if (!y || !m || !d) return "—";
+    const seq = String(loan.id).padStart(5, "0");
+    const type = String(loan.type || "").toLowerCase();
+    const umeajiriwa = loan.details?.umeajiriwa;
+    let prefix = "BSN";
+    if (type === "group") prefix = "GRP";
+    else if (type === "employee" || umeajiriwa === "Ndio") prefix = "EMPL";
+    return `${prefix}-ZKM-${d}-${m}-${y}-${seq}`.toUpperCase();
+};
+
 const CHECKLIST = [
     { key: "identity_verified", label: "Customer Identity Verified" },
     { key: "agreement_signed", label: "Loan Agreement Signed" },
@@ -78,6 +95,7 @@ const DisburseLoan = () => {
     const loan = preview?.loan;
     const summary = preview?.repayment_summary;
     const alreadyDisbursed = preview?.already_disbursed;
+    const accountNumber = buildAccountNumber(loan, disbursementDate);
 
     const approvedAmount = Number(loan?.amount || 0);
     const totalCharges = Number(processingFee || 0) + Number(insuranceFee || 0) + Number(otherCharges || 0);
@@ -176,7 +194,7 @@ const DisburseLoan = () => {
             <h2>Borrower</h2><table>
               <tr><td>Customer</td><td>${loan.name}</td></tr>
               <tr><td>Customer No</td><td>${preview.customer_number || "—"}</td></tr>
-              <tr><td>Loan No</td><td>${preview.loan_number || "—"}</td></tr>
+              <tr><td>Loan Account No</td><td>${accountNumber}</td></tr>
               <tr><td>Product</td><td>${preview.product_name}</td></tr>
             </table>
             <h2>Charges</h2><table>
@@ -198,10 +216,11 @@ const DisburseLoan = () => {
         if (!loan) return;
         printDoc(
             "Loan Agreement",
-            `<h1>Loan Agreement</h1><div class="sub">${preview.product_name} — ${preview.loan_number}</div>
+            `<h1>Loan Agreement</h1><div class="sub">${preview.product_name} — ${accountNumber}</div>
             <table>
               <tr><td>Customer</td><td>${loan.name}</td></tr>
               <tr><td>Customer No</td><td>${preview.customer_number || "—"}</td></tr>
+              <tr><td>Loan Account No</td><td>${accountNumber}</td></tr>
               <tr><td>Approved Amount</td><td>${fmt(approvedAmount)}</td></tr>
               <tr><td>Interest Rate</td><td>${summary?.interest_rate}% per ${summary?.frequency?.toLowerCase()} period</td></tr>
               <tr><td>Loan Period</td><td>${summary?.term_months} Months</td></tr>
@@ -250,7 +269,7 @@ const DisburseLoan = () => {
                 <div className="disb-grid">
                     <Field label="Customer Name" value={loan.name} />
                     <Field label="Customer Number" value={preview.customer_number} />
-                    <Field label="Loan Number" value={preview.loan_number} />
+                    <Field label="Loan Account Number" value={accountNumber} highlight />
                     <Field label="Loan Product" value={preview.product_name} />
                     <Field label="Loan Officer" value={preview.officer_name || "—"} />
                     <Field label="Branch" value={preview.branch} />
