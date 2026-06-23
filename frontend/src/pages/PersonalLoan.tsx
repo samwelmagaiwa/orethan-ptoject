@@ -74,6 +74,9 @@ const PersonalLoan: React.FC = () => {
     mudaKulipaMkopo: "",
     kwaTarakimu: "",
     kiasiRejeshoBilaMatatizo: "",
+    kiwakocha_Riba: "",
+    ainaYaRiba: "",
+    adaYaUchakataji: "",
     malengoMkopo: "",
     chanzoMapato: "",
     historia1JinaTaasisi: "", historia1UlichukuaLini: "", historia1KiasiMkopo: "", historia1KiasiMarejesho: "", historia1TareheMarejesho: "", historia1KiasiKilichobaki: "",
@@ -1152,6 +1155,21 @@ const PersonalLoan: React.FC = () => {
                   <div className="grid-field" style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
                     <strong>Rejesho unaloweza kulipa ({form.repaymentFrequency === "Daily" ? "Kila Siku" : form.repaymentFrequency === "Weekly" ? "Kila Wiki" : "Kila Mwezi"})</strong>
                     <input type="text" name="kiasiRejeshoBilaMatatizo" readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiasiRejeshoBilaMatatizo ? formatMoney(Number(form.kiasiRejeshoBilaMatatizo)) : ""} />
+                    <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
+                  </div>
+                  <div className="grid-field" style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
+                    <strong>Kiwango cha Riba (% kwa mwezi)</strong>
+                    <input type="text" name="kiwakocha_Riba" readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiwakocha_Riba ? `${form.kiwakocha_Riba}%` : ""} />
+                    <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
+                  </div>
+                  <div className="grid-field" style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
+                    <strong>Aina ya Riba</strong>
+                    <input type="text" name="ainaYaRiba" readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.ainaYaRiba} />
+                    <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
+                  </div>
+                  <div className="grid-field" style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
+                    <strong>Ada ya Uchakataji (%)</strong>
+                    <input type="text" name="adaYaUchakataji" readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.adaYaUchakataji ? `${form.adaYaUchakataji}%` : ""} />
                     <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                   </div>
                   <div className="grid-field">

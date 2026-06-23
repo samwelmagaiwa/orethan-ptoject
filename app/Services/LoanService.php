@@ -190,8 +190,9 @@ class LoanService
                 'disbursed_by' => $user->id ?? 1,
             ]);
 
-            // 2. Generate Repayment Schedule from the disbursement date
-            $loan->generateSchedule($loan->termMonths(), 0.03, $loan->repaymentFrequency(), $disbursementDate);
+            // 2. Generate Repayment Schedule from the disbursement date (using captured interest rate)
+            $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? 3) / 100;
+            $loan->generateSchedule($loan->termMonths(), $interestRate, $loan->repaymentFrequency(), $disbursementDate);
 
             // 3. Activate the loan account
             $firstSchedule = $loan->schedules()->orderBy('due_date', 'asc')->first();

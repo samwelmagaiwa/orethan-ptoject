@@ -111,185 +111,228 @@ const DisburseLoan = () => {
         setTimeout(() => win.print(), 500);
     };
 
-    if (loading) return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa", fontSize: "16px", color: "#4a5568"}}>Loading...</div>;
-    if (!loan) return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa"}}>Record not found</div>;
+    if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa", fontSize: "16px", color: "#4a5568" }}>Loading...</div>;
+    if (!loan) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa" }}>Record not found</div>;
 
     return (
-        <div style={{minHeight: "100vh", background: "linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%)", padding: "30px 20px", fontFamily: "'Segoe UI', sans-serif"}}>
+        <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px 20px", fontFamily: "'Inter', sans-serif" }}>
             <AlertModal isOpen={alert.isOpen} title={alert.title} message={alert.message} type={alert.type} onClose={() => { if (alert.type === "success") navigate("/finance/customers"); setAlert({ ...alert, isOpen: false }); }} />
 
-            <div style={{maxWidth: "1400px", margin: "0 auto"}}>
-                <div style={{display: "flex", alignItems: "center", gap: "20px", marginBottom: "30px"}}>
-                    <button onClick={() => navigate(-1)} style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px"}}>
-                        <ArrowLeft size={18} /> Back
+            <div style={{ maxWidth: "1100px", margin: "0 auto", background: "white", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", overflow: "hidden", border: "1px solid #f1f5f9" }}>
+                {/* HEADER */}
+                <div style={{ display: "flex", alignItems: "center", gap: "20px", padding: "24px 40px", borderBottom: "4px solid #3b82f6", background: "#ffffff" }}>
+                    <button onClick={() => navigate(-1)} style={{ background: "#f1f5f9", border: "none", borderRadius: "10px", width: "40px", height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+                        <ArrowLeft size={20} />
                     </button>
-                    <h1 style={{fontSize: "32px", fontWeight: 700, margin: 0, color: "#1a202c"}}>Loan Disbursement</h1>
+                    <h1 style={{ fontSize: "24px", fontWeight: 800, margin: 0, color: "#0f172a", letterSpacing: "-0.5px" }}>Loan Disbursement</h1>
+                    <div style={{ marginLeft: "auto", background: "#f0fdf4", color: "#059669", padding: "8px 20px", borderRadius: "100px", fontSize: "13px", fontWeight: "bold", border: "1px solid #10b98120" }}>
+                        REF: {accountNumber}
+                    </div>
                 </div>
 
-                {/* ROW 1: 3 COLUMNS */}
-                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "20px"}}>
-                    {/* BORROWER INFORMATION */}
-                    <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"}}>
-                        <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                            <User size={18} /> Borrower Information
-                        </h3>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Customer Name:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{loan.name}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Customer Number:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{preview.customer_number}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Loan Account Number:</span><span style={{fontSize: "12px", fontWeight: 600, color: "#1a202c", fontFamily: "monospace", background: "#f7fafc", padding: "4px 8px", borderRadius: "4px"}}>{accountNumber}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Loan Product:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{preview.product_name}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Loan Officer:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{preview.officer_name}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Branch:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{preview.branch}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingTop: "12px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Loan Status:</span><span style={{fontSize: "12px", fontWeight: 600, background: "#e6fffa", color: "#0f766e", padding: "4px 12px", borderRadius: "20px"}}>{alreadyDisbursed ? "Disbursed" : "Ready for Disbursement"}</span></div>
-                    </div>
-
-                    {/* LOAN DETAILS */}
-                    <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"}}>
-                        <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                            <TrendingUp size={18} /> Loan Details
-                        </h3>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Approved Amount:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmt(approvedAmount)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Interest Rate:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{summary?.interest_rate}% / monthly</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Loan Period:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{summary?.term_months} Months</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Repayment Frequency:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{summary?.frequency}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Number of Installments:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{summary?.total_installments}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>First Installment Date:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmtDate(summary?.first_payment_date)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingTop: "12px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Maturity Date:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmtDate(summary?.final_payment_date)}</span></div>
-                    </div>
-
-                    {/* PAYMENT INFORMATION */}
-                    <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"}}>
-                        <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                            <CreditCard size={18} /> Payment Information
-                        </h3>
-                        <div style={{display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                            <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Payment Method</span>
-                            <select value={method} onChange={(e) => { setMethod(e.target.value); setPayDetails({}); }} style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}}>
-                                {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                            </select>
+                <div style={{ padding: "40px" }}>
+                    {/* SECTION 1: MASTER INFO */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "40px" }}>
+                        <div>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 20px 0", paddingBottom: "12px", borderBottom: "1px solid #e0e7ff" }}>
+                                <User size={18} /> Borrower Information
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Name:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{loan.name}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Customer ID:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{preview.customer_number}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Account:</span><span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a", fontFamily: "monospace", letterSpacing: "1px" }}>{accountNumber}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Branch:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{preview.branch}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Status:</span><span style={{ fontSize: "12px", fontWeight: 700, color: alreadyDisbursed ? "#b91c1c" : "#059669" }}>{alreadyDisbursed ? "Disbursed" : "Ready"}</span></div>
+                            </div>
                         </div>
-                        {method === "cash" && (
-                            <>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Cashier</span>
-                                    <input type="text" value={payDetails.cashier || ""} onChange={e => setDetail("cashier", e.target.value)} placeholder="Name" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingTop: "12px"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Cash Drawer</span>
-                                    <input type="text" value={payDetails.cash_drawer || ""} onChange={e => setDetail("cash_drawer", e.target.value)} placeholder="e.g. D10" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                            </>
-                        )}
-                        {(method === "bank_transfer" || method === "cheque") && (
-                            <>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Financial Institution</span>
-                                    <input type="text" value={payDetails.bank_name || ""} onChange={e => setDetail("bank_name", e.target.value)} placeholder="Bank name" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingTop: "12px"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Account / Cheque Ref</span>
-                                    <input type="text" value={payDetails.account_number || payDetails.cheque_number || ""} onChange={e => setDetail(method === "cheque" ? "cheque_number" : "account_number", e.target.value)} placeholder="Reference" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                            </>
-                        )}
-                        {MOBILE_METHODS.includes(method) && (
-                            <>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Subscriber Wallet</span>
-                                    <input type="text" value={payDetails.phone_number || ""} onChange={e => setDetail("phone_number", e.target.value)} placeholder="255..." style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                                <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingTop: "12px"}}>
-                                    <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Transaction ID</span>
-                                    <input type="text" value={transactionRef} onChange={e => setTransactionRef(e.target.value)} placeholder="Ref" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
 
-                {/* ROW 2: LOAN CHARGES - FULL WIDTH */}
-                <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "20px"}}>
-                    <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                        <Calculator size={18} /> Loan Charges
-                    </h3>
-                    <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "12px", background: "#f7fafc", borderRadius: "6px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Approved Loan Amount:</span><span style={{fontSize: "14px", fontWeight: 700, color: "#2d3748"}}>{fmt(approvedAmount)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "12px", background: "#f7fafc", borderRadius: "6px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Processing Fee:</span><span style={{fontSize: "14px", fontWeight: 700, color: "#2d3748"}}>{fmt(processingFee)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "12px", background: "#f7fafc", borderRadius: "6px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Insurance Fee:</span><span style={{fontSize: "14px", fontWeight: 700, color: "#2d3748"}}>{fmt(insuranceFee)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "12px", background: "#f7fafc", borderRadius: "6px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Other Charges:</span><span style={{fontSize: "14px", fontWeight: 700, color: "#2d3748"}}>{fmt(otherCharges)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "12px", background: "#f7fafc", borderRadius: "6px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Total Charges:</span><span style={{fontSize: "14px", fontWeight: 700, color: "#2d3748"}}>{fmt(totalCharges)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", padding: "16px", background: "linear-gradient(135deg, #e6f7ff 0%, #e6fffa 100%)", borderRadius: "6px", border: "2px solid #667eea", gridColumn: "1/3"}}><span style={{fontSize: "13px", fontWeight: 700, color: "#2d3748"}}>Net Disbursement Amount:</span><span style={{fontSize: "16px", fontWeight: 800, color: "#0d5c3f"}}>{fmt(netAmount)}</span></div>
-                    </div>
-                </div>
-
-                {/* ROW 3: DISBURSEMENT INFO + REPAYMENT SUMMARY */}
-                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px"}}>
-                    {/* DISBURSEMENT INFORMATION */}
-                    <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"}}>
-                        <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                            <Calendar size={18} /> Disbursement Information
-                        </h3>
-                        <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                            <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Disbursement Date</span>
-                            <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
+                        <div>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 20px 0", paddingBottom: "12px", borderBottom: "1px solid #ede9fe" }}>
+                                <TrendingUp size={18} /> Product Terms
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Product:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{preview.product_name}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Amount:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{fmt(approvedAmount)}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Interest Rate:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{summary?.interest_rate}% / mo</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Duration:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{summary?.term_months} Months</span></div>
+                            </div>
                         </div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Voucher Number</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>Auto Generated</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Receipt Number</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>Auto Generated</span></div>
-                        <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingTop: "12px"}}>
-                            <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Narration</span>
-                            <textarea value={narration} onChange={e => setNarration(e.target.value)} style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit", minHeight: "60px", resize: "vertical"}} />
+
+                        <div>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 20px 0", paddingBottom: "12px", borderBottom: "1px solid #fef3c7" }}>
+                                <Banknote size={18} /> Schedule
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Frequency:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{summary?.frequency}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Installment:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{fmt(summary?.installment_amount)} <span style={{ color: "#94a3b8", fontWeight: 500 }}>({summary?.total_installments}x)</span></span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>First Date:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{fmtDate(summary?.first_payment_date)}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "8px", borderBottom: "1px dashed #cbd5e1" }}><span style={{ fontSize: "13px", color: "#64748b" }}>Maturity:</span><span style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{fmtDate(summary?.final_payment_date)}</span></div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* REPAYMENT SUMMARY */}
-                    <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"}}>
-                        <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                            <Banknote size={18} /> Repayment Summary
-                        </h3>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Total Installments:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{summary?.total_installments}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Monthly Installment:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmt(summary?.installment_amount)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingBottom: "12px", paddingTop: "12px", borderBottom: "1px solid #f0f4f8"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>First Payment Date:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmtDate(summary?.first_payment_date)}</span></div>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "16px", paddingTop: "12px"}}><span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Final Payment Date:</span><span style={{fontSize: "14px", fontWeight: 600, color: "#2d3748"}}>{fmtDate(summary?.final_payment_date)}</span></div>
-                    </div>
-                </div>
+                    <hr style={{ border: "none", borderTop: "2px solid #f1f5f9", margin: "40px 0" }} />
 
-                {/* ROW 4: VERIFICATION CHECKLIST - FULL WIDTH */}
-                <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "20px"}}>
-                    <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                        <ShieldCheck size={18} /> Verification Checklist
-                    </h3>
-                    <div style={{display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px"}}>
-                        {CHECKLIST.map((c) => (
-                            <label key={c.key} style={{display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", background: checks[c.key] ? "#e6fffa" : "#f7fafc", borderRadius: "6px", cursor: "pointer", border: checks[c.key] ? "1px solid #10b981" : "1px solid #e2e8f0", transition: "all 0.2s"}}>
-                                <input type="checkbox" checked={!!checks[c.key]} onChange={e => setChecks({ ...checks, [c.key]: e.target.checked })} style={{width: "18px", height: "18px", cursor: "pointer", accentColor: "#667eea"}} />
-                                <span style={{fontSize: "13px", fontWeight: 500, color: checks[c.key] ? "#065f46" : "#2d3748"}}>{c.label}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
+                    {/* LOWER SECTIONS: 3-COLUMN GRID */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "30px" }}>
 
-                {/* ROW 5: CONFIRMATION - FULL WIDTH */}
-                <div style={{background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "20px"}}>
-                    <h3 style={{display: "flex", alignItems: "center", gap: "12px", fontSize: "16px", fontWeight: 700, color: "#2d3748", margin: "0 0 16px 0", paddingBottom: "16px", borderBottom: "2px solid #f0f4f8"}}>
-                        <FileText size={18} /> Confirmation
-                    </h3>
-                    <div style={{display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "12px", borderBottom: "1px solid #f0f4f8"}}>
-                        <span style={{fontSize: "13px", fontWeight: 600, color: "#4a5568"}}>Password / PIN Confirmation</span>
-                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" style={{width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit"}} />
+                        {/* COLUMN 1: FINANCIAL EXECUTION */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #d1fae5" }}>
+                                <Calculator size={18} /> Financial Execution
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "16px", borderBottom: "1px dashed #cbd5e1" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Approved Amount</span>
+                                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a" }}>{fmt(approvedAmount)}</span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Processing Fee</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 700 }}>TZS</span>
+                                        <input type="number" value={processingFee} onChange={e => setProcessingFee(e.target.value)} style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Insurance Fee</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 700 }}>TZS</span>
+                                        <input type="number" value={insuranceFee} onChange={e => setInsuranceFee(e.target.value)} style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Other Charges</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 700 }}>TZS</span>
+                                        <input type="number" value={otherCharges} onChange={e => setOtherCharges(e.target.value)} style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#e11d48" }}>Sum of Deductions</span>
+                                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#e11d48" }}>{fmt(totalCharges)}</span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "16px", borderBottom: "2px solid #10b981" }}>
+                                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.5px" }}>Net Payout</span>
+                                    <span style={{ fontSize: "16px", fontWeight: 900, color: "#10b981" }}>{fmt(netAmount)}</span>
+                                </div>
+                                <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", gap: "16px" }}>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Disbursement Date</span>
+                                        <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} style={{ padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontWeight: 600, outline: "none", color: "#0f172a" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Official Narration</span>
+                                        <textarea value={narration} onChange={e => setNarration(e.target.value)} rows={2} style={{ padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", resize: "none", outline: "none", color: "#0f172a", fontFamily: "inherit" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* COLUMN 2: PAYOUT & DOCS */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "32px", borderLeft: "1px dashed #e2e8f0", borderRight: "1px dashed #e2e8f0", padding: "0 24px" }}>
+                            {/* Payout Method */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                                <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                    <CreditCard size={18} /> Payout Method
+                                </h3>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Selected Channel</span>
+                                    <select value={method} onChange={(e) => { setMethod(e.target.value); setPayDetails({}); }} style={{ width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontWeight: 600, outline: "none", color: "#0f172a" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}>
+                                        {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                    </select>
+                                </div>
+                                {method === "cash" && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Cashier Name</span><input type="text" value={payDetails.cashier || ""} onChange={e => setDetail("cashier", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Cash Drawer</span><input type="text" value={payDetails.cash_drawer || ""} onChange={e => setDetail("cash_drawer", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                    </div>
+                                )}
+                                {(method === "bank_transfer" || method === "cheque") && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Institution</span><input type="text" value={payDetails.bank_name || ""} onChange={e => setDetail("bank_name", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Ref Number</span><input type="text" value={payDetails.account_number || payDetails.cheque_number || ""} onChange={e => setDetail(method === "cheque" ? "cheque_number" : "account_number", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                    </div>
+                                )}
+                                {MOBILE_METHODS.includes(method) && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Phone No</span><input type="text" value={payDetails.phone_number || ""} onChange={e => setDetail("phone_number", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Trace ID</span><input type="text" value={transactionRef} onChange={e => setTransactionRef(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Admin PIN */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                                <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                    <ShieldCheck size={18} /> Admin Authorization
+                                </h3>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                        <span style={{ fontSize: "12px", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Admin PIN / Password</span>
+                                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", color: "#0f172a", fontSize: "16px", letterSpacing: "2px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                    <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", padding: "14px", background: confirm ? "#eff6ff" : "#f8fafc", borderRadius: "8px", border: confirm ? "1px solid #3b82f6" : "1px dashed #cbd5e1" }}>
+                                        <input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)} style={{ width: "18px", height: "18px", marginTop: "2px", accentColor: "#3b82f6" }} />
+                                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", lineHeight: "1.4" }}>I confirm details are correct for net amount of {fmt(netAmount)}.</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* COLUMN 3: AUTHORIZATION */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                <ShieldCheck size={20} /> Final Authorization
+                            </h3>
+
+                            <div>
+                                <span style={{ display: "block", fontSize: "12px", fontWeight: 800, color: "#94a3b8", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>Verification Checklist</span>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    {CHECKLIST.map((c) => (
+                                        <label key={c.key} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", background: checks[c.key] ? "#f0fdf4" : "#f8fafc", borderRadius: "8px", cursor: "pointer", border: checks[c.key] ? "1px solid #10b981" : "1px solid #e2e8f0", transition: "all 0.2s" }}>
+                                            <input type="checkbox" checked={!!checks[c.key]} onChange={e => setChecks({ ...checks, [c.key]: e.target.checked })} style={{ width: "16px", height: "16px", accentColor: "#10b981" }} />
+                                            <span style={{ fontSize: "12px", fontWeight: 600, color: checks[c.key] ? "#065f46" : "#475569" }}>{c.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+
+                        </div>
                     </div>
-                    <label style={{display: "flex", alignItems: "flex-start", gap: "12px", marginTop: "16px", cursor: "pointer"}}>
-                        <input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)} style={{width: "18px", height: "18px", marginTop: "2px", cursor: "pointer", accentColor: "#667eea", flexShrink: 0}} />
-                        <span style={{fontSize: "13px", fontWeight: 500, color: "#4a5568", lineHeight: "1.4"}}>I confirm that all loan information has been verified and the customer has received the funds.</span>
-                    </label>
+
                 </div>
 
                 {/* ACTION BUTTONS */}
-                <div style={{display: "flex", gap: "12px", justifyContent: "flex-end", paddingTop: "20px", borderTop: "2px solid #e2e8f0"}}>
-                    <button onClick={() => navigate(-1)} style={{padding: "11px 24px", border: "1px solid #cbd5e0", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "white", color: "#4a5568", transition: "all 0.3s"}}>Cancel</button>
-                    <button onClick={() => printDoc("Voucher", buildVoucherBody())} style={{padding: "11px 24px", border: "1px solid #cbd5e0", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "#edf2f7", color: "#2d3748", transition: "all 0.3s"}}>Preview Voucher</button>
-                    <button onClick={() => printDoc("Agreement", buildAgreementBody())} style={{padding: "11px 24px", border: "1px solid #cbd5e0", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "#edf2f7", color: "#2d3748", transition: "all 0.3s"}}>Print Agreement</button>
-                    <button onClick={handleDisburse} disabled={!canDisburse || submitting} style={{padding: "11px 24px", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: canDisburse ? "pointer" : "not-allowed", background: canDisburse ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "#cbd5e0", color: canDisburse ? "white" : "#718096", transition: "all 0.3s", boxShadow: canDisburse ? "0 4px 15px rgba(102, 126, 234, 0.4)" : "none"}}>
-                        {submitting ? "Processing..." : "Disburse Loan"}
-                    </button>
+                <div style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)", padding: "28px 40px", display: "flex", gap: "16px", justifyContent: "space-between", alignItems: "center", borderTop: "2px solid #e2e8f0" }}>
+                    <div style={{ display: "flex", gap: "14px" }}>
+                        <button onClick={() => printDoc("Voucher", buildVoucherBody())}
+                            style={{ padding: "14px 28px", border: "1px solid #c7d2fe", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)", color: "#4338ca", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.3s ease", boxShadow: "0 2px 8px rgba(99,102,241,0.1)" }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(99,102,241,0.25)"; e.currentTarget.style.background = "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)"; }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.1)"; e.currentTarget.style.background = "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)"; }}>
+                            <FileText size={16} /> Voucher
+                        </button>
+                        <button onClick={() => printDoc("Agreement", buildAgreementBody())}
+                            style={{ padding: "14px 28px", border: "1px solid #bbf7d0", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", color: "#15803d", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.3s ease", boxShadow: "0 2px 8px rgba(34,197,94,0.1)" }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(34,197,94,0.25)"; e.currentTarget.style.background = "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)"; }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(34,197,94,0.1)"; e.currentTarget.style.background = "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)"; }}>
+                            <FileText size={16} /> Agreement
+                        </button>
+                    </div>
+                    <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+                        <button onClick={() => navigate(-1)}
+                            style={{ padding: "14px 28px", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "white", color: "#64748b", transition: "all 0.3s ease" }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#dc2626"; e.currentTarget.style.borderColor = "#fecaca"; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}>
+                            Discard
+                        </button>
+                        <button onClick={handleDisburse} disabled={!canDisburse || submitting}
+                            style={{ padding: "14px 36px", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", cursor: canDisburse ? "pointer" : "not-allowed", background: canDisburse ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" : "#cbd5e1", color: canDisburse ? "white" : "#94a3b8", transition: "all 0.3s ease", boxShadow: canDisburse ? "0 6px 20px rgba(59, 130, 246, 0.4)" : "none", display: "flex", alignItems: "center", gap: "10px" }}
+                            onMouseOver={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 30px rgba(59, 130, 246, 0.5)"; e.currentTarget.style.background = "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"; } }}
+                            onMouseOut={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(59, 130, 246, 0.4)"; e.currentTarget.style.background = "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"; } }}>
+                            {submitting ? "Processing..." : "💰 Disburse Funds"}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

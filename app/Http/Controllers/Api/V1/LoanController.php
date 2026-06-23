@@ -237,7 +237,8 @@ class LoanController extends Controller
         }
 
         $loan = Loan::with(['customer', 'user', 'disbursement'])->findOrFail($id);
-        $summary = $loan->scheduleSummary(0.03);
+        $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? 3) / 100;
+        $summary = $loan->scheduleSummary($interestRate);
 
         return response()->json([
             'loan' => $loan,
@@ -249,7 +250,7 @@ class LoanController extends Controller
             'repayment_summary' => [
                 'term_months' => $loan->termMonths(),
                 'frequency' => $loan->repaymentFrequency(),
-                'interest_rate' => 3, // monthly system rate (%)
+                'interest_rate' => (int) ($loan->details['kiwakocha_Riba'] ?? 3),
                 'total_installments' => $summary['total_installments'],
                 'installment_amount' => $summary['installment_amount'],
                 'first_payment_date' => $summary['first_payment_date'],

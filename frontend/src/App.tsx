@@ -187,7 +187,10 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
       mudaKulipaMkopo: `Miezi ${loanPeriod}`,
       kwaTarakimu: loanPeriod.toString(),
       kiasiRejeshoBilaMatatizo: Math.round(monthlyPayment).toString(),
-      repaymentFrequency: repaymentFrequency // Pass the original frequency key
+      repaymentFrequency: repaymentFrequency,
+      kiwakocha_Riba: interestRate.toString(),
+      ainaYaRiba: interestType,
+      adaYaUchakataji: processingFee.toString()
     };
 
     // Merge with existing backend draft if user is logged in
