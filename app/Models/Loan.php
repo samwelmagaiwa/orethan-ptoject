@@ -38,14 +38,42 @@ class Loan extends Model
         'next_payment_date' => 'date',
     ];
 
+    // Fixed branch/institution code used in every account number
+    const BRANCH_CODE = 'ZKM';
+
     /**
-     * Build a unique, human-readable loan account number.
-     * Format: ORE-{year}-{zero-padded id}, e.g. ORE-2026-00015
+     * Build a unique loan account number whose prefix reflects the loan category:
+     *
+     *   - Group loan                       => GRP-zkm-d/m/year/00id   (e.g. GRP-zkm-23/06/2026/00015)
+     *   - Personal + employed (Ndio)       => EMPL-ZKM-D-M-YEAR-00id  (e.g. EMPL-ZKM-23-06-2026-00015)
+     *   - Employee loan type               => EMPL-ZKM-D-M-YEAR-00id
+     *   - Personal + not employed (Hapana) => BSN-ZKM-D-M-YEAR-00id   (business; default)
+     *
+     * "Not employed" (hajaajiriwa) means the loan is for business, hence the BSN prefix.
      */
     public function generateAccountNumber()
     {
-        $year = ($this->disbursed_at ?? now())->format('Y');
-        return 'ORE-' . $year . '-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+        $date = $this->disbursed_at ?? now();
+        $day = $date->format('d');
+        $month = $date->format('m');
+        $year = $date->format('Y');
+        $seq = str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+
+        $type = strtolower((string) $this->type);
+        $umeajiriwa = $this->details['umeajiriwa'] ?? null;
+
+        // Group loans: GRP-zkm-d/m/year/00id
+        if ($type === 'group') {
+            return 'GRP-' . strtolower(self::BRANCH_CODE) . '-' . $day . '/' . $month . '/' . $year . '/' . $seq;
+        }
+
+        // Employee loan type, or a personal loan where the applicant is employed (Ndio)
+        if ($type === 'employee' || $umeajiriwa === 'Ndio') {
+            return 'EMPL-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq;
+        }
+
+        // Personal loan for the self-employed / business (Hapana), and the safe default
+        return 'BSN-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq;
     }
 
     // Relationships
