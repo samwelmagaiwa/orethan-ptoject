@@ -1,0 +1,229 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Loan;
+use App\Models\Customer;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class LoanService
+{
+    /**
+     * Handle loan submission logic.
+     */
+    public function createLoan(array $data)
+    {
+        return DB::transaction(function () use ($data) {
+            // Find or create customer
+            $customer = Customer::firstOrCreate(
+                ['phone_number' => $data['phone']],
+                [
+                    'full_name' => $data['name'],
+                    'email' => $data['details']['baruaPepe'] ?? null,
+                    'nida_number' => $data['details']['nambaYaNida'] ?? $data['details']['nambaYaKitambulisho'] ?? null,
+                    'id_type' => $data['details']['ainaYaKitambulisho'] ?? null,
+                    'id_number' => $data['details']['nambaYaKitambulisho'] ?? null,
+                    'date_of_birth' => $data['details']['tareheYaKuzaliwa'] ?? null,
+                    'gender' => $data['details']['jinsia'] ?? null,
+                    'region' => $data['details']['mahaliUnapoishiMkoa'] ?? $data['details']['mkoa'] ?? null,
+                    'district' => $data['details']['mahaliUnapoishiWilaya'] ?? $data['details']['wilaya'] ?? null,
+                    'ward' => $data['details']['mahaliUnapoishiKata'] ?? $data['details']['kata'] ?? null,
+                    'street' => $data['details']['mahaliUnapoishiMtaa'] ?? $data['details']['kijijiMtaa'] ?? $data['details']['kijijiBarabara'] ?? null,
+                    'residency_type' => $data['details']['umilikiWaMakazi'] ?? null,
+                ]
+            );
+
+            // Create loan
+            $loan = Loan::create([
+                'name' => $data['name'],
+                'phone' => $data['phone'],
+                'amount' => $data['amount'],
+                'type' => $data['type'],
+                'status' => 'manager_review',
+                'details' => $data['details'] ?? null,
+                'passport_photo' => $data['passport_photo'] ?? null,
+                'guarantor_1_photo' => $data['guarantor_1_photo'] ?? null,
+                'guarantor_2_photo' => $data['guarantor_2_photo'] ?? null,
+                'customer_id' => $customer->id,
+                'user_id' => $data['user_id'] ?? null,
+            ]);
+
+            // Create initial approval record for audit trail
+            \App\Models\LoanApproval::create([
+                'loan_id' => $loan->id,
+                'user_id' => $data['user_id'] ?? 1,
+                'status' => 'loan_officer',
+                'comments' => "Loan application submitted by officer",
+            ]);
+
+            return $loan;
+
+        });
+    }
+
+    /**
+     * Handle loan approval logic.
+     */
+    public function approveLoan($loan, array $data, $user)
+    {
+        return DB::transaction(function () use ($loan, $data, $user) {
+            $oldStatus = $loan->status;
+
+            if ($loan->status == 'manager_review') {
+                $loan->status = 'gm_review';
+            } elseif ($loan->status == 'gm_review') {
+                $loan->status = 'md_review';
+            } elseif ($loan->status == 'md_review') {
+                $loan->status = 'approved';
+                $loan->approved_at = now();
+                $loan->payment_status = 'pending';
+                $loan->remaining_balance = $loan->amount;
+                $loan->total_paid = 0;
+            }
+
+            $loan->approved_by = $user->name ?? 'System';
+            $loan->save();
+
+            // Record in approvals table
+            \App\Models\LoanApproval::create([
+                'loan_id' => $loan->id,
+                'user_id' => $user->id ?? 1,
+                'status' => $loan->status,
+                'comments' => $data['comments'] ?? "",
+            ]);
+
+            return $loan;
+        });
+    }
+
+    /**
+     * Handle loan rejection logic.
+     */
+    public function rejectLoan($loan, array $data, $user)
+    {
+        return DB::transaction(function () use ($loan, $data, $user) {
+            if ($loan->status == 'manager_review') {
+                $loan->status = 'loan_officer';
+            } elseif ($loan->status == 'gm_review') {
+                $loan->status = 'manager_review';
+            } elseif ($loan->status == 'md_review') {
+                $loan->status = 'gm_review';
+            }
+
+            $loan->rejection_reason = $data['reason'];
+            $loan->save();
+
+            // Record in approvals table
+            \App\Models\LoanApproval::create([
+                'loan_id' => $loan->id,
+                'user_id' => $user->id ?? 1,
+                'status' => 'rejected',
+                'comments' => $data['reason'],
+                'rejection_reason' => $data['reason'],
+            ]);
+
+            return $loan;
+        });
+    }
+    /**
+     * Handle loan disbursement.
+     */
+    public function disburseLoan(Loan $loan, array $data, $user)
+    {
+        return DB::transaction(function () use ($loan, $data, $user) {
+            if ($loan->status !== 'approved') {
+                throw new \Exception('Only approved loans can be disbursed');
+            }
+
+            $loan->status = 'disbursed';
+            $loan->save();
+
+            \App\Models\LoanDisbursement::create([
+                'loan_id' => $loan->id,
+                'disbursement_date' => $data['disbursement_date'],
+                'amount' => $data['amount'],
+                'method' => $data['method'],
+                'transaction_reference' => $data['transaction_reference'] ?? null,
+                'disbursed_by' => $user->id ?? 1,
+            ]);
+
+            // Generate schedule based on frequency in details
+            $details = $loan->details;
+            $months = (int) ($details['kwaTarakimu'] ?? 12);
+            $frequency = $details['repayment_frequency'] ?? 'Monthly';
+            $loan->generateSchedule($months, 0.03, $frequency);
+
+            return $loan;
+        });
+    }
+
+    /**
+     * Handle loan repayment.
+     */
+    public function recordRepayment(Loan $loan, array $data, $user)
+    {
+        return DB::transaction(function () use ($loan, $data, $user) {
+            $amount = round($data['amount']);
+            $currentPaid = round($loan->total_paid ?? 0);
+            $remaining = round($loan->remaining_balance ?? ($loan->amount - $currentPaid));
+
+            if ($amount > $remaining) {
+                throw new \Exception("Payment amount $amount exceeds remaining balance $remaining");
+            }
+
+            $repayment = \App\Models\Repayment::create([
+                'loan_id' => $loan->id,
+                'amount' => $amount,
+                'payment_date' => $data['payment_date'],
+                'payment_method' => $data['payment_method'],
+                'transaction_id' => $data['transaction_id'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'receipt_number' => 'RCP-' . strtoupper(uniqid()),
+                'status' => 'completed',
+                'recorded_by' => $user->id ?? 1,
+            ]);
+
+            $loan->total_paid = round(($loan->total_paid ?? 0) + $amount);
+            $loan->remaining_balance = round($loan->amount - $loan->total_paid);
+
+            if ($loan->remaining_balance <= 0) {
+                $loan->payment_status = 'completed';
+                $loan->status = 'completed';
+                $loan->completed_at = now();
+            } else {
+                $loan->payment_status = 'partial';
+            }
+
+            $loan->save();
+
+            // Update schedules
+            $this->updateSchedules($loan, $amount);
+
+            return [
+                'repayment' => $repayment,
+                'loan' => $loan->fresh()
+            ];
+        });
+    }
+
+    protected function updateSchedules(Loan $loan, $paidAmount)
+    {
+        $schedules = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date', 'asc')->get();
+        foreach ($schedules as $schedule) {
+            if ($paidAmount <= 0)
+                break;
+
+            $remainingOnSchedule = $schedule->total_amount - ($schedule->amount_paid ?? 0);
+            $paymentToApply = min($paidAmount, $remainingOnSchedule);
+
+            $schedule->amount_paid = ($schedule->amount_paid ?? 0) + $paymentToApply;
+            if ($schedule->amount_paid >= $schedule->total_amount) {
+                $schedule->status = 'paid';
+            }
+            $schedule->save();
+
+            $paidAmount -= $paymentToApply;
+        }
+    }
+}

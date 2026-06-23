@@ -1,0 +1,144 @@
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ROOT VARIABLES */
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* FULL SCREEN FIX */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* REMOVE CENTER LIMIT */
+#root {
+  width: 100%;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TEXT */
+h1,
+h2 {
+  font-family: var(--heading);
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+p {
+  margin: 0;
+}
+
+/* PREMIUM FORM STYLES */
+.form-table input,
+.form-table select,
+.form-table textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+.form-table input:focus,
+.form-table select:focus,
+.form-table textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #ffffff !important;
+}
+
+.form-table input::placeholder {
+  color: #64748b;
+  font-style: italic;
+  font-size: 13px;
+  opacity: 1;
+}
+
+/* ERROR STATES */
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 500;
+  display: block;
+}
+
+/* REQUIRED INDICATOR */
+strong::after {
+  content: ' *';
+  color: #ef4444;
+  font-weight: bold;
+}
+
+strong.optional::after {
+  content: none !important;
+}
+
+/* Layout helpers */
+.form-section {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

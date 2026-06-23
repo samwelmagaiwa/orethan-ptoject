@@ -1,0 +1,891 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import LoanDetailsModal from "../components/LoanDetailsModal";
+import HistoryModal from "../components/HistoryModal";
+import ConfirmModal from "../components/ConfirmModal";
+import AlertModal from "../components/AlertModal";
+
+interface Loan {
+  id: number;
+  name: string;
+  amount: number | string;
+  type: string;
+  status: string;
+  phone?: string;
+  details?: Record<string, any>;
+  rejection_metadata?: {
+    reason: string;
+    rejector_name: string;
+    rejector_role: string;
+    date: string;
+  };
+  approvals?: any[];
+  created_at?: string;
+}
+
+const MyLoans = () => {
+  const navigate = useNavigate();
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loanToDelete, setLoanToDelete] = useState<Loan | null>(null);
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+
+  useEffect(() => {
+    fetchLoans();
+
+    // Close menu when clicking outside
+    const handleClickOutside = () => setActiveMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const fetchLoans = () => {
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+    setLoading(true);
+    axios
+      .get(`${API_BASE}/loans/my-applications`, { headers })
+      .then((res) => {
+        setLoans(res.data);
+      })
+      .catch((err) => console.log(err))
+      .finally(() => setLoading(false));
+  };
+
+  const getStatusStep = (status: string) => {
+    switch (status) {
+      case 'loan_officer': return 0;
+      case 'manager_review': return 1;
+      case 'gm_review': return 2;
+      case 'md_review': return 3;
+      case 'approved': return 4;
+      case 'disbursed':
+      case 'completed': return 5;
+      default: return 0;
+    }
+  };
+
+  const viewDetails = (loan: Loan) => {
+    setSelectedLoan(loan);
+    setShowDetailsModal(true);
+    setActiveMenu(null);
+  };
+
+  const openHistory = (loan: Loan) => {
+    setSelectedLoan(loan);
+    setShowHistoryModal(true);
+    setActiveMenu(null);
+  };
+
+  const handleEdit = (loan: Loan) => {
+    const route = loan.type === 'personal' ? '/personal-loan' : '/group-loan';
+    navigate(`${route}?edit=${loan.id}`);
+  };
+
+  const handleDelete = (loan: Loan) => {
+    setLoanToDelete(loan);
+    setShowDeleteModal(true);
+    setActiveMenu(null);
+  };
+
+  const confirmDelete = () => {
+    if (!loanToDelete) return;
+
+    const token = localStorage.getItem("token");
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+    axios.delete(`${API_BASE}/loans/${loanToDelete.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => {
+        fetchLoans();
+        setShowDeleteModal(false);
+        setLoanToDelete(null);
+      })
+      .catch(err => {
+        setAlertMsg("Error deleting loan: " + err.message);
+        setAlertType('error');
+        setShowAlert(true);
+      });
+  };
+
+  return (
+    <div className="loan-manager-page">
+
+      <div className="stats-row">
+        <div className="stat-box">
+          <div className="stat-label">Total Applications</div>
+          <div className="stat-number">{loans.length}</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-label">Approved</div>
+          <div className="stat-number">{loans.filter(l => l.status === 'approved' || l.status === 'disbursed').length}</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-label">Pending Approval</div>
+          <div className="stat-number">{loans.filter(l => l.status !== 'approved' && l.status !== 'disbursed' && l.status !== 'completed' && l.status !== 'rejected').length}</div>
+        </div>
+      </div>
+
+      <div className="table-container full-width">
+        <div className="row-header-actions">
+          <div className="header-title-group">
+            <h2 style={{ margin: 0 }}>Submitted Applications</h2>
+            {loans.length > 0 && (
+              <div className="workflow-stepper header-stepper">
+                {[
+                  { label: 'Officer', role: 'Loan Officer' },
+                  { label: 'LM', role: 'Loan Manager' },
+                  { label: 'GM', role: 'General Manager' },
+                  { label: 'MD', role: 'Managing Director' },
+                  { label: 'Final', role: 'Complete' }
+                ].map((step, i) => {
+                  const targetLoan = selectedLoan || loans[0];
+                  const currentStep = getStatusStep(targetLoan.status);
+                  const isCompleted = i < currentStep;
+                  const isActive = i === currentStep;
+                  const isReturned = targetLoan.status === 'loan_officer' && (targetLoan as any).rejection_metadata;
+
+                  return (
+                    <div key={i} className={`step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`}>
+                      <div className="step-circle" title={step.role}>
+                        {isCompleted ? '✓' : i + 1}
+                      </div>
+                      <div className="step-label">{step.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <button className="refresh-button" onClick={fetchLoans}>
+            Refresh Applications
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="empty-state">Loading applications...</div>
+        ) : loans.length === 0 ? (
+          <div className="empty-state">
+            <p>No applications found</p>
+            <span>You haven't submitted any applications yet</span>
+          </div>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Client Name</th>
+                  <th>Loan Amount</th>
+                  <th>Loan Type</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'center', width: '80px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.map((loan, index) => (
+                  <tr key={loan.id}>
+                    <td className="col-number">{index + 1}</td>
+                    <td>
+                      <div className="client-info">
+                        <span className="client-name">{loan.name}</span>
+                      </div>
+                    </td>
+                    <td className="col-amount">TZS {Number(loan.amount).toLocaleString()}</td>
+                    <td><span className="loan-type-badge">{loan.type}</span></td>
+                    <td>
+                      <span className={`status-badge status-${loan.status.replace('_', '-')}`} style={{
+                        color: (loan.status === 'approved' || loan.status === 'disbursed') ? '#16a34a' : 'inherit',
+                        fontWeight: (loan.status === 'approved' || loan.status === 'disbursed') ? '700' : '500',
+                        border: (loan.status === 'approved' || loan.status === 'disbursed') ? '1px solid #16a34a' : 'none',
+                        padding: (loan.status === 'approved' || loan.status === 'disbursed') ? '3px 10px' : '4px 12px'
+                      }}>
+                        {loan.status === 'loan_officer' ? 'RETURNED FOR CORRECTION' :
+                          loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span> :
+
+                            loan.status === 'gm_review' ? (
+                              <span>
+                                <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                                <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
+                                <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                              </span>
+                            ) :
+                              loan.status === 'md_review' ? (
+                                <span>
+                                  <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
+                                  <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
+                                  <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
+                                </span>
+                              ) :
+                                loan.status === 'approved' ? 'APPROVED' :
+                                  loan.status === 'disbursed' ? 'DISBURSED' :
+                                    loan.status.replace(/_/g, ' ').toUpperCase()}
+
+                      </span>
+                      {loan.rejection_metadata && (
+                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
+                          Sababu: {loan.rejection_metadata.reason}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center', position: 'relative' }}>
+                      <button
+                        className="action-menu-trigger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenu(activeMenu === loan.id ? null : loan.id);
+                        }}
+                      >
+                        <div className="dots-vertical">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </button>
+
+                      {activeMenu === loan.id && (
+                        <div className={`action-dropdown ${(index === loans.length - 1 && loans.length > 1) || (index === loans.length - 2 && loans.length > 2) ? 'drop-up' : ''}`}>
+                          <button onClick={() => viewDetails(loan)}>
+                            View
+                          </button>
+                          <button onClick={() => openHistory(loan)} style={{ color: '#2563eb', fontWeight: '600' }}>
+                            Fungua Mapendekezo
+                          </button>
+                          <button
+                            disabled={loan.status !== 'loan_officer'}
+                            className={loan.status !== 'loan_officer' ? 'muted' : ''}
+                            onClick={() => handleEdit(loan)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            disabled={loan.status !== 'loan_officer'}
+                            className={`text-danger ${loan.status !== 'loan_officer' ? 'muted' : ''}`}
+                            onClick={() => handleDelete(loan)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Details Modal */}
+      <LoanDetailsModal
+        show={showDetailsModal}
+        loan={selectedLoan}
+        onClose={() => setShowDetailsModal(false)}
+      />
+
+      {/* History Modal for Officer */}
+      <HistoryModal
+        isOpen={showHistoryModal}
+        loan={selectedLoan}
+        onClose={() => setShowHistoryModal(false)}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Futa Ombi la Mkopo"
+        message={`Je, una uhakika unataka kufuta ombi la mkopo la ${loanToDelete?.name}? Kitendo hiki hakiwezi kurudishwa.`}
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+
+      <AlertModal
+        isOpen={showAlert}
+        message={alertMsg}
+        type={alertType}
+        onClose={() => setShowAlert(false)}
+      />
+
+      <style>{`
+        .loan-manager-page {
+          padding: 0 10px 20px 10px;
+          margin-top: -24px; /* Perfectly negate the 24px layout padding */
+          min-height: 100vh;
+          background: #f8fafc;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: flex-end; /* Align to right since text is gone */
+          align-items: center;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          gap: 16px;
+          width: 100%;
+        }
+
+        .page-header.compact {
+          margin-bottom: 12px;
+        }
+
+        .refresh-button {
+          background: #0f172a;
+          color: white;
+          border: none;
+          padding: 8px 20px;
+          border-radius: 30px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .refresh-button:hover {
+          background: #1e293b;
+        }
+
+        .stats-row {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+          margin-bottom: 32px;
+          width: 100%;
+          position: sticky;
+          top: 0px;
+          z-index: 10;
+          background: #f8fafc;
+          padding: 0 0 20px 0; /* Zero top padding to "touch" the layout boundary */
+        }
+
+        .stat-box {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          border: 1px solid #e2e8f0;
+          border-left: 4px solid #0f172a; /* Stunning accent border */
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-box:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+        }
+
+        .stat-number {
+          font-size: 32px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1;
+        }
+
+        .table-container {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          border: 1px solid #e2e8f0;
+          width: 100%;
+        }
+
+        .table-container.full-width {
+           max-width: none;
+           width: 100%;
+        }
+
+        .table-container h2 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #0f172a;
+          margin: 0 0 20px 0;
+        }
+
+        .table-wrapper {
+          overflow-x: auto;
+          min-height: 400px; /* Ensure enough space for dropdowns */
+          padding-bottom: 100px; /* Extra space at the bottom */
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        th {
+          text-align: left;
+          padding: 12px 16px;
+          background: #f8fafc;
+          color: #334155;
+          font-size: 13px;
+          font-weight: 600;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+          padding: 14px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 14px;
+          color: #1e293b;
+        }
+
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+
+        tr:hover {
+          background: #f1f5f9 !important;
+        }
+
+        .action-menu-trigger {
+          background: none;
+          border: none;
+          padding: 8px;
+          cursor: pointer;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          margin: 0 auto;
+        }
+
+        .action-menu-trigger:hover {
+          background: #f1f5f9;
+        }
+
+        .dots-vertical {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .dots-vertical span {
+          width: 4px;
+          height: 4px;
+          background: #64748b;
+          border-radius: 50%;
+        }
+
+        .action-dropdown {
+          position: absolute;
+          right: 0;
+          top: 100%;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          border: 1px solid #e2e8f0;
+          z-index: 100;
+          min-width: 140px;
+          padding: 6px;
+          display: flex;
+          flex-direction: column;
+          animation: slideIn 0.2s ease;
+          transform-origin: top right;
+        }
+
+        .action-dropdown.drop-up {
+          top: auto;
+          bottom: 100%;
+          margin-bottom: 8px;
+          transform-origin: bottom right;
+          animation: slideUp 0.2s ease;
+        }
+        
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(10px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .action-dropdown button {
+          background: none;
+          border: none;
+          padding: 10px 14px;
+          text-align: left;
+          font-size: 13px;
+          font-weight: 500;
+          color: #475569;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .action-dropdown button:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+
+        .action-dropdown button.text-danger {
+          color: #ef4444;
+        }
+        
+        .action-dropdown button.muted {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: #f1f5f9;
+          filter: grayscale(1);
+        }
+        
+        .action-dropdown button.text-danger:hover {
+           background: #fef2f2;
+        }
+
+        .col-number {
+          width: 50px;
+          color: #64748b;
+        }
+
+        .col-amount {
+          font-weight: 500;
+          color: #0f172a;
+        }
+
+        .client-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .client-name {
+          font-weight: 500;
+        }
+
+        .loan-type-badge {
+          background: #e2e8f0;
+          padding: 4px 10px;
+          border-radius: 30px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #475569;
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 30px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .status-manager-review, .status-gm-review, .status-md-review {
+          background: #fef3c7;
+          color: #b45309;
+        }
+        
+        .status-approved, .status-disbursed {
+           background: #dcfce7;
+           color: #166534;
+        }
+        
+        .status-rejected {
+           background: #fee2e2;
+           color: #991b1b;
+        }
+
+        .status-loan-officer {
+           background: #ffedd5;
+           color: #9a3412;
+           border: 1px solid #fed7aa;
+        }
+
+         .workflow-stepper {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .header-stepper {
+          margin-left: 40px;
+        }
+
+        .header-title-group {
+          display: flex;
+          align-items: center;
+        }
+
+        .row-header-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 25px;
+        }
+
+        .step-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          min-width: 60px;
+        }
+
+        .step-item:not(:last-child)::after {
+          content: '';
+          position: absolute;
+          top: 15px;
+          left: calc(50% + 15px);
+          width: calc(100% - 15px);
+          height: 3px;
+          background: #e2e8f0;
+          z-index: 1;
+        }
+
+        .step-item.completed:not(:last-child)::after {
+          background: #16a34a;
+        }
+
+        .step-item.active:not(:last-child)::after {
+          background: #facc15; /* Yellow for non-reached/pending stages */
+        }
+
+        .step-circle {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: white;
+          border: 3px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #94a3b8;
+          position: relative;
+          z-index: 2;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #94a3b8;
+          margin-top: 6px;
+          text-transform: uppercase;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .step-item.completed .step-circle {
+          background: #16a34a;
+          border-color: #16a34a;
+          color: white;
+          box-shadow: 0 0 15px rgba(22, 163, 74, 0.3);
+        }
+
+        .step-item.completed .step-label {
+          color: #16a34a;
+        }
+
+        .step-item.active .step-circle {
+          border-color: #facc15; /* Yellow */
+          color: #854d0e;
+          background: #fef9c3;
+          box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+          transform: scale(1.1);
+        }
+
+        /* Not yet reached stages also follow yellow/pending aesthetic in line */
+        .step-item:not(.completed) .step-circle {
+          border-color: #fde047;
+          background: #fefce8;
+        }
+
+        .step-item.active .step-label {
+          color: #854d0e;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 24px;
+          padding: 28px;
+          width: 500px;
+          max-width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .modal-large {
+          width: 800px;
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-header h2 {
+          font-size: 20px;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 28px;
+          cursor: pointer;
+          color: #94a3b8;
+          line-height: 1;
+        }
+
+        .modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary {
+          background: #e2e8f0;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+          background: #cbd5e1;
+        }
+
+        .details-section {
+          margin-bottom: 24px;
+        }
+
+        .details-section h3 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #0f172a;
+          margin: 0 0 16px 0;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+        }
+
+        .two-columns {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .detail-item {
+          background: #f8fafc;
+          padding: 12px;
+          border-radius: 12px;
+        }
+
+        .detail-item span {
+          display: block;
+          font-size: 11px;
+          color: #64748b;
+          margin-bottom: 4px;
+        }
+
+        .detail-item strong {
+          font-size: 14px;
+          color: #0f172a;
+          word-break: break-word;
+        }
+
+        .rejection-box {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          padding: 16px;
+          margin-top: 16px;
+        }
+
+        .rejection-box h3 {
+          font-size: 13px;
+          font-weight: 600;
+          color: #dc2626;
+          margin: 0 0 8px 0;
+        }
+
+        .rejection-box p {
+          font-size: 13px;
+          color: #7f1d1d;
+          margin: 0;
+        }
+
+        @media (max-width: 768px) {
+          .loan-manager-page {
+            padding: 70px 16px 16px 16px;
+          }
+          .stats-row {
+            grid-template-columns: 1fr;
+            position: relative;
+          }
+          .two-columns {
+            grid-template-columns: 1fr;
+          }
+          .modal-large {
+            width: 95%;
+          }
+          .workflow-stepper {
+            flex-wrap: wrap;
+          }
+          .step-item:not(:last-child)::after {
+            display: none;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default MyLoans;
