@@ -10,13 +10,30 @@ class LoanDisbursement extends Model
         'loan_id',
         'disbursement_date',
         'amount',
+        'processing_fee',
+        'insurance_fee',
+        'other_charges',
+        'total_charges',
+        'net_amount',
+        'voucher_number',
+        'receipt_number',
         'method',
         'transaction_reference',
+        'payment_details',
+        'narration',
+        'branch',
         'disbursed_by',
     ];
 
     protected $casts = [
         'disbursement_date' => 'date',
+        'payment_details' => 'array',
+        'amount' => 'decimal:2',
+        'processing_fee' => 'decimal:2',
+        'insurance_fee' => 'decimal:2',
+        'other_charges' => 'decimal:2',
+        'total_charges' => 'decimal:2',
+        'net_amount' => 'decimal:2',
     ];
 
     public function loan()

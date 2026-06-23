@@ -94,6 +94,9 @@ Route::prefix('v1')->group(function () {
         // ROUTE YA KUKATA MKOPO (REJECT)
         Route::post('/loans/{id}/reject', [LoanController::class, 'reject']);
 
+        // DISBURSEMENT PREVIEW (full disbursement screen data)
+        Route::get('/loans/{id}/disbursement-preview', [LoanController::class, 'disbursementPreview']);
+
         // ROUTE YA KUTOA PESA (DISBURSE)
         Route::post('/loans/{id}/disburse', [LoanController::class, 'disburse']);
 

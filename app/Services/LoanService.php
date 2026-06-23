@@ -145,28 +145,53 @@ class LoanService
                 throw new \Exception('Only approved loans can be disbursed');
             }
 
-            // Guard against double disbursement / double activation
+            // Lock against double disbursement / double activation
             if ($loan->disbursed_at || $loan->disbursement()->exists()) {
                 throw new \Exception('This loan has already been disbursed');
             }
 
             $disbursementDate = $data['disbursement_date'];
 
-            // 1. Record the disbursement transaction
-            \App\Models\LoanDisbursement::create([
+            // Charges & net amount (calculated server-side, never trusted from client)
+            $processingFee = round((float) ($data['processing_fee'] ?? 0), 2);
+            $insuranceFee = round((float) ($data['insurance_fee'] ?? 0), 2);
+            $otherCharges = round((float) ($data['other_charges'] ?? 0), 2);
+            $totalCharges = round($processingFee + $insuranceFee + $otherCharges, 2);
+            $grossAmount = round((float) $data['amount'], 2);
+            $netAmount = round($grossAmount - $totalCharges, 2);
+
+            if ($netAmount < 0) {
+                throw new \Exception('Total charges cannot exceed the loan amount');
+            }
+
+            // Auto-generated voucher & receipt numbers (one disbursement per loan -> unique)
+            $seq = str_pad((string) $loan->id, 5, '0', STR_PAD_LEFT);
+            $stamp = \Carbon\Carbon::parse($disbursementDate)->format('Ymd');
+            $voucherNumber = 'VCH-' . $stamp . '-' . $seq;
+            $receiptNumber = 'RCP-' . $stamp . '-' . $seq;
+
+            // 1. Record the disbursement transaction (the ledger entry at this app's maturity)
+            $disbursement = \App\Models\LoanDisbursement::create([
                 'loan_id' => $loan->id,
                 'disbursement_date' => $disbursementDate,
-                'amount' => $data['amount'],
+                'amount' => $grossAmount,
+                'processing_fee' => $processingFee,
+                'insurance_fee' => $insuranceFee,
+                'other_charges' => $otherCharges,
+                'total_charges' => $totalCharges,
+                'net_amount' => $netAmount,
+                'voucher_number' => $voucherNumber,
+                'receipt_number' => $receiptNumber,
                 'method' => $data['method'],
                 'transaction_reference' => $data['transaction_reference'] ?? null,
+                'payment_details' => $data['payment_details'] ?? null,
+                'narration' => $data['narration'] ?? ('Loan Disbursement for ' . $loan->product_name),
+                'branch' => $data['branch'] ?? null,
                 'disbursed_by' => $user->id ?? 1,
             ]);
 
             // 2. Generate Repayment Schedule from the disbursement date
-            $details = $loan->details;
-            $months = (int) ($details['kwaTarakimu'] ?? 12);
-            $frequency = $details['repayment_frequency'] ?? 'Monthly';
-            $loan->generateSchedule($months, 0.03, $frequency, $disbursementDate);
+            $loan->generateSchedule($loan->termMonths(), 0.03, $loan->repaymentFrequency(), $disbursementDate);
 
             // 3. Activate the loan account
             $firstSchedule = $loan->schedules()->orderBy('due_date', 'asc')->first();
@@ -185,6 +210,23 @@ class LoanService
                 $loan->loan_account_number = $loan->generateAccountNumber();
                 $loan->save();
             }
+
+            // 5. Record the audit trail (who/when/what/branch)
+            \App\Models\AuditLog::record(
+                'loan.disbursed',
+                $user,
+                $loan,
+                'Loan ' . $loan->loan_account_number . ' disbursed and activated',
+                [
+                    'voucher_number' => $voucherNumber,
+                    'receipt_number' => $receiptNumber,
+                    'gross_amount' => $grossAmount,
+                    'total_charges' => $totalCharges,
+                    'net_amount' => $netAmount,
+                    'method' => $data['method'],
+                ],
+                $data['branch'] ?? null
+            );
 
             return $loan->fresh(['schedules', 'disbursement']);
         });

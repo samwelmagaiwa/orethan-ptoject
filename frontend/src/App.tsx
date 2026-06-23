@@ -26,6 +26,7 @@ import RepaymentTracker from "./pages/RepaymentTracker";
 import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
+import DisburseLoan from "./pages/DisburseLoan";
 
 // =========================
 // AXIOS INTERCEPTORS
@@ -1090,6 +1091,26 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <Customers />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/finance/disburse/:id"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DisburseLoan />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/disburse/:id"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DisburseLoan />
                 </MainLayout>
               </ProtectedRoute>
             }

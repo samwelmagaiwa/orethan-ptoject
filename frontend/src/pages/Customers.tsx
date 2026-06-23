@@ -674,7 +674,10 @@ const Customers: React.FC = () => {
                                                                     <>
                                                                         {loan.status === 'approved' && (
                                                                             <button
-                                                                                onClick={() => openDisburseModal(loan)}
+                                                                                onClick={() => {
+                                                                                    const base = user?.role === 'finance_officer' ? '/finance/disburse/' : '/disburse/';
+                                                                                    window.location.href = base + loan.id;
+                                                                                }}
                                                                                 className={`approve-action ${submitting ? 'muted' : ''}`}
                                                                                 disabled={submitting}
                                                                             >

@@ -76,6 +76,44 @@ class Loan extends Model
         return strtoupper('BSN-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
     }
 
+    /**
+     * Human-readable loan/application reference (available before disbursement).
+     * Format: LN-YYYYMMDD-00id, e.g. LN-20260623-00015
+     */
+    public function getLoanNumberAttribute()
+    {
+        $date = $this->created_at ?? now();
+        return 'LN-' . $date->format('Ymd') . '-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Friendly product name derived from type + employment status.
+     */
+    public function getProductNameAttribute()
+    {
+        $type = strtolower((string) $this->type);
+        if ($type === 'group') {
+            return 'Group Loan';
+        }
+        if ($type === 'employee' || ($this->details['umeajiriwa'] ?? null) === 'Ndio') {
+            return 'Employee Loan';
+        }
+        return 'Business Loan';
+    }
+
+    /**
+     * Loan term (in months) and repayment frequency, read from the application details.
+     */
+    public function termMonths()
+    {
+        return (int) ($this->details['kwaTarakimu'] ?? 12);
+    }
+
+    public function repaymentFrequency()
+    {
+        return $this->details['repayment_frequency'] ?? 'Monthly';
+    }
+
     // Relationships
     public function customer()
     {
@@ -107,11 +145,12 @@ class Loan extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Auto-generate repayment schedule
-    public function generateSchedule($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
+    /**
+     * Build (without persisting) the amortization rows for this loan.
+     * Used both to persist the schedule and to preview it before disbursement.
+     */
+    public function buildScheduleRows($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
     {
-        $this->schedules()->delete();
-
         $installmentsPerMonth = match ($frequency) {
             'Weekly' => 4.33,
             'Bi-Weekly' => 2.165,
@@ -127,11 +166,11 @@ class Loan extends Model
             ? \Carbon\Carbon::parse($startDate)
             : ($this->approved_at ? \Carbon\Carbon::parse($this->approved_at) : now());
 
+        $rows = [];
         for ($i = 1; $i <= $totalInstallments; $i++) {
             $interest = $balance * ($interestRate / $installmentsPerMonth);
             $balance -= $principalPerInstallment;
 
-            // Increment date based on frequency
             $dueDate = match ($frequency) {
                 'Weekly' => $dueDate->addWeek(),
                 'Bi-Weekly' => $dueDate->addWeeks(2),
@@ -140,17 +179,51 @@ class Loan extends Model
                 default => $dueDate->addMonth(),
             };
 
-            LoanSchedule::create([
-                'loan_id' => $this->id,
+            $rows[] = [
                 'installment_number' => $i,
                 'due_date' => $dueDate->toDateString(),
-                'principal_amount' => $principalPerInstallment,
-                'interest_amount' => $interest,
-                'total_amount' => $principalPerInstallment + $interest,
-                'balance_remaining' => max(0, $balance),
+                'principal_amount' => round($principalPerInstallment, 2),
+                'interest_amount' => round($interest, 2),
+                'total_amount' => round($principalPerInstallment + $interest, 2),
+                'balance_remaining' => round(max(0, $balance), 2),
                 'status' => 'pending',
-            ]);
+            ];
         }
+
+        return $rows;
+    }
+
+    // Auto-generate (persist) repayment schedule
+    public function generateSchedule($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
+    {
+        $this->schedules()->delete();
+
+        foreach ($this->buildScheduleRows($months, $interestRate, $frequency, $startDate) as $row) {
+            $this->schedules()->create($row);
+        }
+    }
+
+    /**
+     * Repayment summary (counts, installment amount, first/last dates) for previews.
+     */
+    public function scheduleSummary($interestRate = 0.03, $startDate = null)
+    {
+        $rows = $this->buildScheduleRows($this->termMonths(), $interestRate, $this->repaymentFrequency(), $startDate);
+        if (empty($rows)) {
+            return [
+                'total_installments' => 0,
+                'installment_amount' => 0,
+                'first_payment_date' => null,
+                'final_payment_date' => null,
+            ];
+        }
+
+        return [
+            'total_installments' => count($rows),
+            'installment_amount' => $rows[0]['total_amount'],
+            'first_payment_date' => $rows[0]['due_date'],
+            'final_payment_date' => $rows[count($rows) - 1]['due_date'],
+        ];
     }
 
     // Calculate remaining balance

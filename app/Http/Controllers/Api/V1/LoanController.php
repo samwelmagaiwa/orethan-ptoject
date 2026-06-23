@@ -228,7 +228,38 @@ class LoanController extends Controller
         }
     }
 
-    // DISBURSE LOAN
+    // DISBURSEMENT PREVIEW (borrower info, loan details, charges defaults, repayment summary)
+    public function disbursementPreview(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
+            return $this->error('Only Finance Officer/Cashier can access disbursement', 403);
+        }
+
+        $loan = Loan::with(['customer', 'user', 'disbursement'])->findOrFail($id);
+        $summary = $loan->scheduleSummary(0.03);
+
+        return response()->json([
+            'loan' => $loan,
+            'customer_number' => $loan->customer?->customer_number,
+            'loan_number' => $loan->loan_number,
+            'product_name' => $loan->product_name,
+            'officer_name' => $loan->user?->name,
+            'branch' => $loan->customer?->region ?: 'Dar es Salaam',
+            'repayment_summary' => [
+                'term_months' => $loan->termMonths(),
+                'frequency' => $loan->repaymentFrequency(),
+                'interest_rate' => 3, // monthly system rate (%)
+                'total_installments' => $summary['total_installments'],
+                'installment_amount' => $summary['installment_amount'],
+                'first_payment_date' => $summary['first_payment_date'],
+                'final_payment_date' => $summary['final_payment_date'],
+            ],
+            'already_disbursed' => (bool) ($loan->disbursed_at || $loan->disbursement),
+        ]);
+    }
+
+    // DISBURSE LOAN (full flow: charges, payment details, verification, confirmation, activation)
     public function disburse(Request $request, $id)
     {
         $user = $request->user();
@@ -239,14 +270,41 @@ class LoanController extends Controller
         $data = $request->validate([
             'disbursement_date' => 'required|date',
             'amount' => 'required|numeric|min:1',
-            'method' => 'required|string|in:cash,bank_transfer,mobile_money',
+            'processing_fee' => 'nullable|numeric|min:0',
+            'insurance_fee' => 'nullable|numeric|min:0',
+            'other_charges' => 'nullable|numeric|min:0',
+            'method' => 'required|string|in:cash,bank_transfer,mpesa,airtel_money,tigo_pesa,halopesa,cheque',
             'transaction_reference' => 'nullable|string',
+            'payment_details' => 'nullable|array',
+            'narration' => 'nullable|string|max:255',
+            'branch' => 'nullable|string|max:120',
+
+            // Verification checklist — all six must be confirmed
+            'verification' => 'required|array',
+            'verification.identity_verified' => 'accepted',
+            'verification.agreement_signed' => 'accepted',
+            'verification.guarantor_signed' => 'accepted',
+            'verification.charges_confirmed' => 'accepted',
+            'verification.customer_present' => 'accepted',
+            'verification.payment_verified' => 'accepted',
+
+            // Final confirmation
+            'confirm' => 'accepted',
+            'password' => 'required|string',
         ]);
+
+        // Confirm the operator's identity via password/PIN
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return $this->error('Password confirmation failed. Please re-enter your password.', 422);
+        }
 
         try {
             $loan = Loan::findOrFail($id);
             $updatedLoan = $this->loanService->disburseLoan($loan, $data, $user);
-            return $this->success($updatedLoan->fresh(), 'Loan disbursed successfully');
+            return $this->success(
+                $updatedLoan->fresh(['disbursement', 'customer']),
+                'Loan disbursed and activated successfully'
+            );
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
