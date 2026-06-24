@@ -209,7 +209,7 @@ const RepaymentTracker = () => {
               <span style={{ transform: "scale(0.85)" }}>{card.icon}</span>
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#94a3b8", margin: "0 0 0.3rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.label}</p>
+              <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", color: "#94a3b8", margin: "0 0 0.3rem", lineHeight: 1.25, wordBreak: "break-word" }}>{card.label}</p>
               <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
             </div>
           </div>
