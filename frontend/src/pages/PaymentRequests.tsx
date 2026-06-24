@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, User, ClipboardList, Wallet, Banknote, CreditCard, PenLine, ArrowRight } from "lucide-react";
+import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
@@ -21,7 +21,7 @@ const STATUS_META: Record<string, { label: string; bg: string; color: string }> 
 };
 
 const CARD: React.CSSProperties = { background: "white", borderRadius: 14, border: "1px solid #eef1f6", boxShadow: "0 6px 18px rgba(15,23,42,0.07)" };
-const inp: React.CSSProperties = { width: "100%", padding: "0.65rem 0.8rem", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.85rem", color: "#1e293b", boxSizing: "border-box", fontFamily: "inherit" };
+const inp: React.CSSProperties = { width: "100%", padding: "0.7rem 0.9rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", outline: "none", fontWeight: 600, fontSize: "0.9rem", color: "#1e293b", boxSizing: "border-box", fontFamily: "inherit" };
 
 const PaymentRequests = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -132,34 +132,23 @@ const PaymentRequests = () => {
       </div>
 
       {tab === "new" ? (
-        <div style={{ ...CARD, width: "100%", overflow: "hidden", padding: 0 }}>
-          {/* HERO HEADER */}
-          <div style={{ position: "relative", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%)", padding: "1.7rem 1.8rem", color: "white", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: -40, right: -20, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-            <div style={{ position: "absolute", bottom: -60, right: 80, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <FileText size={26} />
-              </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 900, letterSpacing: "-0.02em" }}>Request Form for Payment</h2>
-                <p style={{ margin: "0.25rem 0 0", fontSize: "0.82rem", opacity: 0.9, fontWeight: 500 }}>Complete the form below — it routes automatically through the approval chain.</p>
-              </div>
-            </div>
-            {/* Approval chain pills */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1.1rem", flexWrap: "wrap" }}>
+        <div className="prf-page">
+          {/* TOP HEADING */}
+          <h2 className="prf-heading">Request Form for Payment</h2>
+
+          <div className="prf-card">
+            {/* Approval chain strip */}
+            <div className="prf-chain">
               {["You", "Loan Manager", "General Manager", "Managing Director"].map((s, i) => (
                 <span key={s} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span style={{ background: "rgba(255,255,255,0.16)", padding: "0.25rem 0.7rem", borderRadius: 20, fontSize: "0.68rem", fontWeight: 700 }}>{s}</span>
-                  {i < 3 && <ArrowRight size={13} style={{ opacity: 0.7 }} />}
+                  <span className="prf-chain-pill">{s}</span>
+                  {i < 3 && <ArrowRight size={13} style={{ color: "#94a3b8" }} />}
                 </span>
               ))}
             </div>
-          </div>
 
-          <div style={{ padding: "1.6rem 1.8rem" }}>
             {/* SECTION 1: APPLICANT */}
-            <Section icon={<User size={16} />} title="Applicant Information" hint="01 – 03">
+            <Section num={1} title="APPLICANT INFORMATION">
               <div className="pr-grid3">
                 <Field label="Full Name of Applicant" required><input className="pr-input" style={inp} value={form.applicant_name} onChange={(e) => set("applicant_name", e.target.value)} /></Field>
                 <Field label="Department"><input className="pr-input" style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
@@ -168,7 +157,7 @@ const PaymentRequests = () => {
             </Section>
 
             {/* SECTION 2: ACTIVITY */}
-            <Section icon={<ClipboardList size={16} />} title="Payment Activity" hint="04 – 06">
+            <Section num={2} title="PAYMENT ACTIVITY">
               <div className="pr-grid3">
                 <Field label="Type of Activity for Payment" required>
                   <select className="pr-input" style={inp} value={form.activity_type} onChange={(e) => set("activity_type", e.target.value)}>
@@ -189,7 +178,7 @@ const PaymentRequests = () => {
             </Section>
 
             {/* SECTION 3: PAYMENT DETAILS */}
-            <Section icon={<Wallet size={16} />} title="Payment Details" hint="07 – 08">
+            <Section num={3} title="PAYMENT DETAILS">
               <Field label="Mode of Payment" required>
                 <div className="pr-grid3">
                   {[["cash", "Cash", <Banknote size={18} />], ["cheque", "Cheque", <FileText size={18} />], ["bank_transfer", "Bank Transfer", <CreditCard size={18} />]].map(([v, l, ic]: any) => {
@@ -225,7 +214,7 @@ const PaymentRequests = () => {
             </Section>
 
             {/* SECTION 4: SIGNATURE */}
-            <Section icon={<PenLine size={16} />} title="Applicant Authorization" hint="09" last>
+            <Section num={4} title="APPLICANT AUTHORIZATION">
               <div className="pr-grid3">
                 <div style={{ gridColumn: "span 2" }}>
                   <Field label="Applicant Signature (name)"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} /></Field>
@@ -235,13 +224,13 @@ const PaymentRequests = () => {
             </Section>
 
             {/* FOOTER ACTIONS */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", marginTop: "1.6rem", paddingTop: "1.3rem", borderTop: "1px solid #f1f5f9", flexWrap: "wrap" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.74rem", color: "#94a3b8", fontWeight: 600 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", marginTop: "0.5rem", paddingTop: "1.3rem", borderTop: "1px solid #e2e8f0", flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.76rem", color: "#94a3b8", fontWeight: 600 }}>
                 <ShieldCheck size={15} style={{ color: "#10b981" }} /> Submitting routes this request to the Loan Manager for review.
               </span>
               <div style={{ display: "flex", gap: "0.7rem" }}>
-                <button onClick={() => setForm(blank)} style={{ padding: "0.75rem 1.5rem", borderRadius: 12, background: "#f1f5f9", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "#64748b" }}>Clear</button>
-                <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.8rem", borderRadius: 12, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 8px 20px rgba(79,70,229,0.35)" }}>
+                <button onClick={() => setForm(blank)} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>Clear</button>
+                <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
                   <Send size={16} /> {submitting ? "Submitting..." : "Submit Request"}
                 </button>
               </div>
@@ -364,10 +353,17 @@ const PaymentRequests = () => {
         .pr-row:hover { background: #fdfbf7; }
         .pr-input { transition: border-color 0.18s, box-shadow 0.18s, background 0.18s; }
         .pr-input:focus { border-color: #6366f1 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
-        .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
+        .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.3rem 1.5rem; }
         .pr-span-all { grid-column: 1 / -1; }
         @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 600px) { .pr-grid3 { grid-template-columns: 1fr; } }
+
+        .prf-page { background: #e8f0fe; border-radius: 14px; padding: 1.3rem; }
+        .prf-heading { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin: 0 0 1rem; }
+        .prf-card { background: #fff; border-radius: 14px; box-shadow: 0 10px 28px rgba(15,23,42,0.08); padding: 1.7rem 1.9rem; }
+        .prf-banner { background: #102a43; color: #fff; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.6px; margin-bottom: 1.3rem; box-shadow: 0 4px 12px rgba(16,42,67,0.18); }
+        .prf-chain { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+        .prf-chain-pill { background: #eef2ff; color: #4f46e5; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 6px; }
       `}</style>
@@ -375,16 +371,12 @@ const PaymentRequests = () => {
   );
 };
 
-const lblStyle: React.CSSProperties = { display: "block", fontSize: "0.68rem", fontWeight: 700, color: "#64748b", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.4px" };
+const lblStyle: React.CSSProperties = { display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.6px" };
 
-const Section = ({ icon, title, hint, last, children }: { icon: React.ReactNode; title: string; hint?: string; last?: boolean; children: React.ReactNode }) => (
-  <div style={{ paddingBottom: last ? 0 : "1.5rem", marginBottom: last ? 0 : "1.5rem", borderBottom: last ? "none" : "1px solid #f1f5f9" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
-      <div style={{ width: 32, height: 32, borderRadius: 9, background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</div>
-      <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>{title}</h3>
-      {hint && <span style={{ marginLeft: "auto", fontSize: "0.66rem", fontWeight: 700, color: "#cbd5e1", letterSpacing: "1px" }}>{hint}</span>}
-    </div>
-    {children}
+const Section = ({ num, title, children }: { num: number; title: string; children: React.ReactNode }) => (
+  <div style={{ marginBottom: "1.6rem" }}>
+    <div className="prf-banner">SECTION {num}: {title}</div>
+    <div style={{ padding: "0.2rem 0.2rem 0" }}>{children}</div>
   </div>
 );
 
