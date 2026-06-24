@@ -166,42 +166,6 @@ const RepaymentTracker = () => {
         ))}
       </div>
 
-      {/* ─── TOOLBAR: TABS + SEARCH + FILTER (TOP OF OVERVIEW SECTION) ─── */}
-      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
-        style={{ ...CARD_STYLE, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", padding: "0.7rem 0.9rem", marginBottom: SECTION_GAP }}>
-        <div style={{ display: "flex", background: "#f1f5f9", padding: 5, borderRadius: 12, gap: 4 }}>
-          {([["active", "Active Loans", activeLoans.length, Clock, "#4f46e5"], ["completed", "Completed", completedLoans.length, CheckCircle2, "#059669"]] as const).map(([key, label, count, Icon, color]) => {
-            const isActive = activeTab === key;
-            return (
-              <button key={key} onClick={() => setActiveTab(key)}
-                style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 1.1rem", borderRadius: 9, border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", background: isActive ? "white" : "transparent", color: isActive ? color : "#64748b", boxShadow: isActive ? "0 2px 8px rgba(15,23,42,0.1)" : "none", transition: "all 0.2s" }}>
-                <Icon size={15} /> {label}
-                <span style={{ background: isActive ? `${color}1a` : "#e2e8f0", color: isActive ? color : "#94a3b8", padding: "1px 8px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 800 }}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ position: "relative" }}>
-            <Search size={15} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client..."
-              style={{ padding: "0.6rem 0.9rem 0.6rem 2.3rem", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.82rem", color: "#1e293b", width: 220 }} />
-          </div>
-          <button style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.6rem 1rem", borderRadius: 10, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#64748b" }}>
-            <Filter size={15} /> Filter
-          </button>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.6rem 1rem", borderRadius: 10, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#475569" }}>
-            <RefreshCw size={15} className={loading ? "rt-spin" : ""} /> Refresh
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.6rem 1.1rem", borderRadius: 10, background: "#6366f1", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
-            <ArrowUpRight size={15} /> Export
-          </motion.button>
-        </div>
-      </motion.div>
-
       {/* ─── CHARTS ROW ─── */}
       <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
         {/* Overview Area Chart */}
@@ -286,6 +250,41 @@ const RepaymentTracker = () => {
 
       {/* ─── TABLE SECTION ─── */}
       <div style={{ ...CARD_STYLE, padding: "1.5rem" }}>
+        {/* TABLE TOOLBAR (NARROW) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.7rem", marginBottom: "1.1rem", paddingBottom: "1rem", borderBottom: "1px solid #f1f5f9" }}>
+          <div style={{ display: "flex", background: "#f1f5f9", padding: 3, borderRadius: 9, gap: 3 }}>
+            {([["active", "Active Loans", activeLoans.length, Clock, "#4f46e5"], ["completed", "Completed", completedLoans.length, CheckCircle2, "#059669"]] as const).map(([key, label, count, Icon, color]) => {
+              const isActive = activeTab === key;
+              return (
+                <button key={key} onClick={() => setActiveTab(key)}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.85rem", borderRadius: 7, border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", background: isActive ? "white" : "transparent", color: isActive ? color : "#64748b", boxShadow: isActive ? "0 1px 4px rgba(15,23,42,0.1)" : "none", transition: "all 0.2s" }}>
+                  <Icon size={14} /> {label}
+                  <span style={{ background: isActive ? `${color}1a` : "#e2e8f0", color: isActive ? color : "#94a3b8", padding: "0px 7px", borderRadius: 20, fontSize: "0.62rem", fontWeight: 800 }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <Search size={14} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client..."
+                style={{ padding: "0.45rem 0.8rem 0.45rem 2.1rem", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.78rem", color: "#1e293b", width: 200 }} />
+            </div>
+            <button style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#64748b" }}>
+              <Filter size={14} /> Filter
+            </button>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
+              style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#475569" }}>
+              <RefreshCw size={14} className={loading ? "rt-spin" : ""} /> Refresh
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.95rem", borderRadius: 8, background: "#6366f1", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
+              <ArrowUpRight size={14} /> Export
+            </motion.button>
+          </div>
+        </div>
+
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
