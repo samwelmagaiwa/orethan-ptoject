@@ -167,17 +167,17 @@ const RepaymentTracker = () => {
 
       {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS ─── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', alignItems: 'stretch', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '2rem', overflow: 'hidden' }}>
+        style={{ display: 'flex', alignItems: 'stretch', width: '100%', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
         {statCards.map((card, i) => (
           <div key={i} className="rt-stat-card"
-            style={{ flex: 1, padding: '1.4rem 1.2rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderLeft: i === 0 ? 'none' : '1px solid #e2e8f0', minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.6rem' }}>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#64748b', margin: 0, marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.label}</p>
-                <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.value}</h3>
+            style={{ flex: '1 1 0', padding: '1.1rem 0.9rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '0.6rem', borderLeft: i === 0 ? 'none' : '1px solid #e2e8f0', minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#64748b', margin: 0, marginBottom: '0.45rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.label}</p>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.value}</h3>
               </div>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                {card.icon && <span style={{ transform: 'scale(0.9)' }}>{card.icon}</span>}
+              <div style={{ width: 34, height: 34, borderRadius: '8px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                {card.icon && <span style={{ transform: 'scale(0.75)' }}>{card.icon}</span>}
               </div>
             </div>
             <div style={{ opacity: 0.6 }}>
