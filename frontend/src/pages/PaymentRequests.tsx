@@ -192,7 +192,7 @@ const PaymentRequests = () => {
                   })}
                 </div>
               </Field>
-              <div className="pr-grid3" style={{ marginTop: "1.1rem" }}>
+              <div className="pr-grid3" style={{ marginTop: "0.6rem" }}>
                 <Field label="Payable To" required><input className="pr-input" style={inp} placeholder="Beneficiary name..." value={form.payable_to} onChange={(e) => set("payable_to", e.target.value)} /></Field>
                 <Field label="Currency">
                   <select className="pr-input" style={inp} value={form.currency} onChange={(e) => set("currency", e.target.value)}>
@@ -353,7 +353,7 @@ const PaymentRequests = () => {
         .pr-row:hover { background: #fdfbf7; }
         .pr-input { transition: border-color 0.18s, box-shadow 0.18s, background 0.18s; }
         .pr-input:focus { border-color: #6366f1 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
-        .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.3rem 1.5rem; }
+        .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem 1.3rem; }
         .pr-span-all { grid-column: 1 / -1; }
         @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 600px) { .pr-grid3 { grid-template-columns: 1fr; } }
@@ -361,7 +361,7 @@ const PaymentRequests = () => {
         .prf-page { background: #e8f0fe; border-radius: 14px; padding: 1.3rem; }
         .prf-heading { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin: 0 0 1rem; }
         .prf-card { background: #fff; border-radius: 14px; box-shadow: 0 10px 28px rgba(15,23,42,0.08); padding: 1.7rem 1.9rem; }
-        .prf-banner { background: #102a43; color: #fff; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.6px; margin-bottom: 1.3rem; box-shadow: 0 4px 12px rgba(16,42,67,0.18); }
+        .prf-banner { background: #102a43; color: #fff; padding: 0.7rem 1.2rem; border-radius: 8px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.6px; margin-bottom: 0.8rem; box-shadow: 0 4px 12px rgba(16,42,67,0.18); }
         .prf-chain { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
         .prf-chain-pill { background: #eef2ff; color: #4f46e5; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -374,7 +374,7 @@ const PaymentRequests = () => {
 const lblStyle: React.CSSProperties = { display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.6px" };
 
 const Section = ({ num, title, children }: { num: number; title: string; children: React.ReactNode }) => (
-  <div style={{ marginBottom: "1.6rem" }}>
+  <div style={{ marginBottom: "1rem" }}>
     <div className="prf-banner">SECTION {num}: {title}</div>
     <div style={{ padding: "0.2rem 0.2rem 0" }}>{children}</div>
   </div>
