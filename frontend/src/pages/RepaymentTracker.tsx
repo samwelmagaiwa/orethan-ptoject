@@ -200,17 +200,17 @@ const RepaymentTracker = () => {
   return (
     <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: "#1e293b" }}>
 
-      {/* ─── STAT CARDS — REDESIGNED, ICON LEFT, SINGLE ROW (TOP) ─── */}
-      <div style={{ ...CARD_STYLE, display: "flex", alignItems: "stretch", width: "100%", overflowX: "auto", marginBottom: SECTION_GAP }}>
+      {/* ─── STAT CARDS — SEPARATE BORDERED CARDS WITH SPACING (WRAPPING) ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
         {statCards.map((card, i) => (
           <div key={i} className="rt-stat-card"
-            style={{ flex: "1 1 0", minWidth: 150, padding: "1.15rem 1.1rem", display: "flex", alignItems: "center", gap: "0.85rem", borderLeft: i === 0 ? "none" : "1px solid #eef1f6", transition: "background 0.2s" }}>
-            <div style={{ width: 42, height: 42, borderRadius: "12px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(15,23,42,0.12)" }}>
-              <span style={{ transform: "scale(0.82)" }}>{card.icon}</span>
+            style={{ ...CARD_STYLE, padding: "1.15rem 1.2rem", display: "flex", alignItems: "center", gap: "0.85rem", transition: "all 0.2s" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "12px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(15,23,42,0.12)" }}>
+              <span style={{ transform: "scale(0.85)" }}>{card.icon}</span>
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#94a3b8", margin: "0 0 0.3rem", whiteSpace: "nowrap" }}>{card.label}</p>
-              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
+              <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#94a3b8", margin: "0 0 0.3rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.label}</p>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
             </div>
           </div>
         ))}
@@ -619,7 +619,7 @@ const RepaymentTracker = () => {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .rt-spin { animation: rt-spin 1s linear infinite; }
         @keyframes rt-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .rt-stat-card:hover { background: #fafbff; }
+        .rt-stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(15,23,42,0.1) !important; border-color: #dbe2ea !important; }
         .rt-table-row { border-bottom: 1px solid #f1f5f9; transition: all 0.15s; }
         .rt-table-row:hover { background: #fdfbf7; }
         .rt-table-row:hover .rt-avatar { background: white !important; color: #4f46e5 !important; border-color: #6366f1 !important; }
