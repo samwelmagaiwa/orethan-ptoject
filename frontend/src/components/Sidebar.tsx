@@ -23,7 +23,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [user, setUser] = useState<User | null>(null);
   const [showLoans, setShowLoans] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
-  const [showRepayment, setShowRepayment] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -123,16 +122,10 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <>
               <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
               {canAccessRepayment && (
-                <>
-                  <div className="sd-item" onClick={() => setShowRepayment(!showRepayment)} title="Dashboard">
-                    <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
-                    {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
-                    {!isCollapsed && <span className={`sd-item__arrow ${showRepayment ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
-                  </div>
-                  {showRepayment && !isCollapsed && (
-                    <div className="sd-sub"><div className="sd-sub__link" onClick={() => navigate("/repayment-tracker")}>View</div></div>
-                  )}
-                </>
+                <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
+                </div>
               )}
               {canAccessUsers && (
                 <>

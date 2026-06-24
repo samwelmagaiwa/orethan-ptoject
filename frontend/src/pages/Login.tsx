@@ -51,33 +51,8 @@ function Login() {
         localStorage.setItem("user", JSON.stringify(res.data.user));
       }
 
-      const role = res.data.user?.role;
-
-      // 🔥 REDIRECT BY ROLE
-      switch (role) {
-        case "admin":
-          navigate("/repayment-tracker");
-          break;
-
-        case "loan_officer":
-          navigate("/repayment-tracker");
-          break;
-
-        case "loan_manager":
-          navigate("/repayment-tracker");
-          break;
-
-        case "general_manager":
-          navigate("/repayment-tracker");
-          break;
-
-        case "managing_director":
-          navigate("/repayment-tracker");
-          break;
-
-        default:
-          navigate("/repayment-tracker");
-      }
+      // Dashboard (repayment tracker) is the default entry after login
+      navigate("/repayment-tracker");
     } catch (err: any) {
       console.error("LOGIN ERROR:", err);
 
