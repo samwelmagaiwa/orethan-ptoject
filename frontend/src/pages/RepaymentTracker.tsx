@@ -153,49 +153,55 @@ const RepaymentTracker = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fdfbf7', padding: '1rem 1rem', fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: '#1e293b' }}>
 
-      {/* ─── HEADER ROW: STATS + ACTIONS ─── */}
-      <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
-
-        {/* COMPACT TOP STATS */}
-        <div style={{ display: 'flex', gap: '0.6rem', flex: 1, flexWrap: 'wrap' }}>
-          {statCards.map((card, i) => (
-            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-              style={{ background: 'white', borderRadius: 4, padding: '0.5rem 0.6rem', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.6rem', flex: '1 1 150px', height: '54px', minWidth: 0 }}
-              className="rt-stat-card">
-              <div style={{ width: 32, height: 32, borderRadius: 4, background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                {card.icon && <span style={{ transform: 'scale(0.8)' }}>{card.icon}</span>}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#64748b', margin: 0 }}>{card.label.replace('TOTAL ', '')}</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{card.value}</h3>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+      {/* ─── HEADER + ACTIONS ─── */}
+      <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Repayment Tracker</h1>
+          <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>Monitor loan disbursements and repayments</p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '0.8rem' }}>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem', borderRadius: 4, background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', color: '#475569', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <RefreshCw size={14} className={loading ? "rt-spin" : ""} /> Refresh
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.2rem', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: '#475569', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <RefreshCw size={16} className={loading ? "rt-spin" : ""} /> Refresh
           </motion.button>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.2rem', borderRadius: 4, background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.25)' }}>
-            <ArrowUpRight size={14} /> Export
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.4rem', borderRadius: '8px', background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+            <ArrowUpRight size={16} /> Export
           </motion.button>
         </div>
+      </motion.div>
+
+      {/* ─── STAT CARDS GRID ─── */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ staggerChildren: 0.05 }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
+        {statCards.map((card, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}
+            className="rt-stat-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', margin: 0, marginBottom: '0.5rem' }}>{card.label}</p>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{card.value}</h3>
+              </div>
+              <div style={{ width: 44, height: 44, borderRadius: '10px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                {card.icon && <span style={{ transform: 'scale(1)' }}>{card.icon}</span>}
+              </div>
+            </div>
+            <div style={{ opacity: 0.6 }}>
+              {card.spark}
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
 
       {/* ─── MAIN CONTENT ─── */}
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>
 
         {/* ─── CHARTS ROW ─── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
           {/* Overview Area Chart */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-            style={{ background: 'white', borderRadius: 4, padding: '1.5rem', border: '1px solid #e2e8f0' }}>
+            style={{ background: 'white', borderRadius: '12px', padding: '2rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Activity size={18} style={{ color: '#6366f1' }} />
@@ -238,7 +244,7 @@ const RepaymentTracker = () => {
 
           {/* Portfolio Health Donut */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-            style={{ background: 'white', borderRadius: 4, padding: '1.5rem', border: '1px solid #e2e8f0' }}>
+            style={{ background: 'white', borderRadius: '12px', padding: '2rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <PieIcon size={18} style={{ color: '#10b981' }} />
@@ -280,7 +286,7 @@ const RepaymentTracker = () => {
         </div>
 
         {/* ─── TABLE SECTION ─── */}
-        <div style={{ background: 'white', borderRadius: 4, padding: '1.5rem', border: '1px solid #e2e8f0' }}>
+        <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1.2rem' }}>
             <div style={{ display: 'flex', background: '#f8fafc', padding: 4, borderRadius: 4 }}>
               <button onClick={() => setActiveTab('active')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', borderRadius: 4, border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', background: activeTab === 'active' ? 'white' : 'transparent', color: activeTab === 'active' ? '#4f46e5' : '#64748b', boxShadow: activeTab === 'active' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
