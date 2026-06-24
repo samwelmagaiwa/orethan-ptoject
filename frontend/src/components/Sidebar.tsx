@@ -73,7 +73,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const userRole = user?.role;
   const canAccessLoansForm = userRole === "admin" || userRole === "loan_officer";
   const canAccessUsers = userRole === "admin";
-  const canAccessRepayment = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "loan_officer" || userRole === "managing_director" || userRole === "finance_officer";
   const canAccessApprovals = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
   const canAccessManagement = canAccessApprovals;
   const canAccessFinance = userRole === "admin" || userRole === "finance_officer";
@@ -117,22 +116,17 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         {/* ── Navigation ── */}
         <nav className="sd-nav">
-          {/* Internal */}
-          {(canAccessUsers || canAccessRepayment) && (
-            <>
+          {/* Internal — Dashboard & Overdue Management are visible to ALL roles */}
+          <>
               <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
-              {canAccessRepayment && (
-                <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
-                </div>
-              )}
-              {canAccessRepayment && (
-                <div className={`sd-item ${isActive("/overdue-management") ? "sd-item--active" : ""}`} onClick={() => navigate("/overdue-management")} title="Usimamizi wa Madeni">
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Usimamizi wa Madeni</span>}
-                </div>
-              )}
+              <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
+              </div>
+              <div className={`sd-item ${isActive("/overdue-management") ? "sd-item--active" : ""}`} onClick={() => navigate("/overdue-management")} title="Usimamizi wa Madeni">
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">Usimamizi wa Madeni</span>}
+              </div>
               {canAccessUsers && (
                 <>
                   <div className="sd-item" onClick={handleUsersClick} title="Users">
@@ -147,7 +141,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </>
               )}
             </>
-          )}
 
           {/* Loan Operations */}
           {canAccessLoansForm && (
