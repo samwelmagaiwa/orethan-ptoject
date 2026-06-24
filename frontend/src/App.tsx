@@ -888,6 +888,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div style={{
         flex: 1,
+        minWidth: 0,
         marginLeft: isCollapsed ? "80px" : "260px",
         display: "flex",
         flexDirection: "column",
@@ -898,7 +899,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         <Navbar />
         <div style={{
           flex: 1,
+          minWidth: 0,
           padding: "10px 16px",
+          overflowX: "hidden",
           overflowY: "auto"
         }}>
           {children}
