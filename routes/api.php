@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\TestController;
 use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\OverdueController;
+use App\Http\Controllers\Api\V1\PaymentRequestController;
 
 Route::prefix('v1')->group(function () {
 
@@ -91,6 +92,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/overdue/loans', [OverdueController::class, 'loans']);
         Route::get('/overdue/loans/{loanId}/activities', [OverdueController::class, 'activities']);
         Route::post('/overdue/loans/{loanId}/activities', [OverdueController::class, 'storeActivity']);
+
+        // ========== PAYMENT REQUESTS (OMBI LA MALIPO + IDHINI) ==========
+        Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
+        Route::post('/payment-requests', [PaymentRequestController::class, 'store']);
+        Route::post('/payment-requests/upload-invoice', [PaymentRequestController::class, 'uploadInvoice']);
+        Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
+        Route::post('/payment-requests/{id}/approve', [PaymentRequestController::class, 'approve']);
+        Route::post('/payment-requests/{id}/reject', [PaymentRequestController::class, 'reject']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========
