@@ -153,18 +153,6 @@ const RepaymentTracker = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fdfbf7', padding: '1rem 1rem', fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: '#1e293b' }}>
 
-      {/* ─── ACTIONS ─── */}
-      <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem', gap: '0.8rem' }}>
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.2rem', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: '#475569', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <RefreshCw size={16} className={loading ? "rt-spin" : ""} /> Refresh
-        </motion.button>
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.4rem', borderRadius: '8px', background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
-          <ArrowUpRight size={16} /> Export
-        </motion.button>
-      </motion.div>
-
       {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS ─── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         style={{ display: 'flex', alignItems: 'stretch', width: '100%', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
@@ -200,11 +188,21 @@ const RepaymentTracker = () => {
                 <Activity size={18} style={{ color: '#6366f1' }} />
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Overview</h2>
               </div>
-              <select style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.4rem 0.8rem', color: '#64748b', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
-                <option>Last 6 months</option>
-                <option>Last 12 months</option>
-                <option>This Year</option>
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <select style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.4rem 0.8rem', color: '#64748b', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
+                  <option>Last 6 months</option>
+                  <option>Last 12 months</option>
+                  <option>This Year</option>
+                </select>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', color: '#475569', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <RefreshCw size={14} className={loading ? "rt-spin" : ""} /> Refresh
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem', borderRadius: '8px', background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+                  <ArrowUpRight size={14} /> Export
+                </motion.button>
+              </div>
             </div>
             <div style={{ height: 280, width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
