@@ -104,14 +104,91 @@ const DisburseLoan = () => {
 
     const methodLabel = PAYMENT_METHODS.find((m) => m.value === method)?.label || method;
 
-    const buildVoucherBody = () => `<h2>Borrower Information</h2><table><tr><td>Customer Name</td><td>${loan.name}</td></tr><tr><td>Customer Number</td><td>${preview.customer_number}</td></tr><tr><td>Loan Account Number</td><td>${accountNumber}</td></tr><tr><td>Loan Product</td><td>${preview.product_name}</td></tr><tr><td>Loan Officer</td><td>${preview.officer_name}</td></tr><tr><td>Branch</td><td>${preview.branch}</td></tr></table><h2>Loan Charges</h2><table><tr><td>Approved Loan Amount</td><td>${fmt(approvedAmount)}</td></tr><tr><td>Processing Fee</td><td>${fmt(processingFee)}</td></tr><tr><td>Insurance Fee</td><td>${fmt(insuranceFee)}</td></tr><tr><td>Other Charges</td><td>${fmt(otherCharges)}</td></tr><tr><td>Total Charges</td><td>${fmt(totalCharges)}</td></tr></table><div class="net-box"><span>Net Disbursement</span><div>${fmt(netAmount)}</div></div><h2>Payment Information</h2><table><tr><td>Payment Method</td><td>${methodLabel}</td></tr>${transactionRef ? `<tr><td>Transaction Reference</td><td>${transactionRef}</td></tr>` : ""}<tr><td>Disbursement Date</td><td>${fmtDate(disbursementDate)}</td></tr><tr><td>Narration</td><td>${narration}</td></tr></table>`;
+    const buildVoucherBody = () => `
+<div style="position:relative;max-width:700px;margin:0 auto;border:2px solid #1e3a5f;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.05)">
+  <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);padding:40px 48px;color:white;position:relative">
+    <div style="position:absolute;top:10px;right:20px;font-size:80px;font-weight:900;opacity:0.08;color:white">VOUCHER</div>
+    <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:8px">Loan Disbursement</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px">Payment Voucher</div>
+    <div style="margin-top:24px;display:flex;gap:40px">
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6">Reference No</div><div style="font-size:14px;font-weight:700;margin-top:4px;font-family:monospace">${accountNumber}</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6">Effective Date</div><div style="font-size:14px;font-weight:700;margin-top:4px">${fmtDate(disbursementDate)}</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6">Issue Branch</div><div style="font-size:14px;font-weight:700;margin-top:4px">${preview.branch}</div></div>
+    </div>
+  </div>
+  <div style="padding:40px 48px">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#2563eb;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #eff6ff">Borrower Information</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:32px"><tbody>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:40%">Customer Full Name</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${loan.name}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Client Identification</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${preview.customer_number}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Loan Product Type</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${preview.product_name}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Relationship Officer</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${preview.officer_name}</td></tr>
+    </tbody></table>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#059669;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0fdf4">Financial Authorization</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px"><tbody>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:40%">Approved Capital</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${fmt(approvedAmount)}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Processing Fee (${capturedProcessingFeePercent}%)</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${fmt(processingFee)}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Insurance (Credit Life)</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${fmt(insuranceFee)}</td></tr>
+       <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Facility Charges</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${fmt(otherCharges)}</td></tr>
+      <tr style="background:#fff1f2"><td style="padding:14px 12px;font-size:13px;font-weight:700;color:#e11d48;border-radius:10px 0 0 10px">Total Statutory Deductions</td><td style="padding:14px 12px;font-size:14px;font-weight:800;color:#e11d48;text-align:right;border-radius:0 10px 10px 0">${fmt(totalCharges)}</td></tr>
+    </tbody></table>
+    <div style="background:linear-gradient(135deg,#059669 0%,#065f46 100%);padding:32px;border-radius:16px;display:flex;justify-content:space-between;align-items:center;color:white;margin:24px 0;box-shadow:0 8px 20px rgba(5,150,105,0.2)">
+      <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;opacity:0.8;font-weight:700">Net Payable Amount</div><div style="font-size:28px;font-weight:900;margin-top:6px;letter-spacing:-0.5px">${fmt(netAmount)}</div></div>
+      <div style="font-size:44px;opacity:0.25">🏦</div>
+    </div>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#d97706;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #fffbeb">Execution Details</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:32px"><tbody>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:40%">Disbursement Channel</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${methodLabel}</td></tr>
+      ${transactionRef ? `<tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Transaction Reference</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace">${transactionRef}</td></tr>` : ""}
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b">Instruction Narration</td><td style="padding:12px 0;font-size:13px;font-weight:600;color:#0f172a;text-align:right;line-height:1.4">${narration}</td></tr>
+    </tbody></table>
+    <div style="margin-top:80px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px">
+      <div style="text-align:center"><div style="border-top:2px solid #0f172a;padding-top:16px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Treasury Approval</div></div>
+      <div style="text-align:center"><div style="border-top:2px solid #0f172a;padding-top:16px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Operations Manager</div></div>
+      <div style="text-align:center"><div style="border-top:2px solid #0f172a;padding-top:16px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Client Acknowledgement</div></div>
+    </div>
+    <div style="margin-top:40px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:20px;font-style:italic">This document remains valid only when officially stamped and authorized. System REF: ${accountNumber} Generated on ${new Date().toLocaleString("en-GB")}</div>
+  </div>
+</div>`;
 
-    const buildAgreementBody = () => `<h2>Loan Agreement Summary</h2><table><tr><td>Customer Name</td><td>${loan.name}</td></tr><tr><td>Loan Account Number</td><td>${accountNumber}</td></tr><tr><td>Approved Amount</td><td>${fmt(approvedAmount)}</td></tr><tr><td>Interest Rate</td><td>${summary?.interest_rate}% / monthly</td></tr><tr><td>Loan Period</td><td>${summary?.term_months} Months</td></tr><tr><td>Repayment Frequency</td><td>${summary?.frequency}</td></tr><tr><td>Number of Installments</td><td>${summary?.total_installments}</td></tr><tr><td>Monthly Installment</td><td>${fmt(summary?.installment_amount)}</td></tr><tr><td>First Payment Date</td><td>${fmtDate(summary?.first_payment_date)}</td></tr><tr><td>Final Payment Date</td><td>${fmtDate(summary?.final_payment_date)}</td></tr></table><div class="sign-grid"><div class="sign-box">Customer Signature</div><div class="sign-box">Loan Officer Signature</div></div>`;
+    const buildAgreementBody = () => `
+<div style="position:relative;max-width:700px;margin:0 auto;border:2px solid #5b21b6;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.05)">
+  <div style="background:linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%);padding:40px 48px;color:white;position:relative">
+    <div style="position:absolute;top:10px;right:20px;font-size:75px;font-weight:900;opacity:0.1;color:white">CONTRACT</div>
+    <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:8px">Financial Service Agreement</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px">Loan Facility Agreement</div>
+    <div style="margin-top:24px;display:flex;gap:40px">
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6">Contract No</div><div style="font-size:14px;font-weight:700;margin-top:4px;font-family:monospace">${accountNumber}</div></div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6">Primary Borrower</div><div style="font-size:14px;font-weight:700;margin-top:4px">${loan.name}</div></div>
+    </div>
+  </div>
+  <div style="padding:40px 48px">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#7c3aed;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f5f3ff">Agreed Facility Terms</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:32px"><tbody>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:40%">Disbursed Principal</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${fmt(approvedAmount)}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Interest Rate (Fix)</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${summary?.interest_rate}% / Monthly</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Tenure Period</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${summary?.term_months} Months</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Repayment Mode</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${summary?.frequency}</td></tr>
+      <tr><td style="padding:12px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9">Total Installments</td><td style="padding:12px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right">${summary?.total_installments} Units</td></tr>
+      <tr style="background:#f5f3ff"><td style="padding:14px 12px;font-size:13px;font-weight:800;color:#5b21b6;border-radius:10px 0 0 10px">Scheduled Installment</td><td style="padding:14px 12px;font-size:16px;font-weight:900;color:#5b21b6;text-align:right;border-radius:0 10px 10px 0">${fmt(summary?.installment_amount)}</td></tr>
+    </tbody></table>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#059669;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0fdf4">Critical Timeline</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px">
+      <div style="background:#f0fdf4;padding:24px;border-radius:16px;border:1px solid #bbf7d0;box-shadow:0 4px 12px rgba(5,150,105,0.05)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700">Commencement Date</div><div style="font-size:18px;font-weight:900;color:#059669;margin-top:8px">${fmtDate(summary?.first_payment_date)}</div></div>
+      <div style="background:#fff1f2;padding:24px;border-radius:16px;border:1px solid #fecaca;box-shadow:0 4px 12px rgba(225,29,72,0.05)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700">Maturity Date</div><div style="font-size:18px;font-weight:900;color:#e11d48;margin-top:8px">${fmtDate(summary?.final_payment_date)}</div></div>
+    </div>
+    <div style="margin-top:80px;display:grid;grid-template-columns:1fr 1fr;gap:60px">
+      <div style="text-align:center"><div style="border-top:2px solid #0f172a;padding-top:16px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Client Signature</div></div>
+      <div style="text-align:center"><div style="border-top:2px solid #0f172a;padding-top:16px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Branch Manager</div></div>
+    </div>
+    <div style="margin-top:40px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:20px;font-style:italic">This agreement is legally binding. Reference: ${accountNumber} Generated on ${new Date().toLocaleString("en-GB")}</div>
+  </div>
+</div>`;
 
     const printDoc = (title: string, body: string) => {
-        const win = window.open("", "_blank", "width=800,height=1000");
+        const win = window.open("", "_blank", "width=850,height=1000");
         if (!win) return;
-        win.document.write(`<html><head><title>${title}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');body{font-family:'Inter', sans-serif;padding:60px;color:#0f172a;background:#fff; line-height:1.5}h1{font-size:28px;font-weight:800;margin:0}h2{font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:#1e3a8a;margin:40px 0 16px;background:#f8fafc;padding:8px 12px;border-radius:8px}table{width:100%;border-collapse:collapse;margin-bottom:16px}td{padding:14px 12px;font-size:14px;border-bottom:1px solid #f1f5f9}td:first-child{color:#64748b;font-weight:500;width:40%} td:last-child{text-align:right;font-weight:700;color:#0f172a}.net-box{background:#0f172a;padding:24px;border-radius:16px;display:flex;justify-content:space-between;margin:32px 0;color:white;font-weight:800}.sign-grid{margin-top:100px;display:grid;grid-template-columns:1fr 1fr;gap:60px}.sign-box{border-top:1px solid #0f172a;padding-top:12px;font-size:13px;text-align:center}</style></head><body>${body}</body></html>`);
+        win.document.write(`<html><head><title>${title}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;padding:60px 40px;color:#0f172a;background:#f8fafc;line-height:1.5;display:flex;justify-content:center;align-items:flex-start}@media print{body{padding:0;background:#fff}}</style></head><body>${body}</body></html>`);
         win.document.close();
         win.focus();
         setTimeout(() => win.print(), 500);

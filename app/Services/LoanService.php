@@ -253,6 +253,7 @@ class LoanService
                 'payment_date' => $data['payment_date'],
                 'payment_method' => $data['payment_method'],
                 'transaction_id' => $data['transaction_id'] ?? null,
+                'collector_name' => $data['received_by'] ?? ($user->name ?? null),
                 'notes' => $data['notes'] ?? null,
                 'receipt_number' => 'RCP-' . strtoupper(uniqid()),
                 'status' => 'completed',

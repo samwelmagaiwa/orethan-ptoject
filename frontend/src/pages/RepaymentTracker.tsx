@@ -7,8 +7,9 @@ import {
 } from "recharts";
 import {
   RefreshCw, TrendingUp, DollarSign, PieChart as PieIcon,
-  Users, CheckCircle2, AlertCircle,
-  Search, Filter, ArrowUpRight, Clock, MoreVertical, Activity
+  Users, CheckCircle2, AlertCircle, Wallet, AlertTriangle,
+  Search, Filter, ArrowUpRight, Clock, Activity,
+  Calendar, Send, Eye, Phone, X
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -25,15 +26,26 @@ interface Loan {
 }
 
 interface TrendPoint { name: string; disbursed: number; repaid: number; outstanding: number; }
+interface TodayCollection { loan_id: number; schedule_id: number; customer: string; loan_number: string; due_amount: number; due_date: string; status: string; }
+interface OverdueRow { loan_id: number; schedule_id: number; customer: string; loan_number: string; days_late: number; amount: number; penalty: number; due_date: string; }
+interface ScheduleRow { installment_number: number; due_date: string; principal_amount: number; interest_amount: number; total_amount: number; amount_paid: number; status: string; }
 interface Summary {
+  total_expected: number;
+  total_collected: number;
+  outstanding_balance: number;
+  overdue_amount: number;
+  collection_rate: number;
+  active_loans: number;
+  defaulted_loans: number;
   total_disbursed: number;
   total_repaid: number;
   outstanding: number;
   repayment_rate: number;
-  active_loans: number;
   completed_loans: number;
   monthly_trend: TrendPoint[];
   portfolio_health: { current: number; at_risk: number; critical: number };
+  today_collections: TodayCollection[];
+  overdue_list: OverdueRow[];
 }
 
 const fmt = (val: any) => `TZS ${Math.round(Number(val) || 0).toLocaleString()}`;
@@ -59,9 +71,15 @@ const RepaymentTracker = () => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [transactionId, setTransactionId] = useState("");
+  const [receivedBy, setReceivedBy] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+
+  // Repayment schedule modal
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleData, setScheduleData] = useState<{ customer: string; loan_number: string; schedule: ScheduleRow[] } | null>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -107,26 +125,58 @@ const RepaymentTracker = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
-        amount, payment_date: paymentDate, payment_method: paymentMethod, transaction_id: transactionId, notes,
+        amount, payment_date: paymentDate, payment_method: paymentMethod, transaction_id: transactionId, received_by: receivedBy, notes,
       }, { headers: { Authorization: `Bearer ${token}` } });
       setShowRepaymentModal(false);
-      setRepaymentAmount(""); setTransactionId(""); setNotes("");
+      setRepaymentAmount(""); setTransactionId(""); setReceivedBy(""); setNotes("");
       await loadData();
     } catch (e) {
       console.error(e);
     }
   };
 
-  const repRate = summary?.repayment_rate || 0;
+  // Open the collection form, optionally prefilled with a due amount.
+  const openCollect = (loanId: number, customer: string, balance: number, prefillAmount?: number) => {
+    setSelectedLoan({ id: loanId, name: customer, amount: 0, total_paid: 0, remaining_balance: balance, payment_status: "pending", status: "disbursed" });
+    setRepaymentAmount(prefillAmount ? String(prefillAmount) : "");
+    setPaymentDate(new Date().toISOString().split("T")[0]);
+    setShowRepaymentModal(true);
+  };
+
+  // Load and show a loan's repayment schedule.
+  const viewSchedule = async (loanId: number) => {
+    setScheduleLoading(true);
+    setShowSchedule(true);
+    setScheduleData(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE}/loans/${loanId}/schedule`, { headers: { Authorization: `Bearer ${token}` } });
+      setScheduleData(res.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  const sendReminder = (customer: string) => {
+    alert(`Reminder queued for ${customer}.`);
+  };
+
+  const collectionRate = summary?.collection_rate || 0;
 
   const statCards = [
-    { label: "TOTAL DISBURSED", value: fmt(summary?.total_disbursed), icon: <DollarSign size={20} />, gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
-    { label: "TOTAL REPAID", value: fmt(summary?.total_repaid), icon: <TrendingUp size={20} />, gradient: "linear-gradient(135deg, #10b981, #34d399)" },
-    { label: "TOTAL OUTSTANDING", value: fmt(summary?.outstanding), icon: <AlertCircle size={20} />, gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
-    { label: "REPAYMENT RATE", value: `${repRate}%`, icon: <PieIcon size={20} />, gradient: "linear-gradient(135deg, #3b82f6, #60a5fa)" },
-    { label: "ACTIVE CLIENTS", value: activeLoans.length, icon: <Users size={20} />, gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)" },
-    { label: "COMPLETED", value: completedLoans.length, icon: <CheckCircle2 size={20} />, gradient: "linear-gradient(135deg, #f43f5e, #fb7185)" },
+    { label: "TOTAL EXPECTED", value: fmt(summary?.total_expected), icon: <DollarSign size={20} />, gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
+    { label: "TOTAL COLLECTED", value: fmt(summary?.total_collected), icon: <TrendingUp size={20} />, gradient: "linear-gradient(135deg, #10b981, #34d399)" },
+    { label: "OUTSTANDING BALANCE", value: fmt(summary?.outstanding_balance), icon: <Wallet size={20} />, gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
+    { label: "OVERDUE AMOUNT", value: fmt(summary?.overdue_amount), icon: <AlertTriangle size={20} />, gradient: "linear-gradient(135deg, #ef4444, #f87171)" },
+    { label: "COLLECTION RATE", value: `${collectionRate}%`, icon: <PieIcon size={20} />, gradient: "linear-gradient(135deg, #3b82f6, #60a5fa)" },
+    { label: "ACTIVE LOANS", value: summary?.active_loans ?? activeLoans.length, icon: <Users size={20} />, gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)" },
+    { label: "DEFAULTED LOANS", value: summary?.defaulted_loans ?? 0, icon: <AlertCircle size={20} />, gradient: "linear-gradient(135deg, #f43f5e, #fb7185)" },
   ];
+
+  const todayCollections = summary?.today_collections || [];
+  const overdueList = summary?.overdue_list || [];
 
   const overviewData = useMemo(() => (summary?.monthly_trend || []).map((m) => ({
     name: m.name,
@@ -248,6 +298,95 @@ const RepaymentTracker = () => {
         </div>
       </div>
 
+      {/* ─── TODAY'S COLLECTION + OVERDUE MANAGEMENT ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
+        {/* Today's Collection */}
+        <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <Calendar size={18} style={{ color: "#6366f1" }} />
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>Today's Collection</h2>
+            <span style={{ marginLeft: "auto", background: "#eef2ff", color: "#6366f1", padding: "2px 10px", borderRadius: 20, fontSize: "0.7rem", fontWeight: 800 }}>{todayCollections.length} due</span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Customer", "Loan No", "Due Amount", "Due Date", "Action"].map((h, i) => (
+                    <th key={h} style={{ textAlign: i >= 2 && i <= 3 ? "left" : i === 4 ? "right" : "left", padding: "0 0.6rem 0.7rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {todayCollections.map((row) => (
+                  <tr key={row.schedule_id} className="rt-table-row">
+                    <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{row.customer}</td>
+                    <td style={{ padding: "0.8rem 0.6rem", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", whiteSpace: "nowrap" }}>{row.loan_number}</td>
+                    <td style={{ padding: "0.8rem 0.6rem", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(row.due_amount)}</td>
+                    <td style={{ padding: "0.8rem 0.6rem", fontSize: "0.78rem", color: "#64748b" }}>{new Date(row.due_date).toLocaleDateString("en-GB")}</td>
+                    <td style={{ padding: "0.8rem 0.6rem" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
+                        <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} title="Collect Payment"
+                          style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>Collect</button>
+                        <button onClick={() => sendReminder(row.customer)} title="Send Reminder"
+                          style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}><Send size={13} /></button>
+                        <button onClick={() => viewSchedule(row.loan_id)} title="View Loan"
+                          style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}><Eye size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {todayCollections.length === 0 && (
+                  <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>No payments due today</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Overdue Management */}
+        <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <AlertTriangle size={18} style={{ color: "#ef4444" }} />
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>Overdue Management</h2>
+            <span style={{ marginLeft: "auto", background: "#fef2f2", color: "#ef4444", padding: "2px 10px", borderRadius: 20, fontSize: "0.7rem", fontWeight: 800 }}>{overdueList.length} late</span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Customer", "Days Late", "Amount", "Penalty", "Action"].map((h, i) => (
+                    <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0 0.6rem 0.7rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {overdueList.map((row) => (
+                  <tr key={row.schedule_id} className="rt-table-row">
+                    <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{row.customer}</td>
+                    <td style={{ padding: "0.8rem 0.6rem" }}>
+                      <span style={{ background: "#fef2f2", color: "#dc2626", padding: "2px 9px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800 }}>{row.days_late}d</span>
+                    </td>
+                    <td style={{ padding: "0.8rem 0.6rem", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(row.amount)}</td>
+                    <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#ef4444", fontSize: "0.82rem" }}>{fmt(row.penalty)}</td>
+                    <td style={{ padding: "0.8rem 0.6rem" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
+                        <button onClick={() => sendReminder(row.customer)} title="Contact"
+                          style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.35rem 0.7rem", borderRadius: 8, background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}><Phone size={12} /> Contact</button>
+                        <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} title="Collect with penalty"
+                          style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>Collect</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {overdueList.length === 0 && (
+                  <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>No overdue payments 🎉</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       {/* ─── TABLE SECTION ─── */}
       <div style={{ ...CARD_STYLE, padding: "1.5rem" }}>
         {/* TABLE TOOLBAR (NARROW) */}
@@ -341,8 +480,8 @@ const RepaymentTracker = () => {
                               Add Payment
                             </button>
                           )}
-                          <button style={{ padding: "0.4rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
-                            <MoreVertical size={14} />
+                          <button onClick={() => viewSchedule(loan.id)} title="View schedule" style={{ padding: "0.4rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+                            <Eye size={14} />
                           </button>
                         </div>
                       </td>
@@ -394,20 +533,82 @@ const RepaymentTracker = () => {
                       style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.85rem", color: "#e2e8f0", boxSizing: "border-box" }} />
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "0.6rem", marginTop: "1rem" }}>
-                  {["cash", "bank", "mobile"].map((m) => (
-                    <button key={m} onClick={() => setPaymentMethod(m)}
-                      style={{ flex: 1, padding: "0.75rem", borderRadius: 12, border: paymentMethod === m ? "2px solid #6366f1" : "1px solid #1e293b", background: paymentMethod === m ? "rgba(99,102,241,0.1)" : "#0b1120", fontWeight: 700, textTransform: "capitalize", cursor: "pointer", color: paymentMethod === m ? "#a5b4fc" : "#64748b", fontSize: "0.8rem", transition: "all 0.2s" }}>
-                      {m}
+                <label style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#64748b", display: "block", margin: "1rem 0 0.4rem" }}>Payment Method</label>
+                <div style={{ display: "flex", gap: "0.6rem" }}>
+                  {[["cash", "Cash"], ["bank_transfer", "Bank"], ["mobile_money", "Mobile Money"]].map(([val, lbl]) => (
+                    <button key={val} onClick={() => setPaymentMethod(val)}
+                      style={{ flex: 1, padding: "0.75rem", borderRadius: 12, border: paymentMethod === val ? "2px solid #6366f1" : "1px solid #1e293b", background: paymentMethod === val ? "rgba(99,102,241,0.1)" : "#0b1120", fontWeight: 700, cursor: "pointer", color: paymentMethod === val ? "#a5b4fc" : "#64748b", fontSize: "0.78rem", transition: "all 0.2s" }}>
+                      {lbl}
                     </button>
                   ))}
                 </div>
-                <input type="text" placeholder="Reference / Transaction ID" value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
+                <input type="text" placeholder="Transaction Reference" value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
+                  style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", marginTop: "0.8rem", boxSizing: "border-box" }} />
+                <input type="text" placeholder="Received By" value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)}
+                  style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", marginTop: "0.8rem", boxSizing: "border-box" }} />
+                <input type="text" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)}
                   style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", marginTop: "0.8rem", boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: "0.8rem", marginTop: "1.5rem" }}>
                   <button onClick={() => setShowRepaymentModal(false)} style={{ flex: 1, padding: "0.85rem", borderRadius: 14, background: "#1e293b", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "#94a3b8" }}>Discard</button>
                   <button onClick={submitRepayment} style={{ flex: 2, padding: "0.85rem", borderRadius: 14, background: "#6366f1", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 20px rgba(99,102,241,0.35)" }}>Confirm Payment</button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── REPAYMENT SCHEDULE MODAL ─── */}
+      <AnimatePresence>
+        {showSchedule && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              style={{ width: "100%", maxWidth: 760, maxHeight: "85vh", borderRadius: 20, background: "white", boxShadow: "0 25px 60px rgba(0,0,0,0.4)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", padding: "1.3rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.2rem", fontWeight: 900, margin: 0 }}>Repayment Schedule</h2>
+                  {scheduleData && <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", opacity: 0.85, fontWeight: 600 }}>{scheduleData.customer} • {scheduleData.loan_number}</p>}
+                </div>
+                <button onClick={() => setShowSchedule(false)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+              </div>
+              <div style={{ padding: "1.2rem 1.5rem", overflowY: "auto" }}>
+                {scheduleLoading ? (
+                  <div style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Loading schedule...</div>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        {["Installment", "Due Date", "Principal", "Interest", "Total", "Status"].map((h, i) => (
+                          <th key={h} style={{ textAlign: i >= 2 && i <= 4 ? "right" : "left", padding: "0 0.7rem 0.8rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(scheduleData?.schedule || []).map((s) => {
+                        const cfg = s.status === "paid"
+                          ? { bg: "#ecfdf5", color: "#059669", label: "🟢 Paid" }
+                          : s.status === "overdue"
+                            ? { bg: "#fef2f2", color: "#dc2626", label: "🔴 Overdue" }
+                            : { bg: "#fffbeb", color: "#d97706", label: "🟡 Pending" };
+                        return (
+                          <tr key={s.installment_number} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "0.8rem 0.7rem", fontWeight: 800, color: "#334155", fontSize: "0.82rem" }}>#{s.installment_number}</td>
+                            <td style={{ padding: "0.8rem 0.7rem", fontSize: "0.8rem", color: "#64748b" }}>{new Date(s.due_date).toLocaleDateString("en-GB")}</td>
+                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{fmt(s.principal_amount)}</td>
+                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: "0.82rem" }}>{fmt(s.interest_amount)}</td>
+                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(s.total_amount)}</td>
+                            <td style={{ padding: "0.8rem 0.7rem" }}>
+                              <span style={{ background: cfg.bg, color: cfg.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, whiteSpace: "nowrap" }}>{cfg.label}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {scheduleData && scheduleData.schedule.length === 0 && (
+                        <tr><td colSpan={6} style={{ textAlign: "center", padding: "2.5rem", color: "#94a3b8", fontWeight: 600 }}>No schedule generated for this loan</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </motion.div>
           </div>

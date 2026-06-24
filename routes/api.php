@@ -73,6 +73,9 @@ Route::prefix('v1')->group(function () {
         // ROUTE YA KUONA HISTORIA YA MALIPO YA MKOPO MMOJA
         Route::get('/loans/{id}/repayments', [LoanController::class, 'repaymentHistory']);
 
+        // REPAYMENT SCHEDULE YA MKOPO MMOJA (installments + live status)
+        Route::get('/loans/{id}/schedule', [LoanController::class, 'loanSchedule']);
+
         // ROUTE YA KUREKODI MALIPO MPYA
         Route::post('/loans/{id}/repay', [LoanController::class, 'recordRepayment']);
 

@@ -488,6 +488,7 @@ class LoanController extends Controller
             'payment_date' => 'required|date',
             'payment_method' => 'required|string|in:cash,bank_transfer,mobile_money',
             'transaction_id' => 'nullable|string',
+            'received_by' => 'nullable|string|max:120',
             'notes' => 'nullable|string',
         ]);
 
@@ -524,15 +525,38 @@ class LoanController extends Controller
         }
     }
 
+    // Penalty rate applied to an overdue installment amount (flat % once overdue).
+    const PENALTY_RATE = 0.04;
+    // A loan is considered defaulted once an installment is this many days overdue.
+    const DEFAULT_DAYS = 90;
+
     // GET REPAYMENT SUMMARY - FIXED DECIMAL ISSUE
     public function repaymentSummary()
     {
         try {
-            // Only loans actually disbursed by finance/cashier count as "disbursed"
-            // (status 'approved' = MD-approved but awaiting disbursement, not yet paid out)
+            // Only loans actually disbursed by finance/cashier count (status 'approved'
+            // = MD-approved but awaiting disbursement, not yet paid out).
             $totalDisbursed = round(Loan::whereNotNull('disbursed_at')->sum('amount'));
-            $totalRepaid = round(Loan::whereNotNull('disbursed_at')->sum('total_paid'));
-            $outstanding = $totalDisbursed - $totalRepaid;
+            $totalCollected = round(Loan::whereNotNull('disbursed_at')->sum('total_paid'));
+
+            // Total Expected Repayment = principal + interest across all disbursed schedules.
+            $totalExpected = round(\App\Models\LoanSchedule::whereHas('loan', function ($q) {
+                $q->whereNotNull('disbursed_at');
+            })->sum('total_amount'));
+            // Fall back to principal when no schedules exist yet.
+            if ($totalExpected <= 0) {
+                $totalExpected = $totalDisbursed;
+            }
+
+            $outstandingBalance = max($totalExpected - $totalCollected, 0);
+
+            // Overdue amount = unpaid portion of installments past their due date.
+            $overdueAmount = round(\App\Models\LoanSchedule::whereHas('loan', function ($q) {
+                $q->whereNotNull('disbursed_at');
+            })
+                ->where('status', '!=', 'paid')
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->sum(DB::raw('total_amount - COALESCE(amount_paid, 0)')));
 
             $activeLoans = Loan::whereNotNull('disbursed_at')
                 ->whereIn('payment_status', ['pending', 'partial'])
@@ -540,30 +564,147 @@ class LoanController extends Controller
 
             $completedLoans = Loan::where('payment_status', 'completed')->count();
 
+            // Defaulted = disbursed loans with an installment overdue beyond DEFAULT_DAYS.
+            $defaultedLoans = Loan::whereNotNull('disbursed_at')
+                ->whereHas('schedules', function ($q) {
+                    $q->where('status', '!=', 'paid')
+                        ->whereDate('due_date', '<', now()->subDays(self::DEFAULT_DAYS)->toDateString());
+                })->count();
+
             return response()->json([
-                'total_disbursed' => (float) $totalDisbursed,
-                'total_repaid' => (float) $totalRepaid,
-                'outstanding' => (float) $outstanding,
-                'repayment_rate' => $totalDisbursed > 0 ? round(($totalRepaid / $totalDisbursed) * 100, 2) : 0,
+                'total_expected' => (float) $totalExpected,
+                'total_collected' => (float) $totalCollected,
+                'outstanding_balance' => (float) $outstandingBalance,
+                'overdue_amount' => (float) $overdueAmount,
+                'collection_rate' => $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100, 2) : 0,
                 'active_loans' => $activeLoans,
+                'defaulted_loans' => $defaultedLoans,
+                // legacy fields still consumed elsewhere
+                'total_disbursed' => (float) $totalDisbursed,
+                'total_repaid' => (float) $totalCollected,
+                'outstanding' => (float) $outstandingBalance,
+                'repayment_rate' => $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100, 2) : 0,
                 'completed_loans' => $completedLoans,
-                'overdue_loans' => 0,
                 'monthly_trend' => $this->buildMonthlyTrend(),
                 'portfolio_health' => $this->buildPortfolioHealth(),
+                'today_collections' => $this->buildTodayCollections(),
+                'overdue_list' => $this->buildOverdueList(),
             ]);
         } catch (\Exception $e) {
             \Log::error('repaymentSummary error: ' . $e->getMessage());
             return response()->json([
+                'total_expected' => 0,
+                'total_collected' => 0,
+                'outstanding_balance' => 0,
+                'overdue_amount' => 0,
+                'collection_rate' => 0,
+                'active_loans' => 0,
+                'defaulted_loans' => 0,
                 'total_disbursed' => 0,
                 'total_repaid' => 0,
                 'outstanding' => 0,
                 'repayment_rate' => 0,
-                'active_loans' => 0,
                 'completed_loans' => 0,
-                'overdue_loans' => 0,
                 'monthly_trend' => [],
                 'portfolio_health' => ['current' => 0, 'at_risk' => 0, 'critical' => 0],
+                'today_collections' => [],
+                'overdue_list' => [],
             ]);
+        }
+    }
+
+    /**
+     * Installments due today (disbursed loans, not yet fully paid).
+     */
+    private function buildTodayCollections(): array
+    {
+        $schedules = \App\Models\LoanSchedule::with('loan.customer')
+            ->whereHas('loan', function ($q) {
+                $q->whereNotNull('disbursed_at');
+            })
+            ->where('status', '!=', 'paid')
+            ->whereDate('due_date', now()->toDateString())
+            ->orderBy('due_date')
+            ->get();
+
+        return $schedules->map(function ($s) {
+            $loan = $s->loan;
+            return [
+                'loan_id' => $loan?->id,
+                'schedule_id' => $s->id,
+                'customer' => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
+                'loan_number' => $loan?->loan_account_number ?? ('LN-' . $loan?->id),
+                'due_amount' => round((float) $s->total_amount - (float) ($s->amount_paid ?? 0)),
+                'due_date' => $s->due_date?->toDateString(),
+                'status' => 'pending',
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Overdue installments with auto-calculated penalty and days late.
+     */
+    private function buildOverdueList(): array
+    {
+        $schedules = \App\Models\LoanSchedule::with('loan.customer')
+            ->whereHas('loan', function ($q) {
+                $q->whereNotNull('disbursed_at');
+            })
+            ->where('status', '!=', 'paid')
+            ->whereDate('due_date', '<', now()->toDateString())
+            ->orderBy('due_date')
+            ->get();
+
+        return $schedules->map(function ($s) {
+            $loan = $s->loan;
+            $amount = round((float) $s->total_amount - (float) ($s->amount_paid ?? 0));
+            $daysLate = \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
+            return [
+                'loan_id' => $loan?->id,
+                'schedule_id' => $s->id,
+                'customer' => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
+                'loan_number' => $loan?->loan_account_number ?? ('LN-' . $loan?->id),
+                'days_late' => $daysLate,
+                'amount' => $amount,
+                'penalty' => round($amount * self::PENALTY_RATE),
+                'due_date' => $s->due_date?->toDateString(),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Repayment schedule for a single loan with live display status.
+     */
+    public function loanSchedule($id)
+    {
+        try {
+            $loan = Loan::with('schedules')->findOrFail($id);
+            $today = now()->toDateString();
+
+            $rows = $loan->schedules()->orderBy('installment_number')->get()->map(function ($s) use ($today) {
+                $status = $s->status === 'paid'
+                    ? 'paid'
+                    : ($s->due_date && $s->due_date->toDateString() < $today ? 'overdue' : 'pending');
+                return [
+                    'installment_number' => $s->installment_number,
+                    'due_date' => $s->due_date?->toDateString(),
+                    'principal_amount' => round((float) $s->principal_amount),
+                    'interest_amount' => round((float) $s->interest_amount),
+                    'total_amount' => round((float) $s->total_amount),
+                    'amount_paid' => round((float) ($s->amount_paid ?? 0)),
+                    'status' => $status,
+                ];
+            });
+
+            return response()->json([
+                'loan_id' => $loan->id,
+                'customer' => $loan->name,
+                'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                'schedule' => $rows,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('loanSchedule error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to load schedule'], 500);
         }
     }
 
