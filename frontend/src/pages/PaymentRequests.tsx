@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck } from "lucide-react";
+import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, User, ClipboardList, Wallet, Banknote, CreditCard, PenLine, ArrowRight } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
@@ -132,52 +132,124 @@ const PaymentRequests = () => {
       </div>
 
       {tab === "new" ? (
-        <div style={{ ...CARD, padding: "1.6rem", maxWidth: 900 }}>
-          <Row n="01" label="Full Name of Applicant"><input style={inp} value={form.applicant_name} onChange={(e) => set("applicant_name", e.target.value)} /></Row>
-          <Row n="02" label="Department"><input style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Row>
-          <Row n="03" label="Section"><input style={inp} value={form.section} onChange={(e) => set("section", e.target.value)} /></Row>
-          <Row n="04" label="Type of Activity for Payment">
-            <select style={inp} value={form.activity_type} onChange={(e) => set("activity_type", e.target.value)}>
-              {ACTIVITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <textarea style={{ ...inp, marginTop: "0.5rem", resize: "vertical" }} rows={2} placeholder="State details..." value={form.activity_detail} onChange={(e) => set("activity_detail", e.target.value)} />
-          </Row>
-          <Row n="05" label="Name of Loan Applicant"><input style={inp} value={form.loan_applicant_name} onChange={(e) => set("loan_applicant_name", e.target.value)} placeholder="(if applicable)" /></Row>
-          <Row n="06" label="Other Invoice (attach)">
-            <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.55rem 1rem", borderRadius: 10, border: "1px dashed #cbd5e1", background: "#f8fafc", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#475569" }}>
-              <Paperclip size={15} /> {uploading ? "Uploading..." : form.invoice_path ? "Attached ✓" : "Choose file"}
-              <input type="file" hidden accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => e.target.files?.[0] && uploadInvoice(e.target.files[0])} />
-            </label>
-          </Row>
-          <Row n="07" label="Mode of Payment">
-            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-              {[["cash", "Cash"], ["cheque", "Cheque"], ["bank_transfer", "Bank Transfer"]].map(([v, l]) => (
-                <button key={v} onClick={() => set("mode_of_payment", v)} style={{ flex: 1, minWidth: 120, padding: "0.6rem", borderRadius: 10, border: form.mode_of_payment === v ? "2px solid #4f46e5" : "1px solid #e2e8f0", background: form.mode_of_payment === v ? "#eef2ff" : "#f8fafc", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", color: form.mode_of_payment === v ? "#4f46e5" : "#64748b" }}>{l}</button>
+        <div style={{ ...CARD, maxWidth: 960, overflow: "hidden", padding: 0 }}>
+          {/* HERO HEADER */}
+          <div style={{ position: "relative", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%)", padding: "1.7rem 1.8rem", color: "white", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -40, right: -20, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+            <div style={{ position: "absolute", bottom: -60, right: 80, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <FileText size={26} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 900, letterSpacing: "-0.02em" }}>Request Form for Payment</h2>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.82rem", opacity: 0.9, fontWeight: 500 }}>Complete the form below — it routes automatically through the approval chain.</p>
+              </div>
+            </div>
+            {/* Approval chain pills */}
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1.1rem", flexWrap: "wrap" }}>
+              {["You", "Loan Manager", "General Manager", "Managing Director"].map((s, i) => (
+                <span key={s} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ background: "rgba(255,255,255,0.16)", padding: "0.25rem 0.7rem", borderRadius: 20, fontSize: "0.68rem", fontWeight: 700 }}>{s}</span>
+                  {i < 3 && <ArrowRight size={13} style={{ opacity: 0.7 }} />}
+                </span>
               ))}
             </div>
-          </Row>
-          <Row n="08" label="Details for Payment">
-            <input style={inp} placeholder="Payable to..." value={form.payable_to} onChange={(e) => set("payable_to", e.target.value)} />
-            <textarea style={{ ...inp, marginTop: "0.5rem", resize: "vertical" }} rows={2} placeholder="Amount payable (in words)..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} />
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-              <select style={{ ...inp, width: 100 }} value={form.currency} onChange={(e) => set("currency", e.target.value)}>
-                <option value="TZS">TZS</option><option value="USD">USD</option>
-              </select>
-              <input type="number" style={inp} placeholder="Amount in figures" value={form.amount} onChange={(e) => set("amount", e.target.value)} />
-            </div>
-          </Row>
-          <Row n="09" label="Signature & Date of Applicant">
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <input style={inp} placeholder="Applicant signature (name)" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} />
-              <input type="date" style={{ ...inp, maxWidth: 180 }} value={form.applicant_date} onChange={(e) => set("applicant_date", e.target.value)} />
-            </div>
-          </Row>
+          </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.7rem", marginTop: "1.2rem" }}>
-            <button onClick={() => setForm(blank)} style={{ padding: "0.7rem 1.4rem", borderRadius: 10, background: "#f1f5f9", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "#64748b" }}>Clear</button>
-            <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.7rem 1.6rem", borderRadius: 10, background: "#4f46e5", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(79,70,229,0.3)" }}>
-              <Send size={16} /> {submitting ? "Submitting..." : "Submit Request"}
-            </button>
+          <div style={{ padding: "1.6rem 1.8rem" }}>
+            {/* SECTION 1: APPLICANT */}
+            <Section icon={<User size={16} />} title="Applicant Information" hint="01 – 03">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+                <Field label="Full Name of Applicant" required><input className="pr-input" style={inp} value={form.applicant_name} onChange={(e) => set("applicant_name", e.target.value)} /></Field>
+                <Field label="Department"><input className="pr-input" style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
+                <Field label="Section"><input className="pr-input" style={inp} value={form.section} onChange={(e) => set("section", e.target.value)} /></Field>
+              </div>
+            </Section>
+
+            {/* SECTION 2: ACTIVITY */}
+            <Section icon={<ClipboardList size={16} />} title="Payment Activity" hint="04 – 06">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+                <Field label="Type of Activity for Payment" required>
+                  <select className="pr-input" style={inp} value={form.activity_type} onChange={(e) => set("activity_type", e.target.value)}>
+                    {ACTIVITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <Field label="Name of Loan Applicant"><input className="pr-input" style={inp} value={form.loan_applicant_name} onChange={(e) => set("loan_applicant_name", e.target.value)} placeholder="(if applicable)" /></Field>
+              </div>
+              <div style={{ marginTop: "1rem" }}>
+                <Field label="Activity Details"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="State details..." value={form.activity_detail} onChange={(e) => set("activity_detail", e.target.value)} /></Field>
+              </div>
+              <div style={{ marginTop: "1rem" }}>
+                <Field label="Other Invoice (attach)">
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem", padding: "0.7rem 1.1rem", borderRadius: 12, border: `1.5px dashed ${form.invoice_path ? "#10b981" : "#cbd5e1"}`, background: form.invoice_path ? "#ecfdf5" : "#f8fafc", cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, color: form.invoice_path ? "#059669" : "#475569", transition: "all 0.2s" }}>
+                    <Paperclip size={16} /> {uploading ? "Uploading..." : form.invoice_path ? "Invoice attached ✓" : "Choose file (PDF / image)"}
+                    <input type="file" hidden accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => e.target.files?.[0] && uploadInvoice(e.target.files[0])} />
+                  </label>
+                </Field>
+              </div>
+            </Section>
+
+            {/* SECTION 3: PAYMENT DETAILS */}
+            <Section icon={<Wallet size={16} />} title="Payment Details" hint="07 – 08">
+              <Field label="Mode of Payment" required>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.7rem" }}>
+                  {[["cash", "Cash", <Banknote size={18} />], ["cheque", "Cheque", <FileText size={18} />], ["bank_transfer", "Bank Transfer", <CreditCard size={18} />]].map(([v, l, ic]: any) => {
+                    const on = form.mode_of_payment === v;
+                    return (
+                      <button key={v} type="button" onClick={() => set("mode_of_payment", v)}
+                        style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.85rem 1rem", borderRadius: 12, border: on ? "2px solid #4f46e5" : "1.5px solid #e2e8f0", background: on ? "#eef2ff" : "white", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: on ? "#4f46e5" : "#64748b", transition: "all 0.2s", boxShadow: on ? "0 4px 12px rgba(79,70,229,0.18)" : "none" }}>
+                        <span style={{ display: "flex", color: on ? "#4f46e5" : "#94a3b8" }}>{ic}</span> {l}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <div style={{ marginTop: "1rem" }}>
+                <Field label="Payable To" required><input className="pr-input" style={inp} placeholder="Beneficiary name..." value={form.payable_to} onChange={(e) => set("payable_to", e.target.value)} /></Field>
+              </div>
+              <div style={{ marginTop: "1rem" }}>
+                <Field label="Amount Payable (in words)"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="e.g. One million Tanzanian shillings only..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} /></Field>
+              </div>
+              {/* Prominent amount block */}
+              <div style={{ marginTop: "1rem", background: "linear-gradient(135deg,#f8fafc,#eef2ff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "1rem 1.2rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                <div style={{ flex: "0 0 auto" }}>
+                  <label style={lblStyle}>Currency</label>
+                  <select className="pr-input" style={{ ...inp, width: 110 }} value={form.currency} onChange={(e) => set("currency", e.target.value)}>
+                    <option value="TZS">TZS</option><option value="USD">USD</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label style={lblStyle}>Amount in Figures <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input type="number" className="pr-input" style={{ ...inp, fontSize: "1.4rem", fontWeight: 900, color: "#0f172a", padding: "0.7rem 0.9rem" }} placeholder="0" value={form.amount} onChange={(e) => set("amount", e.target.value)} />
+                </div>
+                <div style={{ flex: "0 0 auto", textAlign: "right" }}>
+                  <span style={{ display: "block", fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Total Requested</span>
+                  <span style={{ fontSize: "1.25rem", fontWeight: 900, color: "#4f46e5" }}>{fmt(form.amount, form.currency)}</span>
+                </div>
+              </div>
+            </Section>
+
+            {/* SECTION 4: SIGNATURE */}
+            <Section icon={<PenLine size={16} />} title="Applicant Authorization" hint="09" last>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem" }}>
+                <Field label="Applicant Signature (name)"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} /></Field>
+                <Field label="Date"><input type="date" className="pr-input" style={inp} value={form.applicant_date} onChange={(e) => set("applicant_date", e.target.value)} /></Field>
+              </div>
+            </Section>
+
+            {/* FOOTER ACTIONS */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", marginTop: "1.6rem", paddingTop: "1.3rem", borderTop: "1px solid #f1f5f9", flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.74rem", color: "#94a3b8", fontWeight: 600 }}>
+                <ShieldCheck size={15} style={{ color: "#10b981" }} /> Submitting routes this request to the Loan Manager for review.
+              </span>
+              <div style={{ display: "flex", gap: "0.7rem" }}>
+                <button onClick={() => setForm(blank)} style={{ padding: "0.75rem 1.5rem", borderRadius: 12, background: "#f1f5f9", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "#64748b" }}>Clear</button>
+                <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.8rem", borderRadius: 12, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 8px 20px rgba(79,70,229,0.35)" }}>
+                  <Send size={16} /> {submitting ? "Submitting..." : "Submit Request"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -294,6 +366,8 @@ const PaymentRequests = () => {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .pr-row { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
         .pr-row:hover { background: #fdfbf7; }
+        .pr-input { transition: border-color 0.18s, box-shadow 0.18s, background 0.18s; }
+        .pr-input:focus { border-color: #6366f1 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 6px; }
       `}</style>
@@ -301,13 +375,23 @@ const PaymentRequests = () => {
   );
 };
 
-const Row = ({ n, label, children }: { n: string; label: string; children: React.ReactNode }) => (
-  <div style={{ display: "flex", gap: "1rem", padding: "0.8rem 0", borderBottom: "1px solid #f5f7fa", alignItems: "flex-start" }}>
-    <div style={{ width: 30, height: 30, borderRadius: 8, background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.75rem", flexShrink: 0 }}>{n}</div>
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</label>
-      {children}
+const lblStyle: React.CSSProperties = { display: "block", fontSize: "0.68rem", fontWeight: 700, color: "#64748b", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.4px" };
+
+const Section = ({ icon, title, hint, last, children }: { icon: React.ReactNode; title: string; hint?: string; last?: boolean; children: React.ReactNode }) => (
+  <div style={{ paddingBottom: last ? 0 : "1.5rem", marginBottom: last ? 0 : "1.5rem", borderBottom: last ? "none" : "1px solid #f1f5f9" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
+      <div style={{ width: 32, height: 32, borderRadius: 9, background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</div>
+      <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>{title}</h3>
+      {hint && <span style={{ marginLeft: "auto", fontSize: "0.66rem", fontWeight: 700, color: "#cbd5e1", letterSpacing: "1px" }}>{hint}</span>}
     </div>
+    {children}
+  </div>
+);
+
+const Field = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
+  <div>
+    <label style={lblStyle}>{label} {required && <span style={{ color: "#ef4444" }}>*</span>}</label>
+    {children}
   </div>
 );
 
