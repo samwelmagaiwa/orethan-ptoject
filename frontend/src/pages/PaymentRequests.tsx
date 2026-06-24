@@ -132,7 +132,7 @@ const PaymentRequests = () => {
       </div>
 
       {tab === "new" ? (
-        <div style={{ ...CARD, maxWidth: 960, overflow: "hidden", padding: 0 }}>
+        <div style={{ ...CARD, width: "100%", overflow: "hidden", padding: 0 }}>
           {/* HERO HEADER */}
           <div style={{ position: "relative", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%)", padding: "1.7rem 1.8rem", color: "white", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -40, right: -20, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
@@ -160,7 +160,7 @@ const PaymentRequests = () => {
           <div style={{ padding: "1.6rem 1.8rem" }}>
             {/* SECTION 1: APPLICANT */}
             <Section icon={<User size={16} />} title="Applicant Information" hint="01 – 03">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+              <div className="pr-grid3">
                 <Field label="Full Name of Applicant" required><input className="pr-input" style={inp} value={form.applicant_name} onChange={(e) => set("applicant_name", e.target.value)} /></Field>
                 <Field label="Department"><input className="pr-input" style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
                 <Field label="Section"><input className="pr-input" style={inp} value={form.section} onChange={(e) => set("section", e.target.value)} /></Field>
@@ -169,71 +169,67 @@ const PaymentRequests = () => {
 
             {/* SECTION 2: ACTIVITY */}
             <Section icon={<ClipboardList size={16} />} title="Payment Activity" hint="04 – 06">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+              <div className="pr-grid3">
                 <Field label="Type of Activity for Payment" required>
                   <select className="pr-input" style={inp} value={form.activity_type} onChange={(e) => set("activity_type", e.target.value)}>
                     {ACTIVITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </Field>
                 <Field label="Name of Loan Applicant"><input className="pr-input" style={inp} value={form.loan_applicant_name} onChange={(e) => set("loan_applicant_name", e.target.value)} placeholder="(if applicable)" /></Field>
-              </div>
-              <div style={{ marginTop: "1rem" }}>
-                <Field label="Activity Details"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="State details..." value={form.activity_detail} onChange={(e) => set("activity_detail", e.target.value)} /></Field>
-              </div>
-              <div style={{ marginTop: "1rem" }}>
                 <Field label="Other Invoice (attach)">
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem", padding: "0.7rem 1.1rem", borderRadius: 12, border: `1.5px dashed ${form.invoice_path ? "#10b981" : "#cbd5e1"}`, background: form.invoice_path ? "#ecfdf5" : "#f8fafc", cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, color: form.invoice_path ? "#059669" : "#475569", transition: "all 0.2s" }}>
-                    <Paperclip size={16} /> {uploading ? "Uploading..." : form.invoice_path ? "Invoice attached ✓" : "Choose file (PDF / image)"}
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.62rem 1rem", borderRadius: 10, border: `1.5px dashed ${form.invoice_path ? "#10b981" : "#cbd5e1"}`, background: form.invoice_path ? "#ecfdf5" : "#f8fafc", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: form.invoice_path ? "#059669" : "#475569", transition: "all 0.2s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Paperclip size={16} /> {uploading ? "Uploading..." : form.invoice_path ? "Attached ✓" : "Choose file"}
                     <input type="file" hidden accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => e.target.files?.[0] && uploadInvoice(e.target.files[0])} />
                   </label>
                 </Field>
+                <div className="pr-span-all">
+                  <Field label="Activity Details"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="State details..." value={form.activity_detail} onChange={(e) => set("activity_detail", e.target.value)} /></Field>
+                </div>
               </div>
             </Section>
 
             {/* SECTION 3: PAYMENT DETAILS */}
             <Section icon={<Wallet size={16} />} title="Payment Details" hint="07 – 08">
               <Field label="Mode of Payment" required>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0.7rem" }}>
+                <div className="pr-grid3">
                   {[["cash", "Cash", <Banknote size={18} />], ["cheque", "Cheque", <FileText size={18} />], ["bank_transfer", "Bank Transfer", <CreditCard size={18} />]].map(([v, l, ic]: any) => {
                     const on = form.mode_of_payment === v;
                     return (
                       <button key={v} type="button" onClick={() => set("mode_of_payment", v)}
-                        style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.85rem 1rem", borderRadius: 12, border: on ? "2px solid #4f46e5" : "1.5px solid #e2e8f0", background: on ? "#eef2ff" : "white", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: on ? "#4f46e5" : "#64748b", transition: "all 0.2s", boxShadow: on ? "0 4px 12px rgba(79,70,229,0.18)" : "none" }}>
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.85rem 1rem", borderRadius: 12, border: on ? "2px solid #4f46e5" : "1.5px solid #e2e8f0", background: on ? "#eef2ff" : "white", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: on ? "#4f46e5" : "#64748b", transition: "all 0.2s", boxShadow: on ? "0 4px 12px rgba(79,70,229,0.18)" : "none" }}>
                         <span style={{ display: "flex", color: on ? "#4f46e5" : "#94a3b8" }}>{ic}</span> {l}
                       </button>
                     );
                   })}
                 </div>
               </Field>
-              <div style={{ marginTop: "1rem" }}>
+              <div className="pr-grid3" style={{ marginTop: "1.1rem" }}>
                 <Field label="Payable To" required><input className="pr-input" style={inp} placeholder="Beneficiary name..." value={form.payable_to} onChange={(e) => set("payable_to", e.target.value)} /></Field>
-              </div>
-              <div style={{ marginTop: "1rem" }}>
-                <Field label="Amount Payable (in words)"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="e.g. One million Tanzanian shillings only..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} /></Field>
-              </div>
-              {/* Prominent amount block */}
-              <div style={{ marginTop: "1rem", background: "linear-gradient(135deg,#f8fafc,#eef2ff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "1rem 1.2rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                <div style={{ flex: "0 0 auto" }}>
-                  <label style={lblStyle}>Currency</label>
-                  <select className="pr-input" style={{ ...inp, width: 110 }} value={form.currency} onChange={(e) => set("currency", e.target.value)}>
+                <Field label="Currency">
+                  <select className="pr-input" style={inp} value={form.currency} onChange={(e) => set("currency", e.target.value)}>
                     <option value="TZS">TZS</option><option value="USD">USD</option>
                   </select>
+                </Field>
+                <Field label="Amount in Figures" required><input type="number" className="pr-input" style={{ ...inp, fontWeight: 800 }} placeholder="0" value={form.amount} onChange={(e) => set("amount", e.target.value)} /></Field>
+                <div className="pr-span-all">
+                  <Field label="Amount Payable (in words)"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="e.g. One million Tanzanian shillings only..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} /></Field>
                 </div>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <label style={lblStyle}>Amount in Figures <span style={{ color: "#ef4444" }}>*</span></label>
-                  <input type="number" className="pr-input" style={{ ...inp, fontSize: "1.4rem", fontWeight: 900, color: "#0f172a", padding: "0.7rem 0.9rem" }} placeholder="0" value={form.amount} onChange={(e) => set("amount", e.target.value)} />
-                </div>
-                <div style={{ flex: "0 0 auto", textAlign: "right" }}>
-                  <span style={{ display: "block", fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Total Requested</span>
-                  <span style={{ fontSize: "1.25rem", fontWeight: 900, color: "#4f46e5" }}>{fmt(form.amount, form.currency)}</span>
-                </div>
+              </div>
+              {/* Live total banner */}
+              <div style={{ marginTop: "1.1rem", background: "linear-gradient(135deg,#eef2ff,#faf5ff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "1rem 1.3rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.82rem", fontWeight: 700, color: "#475569" }}>
+                  <Wallet size={18} style={{ color: "#4f46e5" }} /> Total Amount Requested
+                </span>
+                <span style={{ fontSize: "1.6rem", fontWeight: 900, color: "#4f46e5", letterSpacing: "-0.02em" }}>{fmt(form.amount, form.currency)}</span>
               </div>
             </Section>
 
             {/* SECTION 4: SIGNATURE */}
             <Section icon={<PenLine size={16} />} title="Applicant Authorization" hint="09" last>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem" }}>
-                <Field label="Applicant Signature (name)"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} /></Field>
+              <div className="pr-grid3">
+                <div style={{ gridColumn: "span 2" }}>
+                  <Field label="Applicant Signature (name)"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} /></Field>
+                </div>
                 <Field label="Date"><input type="date" className="pr-input" style={inp} value={form.applicant_date} onChange={(e) => set("applicant_date", e.target.value)} /></Field>
               </div>
             </Section>
@@ -368,6 +364,10 @@ const PaymentRequests = () => {
         .pr-row:hover { background: #fdfbf7; }
         .pr-input { transition: border-color 0.18s, box-shadow 0.18s, background 0.18s; }
         .pr-input:focus { border-color: #6366f1 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
+        .pr-span-all { grid-column: 1 / -1; }
+        @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 600px) { .pr-grid3 { grid-template-columns: 1fr; } }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 6px; }
       `}</style>
