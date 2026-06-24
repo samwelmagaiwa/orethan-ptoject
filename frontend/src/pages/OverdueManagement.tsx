@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend,
 } from "recharts";
 import {
   AlertTriangle, Wallet, Coins, Users, CalendarClock, CalendarDays,
@@ -144,6 +145,33 @@ const OverdueManagement = () => {
     { name: "90+", value: dash.aging["90+"], color: "#991b1b" },
   ] : [];
 
+  // Mgawanyo wa hatari (Risk distribution) kutoka kwenye mikopo
+  const riskData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    loans.forEach((l) => { counts[l.risk] = (counts[l.risk] || 0) + 1; });
+    return Object.keys(RISK_META)
+      .filter((k) => counts[k])
+      .map((k) => ({ name: RISK_META[k].label, value: counts[k], color: RISK_META[k].color }));
+  }, [loans]);
+
+  // Mgawanyo wa hali (Status distribution) kutoka kwenye mikopo
+  const statusData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    loans.forEach((l) => { counts[l.status] = (counts[l.status] || 0) + 1; });
+    return Object.keys(counts).map((k) => ({
+      name: STATUS_META[k]?.label || k,
+      value: counts[k],
+      color: STATUS_META[k]?.color || "#94a3b8",
+    }));
+  }, [loans]);
+
+  // Ufanisi wa ukusanyaji (Collection performance) kwa chati ya pau
+  const performanceData = dash ? [
+    { name: "Urejeshaji", value: dash.recovery_rate ?? 0, color: "#10b981" },
+    { name: "Ufanisi", value: dash.collection_efficiency ?? 0, color: "#3b82f6" },
+    { name: "PAR", value: dash.par ?? 0, color: "#ef4444" },
+  ] : [];
+
   return (
     <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
@@ -169,18 +197,75 @@ const OverdueManagement = () => {
         ))}
       </div>
 
-      {/* AGING CHART */}
+      {/* CHATI ZA UCHAMBUZI (Aging bar + Risk pie + Status pie) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: GAP, marginBottom: GAP }}>
+        {/* Aging bar chart */}
+        <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
+          <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Uchambuzi wa Umri wa Madeni (Aging)</h2>
+          <div style={{ height: 220, width: "100%" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agingData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} allowDecimals={false} tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                <RechartsTooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {agingData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Risk distribution pie */}
+        <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
+          <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.5rem" }}>Mgawanyo wa Hatari</h2>
+          <div style={{ height: 220, width: "100%" }}>
+            {riskData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={riskData} cx="50%" cy="45%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {riskData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </div>
+        </div>
+
+        {/* Status distribution pie */}
+        <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
+          <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.5rem" }}>Mgawanyo wa Hali</h2>
+          <div style={{ height: 220, width: "100%" }}>
+            {statusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={statusData} cx="50%" cy="45%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {statusData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </div>
+        </div>
+      </div>
+
+      {/* CHATI YA UFANISI WA UKUSANYAJI */}
       <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", marginBottom: GAP }}>
-        <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Uchambuzi wa Umri wa Madeni (Aging)</h2>
+        <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Ufanisi wa Ukusanyaji na Urejeshaji (%)</h2>
         <div style={{ height: 200, width: "100%" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={agingData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} allowDecimals={false} tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <RechartsTooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {agingData.map((d, i) => <Cell key={i} fill={d.color} />)}
+            <BarChart data={performanceData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+              <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }} width={90} />
+              <RechartsTooltip cursor={{ fill: "#f8fafc" }} formatter={(v: any) => `${v}%`} contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={26}>
+                {performanceData.map((d, i) => <Cell key={i} fill={d.color} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -328,6 +413,12 @@ const OverdueManagement = () => {
 };
 
 const inp: React.CSSProperties = { width: "100%", padding: "0.6rem 0.7rem", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.8rem", color: "#1e293b", boxSizing: "border-box", fontFamily: "inherit" };
+
+const EmptyChart = () => (
+  <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontWeight: 600, fontSize: "0.78rem" }}>
+    Hakuna data ya kuonyesha
+  </div>
+);
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
