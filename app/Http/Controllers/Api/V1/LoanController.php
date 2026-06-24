@@ -544,6 +544,8 @@ class LoanController extends Controller
                 'active_loans' => $activeLoans,
                 'completed_loans' => $completedLoans,
                 'overdue_loans' => 0,
+                'monthly_trend' => $this->buildMonthlyTrend(),
+                'portfolio_health' => $this->buildPortfolioHealth(),
             ]);
         } catch (\Exception $e) {
             \Log::error('repaymentSummary error: ' . $e->getMessage());
@@ -555,8 +557,74 @@ class LoanController extends Controller
                 'active_loans' => 0,
                 'completed_loans' => 0,
                 'overdue_loans' => 0,
+                'monthly_trend' => [],
+                'portfolio_health' => ['current' => 0, 'at_risk' => 0, 'critical' => 0],
             ]);
         }
+    }
+
+    /**
+     * Build the last 6 months of disbursed vs repaid totals from real records.
+     */
+    private function buildMonthlyTrend(): array
+    {
+        $months = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->copy()->subMonths($i);
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+
+            $disbursed = round(Loan::where('status', 'approved')
+                ->whereBetween('disbursed_at', [$start, $end])
+                ->sum('amount'));
+
+            $repaid = round(\App\Models\Repayment::where('status', 'completed')
+                ->whereBetween('payment_date', [$start, $end])
+                ->sum('amount'));
+
+            $months[] = [
+                'name' => $month->format('M'),
+                'disbursed' => (float) $disbursed,
+                'repaid' => (float) $repaid,
+                'outstanding' => (float) max($disbursed - $repaid, 0),
+            ];
+        }
+        return $months;
+    }
+
+    /**
+     * Classify active loans into Current / At Risk / Critical buckets (as %).
+     */
+    private function buildPortfolioHealth(): array
+    {
+        $loans = Loan::where('status', 'approved')
+            ->whereIn('payment_status', ['pending', 'partial', 'overdue'])
+            ->get(['payment_status', 'next_payment_date']);
+
+        $total = $loans->count();
+        if ($total === 0) {
+            return ['current' => 0, 'at_risk' => 0, 'critical' => 0];
+        }
+
+        $critical = 0;
+        $atRisk = 0;
+        $current = 0;
+        foreach ($loans as $loan) {
+            $due = $loan->next_payment_date ? \Carbon\Carbon::parse($loan->next_payment_date) : null;
+            if ($loan->payment_status === 'overdue' || ($due && $due->isPast() && $due->diffInDays(now()) > 30)) {
+                $critical++;
+            } elseif ($due && $due->isPast()) {
+                $atRisk++;
+            } else {
+                $current++;
+            }
+        }
+
+        return [
+            'current' => round(($current / $total) * 100),
+            'at_risk' => round(($atRisk / $total) * 100),
+            'critical' => round(($critical / $total) * 100),
+        ];
     }
 
 
