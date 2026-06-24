@@ -211,16 +211,16 @@ const PaymentRequests = () => {
                   </select>
                 </Field>
                 <Field label="Amount in Figures" required><input type="number" className="pr-input" style={{ ...inp, fontWeight: 800 }} placeholder="0" value={form.amount} onChange={(e) => set("amount", e.target.value)} /></Field>
-                <div className="pr-span-all">
-                  <Field label="Amount Payable (in words)"><textarea className="pr-input" style={{ ...inp, resize: "vertical" }} rows={2} placeholder="e.g. One million Tanzanian shillings only..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} /></Field>
+                <div style={{ gridColumn: "span 2" }}>
+                  <Field label="Amount Payable (in words)"><textarea className="pr-input" style={{ ...inp, resize: "vertical", minHeight: 92 }} rows={3} placeholder="e.g. One million Tanzanian shillings only..." value={form.amount_in_words} onChange={(e) => set("amount_in_words", e.target.value)} /></Field>
                 </div>
-              </div>
-              {/* Live total banner */}
-              <div style={{ marginTop: "1.1rem", background: "linear-gradient(135deg,#eef2ff,#faf5ff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "1rem 1.3rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.82rem", fontWeight: 700, color: "#475569" }}>
-                  <Wallet size={18} style={{ color: "#4f46e5" }} /> Total Amount Requested
-                </span>
-                <span style={{ fontSize: "1.6rem", fontWeight: 900, color: "#4f46e5", letterSpacing: "-0.02em" }}>{fmt(form.amount, form.currency)}</span>
+                <div>
+                  <label style={lblStyle}>Total Amount Requested</label>
+                  <div style={{ background: "linear-gradient(135deg,#eef2ff,#faf5ff)", border: "1px solid #e0e7ff", borderRadius: 12, padding: "0.9rem 1rem", minHeight: 92, display: "flex", flexDirection: "column", justifyContent: "center", gap: "0.3rem" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.66rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.4px" }}><Wallet size={14} style={{ color: "#4f46e5" }} /> Total</span>
+                    <span style={{ fontSize: "1.35rem", fontWeight: 900, color: "#4f46e5", letterSpacing: "-0.02em", wordBreak: "break-word" }}>{fmt(form.amount, form.currency)}</span>
+                  </div>
+                </div>
               </div>
             </Section>
 
