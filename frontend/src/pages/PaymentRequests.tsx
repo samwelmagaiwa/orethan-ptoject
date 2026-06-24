@@ -133,9 +133,6 @@ const PaymentRequests = () => {
 
       {tab === "new" ? (
         <div className="prf-page">
-          {/* TOP HEADING */}
-          <h2 className="prf-heading">Request Form for Payment</h2>
-
           <div className="prf-card">
             {/* Approval chain strip */}
             <div className="prf-chain">
@@ -358,8 +355,7 @@ const PaymentRequests = () => {
         @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 600px) { .pr-grid3 { grid-template-columns: 1fr; } }
 
-        .prf-page { background: #e8f0fe; border-radius: 14px; padding: 1.3rem; }
-        .prf-heading { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin: 0 0 1rem; }
+        .prf-page { background: #e8f0fe; border-radius: 14px; padding: 0.5rem; }
         .prf-card { background: #fff; border-radius: 14px; box-shadow: 0 10px 28px rgba(15,23,42,0.08); padding: 1.7rem 1.9rem; }
         .prf-banner { background: #102a43; color: #fff; padding: 0.7rem 1.2rem; border-radius: 8px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.6px; margin-bottom: 0.8rem; box-shadow: 0 4px 12px rgba(16,42,67,0.18); }
         .prf-chain { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
