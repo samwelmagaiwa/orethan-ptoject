@@ -151,18 +151,18 @@ const RepaymentTracker = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fdfbf7', padding: '1rem 1rem', fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: '#1e293b' }}>
+    <div style={{ minHeight: '100vh', background: '#fdfbf7', padding: '0.5rem 1rem 1rem', fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: '#1e293b' }}>
 
-      {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS ─── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', alignItems: 'stretch', width: '100%', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
+      {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS (STATIC) ─── */}
+      <div
+        style={{ display: 'flex', alignItems: 'stretch', width: '100%', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
         {statCards.map((card, i) => (
           <div key={i} className="rt-stat-card"
-            style={{ flex: '1 1 0', padding: '1.1rem 0.9rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '0.6rem', borderLeft: i === 0 ? 'none' : '1px solid #e2e8f0', minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#64748b', margin: 0, marginBottom: '0.45rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.label}</p>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.value}</h3>
+            style={{ flex: '1 1 auto', padding: '1.1rem 1rem', cursor: 'pointer', transition: 'background 0.2s', display: 'flex', flexDirection: 'column', gap: '0.6rem', borderLeft: i === 0 ? 'none' : '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.6rem' }}>
+              <div>
+                <p style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#64748b', margin: 0, marginBottom: '0.45rem', whiteSpace: 'nowrap' }}>{card.label}</p>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', margin: 0, whiteSpace: 'nowrap' }}>{card.value}</h3>
               </div>
               <div style={{ width: 34, height: 34, borderRadius: '8px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                 {card.icon && <span style={{ transform: 'scale(0.75)' }}>{card.icon}</span>}
@@ -173,7 +173,7 @@ const RepaymentTracker = () => {
             </div>
           </div>
         ))}
-      </motion.div>
+      </div>
 
       {/* ─── MAIN CONTENT ─── */}
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>
