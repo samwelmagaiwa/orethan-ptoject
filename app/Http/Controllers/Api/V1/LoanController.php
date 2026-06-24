@@ -409,8 +409,10 @@ class LoanController extends Controller
     // GET ACTIVE LOANS
     public function activeLoans()
     {
+        // Only disbursed loans are being repaid — approved-but-undisbursed loans
+        // are still awaiting the finance/cashier and must not show here.
         $loans = Loan::with(['customer', 'approvals.user', 'user'])
-            ->whereIn('status', ['approved', 'disbursed'])
+            ->whereNotNull('disbursed_at')
             ->where(function ($query) {
                 $query->where('payment_status', '!=', 'completed')
                     ->orWhereNull('payment_status');
@@ -526,11 +528,13 @@ class LoanController extends Controller
     public function repaymentSummary()
     {
         try {
-            $totalDisbursed = round(Loan::where('status', 'approved')->sum('amount'));
-            $totalRepaid = round(Loan::where('status', 'approved')->sum('total_paid'));
+            // Only loans actually disbursed by finance/cashier count as "disbursed"
+            // (status 'approved' = MD-approved but awaiting disbursement, not yet paid out)
+            $totalDisbursed = round(Loan::whereNotNull('disbursed_at')->sum('amount'));
+            $totalRepaid = round(Loan::whereNotNull('disbursed_at')->sum('total_paid'));
             $outstanding = $totalDisbursed - $totalRepaid;
 
-            $activeLoans = Loan::where('status', 'approved')
+            $activeLoans = Loan::whereNotNull('disbursed_at')
                 ->whereIn('payment_status', ['pending', 'partial'])
                 ->count();
 
