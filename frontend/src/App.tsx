@@ -23,6 +23,7 @@ import ManagingDirector from "./pages/ManagingDirector";
 import MyLoans from "./pages/MyLoans";
 
 import RepaymentTracker from "./pages/RepaymentTracker";
+import OverdueManagement from "./pages/OverdueManagement";
 import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
@@ -1034,6 +1035,16 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <RepaymentTracker />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/overdue-management"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <OverdueManagement />
                 </MainLayout>
               </ProtectedRoute>
             }

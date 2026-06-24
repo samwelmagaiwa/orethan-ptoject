@@ -140,6 +140,11 @@ class Loan extends Model
         return $this->hasMany(LoanSchedule::class);
     }
 
+    public function collectionActivities()
+    {
+        return $this->hasMany(CollectionActivity::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

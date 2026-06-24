@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\TestController;
 use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\OverdueController;
 
 Route::prefix('v1')->group(function () {
 
@@ -84,6 +85,12 @@ Route::prefix('v1')->group(function () {
 
         // ROUTE YA KUTENGUA MALIPO (FINANCE OFFICER/CASHIER ONLY, WITH AUTHORIZATION)
         Route::post('/repayments/{repaymentId}/reverse', [LoanController::class, 'reverseRepayment']);
+
+        // ========== OVERDUE MANAGEMENT (USIMAMIZI WA MADENI) ==========
+        Route::get('/overdue/dashboard', [OverdueController::class, 'dashboard']);
+        Route::get('/overdue/loans', [OverdueController::class, 'loans']);
+        Route::get('/overdue/loans/{loanId}/activities', [OverdueController::class, 'activities']);
+        Route::post('/overdue/loans/{loanId}/activities', [OverdueController::class, 'storeActivity']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========
