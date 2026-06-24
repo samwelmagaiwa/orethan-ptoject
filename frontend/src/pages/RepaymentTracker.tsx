@@ -150,7 +150,23 @@ const RepaymentTracker = () => {
   return (
     <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: "#1e293b" }}>
 
-      {/* ─── TOP TOOLBAR: TABS + SEARCH + FILTER ─── */}
+      {/* ─── STAT CARDS — REDESIGNED, ICON LEFT, SINGLE ROW (TOP) ─── */}
+      <div style={{ ...CARD_STYLE, display: "flex", alignItems: "stretch", width: "100%", overflowX: "auto", marginBottom: SECTION_GAP }}>
+        {statCards.map((card, i) => (
+          <div key={i} className="rt-stat-card"
+            style={{ flex: "1 1 0", minWidth: 150, padding: "1.15rem 1.1rem", display: "flex", alignItems: "center", gap: "0.85rem", borderLeft: i === 0 ? "none" : "1px solid #eef1f6", transition: "background 0.2s" }}>
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(15,23,42,0.12)" }}>
+              <span style={{ transform: "scale(0.82)" }}>{card.icon}</span>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#94a3b8", margin: "0 0 0.3rem", whiteSpace: "nowrap" }}>{card.label}</p>
+              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ─── TOOLBAR: TABS + SEARCH + FILTER (TOP OF OVERVIEW SECTION) ─── */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
         style={{ ...CARD_STYLE, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", padding: "0.7rem 0.9rem", marginBottom: SECTION_GAP }}>
         <div style={{ display: "flex", background: "#f1f5f9", padding: 5, borderRadius: 12, gap: 4 }}>
@@ -166,7 +182,7 @@ const RepaymentTracker = () => {
           })}
         </div>
 
-        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ position: "relative" }}>
             <Search size={15} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client..."
@@ -185,22 +201,6 @@ const RepaymentTracker = () => {
           </motion.button>
         </div>
       </motion.div>
-
-      {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS (STATIC) ─── */}
-      <div style={{ ...CARD_STYLE, display: "flex", alignItems: "stretch", width: "100%", overflowX: "auto", marginBottom: SECTION_GAP }}>
-        {statCards.map((card, i) => (
-          <div key={i} className="rt-stat-card"
-            style={{ flex: "1 1 0", minWidth: 150, padding: "1.1rem 1.1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.7rem", borderLeft: i === 0 ? "none" : "1px solid #eef1f6", transition: "background 0.2s" }}>
-            <div>
-              <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", color: "#64748b", margin: "0 0 0.45rem", whiteSpace: "nowrap" }}>{card.label}</p>
-              <h3 style={{ fontSize: "1.15rem", fontWeight: 900, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
-            </div>
-            <div style={{ width: 38, height: 38, borderRadius: "10px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
-              <span style={{ transform: "scale(0.8)" }}>{card.icon}</span>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* ─── CHARTS ROW ─── */}
       <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
