@@ -197,8 +197,8 @@ const OverdueManagement = () => {
         ))}
       </div>
 
-      {/* CHATI ZA UCHAMBUZI (Aging bar + Risk pie + Status pie) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: GAP, marginBottom: GAP }}>
+      {/* CHATI ZA UCHAMBUZI (Aging bar + Risk pie + Status pie) — flexible/wrapping */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: GAP, marginBottom: GAP }}>
         {/* Aging bar chart */}
         <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
           <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Uchambuzi wa Umri wa Madeni (Aging)</h2>
@@ -228,7 +228,7 @@ const OverdueManagement = () => {
                     {riskData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
                   </Pie>
                   <RechartsTooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600 }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600, maxHeight: 56, overflowY: "auto" }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <EmptyChart />}
@@ -246,7 +246,7 @@ const OverdueManagement = () => {
                     {statusData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
                   </Pie>
                   <RechartsTooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem" }} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600 }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: "0.68rem", fontWeight: 600, maxHeight: 56, overflowY: "auto" }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <EmptyChart />}
@@ -257,7 +257,7 @@ const OverdueManagement = () => {
       {/* CHATI YA UFANISI WA UKUSANYAJI */}
       <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", marginBottom: GAP }}>
         <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Ufanisi wa Ukusanyaji na Urejeshaji (%)</h2>
-        <div style={{ height: 200, width: "100%" }}>
+        <div style={{ height: Math.max(160, performanceData.length * 52), width: "100%" }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={performanceData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
