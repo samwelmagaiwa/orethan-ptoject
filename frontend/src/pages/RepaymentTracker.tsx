@@ -148,7 +148,7 @@ const RepaymentTracker = () => {
     .filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: "#1e293b" }}>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: "#1e293b" }}>
 
       {/* ─── TOP TOOLBAR: TABS + SEARCH + FILTER ─── */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
@@ -187,10 +187,10 @@ const RepaymentTracker = () => {
       </motion.div>
 
       {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS (STATIC) ─── */}
-      <div style={{ ...CARD_STYLE, display: "flex", alignItems: "stretch", width: "100%", marginBottom: SECTION_GAP }}>
+      <div style={{ ...CARD_STYLE, display: "flex", alignItems: "stretch", width: "100%", overflowX: "auto", marginBottom: SECTION_GAP }}>
         {statCards.map((card, i) => (
           <div key={i} className="rt-stat-card"
-            style={{ flex: "1 1 auto", padding: "1.1rem 1.1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.7rem", borderLeft: i === 0 ? "none" : "1px solid #eef1f6", transition: "background 0.2s" }}>
+            style={{ flex: "1 1 0", minWidth: 150, padding: "1.1rem 1.1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.7rem", borderLeft: i === 0 ? "none" : "1px solid #eef1f6", transition: "background 0.2s" }}>
             <div>
               <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", color: "#64748b", margin: "0 0 0.45rem", whiteSpace: "nowrap" }}>{card.label}</p>
               <h3 style={{ fontSize: "1.15rem", fontWeight: 900, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
@@ -205,7 +205,7 @@ const RepaymentTracker = () => {
       {/* ─── CHARTS ROW ─── */}
       <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
         {/* Overview Area Chart */}
-        <div style={{ ...CARD_STYLE, padding: "1.5rem" }}>
+        <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Activity size={18} style={{ color: "#6366f1" }} />
@@ -243,7 +243,7 @@ const RepaymentTracker = () => {
         </div>
 
         {/* Portfolio Health Donut */}
-        <div style={{ ...CARD_STYLE, padding: "1.5rem" }}>
+        <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <PieIcon size={18} style={{ color: "#10b981" }} />
             <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>Portfolio Health</h2>
