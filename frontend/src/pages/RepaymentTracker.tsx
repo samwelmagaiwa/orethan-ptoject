@@ -153,44 +153,37 @@ const RepaymentTracker = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fdfbf7', padding: '1rem 1rem', fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: '#1e293b' }}>
 
-      {/* ─── HEADER + ACTIONS ─── */}
-      <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Repayment Tracker</h1>
-          <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>Monitor loan disbursements and repayments</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.2rem', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: '#475569', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-            <RefreshCw size={16} className={loading ? "rt-spin" : ""} /> Refresh
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.4rem', borderRadius: '8px', background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
-            <ArrowUpRight size={16} /> Export
-          </motion.button>
-        </div>
+      {/* ─── ACTIONS ─── */}
+      <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem', gap: '0.8rem' }}>
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.2rem', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: '#475569', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <RefreshCw size={16} className={loading ? "rt-spin" : ""} /> Refresh
+        </motion.button>
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.4rem', borderRadius: '8px', background: '#6366f1', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+          <ArrowUpRight size={16} /> Export
+        </motion.button>
       </motion.div>
 
-      {/* ─── STAT CARDS GRID ─── */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ staggerChildren: 0.05 }}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
+      {/* ─── STAT CARDS — SINGLE ROW WITH VERTICAL DIVIDERS ─── */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        style={{ display: 'flex', alignItems: 'stretch', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '2rem', overflow: 'hidden' }}>
         {statCards.map((card, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}
-            className="rt-stat-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', margin: 0, marginBottom: '0.5rem' }}>{card.label}</p>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{card.value}</h3>
+          <div key={i} className="rt-stat-card"
+            style={{ flex: 1, padding: '1.4rem 1.2rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderLeft: i === 0 ? 'none' : '1px solid #e2e8f0', minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.6rem' }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#64748b', margin: 0, marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.label}</p>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.value}</h3>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: '10px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                {card.icon && <span style={{ transform: 'scale(1)' }}>{card.icon}</span>}
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                {card.icon && <span style={{ transform: 'scale(0.9)' }}>{card.icon}</span>}
               </div>
             </div>
             <div style={{ opacity: 0.6 }}>
               {card.spark}
             </div>
-          </motion.div>
+          </div>
         ))}
       </motion.div>
 
@@ -440,7 +433,7 @@ const RepaymentTracker = () => {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .rt-spin { animation: rt-spin 1s linear infinite; }
         @keyframes rt-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .rt-stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.06) !important; border-color: #cbd5e1 !important; }
+        .rt-stat-card:hover { background: #fafbff; }
         .rt-table-row { border-bottom: 1px solid #f1f5f9; transition: all 0.15s; }
         .rt-table-row:hover { background: #fdfbf7; }
         .rt-table-row:hover .rt-avatar { background: white !important; color: #4f46e5 !important; border-color: #6366f1 !important; }
