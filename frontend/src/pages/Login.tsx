@@ -103,7 +103,11 @@ function Login() {
   return (
     <div className="lg">
       <div className="lg__mesh" />
-      <img src={logo} className="lg__bglogo" alt="" aria-hidden="true" />
+      <div className="lg__wm" aria-hidden="true">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i}>ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN</div>
+        ))}
+      </div>
       <div className="lg__card">
         <div className="lg__brand">
           <img src={logo} alt="Orethan Microfinance" />
@@ -197,7 +201,8 @@ function Login() {
           font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
         .lg__mesh { position: absolute; inset: 0; pointer-events: none;
           background: radial-gradient(640px 640px at 82% 14%, rgba(255,255,255,0.28), transparent 62%), radial-gradient(560px 560px at 14% 88%, rgba(124,179,66,0.45), transparent 64%), radial-gradient(520px 520px at 90% 92%, rgba(21,101,192,0.4), transparent 66%); }
-        .lg__bglogo { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(1200px, 98vw); max-height: 98vh; object-fit: contain; opacity: 0.12; pointer-events: none; z-index: 0; filter: brightness(1.4) saturate(0.9); }
+        .lg__wm { position: fixed; inset: -25%; transform: rotate(-26deg); display: flex; flex-direction: column; justify-content: center; gap: 2.2rem; pointer-events: none; z-index: 0; }
+        .lg__wm div { font-family: 'Inter', sans-serif; font-size: clamp(4rem, 8vw, 8rem); font-weight: 900; color: rgba(255,255,255,0.13); letter-spacing: 0.35rem; white-space: nowrap; text-align: center; line-height: 1; user-select: none; }
         .lg__card { position: relative; z-index: 1; width: 100%; max-width: 430px;
           background: rgba(255,255,255,0.14);
           backdrop-filter: blur(30px) saturate(1.6);
@@ -207,8 +212,8 @@ function Login() {
           box-shadow: 0 35px 80px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
           padding: 2.2rem 2.2rem 1.6rem; }
         .lg__brand { text-align: center; margin-bottom: 1.4rem; }
-        .lg__brand img { height: 86px; width: auto; object-fit: contain; }
-        .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 0.8rem auto 0; max-width: 220px; }
+        .lg__brand img { height: 132px; width: auto; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(7,42,67,0.25)); }
+        .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 1rem auto 0; max-width: 240px; }
         .lg__bars .g { flex: 1; background: linear-gradient(90deg,#7cb342,#aed581); }
         .lg__bars .b { flex: 1; background: linear-gradient(90deg,#1565c0,#1d8ad1); }
         .lg__card h2 { font-size: 1.55rem; font-weight: 900; color: #ffffff; margin: 0 0 0.3rem; letter-spacing: -0.02em; text-shadow: 0 2px 8px rgba(7,42,67,0.25); }
