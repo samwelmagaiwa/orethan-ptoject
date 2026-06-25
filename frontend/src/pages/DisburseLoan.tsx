@@ -112,19 +112,19 @@ const DisburseLoan = () => {
             <div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:5px;${mono ? "font-family:ui-monospace,monospace;letter-spacing:0.5px" : ""}">${value}</div>
           </div>`;
         const sectionTitle = (t, n) => `
-          <div style="display:flex;align-items:center;gap:13px;margin:22px 0 12px">
-            <span style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#102a43,#1d3a5f);color:#fff;font-size:13px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(16,42,67,0.25)">${n}</span>
+          <div style="display:flex;align-items:center;gap:11px;margin:13px 0 7px">
+            <span style="width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,#102a43,#1d3a5f);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(16,42,67,0.25)">${n}</span>
             <span style="font-size:15px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#102a43">${t}</span>
             <span style="flex:1;height:3px;border-radius:3px;background:linear-gradient(90deg,#7cb342 0%,#1d8ad1 45%,rgba(29,138,209,0) 100%)"></span>
           </div>`;
         const kv = (k, v, mono = false) => `<tr><td style="padding:11px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:46%">${k}</td><td style="padding:11px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;${mono ? "font-family:ui-monospace,monospace" : ""}">${v}</td></tr>`;
         // Clean stacked label/value for the 3-column layout (no card box)
         const block = (label, value, opts = {}) => `
-          <div style="padding:8px 0;border-bottom:1px solid #f1f5f9">
+          <div style="padding:5px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700">${label}</div>
-            <div style="font-size:13px;font-weight:700;color:${opts.color || "#0f172a"};margin-top:4px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
+            <div style="font-size:12.5px;font-weight:700;color:${opts.color || "#0f172a"};margin-top:2px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
           </div>`;
-        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 28px">${cells.join("")}</div>`;
+        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px 24px">${cells.join("")}</div>`;
         return `
 <div style="max-width:700px;margin:0 auto;color:#0f172a">
   <!-- Title row -->
@@ -137,7 +137,7 @@ const DisburseLoan = () => {
   </div>
 
   <!-- Meta strip (no colored background) -->
-  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:1px;background:#e2e8f0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin:22px 0 6px">
+  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:1px;background:#e2e8f0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin:16px 0 2px">
     <div style="background:#fff">${metaCell("Reference No", accountNumber, true)}</div>
     <div style="background:#fff">${metaCell("Effective Date", fmtDate(disbursementDate))}</div>
     <div style="background:#fff">${metaCell("Issue Branch", preview.branch)}</div>
@@ -161,7 +161,7 @@ const DisburseLoan = () => {
         ])}
 
   <!-- Net payable: clean bordered highlight (no blue/gradient) -->
-  <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #102a43;border-left:6px solid #102a43;border-radius:12px;padding:16px 24px;margin:18px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #102a43;border-left:6px solid #102a43;border-radius:12px;padding:12px 22px;margin:12px 0">
     <div>
       <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:#64748b;font-weight:700">Net Payable Amount</div>
       <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-top:3px">Amount disbursed to the borrower</div>
@@ -177,7 +177,7 @@ const DisburseLoan = () => {
         ])}
 
   <!-- Signatures -->
-  <div style="margin-top:48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
+  <div style="margin-top:34px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
     <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Prepared / Cashier</div></div>
     <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Authorized By</div></div>
     <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Received By (Client)</div></div>
@@ -224,7 +224,7 @@ const DisburseLoan = () => {
     const printDoc = (title: string, body: string) => {
         const win = window.open("", "_blank", "width=850,height=1000");
         if (!win) return;
-        win.document.write(`<html><head><title>${title}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;padding:48px 40px;color:#0f172a;background:#f8fafc;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{padding:0;background:#fff}}</style></head><body>${watermarkBlock()}<div style="max-width:700px;margin:0 auto;position:relative;z-index:1">${letterheadBlock()}<div style="height:24px"></div>${body}</div></body></html>`);
+        win.document.write(`<html><head><title>${title}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;padding:32px 40px;color:#0f172a;background:#f8fafc;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{padding:0;background:#fff}}</style></head><body>${watermarkBlock()}<div style="max-width:700px;margin:0 auto;position:relative;z-index:1">${letterheadBlock()}<div style="height:12px"></div>${body}</div></body></html>`);
         win.document.close();
         triggerPrint(win);
     };
