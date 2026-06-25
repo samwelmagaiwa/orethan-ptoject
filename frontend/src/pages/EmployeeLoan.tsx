@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import SignaturePad from "../components/SignaturePad";
+
+const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
 function EmployeeLoan() {
   const [form, setForm] = useState({
@@ -8,6 +11,7 @@ function EmployeeLoan() {
     employeeId: "",
     amount: "",
   });
+  const [signatureImg, setSignatureImg] = useState<string>("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -73,6 +77,7 @@ function EmployeeLoan() {
           details: {
             employeeId: form.employeeId,
             umeajiriwa: "Ndio", // employee loans are by definition for employed applicants
+            applicantSignatureImg: signatureImg,
           },
         }
       );
@@ -143,6 +148,11 @@ function EmployeeLoan() {
             />
             <label>Loan Amount (TZS)</label>
             {errors.amount && <span className="error-text">{errors.amount}</span>}
+          </div>
+
+          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: 14, marginBottom: 4 }}>
+            <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#e2e8f0", margin: "0 0 8px", letterSpacing: "0.5px" }}>APPLICANT SIGNATURE / SAHIHI</p>
+            <SignaturePad value={signatureImg || undefined} savedSignature={currentUser?.signature} onChange={(d) => setSignatureImg(d || "")} height={130} />
           </div>
 
           <button type="submit" disabled={loading}>

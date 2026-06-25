@@ -9,6 +9,16 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
+// Signature cell for printed documents: stamped image (if any) over a ruled line
+const sigCell = (role: string, name?: string, date?: string, img?: string) => `
+  <div style="text-align:center">
+    <div style="height:46px;display:flex;align-items:flex-end;justify-content:center">
+      ${img ? `<img src="${img}" style="height:44px;max-width:150px;object-fit:contain" />` : ""}
+    </div>
+    <div style="border-top:1.5px solid #0f172a;padding-top:8px;font-size:9.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px">${role}</div>
+    ${name ? `<div style="font-size:9px;color:#64748b;margin-top:3px">${name}${date ? " · " + new Date(date).toLocaleDateString("en-GB") : ""}</div>` : ""}
+  </div>`;
+
 const ACTIVITY_TYPES = [
   "Loan", "Duties", "Tax", "Transportation", "Permits", "Bank charges", "Postage Charges",
   "Office cleaning & maintenance", "Office equipment repairs", "Utilities", "ICT & Software bills", "Rents fees", "Other",
@@ -134,16 +144,12 @@ const PaymentRequests = () => {
       </table>
       <div class="net-box"><span>Amount Paid</span><div>${fmt(r.final_amount ?? r.amount, r.currency)}</div></div>
       ${r.amount_in_words ? `<p style="font-style:italic;color:#475569;font-size:13px">Amount in words: ${r.amount_in_words}</p>` : ""}
-      <h2>Approval Trail</h2>
-      <table>
-        <tr><td>Loan Manager</td><td>${r.manager_name || "—"} ${r.manager_date ? "(" + fmtDate(r.manager_date) + ")" : ""}</td></tr>
-        <tr><td>General Manager</td><td>${r.gm_name || "—"} ${r.gm_date ? "(" + fmtDate(r.gm_date) + ")" : ""}</td></tr>
-        <tr><td>Managing Director</td><td>${r.md_name || "—"} ${r.md_date ? "(" + fmtDate(r.md_date) + ")" : ""}</td></tr>
-        <tr><td>Disbursed By (Cashier)</td><td>${r.cashier_name || "—"} ${r.cashier_date ? "(" + fmtDate(r.cashier_date) + ")" : ""}</td></tr>
-      </table>
-      <div class="sign-grid">
-        <div class="sign-box">Cashier Signature</div>
-        <div class="sign-box">Recipient Signature</div>
+      <h2>Authorized Signatures</h2>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:34px">
+        ${sigCell("Loan Manager", r.manager_name, r.manager_date, r.manager_signature_img)}
+        ${sigCell("General Manager", r.gm_name, r.gm_date, r.gm_signature_img)}
+        ${sigCell("Managing Director", r.md_name, r.md_date, r.md_signature_img)}
+        ${sigCell("Cashier / Finance", r.cashier_name, r.cashier_date, r.cashier_signature_img)}
       </div>`;
     printDocument("Payment Voucher", body, `PV-${String(r.id).padStart(5, "0")}`);
   };
