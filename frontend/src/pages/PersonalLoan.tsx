@@ -552,7 +552,8 @@ const PersonalLoan: React.FC = () => {
     "2. KAZI NA BIASHARA",
     "3. MKOPO NA HISTORIA",
     "4. DHAMANA NA WADHAMINI",
-    "5. TAMKO NA WASILISHA"
+    "5. TAMKO NA PASSPORT",
+    "6. ORODHA YA UHAKIKI WA NYARAKA"
   ];
 
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -1576,7 +1577,7 @@ const PersonalLoan: React.FC = () => {
             {/* STEP 5: TAMKO NA WASILISHA */}
             {currentStep === 4 && (
               <div className="form-section">
-                <div className="section-divider">TAMKO, PASSPORT NA WASILISHA</div>
+                <div className="section-divider">TAMKO NA PASSPORT</div>
 
                 <div className="tamko-content" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
                   {/* Triple Photo Upload Row */}
@@ -1696,9 +1697,15 @@ const PersonalLoan: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
 
-                {/* DOCUMENTATION CHECKLIST — cross-checked before submission */}
-                <div className="section-divider" style={{ marginTop: '30px' }}>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
+            {currentStep === 5 && (
+              <div className="form-section">
+                <div className="section-divider">ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
+                <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 18px' }}>
+                  Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>“Proceed without”</strong>.
+                </p>
                 <LoanChecklist
                   category={form.umeajiriwa === 'Ndio' ? 'employee' : 'business'}
                   verified={{

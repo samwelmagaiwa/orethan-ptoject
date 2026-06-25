@@ -352,7 +352,8 @@ const GroupLoan: React.FC = () => {
     "SEHEMU 2: TAARIFA ZA KIKUNDI",
     "SEHEMU 3: TAARIFA ZA MIRADI NA MKOPO",
     "SEHEMU 4: MDHAMINI NA DHAMANA",
-    "TAMKO NA WASILISHA"
+    "TAMKO NA PASSPORT",
+    "ORODHA YA UHAKIKI WA NYARAKA"
   ];
 
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -914,9 +915,16 @@ const GroupLoan: React.FC = () => {
                   </div>
                 </div>
 
-                {/* DOCUMENTATION CHECKLIST — cross-checked before submission */}
+              </div>
+            )}
+
+            {currentStep === 5 && (
+              <div className="tamko-container">
                 <div className="tamko-card" style={{ borderLeft: 'none' }}>
                   <p><strong>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</strong></p>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 14px' }}>
+                    Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>“Proceed without”</strong>.
+                  </p>
                   <LoanChecklist
                     category="group"
                     verified={{
