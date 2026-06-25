@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import SignaturePad from "../components/SignaturePad";
+import LoanChecklist from "../components/LoanChecklist";
 
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -14,6 +15,8 @@ const GroupLoan: React.FC = () => {
   const isInitialized = useRef(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [checklistResolved, setChecklistResolved] = useState(false);
+  const [checklistState, setChecklistState] = useState<any>({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -445,6 +448,11 @@ const GroupLoan: React.FC = () => {
       return;
     }
 
+    if (!checklistResolved) {
+      showAlert("Tafadhali kamilisha orodha ya uhakiki wa nyaraka — weka tiki kwenye nyaraka ulizonazo, au bonyeza 'Proceed without' kwa zinazokosekana.", "warning");
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -461,6 +469,7 @@ const GroupLoan: React.FC = () => {
         passport_photo: form.passportPhotoUrl,
         details: {
           ...form,
+          documentation_checklist: checklistState,
           passportPhotoUrl: form.passportPhotoUrl,
         },
       };
@@ -904,6 +913,26 @@ const GroupLoan: React.FC = () => {
                     <label className="checkbox-label"><input type="checkbox" name="kikundiKimewekaDoleGumba" checked={form.kikundiKimewekaDoleGumba} onChange={handleChange} /> Je MWENYEKITI ameweka dole gumba kwenye karatasi ngumu ya mkopo?</label>
                   </div>
                 </div>
+
+                {/* DOCUMENTATION CHECKLIST — cross-checked before submission */}
+                <div className="tamko-card" style={{ borderLeft: 'none' }}>
+                  <p><strong>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</strong></p>
+                  <LoanChecklist
+                    category="group"
+                    verified={{
+                      id_doc: !!(form.nambaYaKitambulisho || (form as any).nambaYaNida),
+                      passport_photo: !!form.passportPhotoUrl,
+                      proof_residence: !!(form.mahaliUnapoishiMtaa || form.mahaliUnapoishiKata),
+                      guarantor_id: !!form.jinaLaMwenyekiti,
+                      application_form: true,
+                      two_guarantors_signed: !!(form.tamkoLaMdhamini && form.tamkoLaMdhaminiWajibika),
+                      loan_agreement: !!form.kikundiKimesainiFomuNgumu,
+                      credit_consent: !!form.tamkoLaMwombaji,
+                      terms_ack: !!form.tamkoLaMwombaji,
+                    }}
+                    onChange={(r) => { setChecklistResolved(r.allResolved); setChecklistState(r.state); }}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -915,7 +944,7 @@ const GroupLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading}>
+              <button type="submit" className="btn-submit" disabled={loading || !checklistResolved} title={!checklistResolved ? "Kamilisha orodha ya uhakiki kwanza" : ""} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
                 {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}

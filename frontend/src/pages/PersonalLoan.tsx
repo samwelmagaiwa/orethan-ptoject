@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import SignaturePad from "../components/SignaturePad";
+import LoanChecklist from "../components/LoanChecklist";
 
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -14,6 +15,8 @@ const PersonalLoan: React.FC = () => {
   const isInitialized = useRef(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [checklistResolved, setChecklistResolved] = useState(false);
+  const [checklistState, setChecklistState] = useState<any>({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -668,6 +671,11 @@ const PersonalLoan: React.FC = () => {
       return;
     }
 
+    if (!checklistResolved) {
+      showAlert("Tafadhali kamilisha orodha ya uhakiki wa nyaraka — weka tiki kwenye nyaraka ulizonazo, au bonyeza 'Proceed without' kwa zinazokosekana.", "warning");
+      return;
+    }
+
     const cleanNumber = (val: any) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -702,6 +710,7 @@ const PersonalLoan: React.FC = () => {
         guarantor_2_photo: form.guarantor2PhotoUrl,
         details: {
           ...form,
+          documentation_checklist: checklistState,
           // redundant but kept for safety with existing logic
           passportPhotoUrl: form.passportPhotoUrl,
           guarantor1PhotoUrl: form.guarantor1PhotoUrl,
@@ -1687,6 +1696,26 @@ const PersonalLoan: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* DOCUMENTATION CHECKLIST — cross-checked before submission */}
+                <div className="section-divider" style={{ marginTop: '30px' }}>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
+                <LoanChecklist
+                  category={form.umeajiriwa === 'Ndio' ? 'employee' : 'business'}
+                  verified={{
+                    id_doc: !!(form.nambaYaKitambulisho || (form as any).nambaYaNida),
+                    passport_photo: !!form.passportPhotoUrl,
+                    proof_residence: !!(form.mahaliUnapoishiMtaa || form.mahaliUnapoishiKata),
+                    guarantor_id: !!form.wdhamini1JinaKamili,
+                    guarantor_residence: !!form.wdhamini1MahaliAnapoishi,
+                    guarantor_photos: !!(form.guarantor1PhotoUrl || form.guarantor2PhotoUrl),
+                    application_form: true,
+                    two_guarantors_signed: !!(form.tamkoMdhamini1 && form.tamkoMdhamini2),
+                    loan_agreement: !!form.mwombajiAmesainiFomuNgumu,
+                    credit_consent: !!form.tamkoLaMwombaji,
+                    terms_ack: !!form.tamkoLaMwombaji,
+                  }}
+                  onChange={(r) => { setChecklistResolved(r.allResolved); setChecklistState(r.state); }}
+                />
               </div>
             )}
           </div>
@@ -1698,7 +1727,7 @@ const PersonalLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading}>
+              <button type="submit" className="btn-submit" disabled={loading || !checklistResolved} title={!checklistResolved ? "Kamilisha orodha ya uhakiki kwanza" : ""} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
                 {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}

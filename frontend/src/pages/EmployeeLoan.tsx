@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import SignaturePad from "../components/SignaturePad";
+import LoanChecklist from "../components/LoanChecklist";
 
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -12,6 +13,8 @@ function EmployeeLoan() {
     amount: "",
   });
   const [signatureImg, setSignatureImg] = useState<string>("");
+  const [checklistResolved, setChecklistResolved] = useState(false);
+  const [checklistState, setChecklistState] = useState<any>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -63,6 +66,11 @@ function EmployeeLoan() {
 
     if (hasError) return;
 
+    if (!checklistResolved) {
+      showAlert("Please complete the documentation checklist — tick the documents you have or use 'Proceed without' for missing items.", "warning");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -78,6 +86,7 @@ function EmployeeLoan() {
             employeeId: form.employeeId,
             umeajiriwa: "Ndio", // employee loans are by definition for employed applicants
             applicantSignatureImg: signatureImg,
+            documentation_checklist: checklistState,
           },
         }
       );
@@ -155,7 +164,16 @@ function EmployeeLoan() {
             <SignaturePad value={signatureImg || undefined} savedSignature={currentUser?.signature} onChange={(d) => setSignatureImg(d || "")} height={130} />
           </div>
 
-          <button type="submit" disabled={loading}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 16, marginBottom: 4 }}>
+            <p style={{ fontSize: "0.78rem", fontWeight: 800, color: "#102a43", margin: "0 0 12px" }}>DOCUMENTATION CHECKLIST</p>
+            <LoanChecklist
+              category="employee"
+              verified={{ application_form: true }}
+              onChange={(r) => { setChecklistResolved(r.allResolved); setChecklistState(r.state); }}
+            />
+          </div>
+
+          <button type="submit" disabled={loading || !checklistResolved} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
             {loading ? "Submitting..." : "Submit Application"}
           </button>
 
