@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\OverdueController;
 use App\Http\Controllers\Api\V1\PaymentRequestController;
+use App\Http\Controllers\Api\V1\LeaveRequestController;
 
 Route::prefix('v1')->group(function () {
 
@@ -100,6 +101,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
         Route::post('/payment-requests/{id}/approve', [PaymentRequestController::class, 'approve']);
         Route::post('/payment-requests/{id}/reject', [PaymentRequestController::class, 'reject']);
+
+        // ========== LEAVE REQUESTS (OMBI LA LIKIZO + IDHINI) ==========
+        Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
+        Route::post('/leave-requests', [LeaveRequestController::class, 'store']);
+        Route::get('/leave-requests/{id}', [LeaveRequestController::class, 'show']);
+        Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
+        Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========
