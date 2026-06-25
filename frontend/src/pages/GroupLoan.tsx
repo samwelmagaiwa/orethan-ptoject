@@ -3,10 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
-import SignaturePad from "../components/SignaturePad";
 import LoanChecklist from "../components/LoanChecklist";
-
-const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
 const GroupLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -91,7 +88,6 @@ const GroupLoan: React.FC = () => {
     dhamanaMmilikiWamiliki: "",
     dhamanaRangiMuonekanoWaDhamana: "",
     dhamanaMahaliIlipo: "",
-    applicantSignatureImg: "",
     tamkoLaMwombaji: false,
     mwombajiAmesainiFomuNgumu: false,
     mwombajiAmewekaDoleGumba: false,
@@ -887,10 +883,6 @@ const GroupLoan: React.FC = () => {
                   <div className="tamko-checkbox-group">
                     <label className="checkbox-label"><input type="checkbox" name="mwombajiAmesainiFomuNgumu" checked={form.mwombajiAmesainiFomuNgumu} onChange={handleChange} /> Je MWOMBAJI amesaini kwenye fomu ngumu ya mkopo?</label>
                     <label className="checkbox-label"><input type="checkbox" name="mwombajiAmewekaDoleGumba" checked={form.mwombajiAmewekaDoleGumba} onChange={handleChange} /> Je MWOMBAJI ameweka dole gumba kwenye karatasi ngumu ya mkopo?</label>
-                  </div>
-                  <div style={{ marginTop: '15px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>SAHIHI YA MWOMBAJI / APPLICANT SIGNATURE</p>
-                    <SignaturePad value={form.applicantSignatureImg || undefined} savedSignature={currentUser?.signature} onChange={(d) => setForm((prev: any) => ({ ...prev, applicantSignatureImg: d || "" }))} height={140} />
                   </div>
                 </div>
 

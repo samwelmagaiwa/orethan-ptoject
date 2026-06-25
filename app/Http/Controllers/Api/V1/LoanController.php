@@ -66,7 +66,8 @@ class LoanController extends Controller
         $loans = Loan::with(['customer', 'approvals.user', 'user'])
             ->where('status', 'manager_review')
             ->orWhereHas('approvals', function ($query) {
-                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved']);
+                // include 'rejected' so loans the manager sent back to the officer stay visible
+                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'rejected']);
             })
             ->orderByRaw("FIELD(status, 'manager_review', 'gm_review', 'md_review', 'approved', 'loan_officer')")
             ->orderBy('updated_at', 'desc')
