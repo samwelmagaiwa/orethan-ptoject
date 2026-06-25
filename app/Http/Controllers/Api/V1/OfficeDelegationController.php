@@ -33,9 +33,11 @@ class OfficeDelegationController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$user->isManagingDirector() && !$user->isAdmin()) {
-            return $this->error('Mkurugenzi Mtendaji pekee ndiye anaweza kukaimisha madaraka', 403);
+        if (!$user->isManagingDirector() && !$user->isGeneralManager() && !$user->isAdmin()) {
+            return $this->error('Mkurugenzi Mtendaji au Meneja Mkuu pekee ndiye anaweza kukaimisha madaraka', 403);
         }
+        $delegatorTitle = $user->isGeneralManager() ? 'General Manager' : 'Managing Director';
+        $defaultActing = $user->isGeneralManager() ? 'Acting General Manager' : 'Acting Managing Director';
 
         $data = $request->validate([
             'delegate_id' => 'required|exists:users,id',
@@ -68,10 +70,10 @@ class OfficeDelegationController extends Controller
             $del = OfficeDelegation::create([
                 'delegator_id' => $user->id,
                 'delegator_name' => $user->name,
-                'delegator_title' => 'Managing Director',
+                'delegator_title' => $delegatorTitle,
                 'delegate_id' => $delegate->id,
                 'delegate_name' => $delegate->name,
-                'acting_title' => $data['acting_title'] ?? 'Acting Managing Director',
+                'acting_title' => $data['acting_title'] ?: $defaultActing,
                 'reason' => $data['reason'] ?? null,
                 'from_date' => $data['from_date'],
                 'to_date' => $data['to_date'],
@@ -108,8 +110,8 @@ class OfficeDelegationController extends Controller
         } elseif ($scope === 'all' && !$user->isAdmin()) {
             $query->where(fn($q) => $q->where('delegator_id', $user->id)->orWhere('delegate_id', $user->id));
         } else {
-            // default: MD -> mine, others -> assigned
-            if ($user->isManagingDirector()) $query->where('delegator_id', $user->id);
+            // default: MD/GM -> mine, others -> assigned
+            if ($user->isManagingDirector() || $user->isGeneralManager()) $query->where('delegator_id', $user->id);
             elseif (!$user->isAdmin()) $query->where('delegate_id', $user->id);
         }
 

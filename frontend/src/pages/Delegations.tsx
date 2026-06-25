@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Send, Inbox, PlusCircle, X, CheckCircle2, XCircle, Clock, Lock, UserCheck } from "lucide-react";
-import SignaturePad from "../components/SignaturePad";
+import { ShieldCheck, Inbox, PlusCircle, X, CheckCircle2, XCircle, Clock, Lock, UserCheck } from "lucide-react";
 import SuccessModal from "../components/SuccessModal";
+import DelegationForm from "../components/DelegationForm";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -15,26 +15,16 @@ const STATUS_META: Record<string, { label: string; bg: string; color: string }> 
 };
 
 const inp: React.CSSProperties = { width: "100%", padding: "0.7rem 0.9rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", outline: "none", fontWeight: 600, fontSize: "0.9rem", color: "#1e293b", boxSizing: "border-box", fontFamily: "inherit" };
-const lbl: React.CSSProperties = { display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.5px" };
 
 const Delegations = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isMD = user?.role === "managing_director" || user?.role === "admin";
-  const [tab, setTab] = useState<"new" | "list">(isMD ? "new" : "list");
-  const [scope, setScope] = useState<"mine" | "assigned" | "all">(isMD ? "mine" : "assigned");
+  const canDelegate = ["managing_director", "general_manager", "admin"].includes(user?.role);
+  const [tab, setTab] = useState<"new" | "list">(canDelegate ? "new" : "list");
+  const [scope, setScope] = useState<"mine" | "assigned" | "all">(canDelegate ? "mine" : "assigned");
   const [list, setList] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [success, setSuccess] = useState({ open: false, title: "", message: "" });
-  const [formError, setFormError] = useState("");
 
-  const today = new Date().toISOString().slice(0, 10);
-  const blank = { delegate_id: "", acting_title: "Acting Managing Director", reason: "", from_date: today, to_date: today, responsibilities: "", limitations: "", handover_notes: "", delegator_signature_img: user?.signature || "", delegator_date: today };
-  const [form, setForm] = useState<any>(blank);
-  const [pin, setPin] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  // Acknowledge/decline state
   const [ackPin, setAckPin] = useState("");
   const [declineReason, setDeclineReason] = useState("");
   const [acting, setActing] = useState(false);
@@ -51,25 +41,6 @@ const Delegations = () => {
     } catch (e) { console.error(e); }
   };
   useEffect(() => { load(); }, [scope]);
-  useEffect(() => {
-    if (isMD) axios.get(`${API_BASE}/delegations/staff`, { headers: headers() }).then((r) => setStaff(r.data.staff || [])).catch(() => {});
-  }, []);
-
-  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-
-  const submit = async () => {
-    setFormError("");
-    if (!form.delegate_id || !form.responsibilities || !form.from_date || !form.to_date) { setFormError("Please select the staff, period and responsibilities being delegated."); return; }
-    if (!pin.trim()) { setFormError("Enter your password/PIN to sign and authorize the delegation."); return; }
-    setSubmitting(true);
-    try {
-      await axios.post(`${API_BASE}/delegations`, { ...form, password: pin }, { headers: headers() });
-      setForm(blank); setPin("");
-      setTab("list"); setScope("mine");
-      await load();
-      setSuccess({ open: true, title: "Delegation Submitted", message: "Your office delegation has been sent to the selected staff. They will be notified to acknowledge it." });
-    } catch (e: any) { setFormError(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
-  };
 
   const openDetail = (d: any) => { setSelected(d); setAckPin(""); setDeclineReason(""); };
   const canAct = (d: any) => d.status === "pending" && (d.delegate_id === user?.id || user?.role === "admin");
@@ -94,6 +65,12 @@ const Delegations = () => {
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
   };
 
+  const onFormSuccess = async (msg: string) => {
+    setTab("list"); setScope("mine");
+    await load();
+    setSuccess({ open: true, title: "Delegation Submitted", message: msg });
+  };
+
   return (
     <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.7rem 1rem 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
@@ -101,7 +78,7 @@ const Delegations = () => {
         <UserCheck size={22} style={{ color: "#4f46e5" }} />
         <h1 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>Office Delegation / Kukaimisha Ofisi na Madaraka</h1>
         <div style={{ marginLeft: "auto", display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 10, gap: 3 }}>
-          {([["list", "Delegations", Inbox], ...(isMD ? [["new", "New Delegation", PlusCircle]] : [])] as const).map(([k, l, Icon]: any) => (
+          {([["list", "Delegations", Inbox], ...(canDelegate ? [["new", "New Delegation", PlusCircle]] : [])] as const).map(([k, l, Icon]: any) => (
             <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", borderRadius: 8, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "white" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: tab === k ? "0 1px 4px rgba(15,23,42,0.1)" : "none" }}>
               <Icon size={15} /> {l}
             </button>
@@ -109,78 +86,14 @@ const Delegations = () => {
         </div>
       </div>
 
-      {tab === "new" && isMD ? (
+      {tab === "new" && canDelegate ? (
         <div style={{ background: "#e8f0fe", borderRadius: 14, padding: "0.5rem" }}>
-          <div style={{ background: "#fff", borderRadius: 14, boxShadow: "0 10px 28px rgba(15,23,42,0.08)", padding: "1.7rem 1.9rem" }}>
-            <div style={{ background: "#102a43", color: "#fff", padding: "0.8rem 1.2rem", borderRadius: 8, fontWeight: 800, fontSize: "0.85rem", letterSpacing: "0.6px", marginBottom: "1rem", boxShadow: "0 4px 12px rgba(16,42,67,0.18)" }}>
-              FOMU YA KUKAIMISHA OFISI NA MADARAKA KWA MUDA
-            </div>
-            <p style={{ fontSize: "0.82rem", color: "#64748b", margin: "0 0 1.2rem", lineHeight: 1.5 }}>
-              Mimi <strong style={{ color: "#0f172a" }}>{user?.name}</strong> (Managing Director), kwa kuwa nitakuwa nje ya ofisi, nakaimisha ofisi na madaraka yangu kwa mtumishi niliyemchagua hapa chini kwa kipindi kilichoainishwa.
-            </p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label style={lbl}>Delegate To / Mkaimishwa <span style={{ color: "#ef4444" }}>*</span></label>
-                <select style={inp} value={form.delegate_id} onChange={(e) => set("delegate_id", e.target.value)}>
-                  <option value="">— Select staff —</option>
-                  {staff.map((s) => <option key={s.id} value={s.id}>{s.name} ({String(s.role).replace(/_/g, " ")})</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={lbl}>Acting Title / Cheo cha Kukaimu</label>
-                <input style={inp} value={form.acting_title} onChange={(e) => set("acting_title", e.target.value)} />
-              </div>
-              <div>
-                <label style={lbl}>From / Kuanzia <span style={{ color: "#ef4444" }}>*</span></label>
-                <input type="date" style={inp} value={form.from_date} onChange={(e) => set("from_date", e.target.value)} />
-              </div>
-              <div>
-                <label style={lbl}>To / Mpaka <span style={{ color: "#ef4444" }}>*</span></label>
-                <input type="date" style={inp} value={form.to_date} onChange={(e) => set("to_date", e.target.value)} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={lbl}>Reason for absence / Sababu ya kutokuwepo</label>
-                <input style={inp} value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder="e.g. Official travel, leave..." />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={lbl}>Responsibilities & Authority Delegated / Madaraka na Majukumu Yanayokaimishwa <span style={{ color: "#ef4444" }}>*</span></label>
-                <textarea style={{ ...inp, resize: "vertical" }} rows={3} value={form.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} placeholder="List the duties and decision-making authority being delegated..." />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={lbl}>Limitations / Mipaka (optional)</label>
-                <textarea style={{ ...inp, resize: "vertical" }} rows={2} value={form.limitations} onChange={(e) => set("limitations", e.target.value)} placeholder="e.g. Approvals up to TZS 5,000,000; no new hires..." />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={lbl}>Handover Notes / Maelezo ya Makabidhiano (optional)</label>
-                <textarea style={{ ...inp, resize: "vertical" }} rows={2} value={form.handover_notes} onChange={(e) => set("handover_notes", e.target.value)} placeholder="Pending matters, key contacts, ongoing items..." />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <SignaturePad label="MD Signature / Sahihi ya Mkurugenzi" value={form.delegator_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("delegator_signature_img", d || "")} height={130} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={lbl}>Authorize with your Password / PIN <span style={{ color: "#ef4444" }}>*</span></label>
-                <div style={{ position: "relative" }}>
-                  <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                  <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Enter your password / PIN to sign" />
-                </div>
-              </div>
-            </div>
-
-            {formError && <div style={{ marginTop: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "0.7rem 0.9rem" }}>{formError}</div>}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.7rem", marginTop: "1.3rem", paddingTop: "1.2rem", borderTop: "1px solid #e2e8f0" }}>
-              <button onClick={() => { setForm(blank); setPin(""); setFormError(""); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>Clear</button>
-              <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
-                <Send size={16} /> {submitting ? "Submitting..." : "Delegate Authority"}
-              </button>
-            </div>
-          </div>
+          <DelegationForm onSuccess={onFormSuccess} />
         </div>
       ) : (
         <>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.8rem" }}>
-            {([["assigned", "Assigned to Me"], ...(isMD ? [["mine", "Created by Me"]] : []), ["all", "All"]] as const).map(([k, l]: any) => (
+            {([["assigned", "Assigned to Me"], ...(canDelegate ? [["mine", "Created by Me"]] : []), ["all", "All"]] as const).map(([k, l]: any) => (
               <button key={k} onClick={() => setScope(k)} style={{ padding: "0.45rem 1rem", borderRadius: 8, border: "1px solid #e2e8f0", background: scope === k ? "#4f46e5" : "white", color: scope === k ? "white" : "#64748b", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>{l}</button>
             ))}
           </div>
@@ -188,7 +101,7 @@ const Delegations = () => {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>{["Delegator (MD)", "Delegate", "Acting As", "Period", "Status", ""].map((h, i) => (
+                  <tr>{["Delegator", "Delegate", "Acting As", "Period", "Status", ""].map((h, i) => (
                     <th key={h} style={{ textAlign: i === 5 ? "right" : "left", padding: "0 0.7rem 0.9rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
                   ))}</tr>
                 </thead>
@@ -197,7 +110,7 @@ const Delegations = () => {
                     const sm = STATUS_META[d.status] || STATUS_META.pending;
                     return (
                       <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "0.85rem 0.7rem", fontWeight: 700, color: "#1e293b", fontSize: "0.84rem" }}>{d.delegator_name}</td>
+                        <td style={{ padding: "0.85rem 0.7rem", fontWeight: 700, color: "#1e293b", fontSize: "0.84rem" }}>{d.delegator_name}<div style={{ fontSize: "0.66rem", color: "#94a3b8", fontWeight: 600 }}>{d.delegator_title}</div></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.82rem", color: "#475569" }}>{d.delegate_name}</td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.8rem", color: "#64748b" }}>{d.acting_title}</td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(d.from_date)} – {fmtDate(d.to_date)}</td>
@@ -224,7 +137,7 @@ const Delegations = () => {
               style={{ width: "100%", maxWidth: 620, maxHeight: "90vh", borderRadius: 18, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
               <div style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)", padding: "1.3rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h2 style={{ fontSize: "1.05rem", fontWeight: 900, margin: 0 }}>Delegation of Office & Authority</h2>
+                  <h2 style={{ fontSize: "1.05rem", fontWeight: 900, margin: 0 }}>Delegation of Office &amp; Authority</h2>
                   <p style={{ margin: "0.2rem 0 0", fontSize: "0.76rem", opacity: 0.9, fontWeight: 600 }}>{STATUS_META[selected.status]?.label}</p>
                 </div>
                 <button onClick={() => setSelected(null)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil, Lock, UserCheck } from "lucide-react";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
+import DelegationForm from "../components/DelegationForm";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review"];
 
@@ -32,7 +32,6 @@ const CARD: React.CSSProperties = { background: "white", borderRadius: 14, borde
 const inp: React.CSSProperties = { width: "100%", padding: "0.7rem 0.9rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", outline: "none", fontWeight: 600, fontSize: "0.9rem", color: "#1e293b", boxSizing: "border-box", fontFamily: "inherit" };
 
 const LeaveRequests = () => {
-  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role;
   const isMD = role === "managing_director";
@@ -171,18 +170,13 @@ const LeaveRequests = () => {
 
       {tab === "new" && isMD ? (
         <div className="prf-page">
-          <div className="prf-card" style={{ textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0.5rem auto 1rem" }}>
-              <UserCheck size={32} style={{ color: "#4f46e5" }} />
-            </div>
-            <h2 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", margin: "0 0 0.5rem" }}>Kukaimisha Ofisi na Madaraka kwa Muda</h2>
-            <p style={{ fontSize: "0.86rem", color: "#64748b", maxWidth: 520, margin: "0 auto 1.3rem", lineHeight: 1.6 }}>
-              As the Managing Director, when you are away from office you don't file a normal leave request — instead you delegate your office and authority to a staff member of your choice. Use the Office Delegation form to select the acting officer and define the authority being handed over.
-            </p>
-            <button onClick={() => navigate("/delegations")} style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 1.8rem", borderRadius: 10, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
-              Open Delegation Form <ArrowRight size={17} />
-            </button>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 10, padding: "0.8rem 1rem", marginBottom: "0.75rem" }}>
+            <UserCheck size={17} style={{ color: "#4f46e5", flexShrink: 0, marginTop: 2 }} />
+            <span style={{ fontSize: "0.8rem", color: "#3730a3", fontWeight: 600, lineHeight: 1.5 }}>
+              As the Managing Director, you don't file a normal leave request — instead you delegate your office and authority to a selected staff member for the period you are away. Complete the delegation form below.
+            </span>
           </div>
+          <DelegationForm onSuccess={(msg) => { setTab("list"); setScope("mine"); setSuccess({ open: true, title: "Delegation Submitted", message: msg }); }} />
         </div>
       ) : tab === "new" ? (
         <div className="prf-page">

@@ -23,6 +23,17 @@ class LeaveRequestController extends Controller
         };
     }
 
+    /**
+     * Hatua ya kwanza kulingana na cheo cha mwombaji.
+     * Ombi la GM huenda moja kwa moja kwa MD; la Loan Manager huanza kwa GM.
+     */
+    private function initialStatus($user): string
+    {
+        if ($user->isGeneralManager()) return 'md_review';
+        if ($user->isLoanManager()) return 'gm_review';
+        return 'manager_review';
+    }
+
     private function canDecide($user, string $status): bool
     {
         if ($user->isAdmin()) return true;
@@ -59,7 +70,7 @@ class LeaveRequestController extends Controller
         }
 
         try {
-            $data['status'] = 'manager_review';
+            $data['status'] = $this->initialStatus($user);
             $data['created_by'] = $user->id ?? null;
             if (empty($data['employee_signature'])) {
                 $data['employee_signature'] = $user->name ?? null;
@@ -140,7 +151,7 @@ class LeaveRequestController extends Controller
 
         try {
             $lr->fill($data);
-            $lr->status = 'manager_review';
+            $lr->status = $this->initialStatus($user);
             $lr->rejection_reason = null;
             foreach ([
                 'manager_name', 'manager_decision', 'manager_comments', 'manager_date',
