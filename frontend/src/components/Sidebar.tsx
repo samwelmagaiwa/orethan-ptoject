@@ -191,8 +191,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <>
               <div className="sd-sec">{!isCollapsed ? "APPROVALS" : "─"}</div>
               {userRole === "loan_manager" || userRole === "admin" ? (
-                <div className={`sd-item ${isActive("/loan-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-manager")} title="Loan Manager">
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></svg></span>
+                <div className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers")} title="Manager Review">
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
                   {!isCollapsed && <span className="sd-item__text">Manager Review</span>}
                 </div>
               ) : null}
@@ -211,8 +211,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Management */}
-          {canAccessManagement && (
+          {/* Management — the loan manager reaches Customers via APPROVALS > Manager Review */}
+          {canAccessManagement && userRole !== "loan_manager" && (
             <>
               <div className="sd-sec">{!isCollapsed ? "MANAGEMENT" : "─"}</div>
               <div className={`sd-item ${isActive("/customers") || location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => {
