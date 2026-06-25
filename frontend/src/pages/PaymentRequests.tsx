@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil } from "lucide-react";
+import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil, Printer } from "lucide-react";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
@@ -117,6 +118,33 @@ const PaymentRequests = () => {
   };
 
   const openDetail = (r: any) => { setSelected(r); setAdjustedAmount(""); setComments(""); setCashierRef(""); };
+
+  const printVoucher = (r: any) => {
+    const body = `
+      <h2>Payee Information</h2>
+      <table>
+        <tr><td>Payable To</td><td>${r.payable_to}</td></tr>
+        <tr><td>Applicant</td><td>${r.applicant_name}</td></tr>
+        <tr><td>Department / Section</td><td>${[r.department, r.section].filter(Boolean).join(" / ") || "—"}</td></tr>
+        <tr><td>Activity</td><td>${r.activity_type}${r.activity_detail ? " — " + r.activity_detail : ""}</td></tr>
+        <tr><td>Mode of Payment</td><td>${String(r.mode_of_payment).replace("_", " ")}</td></tr>
+        ${r.cashier_reference ? `<tr><td>Transaction Reference</td><td>${r.cashier_reference}</td></tr>` : ""}
+      </table>
+      <div class="net-box"><span>Amount Paid</span><div>${fmt(r.final_amount ?? r.amount, r.currency)}</div></div>
+      ${r.amount_in_words ? `<p style="font-style:italic;color:#475569;font-size:13px">Amount in words: ${r.amount_in_words}</p>` : ""}
+      <h2>Approval Trail</h2>
+      <table>
+        <tr><td>Loan Manager</td><td>${r.manager_name || "—"} ${r.manager_date ? "(" + fmtDate(r.manager_date) + ")" : ""}</td></tr>
+        <tr><td>General Manager</td><td>${r.gm_name || "—"} ${r.gm_date ? "(" + fmtDate(r.gm_date) + ")" : ""}</td></tr>
+        <tr><td>Managing Director</td><td>${r.md_name || "—"} ${r.md_date ? "(" + fmtDate(r.md_date) + ")" : ""}</td></tr>
+        <tr><td>Disbursed By (Cashier)</td><td>${r.cashier_name || "—"} ${r.cashier_date ? "(" + fmtDate(r.cashier_date) + ")" : ""}</td></tr>
+      </table>
+      <div class="sign-grid">
+        <div class="sign-box">Cashier Signature</div>
+        <div class="sign-box">Recipient Signature</div>
+      </div>`;
+    printDocument("Payment Voucher", body, `PV-${String(r.id).padStart(5, "0")}`);
+  };
 
   const approve = async () => {
     if (!selected) return;
@@ -343,6 +371,11 @@ const PaymentRequests = () => {
                 </div>
                 {selected.activity_detail && <p style={{ marginTop: "0.8rem", fontSize: "0.8rem", color: "#475569", background: "#f8fafc", padding: "0.7rem", borderRadius: 8 }}>{selected.activity_detail}</p>}
                 {selected.amount_in_words && <p style={{ marginTop: "0.5rem", fontSize: "0.78rem", color: "#64748b", fontStyle: "italic" }}>"{selected.amount_in_words}"</p>}
+                {selected.status === "disbursed" && (
+                  <button onClick={() => printVoucher(selected)} style={{ marginTop: "0.9rem", display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.1rem", borderRadius: 10, background: "#102a43", border: "none", color: "white", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
+                    <Printer size={15} /> Print Payment Voucher
+                  </button>
+                )}
 
                 {/* Approval trail */}
                 <div style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
