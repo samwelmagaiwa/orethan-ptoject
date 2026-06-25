@@ -115,6 +115,19 @@ class LeaveRequestController extends Controller
         return response()->json(LeaveRequest::findOrFail($id));
     }
 
+    /** Admin anaweza kufuta ombi lolote la likizo. */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return $this->error('Admin pekee ndiye anaweza kufuta ombi', 403);
+        }
+        $lr = LeaveRequest::findOrFail($id);
+        AuditLog::record('leave_request.deleted', $user, $lr, 'Ombi la likizo limefutwa na admin');
+        $lr->delete();
+        return $this->success(null, 'Ombi limefutwa');
+    }
+
     /**
      * Mwombaji anahariri ombi lililokataliwa kisha kuliwasilisha tena.
      */

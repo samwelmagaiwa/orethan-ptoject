@@ -24,6 +24,9 @@ class User extends Authenticatable
         'role',
         'phone',
         'signature',
+        'is_locked',
+        'locked_at',
+        'locked_reason',
     ];
 
     /**
@@ -44,12 +47,19 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_locked' => 'boolean',
+        'locked_at' => 'datetime',
     ];
 
     // Helper methods for role checking
     public function isAdmin()
     {
         return $this->role === 'admin';
+    }
+
+    public function isLocked()
+    {
+        return (bool) $this->is_locked;
     }
 
     public function isLoanOfficer()

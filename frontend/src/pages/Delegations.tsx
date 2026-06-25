@@ -43,6 +43,14 @@ const Delegations = () => {
   useEffect(() => { load(); }, [scope]);
 
   const openDetail = (d: any) => { setSelected(d); setAckPin(""); setDeclineReason(""); };
+
+  const adminDelete = async (id: number) => {
+    if (!window.confirm("Delete this delegation permanently?")) return;
+    try {
+      await axios.delete(`${API_BASE}/delegations/${id}`, { headers: headers() });
+      await load();
+    } catch (e: any) { alert(e?.response?.data?.message || "Delete failed"); }
+  };
   const canAct = (d: any) => d.status === "pending" && (d.delegate_id === user?.id || user?.role === "admin");
 
   const acknowledge = async () => {
@@ -116,7 +124,12 @@ const Delegations = () => {
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(d.from_date)} – {fmtDate(d.to_date)}</td>
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.64rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
-                          <button onClick={() => openDetail(d)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>{canAct(d) ? "Review" : "View"}</button>
+                          <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+                            <button onClick={() => openDetail(d)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>{canAct(d) ? "Review" : "View"}</button>
+                            {user?.role === "admin" && (
+                              <button onClick={() => adminDelete(d.id)} style={{ padding: "0.4rem 0.8rem", borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>Delete</button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

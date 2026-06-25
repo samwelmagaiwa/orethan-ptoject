@@ -103,6 +103,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/payment-requests/upload-invoice', [PaymentRequestController::class, 'uploadInvoice']);
         Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
         Route::put('/payment-requests/{id}', [PaymentRequestController::class, 'update']);
+        Route::delete('/payment-requests/{id}', [PaymentRequestController::class, 'destroy']);
         Route::post('/payment-requests/{id}/approve', [PaymentRequestController::class, 'approve']);
         Route::post('/payment-requests/{id}/reject', [PaymentRequestController::class, 'reject']);
 
@@ -111,6 +112,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/leave-requests', [LeaveRequestController::class, 'store']);
         Route::get('/leave-requests/{id}', [LeaveRequestController::class, 'show']);
         Route::put('/leave-requests/{id}', [LeaveRequestController::class, 'update']);
+        Route::delete('/leave-requests/{id}', [LeaveRequestController::class, 'destroy']);
         Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
         Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
 
@@ -119,6 +121,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/delegations', [OfficeDelegationController::class, 'index']);
         Route::post('/delegations', [OfficeDelegationController::class, 'store']);
         Route::get('/delegations/{id}', [OfficeDelegationController::class, 'show']);
+        Route::delete('/delegations/{id}', [OfficeDelegationController::class, 'destroy']);
         Route::post('/delegations/{id}/acknowledge', [OfficeDelegationController::class, 'acknowledge']);
         Route::post('/delegations/{id}/decline', [OfficeDelegationController::class, 'decline']);
     });
@@ -149,6 +152,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        Route::post('/users/{id}/lock', [UserController::class, 'lock']);
+        Route::post('/users/{id}/unlock', [UserController::class, 'unlock']);
 
         // ========== DRAFT PERSISTENCE ROUTES ==========
         Route::get('/drafts/{type}', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'show']);

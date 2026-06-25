@@ -123,6 +123,19 @@ class OfficeDelegationController extends Controller
         return response()->json(OfficeDelegation::findOrFail($id));
     }
 
+    /** Admin anaweza kufuta ukaimishaji wowote. */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return $this->error('Admin pekee ndiye anaweza kufuta ukaimishaji', 403);
+        }
+        $del = OfficeDelegation::findOrFail($id);
+        AuditLog::record('office_delegation.deleted', $user, $del, 'Ukaimishaji umefutwa na admin');
+        $del->delete();
+        return $this->success(null, 'Ukaimishaji umefutwa');
+    }
+
     /**
      * Mfanyakazi aliyechaguliwa anakubali kukaimishwa.
      */

@@ -133,6 +133,14 @@ const LeaveRequests = () => {
 
   const openDetail = (r: any) => { setSelected(r); setComments(""); setPin(""); };
 
+  const adminDelete = async (id: number) => {
+    if (!window.confirm("Delete this leave request permanently?")) return;
+    try {
+      await axios.delete(`${API_BASE}/leave-requests/${id}`, { headers: headers() });
+      await load();
+    } catch (e: any) { alert(e?.response?.data?.message || "Delete failed"); }
+  };
+
   const approve = async () => {
     if (!selected) return;
     if (!pin.trim()) { alert("Enter your password/PIN to sign this approval."); return; }
@@ -305,6 +313,9 @@ const LeaveRequests = () => {
                             <button onClick={() => openDetail(r)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
                               {canDecide(r.status) ? "Review" : "View"}
                             </button>
+                            {role === "admin" && (
+                              <button onClick={() => adminDelete(r.id)} style={{ padding: "0.4rem 0.8rem", borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>Delete</button>
+                            )}
                           </div>
                         </td>
                       </tr>

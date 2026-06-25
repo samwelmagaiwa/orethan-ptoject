@@ -131,6 +131,19 @@ class PaymentRequestController extends Controller
         return response()->json(PaymentRequest::findOrFail($id));
     }
 
+    /** Admin anaweza kufuta ombi lolote la malipo. */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return $this->error('Admin pekee ndiye anaweza kufuta ombi', 403);
+        }
+        $pr = PaymentRequest::findOrFail($id);
+        AuditLog::record('payment_request.deleted', $user, $pr, 'Ombi la malipo limefutwa na admin');
+        $pr->delete();
+        return $this->success(null, 'Ombi limefutwa');
+    }
+
     /**
      * Idhinisha / Rekebisha kiasi katika hatua ya sasa (Manager, GM, au MD).
      */

@@ -131,6 +131,29 @@ const Users = () => {
     });
   };
 
+  const toggleLock = (user: any) => {
+    const locking = !user.is_locked;
+    setConfirm({
+      isOpen: true,
+      title: locking ? "Lock User" : "Unlock User",
+      message: locking
+        ? `Lock ${user.name}? They will be signed out immediately and blocked from logging in until unlocked.`
+        : `Unlock ${user.name} so they can use the system again?`,
+      type: locking ? 'danger' : 'info',
+      onConfirm: async () => {
+        setConfirm(prev => ({ ...prev, isOpen: false }));
+        try {
+          const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+          const res = await axios.post(`${API_BASE}/users/${user.id}/${locking ? "lock" : "unlock"}`, {}, { headers: getAuthHeaders() });
+          setUsers(users.map(u => u.id === user.id ? { ...u, ...res.data.user } : u));
+          setModal({ isOpen: true, title: locking ? "Locked" : "Unlocked", message: res.data.message || "Done", type: 'success' });
+        } catch (err: any) {
+          setModal({ isOpen: true, title: "Error", message: err?.response?.data?.message || "Action failed", type: 'error' });
+        }
+      }
+    });
+  };
+
   const startEdit = (user: User) => {
     setEditUser(user);
     setNewUser({
@@ -215,16 +238,17 @@ const Users = () => {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="empty-state">No users found</td>
+                    <td colSpan={7} className="empty-state">No users found</td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user, index) => (
+                  filteredUsers.map((user: any, index) => (
                     <tr key={user.id}>
                       <td className="user-number">{index + 1}</td>
                       <td className="user-name">
@@ -237,8 +261,14 @@ const Users = () => {
                           {getRoleLabel(user.role)}
                         </span>
                       </td>
+                      <td>
+                        <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, background: user.is_locked ? "#fef2f2" : "#ecfdf5", color: user.is_locked ? "#dc2626" : "#059669" }}>
+                          {user.is_locked ? "🔒 Locked" : "Active"}
+                        </span>
+                      </td>
                       <td className="actions-cell">
                         <button className="edit-btn" onClick={() => startEdit(user)}>Edit</button>
+                        <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => toggleLock(user)}>{user.is_locked ? "Unlock" : "Lock"}</button>
                         <button className="delete-btn" onClick={() => deleteUser(user.id)}>Delete</button>
                       </td>
                     </tr>
@@ -507,6 +537,16 @@ const Users = () => {
         .delete-btn:hover {
           background: #dc2626;
         }
+
+        .lock-btn {
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: filter 0.2s;
+        }
+        .lock-btn:hover { filter: brightness(0.97); }
 
         .loading-state {
           text-align: center;

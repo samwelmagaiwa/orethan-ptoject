@@ -54,6 +54,14 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
+
+        if ($user->isLocked()) {
+            return response()->json([
+                'message' => 'Akaunti yako imefungwa na msimamizi. Wasiliana na Admin. (Your account is locked.)' .
+                    ($user->locked_reason ? ' Reason: ' . $user->locked_reason : ''),
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
