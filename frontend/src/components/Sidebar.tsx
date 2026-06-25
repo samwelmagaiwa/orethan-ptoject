@@ -23,6 +23,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [user, setUser] = useState<User | null>(null);
   const [showLoans, setShowLoans] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  const [showFinance, setShowFinance] = useState(false);
+  const [showRequests, setShowRequests] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -75,7 +77,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessUsers = userRole === "admin";
   const canAccessApprovals = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
   const canAccessManagement = canAccessApprovals;
-  const canAccessFinance = userRole === "admin" || userRole === "finance_officer";
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
@@ -123,18 +124,33 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
                 {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
               </div>
-              <div className={`sd-item ${isActive("/overdue-management") ? "sd-item--active" : ""}`} onClick={() => navigate("/overdue-management")} title="Usimamizi wa Madeni">
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Usimamizi wa Madeni</span>}
+              {/* Finance & Collections dropdown */}
+              <div className={`sd-item ${(isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) ? "sd-item--active" : ""}`} onClick={() => setShowFinance(!showFinance)} title="Finance & Collections">
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">Finance & Collections</span>}
+                {!isCollapsed && <span className={`sd-item__arrow ${showFinance ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
-              <div className={`sd-item ${isActive("/payment-requests") ? "sd-item--active" : ""}`} onClick={() => navigate("/payment-requests")} title="Payment Requests">
+              {(showFinance || isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) && !isCollapsed && (
+                <div className="sd-sub">
+                  <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>Usimamizi wa Madeni</div>
+                  {(userRole === "finance_officer" || userRole === "admin") && (
+                    <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>Disburse &amp; Payments</div>
+                  )}
+                </div>
+              )}
+
+              {/* Requests dropdown */}
+              <div className={`sd-item ${(isActive("/payment-requests") || isActive("/leave-requests")) ? "sd-item--active" : ""}`} onClick={() => setShowRequests(!showRequests)} title="Requests">
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Payment Requests</span>}
+                {!isCollapsed && <span className="sd-item__text">Requests / Maombi</span>}
+                {!isCollapsed && <span className={`sd-item__arrow ${showRequests ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
-              <div className={`sd-item ${isActive("/leave-requests") ? "sd-item--active" : ""}`} onClick={() => navigate("/leave-requests")} title="Leave Requests">
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Leave Requests</span>}
-              </div>
+              {(showRequests || isActive("/payment-requests") || isActive("/leave-requests")) && !isCollapsed && (
+                <div className="sd-sub">
+                  <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>Payment Requests</div>
+                  <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>Leave Requests</div>
+                </div>
+              )}
               {canAccessUsers && (
                 <>
                   <div className="sd-item" onClick={handleUsersClick} title="Users">
@@ -166,19 +182,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   <div className="sd-sub__link" style={{ color: '#60a5fa', fontWeight: '500' }} onClick={() => navigate("/my-applications")}>My Applications</div>
                 </div>
               )}
-            </>
-          )}
-
-          {/* Finance (Disbursement & Cashiering) */}
-          {canAccessFinance && (
-            <>
-              <div className="sd-sec">{!isCollapsed ? "FINANCE" : "─"}</div>
-              {userRole === "finance_officer" || userRole === "admin" ? (
-                <div className={`sd-item ${isActive("/finance/customers") ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")} title="Disburse & Record Payments">
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Disburse & Payments</span>}
-                </div>
-              ) : null}
             </>
           )}
 
@@ -377,6 +380,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           cursor: pointer; border-radius: 6px; transition: all 0.15s;
         }
         .sd-sub__link:hover { color: #ffffff; background: rgba(56, 189, 248, 0.12); }
+        .sd-sub__link--active { color: #ffffff; background: rgba(56, 189, 248, 0.18); font-weight: 600; }
 
         .sd-footer { margin-top: 20px; border-top: 1px solid rgba(255,255,255, 0.08); padding-bottom: 20px; padding-top: 4px; }
         .sd-footer .sd-item:hover { background: rgba(239, 68, 68, 0.12); }
