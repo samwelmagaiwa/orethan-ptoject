@@ -305,10 +305,10 @@ const DisburseLoan = () => {
                                     <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a" }}>{fmt(approvedAmount)}</span>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Processing Fee <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>({capturedProcessingFeePercent}%)</span></span>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#475569" }}>Processing Fee <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>({capturedProcessingFeePercent}% · auto)</span></span>
                                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                         <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 700 }}>TZS</span>
-                                        <input type="number" value={processingFee} onChange={e => setProcessingFee(e.target.value)} style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                                        <input type="number" value={processingFee} readOnly title="Auto-calculated from the loan calculator" style={{ width: "90px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", textAlign: "right", fontSize: "13px", outline: "none", background: "#f1f5f9", color: "#64748b", cursor: "not-allowed", fontWeight: 700 }} />
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #cbd5e1" }}>
