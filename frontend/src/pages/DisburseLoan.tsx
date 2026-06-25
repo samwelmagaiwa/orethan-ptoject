@@ -180,7 +180,7 @@ const DisburseLoan = () => {
   <div style="margin-top:34px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
     <div style="text-align:center"><div style="height:42px"></div><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Prepared / Cashier</div></div>
     <div style="text-align:center"><div style="height:42px"></div><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Authorized By</div></div>
-    <div style="text-align:center"><div style="height:42px"></div><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Received By (Client)</div></div>
+    <div style="text-align:center"><div style="height:42px;display:flex;align-items:flex-end;justify-content:center">${loan?.details?.mwombajiAmesainiFomuNgumu ? `<span style="font-size:11px;font-weight:900;color:#059669;letter-spacing:0.5px">[ IMEWEKWA ]</span>` : ""}</div><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Received By (Client)</div></div>
   </div>
 
   <div style="margin-top:24px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:14px;font-style:italic">Valid only when officially stamped and authorized · REF: ${accountNumber} · Generated ${new Date().toLocaleString("en-GB")}</div>
@@ -214,7 +214,7 @@ const DisburseLoan = () => {
       <div style="background:#fff1f2;padding:24px;border-radius:16px;border:1px solid #fecaca;box-shadow:0 4px 12px rgba(225,29,72,0.05)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700">Maturity Date</div><div style="font-size:18px;font-weight:900;color:#e11d48;margin-top:8px">${fmtDate(summary?.final_payment_date)}</div></div>
     </div>
     <div style="margin-top:70px;display:grid;grid-template-columns:1fr 1fr;gap:60px">
-      <div style="text-align:center"><div style="height:46px"></div><div style="border-top:2px solid #0f172a;padding-top:14px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Client Signature</div></div>
+      <div style="text-align:center"><div style="height:46px;display:flex;align-items:flex-end;justify-content:center">${loan?.details?.mwombajiAmesainiFomuNgumu ? `<span style="font-size:12px;font-weight:900;color:#059669;letter-spacing:0.5px">[ IMEWEKWA ]</span>` : ""}</div><div style="border-top:2px solid #0f172a;padding-top:14px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Client Signature</div></div>
       <div style="text-align:center"><div style="height:46px"></div><div style="border-top:2px solid #0f172a;padding-top:14px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Branch Manager</div></div>
     </div>
     <div style="margin-top:40px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:20px;font-style:italic">This agreement is legally binding. Reference: ${accountNumber} Generated on ${new Date().toLocaleString("en-GB")}</div>
