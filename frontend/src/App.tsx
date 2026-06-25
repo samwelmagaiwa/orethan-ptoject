@@ -4,7 +4,6 @@ import axios from "axios";
 import LoadingScreen from "./components/LoadingScreen";
 
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 
 import Sidebar from "./components/Sidebar";
@@ -501,7 +500,6 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
 
         <div className="nav-links">
           <Link to="/login" className="login-btn">Login</Link>
-          <Link to="/register" className="register-btn">Get Started</Link>
         </div>
       </div>
 
@@ -934,7 +932,6 @@ function App() {
 
           {/* PUBLIC ROUTES */}
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
 
           {/* ========== PROTECTED ROUTES - WITH SIDEBAR ========== */}
           <Route

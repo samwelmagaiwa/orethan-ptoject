@@ -23,6 +23,8 @@ Route::prefix('v1')->group(function () {
     // ========== AUTH ROUTES ==========
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // ========== PROTECTED AUTH ROUTES ==========
     Route::middleware('auth:sanctum')->group(function () {
@@ -31,6 +33,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/me/signature', [AuthController::class, 'saveSignature']);
         Route::post('/me/avatar', [AuthController::class, 'saveAvatar']);
         Route::post('/me/verify-pin', [AuthController::class, 'verifyPin']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 
     // ========== PUBLIC ROUTES (No authentication required) ==========

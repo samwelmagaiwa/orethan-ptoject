@@ -28,6 +28,10 @@ class User extends Authenticatable
         'is_locked',
         'locked_at',
         'locked_reason',
+        'otp_code',
+        'otp_expires_at',
+        'first_login',
+        'must_change_password',
     ];
 
     /**
@@ -50,6 +54,9 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_locked' => 'boolean',
         'locked_at' => 'datetime',
+        'otp_expires_at' => 'datetime',
+        'first_login' => 'boolean',
+        'must_change_password' => 'boolean',
     ];
 
     // Helper methods for role checking

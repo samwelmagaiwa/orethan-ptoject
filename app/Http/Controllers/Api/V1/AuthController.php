@@ -47,13 +47,11 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
-        }
+        $user = User::where('email', $request->email)->first();
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid email or password'], 401);
+        }
 
         if ($user->isLocked()) {
             return response()->json([
@@ -62,13 +60,104 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // First-ever login -> require a 4-digit OTP (shown on screen, no SMS)
+        if ($user->first_login) {
+            $otp = (string) random_int(1000, 9999);
+            $user->otp_code = $otp;
+            $user->otp_expires_at = now()->addMinutes(10);
+            $user->save();
 
+            return response()->json([
+                'otp_required' => true,
+                'email' => $user->email,
+                'otp' => $otp, // delivered via the built-in on-screen notification
+                'message' => 'Enter the 4-digit verification code to continue.',
+            ]);
+        }
+
+        return $this->issueToken($user);
+    }
+
+    /** Verify the first-login OTP and issue the token. */
+    public function verifyOtp(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string',
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        if ($user->isLocked()) {
+            return response()->json(['message' => 'Account is locked.'], 403);
+        }
+        if (!$user->otp_code || $user->otp_code !== $data['otp']) {
+            return response()->json(['message' => 'Incorrect verification code.'], 422);
+        }
+        if (!$user->otp_expires_at || $user->otp_expires_at->isPast()) {
+            return response()->json(['message' => 'The verification code has expired. Please log in again.'], 422);
+        }
+
+        $user->first_login = false;
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+
+        return $this->issueToken($user);
+    }
+
+    /** Forgot password: verify the registered phone, reset to default ORETHAN. */
+    public function forgotPassword(Request $request)
+    {
+        $data = $request->validate(['phone' => 'required|string']);
+
+        $phone = preg_replace('/\s+/', '', $data['phone']);
+        $user = User::whereRaw("REPLACE(phone,' ','') = ?", [$phone])->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'No account is registered with that phone number.'], 404);
+        }
+        if ($user->isLocked()) {
+            return response()->json(['message' => 'Account is locked. Contact the administrator.'], 403);
+        }
+
+        $user->password = Hash::make('ORETHAN');
+        $user->must_change_password = true;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Your password has been reset to the default password.',
+            'default_password' => 'ORETHAN',
+            'email' => $user->email,
+        ]);
+    }
+
+    /** Change password (e.g. forced after a default reset). */
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+        $user->password = Hash::make($data['new_password']);
+        $user->must_change_password = false;
+        $user->save();
+
+        return response()->json(['message' => 'Password changed successfully.']);
+    }
+
+    private function issueToken(User $user)
+    {
+        $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
             'message' => 'Login success',
             'user' => $user,
             'token' => $token,
             'role' => $user->role,
+            'must_change_password' => (bool) $user->must_change_password,
         ]);
     }
 
