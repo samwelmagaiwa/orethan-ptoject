@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Models\AuditLog;
+use App\Services\Notifier;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -84,6 +85,11 @@ class LeaveRequestController extends Controller
 
             AuditLog::record('leave_request.created', $user, $lr,
                 'Ombi la likizo limewasilishwa: ' . $lr->employee_name, ['absence_type' => $lr->absence_type]);
+
+            if ($role = Notifier::roleForStatus($lr->status)) {
+                Notifier::toRoles($role, 'leave_request', 'New leave request',
+                    $user->name . ' submitted a leave request for your approval.', '/leave-requests', ['id' => $lr->id]);
+            }
 
             return $this->success($lr, 'Ombi la likizo limewasilishwa');
         } catch (\Exception $e) {
@@ -226,6 +232,14 @@ class LeaveRequestController extends Controller
             AuditLog::record('leave_request.approved', $user, $lr,
                 'Ombi la likizo limeidhinishwa (' . $stage . ')', ['stage' => $stage]);
 
+            if ($lr->status === 'authorized') {
+                Notifier::toUsers([$lr->created_by], 'leave_request', 'Leave approved',
+                    'Your leave request has been approved.', '/leave-requests', ['id' => $lr->id]);
+            } elseif ($nextRole = Notifier::roleForStatus($lr->status)) {
+                Notifier::toRoles($nextRole, 'leave_request', 'Leave request awaiting your approval',
+                    $lr->employee_name . ' has a leave request needing your approval.', '/leave-requests', ['id' => $lr->id]);
+            }
+
             return $this->success($lr, $lr->status === 'authorized' ? 'Likizo imeidhinishwa kikamilifu' : 'Imeidhinishwa, imepelekwa hatua inayofuata');
         } catch (\Exception $e) {
             Log::error('leave request approve error: ' . $e->getMessage());
@@ -262,6 +276,9 @@ class LeaveRequestController extends Controller
             $lr->save();
 
             AuditLog::record('leave_request.rejected', $user, $lr, 'Ombi la likizo limekataliwa', ['reason' => $data['reason']]);
+
+            Notifier::toUsers([$lr->created_by], 'leave_request', 'Leave request rejected',
+                'Your leave request was not approved. You can edit and resubmit it.', '/leave-requests', ['id' => $lr->id]);
 
             return $this->success($lr, 'Ombi limekataliwa');
         } catch (\Exception $e) {

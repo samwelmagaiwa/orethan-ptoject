@@ -28,10 +28,12 @@ const NotificationBell = () => {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 30000);
+    const t = setInterval(load, 15000); // fast polling
+    const onFocus = () => load();        // refresh the moment the tab is focused
     const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("focus", onFocus);
     document.addEventListener("mousedown", onClick);
-    return () => { clearInterval(t); document.removeEventListener("mousedown", onClick); };
+    return () => { clearInterval(t); window.removeEventListener("focus", onFocus); document.removeEventListener("mousedown", onClick); };
   }, []);
 
   const openItem = async (n: any) => {

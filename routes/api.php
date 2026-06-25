@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/signature', [AuthController::class, 'saveSignature']);
+        Route::post('/me/avatar', [AuthController::class, 'saveAvatar']);
         Route::post('/me/verify-pin', [AuthController::class, 'verifyPin']);
     });
 

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'role',
         'phone',
         'signature',
+        'avatar',
         'is_locked',
         'locked_at',
         'locked_reason',

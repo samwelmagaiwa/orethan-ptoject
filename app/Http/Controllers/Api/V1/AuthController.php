@@ -106,6 +106,19 @@ class AuthController extends Controller
         return response()->json(['message' => 'Signature saved', 'signature' => $user->signature]);
     }
 
+    // SAVE PROFILE AVATAR (base64 image data URL)
+    public function saveAvatar(Request $request)
+    {
+        $data = $request->validate(['avatar' => 'required|string']);
+        if (!str_starts_with($data['avatar'], 'data:image/')) {
+            return response()->json(['message' => 'Invalid image'], 422);
+        }
+        $user = $request->user();
+        $user->avatar = $data['avatar'];
+        $user->save();
+        return response()->json(['message' => 'Avatar saved', 'avatar' => $user->avatar]);
+    }
+
     // VERIFY THE CURRENT USER'S PASSWORD/PIN (for re-auth gates)
     public function verifyPin(Request $request)
     {

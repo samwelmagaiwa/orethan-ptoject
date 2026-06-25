@@ -34,6 +34,10 @@ class LoanController extends Controller
             $data = $request->validated();
             $data['user_id'] = $request->user()->id ?? null;
             $loan = $this->loanService->createLoan($data);
+
+            \App\Services\Notifier::toRoles('loan_manager', 'loan_request', 'New loan application',
+                'A new loan application for ' . ($loan->name ?? 'a customer') . ' awaits your review.', '/loan-manager', ['id' => $loan->id]);
+
             return $this->success($loan, 'Loan created successfully', 201);
         } catch (\Exception $e) {
             Log::error('Loan submission error: ' . $e->getMessage());
@@ -193,6 +197,19 @@ class LoanController extends Controller
             }
 
             $updatedLoan = $this->loanService->approveLoan($loan, $request->all(), $user);
+
+            // Arifa hatua inayofuata kwenye mtiririko wa mkopo
+            $loanLinks = ['gm_review' => '/general-manager', 'md_review' => '/managing-director'];
+            if ($updatedLoan->status === 'approved') {
+                \App\Services\Notifier::toRoles('finance_officer', 'loan_request', 'Loan approved — ready to disburse',
+                    'Loan for ' . ($updatedLoan->name ?? 'a customer') . ' is approved and ready for disbursement.', '/finance/customers', ['id' => $updatedLoan->id]);
+                \App\Services\Notifier::toUsers([$updatedLoan->user_id], 'loan_request', 'Loan approved',
+                    'The loan you submitted for ' . ($updatedLoan->name ?? 'a customer') . ' has been fully approved.', '/my-applications', ['id' => $updatedLoan->id]);
+            } elseif ($nextRole = \App\Services\Notifier::roleForStatus($updatedLoan->status)) {
+                \App\Services\Notifier::toRoles($nextRole, 'loan_request', 'Loan awaiting your approval',
+                    'A loan for ' . ($updatedLoan->name ?? 'a customer') . ' needs your approval.', $loanLinks[$updatedLoan->status] ?? '/loan-manager', ['id' => $updatedLoan->id]);
+            }
+
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan approved successfully');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
 use App\Models\AuditLog;
+use App\Services\Notifier;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -95,6 +96,9 @@ class PaymentRequestController extends Controller
 
             AuditLog::record('payment_request.created', $user, $pr,
                 'Ombi la malipo limewasilishwa: ' . $pr->payable_to, ['amount' => $pr->amount]);
+
+            Notifier::toRoles('loan_manager', 'payment_request', 'New payment request',
+                $user->name . ' submitted a payment request payable to ' . $pr->payable_to . '.', '/payment-requests', ['id' => $pr->id]);
 
             return $this->success($pr, 'Ombi la malipo limewasilishwa');
         } catch (\Exception $e) {
@@ -217,6 +221,15 @@ class PaymentRequestController extends Controller
                 : 'Ombi la malipo limeidhinishwa (' . $stage . ')';
             AuditLog::record($action, $user, $pr, $desc, ['decision' => $decision, 'amount' => $pr->final_amount]);
 
+            // Arifa hatua inayofuata / mwombaji
+            if ($pr->status === 'disbursed') {
+                Notifier::toUsers([$pr->created_by], 'payment_request', 'Payment disbursed',
+                    'Your payment request payable to ' . $pr->payable_to . ' has been disbursed.', '/payment-requests', ['id' => $pr->id]);
+            } elseif ($nextRole = Notifier::roleForStatus($pr->status)) {
+                Notifier::toRoles($nextRole, 'payment_request', 'Payment request awaiting your action',
+                    'A payment request payable to ' . $pr->payable_to . ' needs your review.', '/payment-requests', ['id' => $pr->id]);
+            }
+
             $msg = match ($pr->status) {
                 'awaiting_disbursement' => 'Imeidhinishwa na MD, inasubiri malipo ya keshia',
                 'disbursed' => 'Malipo yametolewa kwa mwombaji kikamilifu',
@@ -325,6 +338,9 @@ class PaymentRequestController extends Controller
             $pr->save();
 
             AuditLog::record('payment_request.rejected', $user, $pr, 'Ombi la malipo limekataliwa', ['reason' => $data['reason']]);
+
+            Notifier::toUsers([$pr->created_by], 'payment_request', 'Payment request rejected',
+                'Your payment request payable to ' . $pr->payable_to . ' was not approved. You can edit and resubmit it.', '/payment-requests', ['id' => $pr->id]);
 
             return $this->success($pr, 'Ombi limekataliwa');
         } catch (\Exception $e) {
