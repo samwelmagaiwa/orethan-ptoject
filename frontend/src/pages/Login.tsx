@@ -193,49 +193,49 @@ function Login() {
       <style>{`
         * { box-sizing: border-box; }
         .lg { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden;
-          background: radial-gradient(1200px 600px at 10% -10%, #e3f2e9 0%, transparent 55%), radial-gradient(1000px 600px at 110% 110%, #e0eefb 0%, transparent 55%), #f6f9fc;
+          background: linear-gradient(135deg, #6cb33f 0%, #2a9d6f 38%, #1d8ad1 74%, #1565c0 100%);
           font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
         .lg__mesh { position: absolute; inset: 0; pointer-events: none;
-          background: radial-gradient(420px 420px at 85% 15%, rgba(29,138,209,0.10), transparent 70%), radial-gradient(420px 420px at 12% 85%, rgba(124,179,66,0.12), transparent 70%); }
-        .lg__bglogo { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(1150px, 96vw); max-height: 96vh; object-fit: contain; opacity: 0.08; pointer-events: none; z-index: 0; filter: saturate(1.1); }
+          background: radial-gradient(640px 640px at 82% 14%, rgba(255,255,255,0.28), transparent 62%), radial-gradient(560px 560px at 14% 88%, rgba(124,179,66,0.45), transparent 64%), radial-gradient(520px 520px at 90% 92%, rgba(21,101,192,0.4), transparent 66%); }
+        .lg__bglogo { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(1200px, 98vw); max-height: 98vh; object-fit: contain; opacity: 0.12; pointer-events: none; z-index: 0; filter: brightness(1.4) saturate(0.9); }
         .lg__card { position: relative; z-index: 1; width: 100%; max-width: 430px;
-          background: rgba(255,255,255,0.45);
-          backdrop-filter: blur(22px) saturate(1.5);
-          -webkit-backdrop-filter: blur(22px) saturate(1.5);
-          border: 1px solid rgba(255,255,255,0.65);
-          border-radius: 24px;
-          box-shadow: 0 30px 70px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.6);
+          background: rgba(255,255,255,0.14);
+          backdrop-filter: blur(30px) saturate(1.6);
+          -webkit-backdrop-filter: blur(30px) saturate(1.6);
+          border: 1px solid rgba(255,255,255,0.4);
+          border-radius: 26px;
+          box-shadow: 0 35px 80px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
           padding: 2.2rem 2.2rem 1.6rem; }
         .lg__brand { text-align: center; margin-bottom: 1.4rem; }
         .lg__brand img { height: 86px; width: auto; object-fit: contain; }
         .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 0.8rem auto 0; max-width: 220px; }
         .lg__bars .g { flex: 1; background: linear-gradient(90deg,#7cb342,#aed581); }
         .lg__bars .b { flex: 1; background: linear-gradient(90deg,#1565c0,#1d8ad1); }
-        .lg__card h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0 0 0.3rem; letter-spacing: -0.02em; }
-        .lg__sub { font-size: 0.84rem; color: #64748b; margin: 0 0 1.3rem; line-height: 1.5; }
+        .lg__card h2 { font-size: 1.55rem; font-weight: 900; color: #ffffff; margin: 0 0 0.3rem; letter-spacing: -0.02em; text-shadow: 0 2px 8px rgba(7,42,67,0.25); }
+        .lg__sub { font-size: 0.84rem; color: rgba(255,255,255,0.85); margin: 0 0 1.3rem; line-height: 1.5; }
         form { display: flex; flex-direction: column; gap: 0; }
         .lg__field { margin-bottom: 1rem; }
-        .lg__field label { display: block; font-size: 0.72rem; font-weight: 700; color: #475569; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.4px; }
-        .lg__field input { width: 100%; padding: 0.85rem 1rem; border: 1.5px solid rgba(255,255,255,0.7); border-radius: 12px; font-size: 0.92rem; font-weight: 600; color: #0f172a; outline: none; transition: all 0.18s; background: rgba(255,255,255,0.55); }
-        .lg__field input::placeholder { color: #64748b; }
-        .lg__field input:focus { border-color: #1d8ad1; box-shadow: 0 0 0 3px rgba(29,138,209,0.15); background: rgba(255,255,255,0.9); }
+        .lg__field label { display: block; font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.92); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .lg__field input { width: 100%; padding: 0.85rem 1rem; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 12px; font-size: 0.92rem; font-weight: 600; color: #ffffff; outline: none; transition: all 0.18s; background: rgba(255,255,255,0.14); }
+        .lg__field input::placeholder { color: rgba(255,255,255,0.6); }
+        .lg__field input:focus { border-color: rgba(255,255,255,0.85); box-shadow: 0 0 0 3px rgba(255,255,255,0.18); background: rgba(255,255,255,0.26); }
         .lg__pw { position: relative; }
-        .lg__pw > button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; }
-        .lg__pwic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .lg__pw > button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.8); cursor: pointer; display: flex; }
+        .lg__pwic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.8); }
         .lg__row { display: flex; justify-content: flex-end; margin: -0.3rem 0 1rem; }
-        .lg__link { background: none; border: none; color: #1d8ad1; font-weight: 700; font-size: 0.8rem; cursor: pointer; padding: 0; }
-        .lg__btn { width: 100%; padding: 0.95rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#102a43,#1d3a5f); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 10px 22px rgba(16,42,67,0.28); }
-        .lg__btn:hover { transform: translateY(-1px); filter: brightness(1.07); }
+        .lg__link { background: none; border: none; color: #ffffff; font-weight: 800; font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+        .lg__btn { width: 100%; padding: 0.95rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#5fb030 0%,#2a9d6f 45%,#1577c4 100%); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 14px 30px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.25); }
+        .lg__btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
         .lg__btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .lg__back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: #64748b; font-weight: 700; font-size: 0.8rem; cursor: pointer; padding: 0; margin-bottom: 1rem; }
-        .lg__icon { width: 52px; height: 52px; border-radius: 15px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
-        .lg__otpbox { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: linear-gradient(135deg,#eef2ff,#e0f2fe); border: 1px solid #c7d2fe; border-radius: 14px; padding: 1rem; margin-bottom: 1.1rem; }
-        .lg__otpbox span { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-        .lg__otpbox strong { font-size: 2.1rem; font-weight: 900; color: #102a43; letter-spacing: 0.7rem; padding-left: 0.7rem; }
-        .lg__msg { font-size: 0.82rem; font-weight: 600; padding: 0.75rem 0.9rem; border-radius: 10px; margin-bottom: 1rem; line-height: 1.45; }
-        .lg__msg--err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
-        .lg__msg--info { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
-        .lg__foot { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 1.4rem; font-weight: 600; }
+        .lg__back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.8rem; cursor: pointer; padding: 0; margin-bottom: 1rem; }
+        .lg__icon { width: 52px; height: 52px; border-radius: 15px; background: rgba(255,255,255,0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; border: 1px solid rgba(255,255,255,0.3); }
+        .lg__otpbox { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.35); border-radius: 14px; padding: 1rem; margin-bottom: 1.1rem; }
+        .lg__otpbox span { font-size: 0.68rem; font-weight: 800; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
+        .lg__otpbox strong { font-size: 2.1rem; font-weight: 900; color: #ffffff; letter-spacing: 0.7rem; padding-left: 0.7rem; text-shadow: 0 2px 8px rgba(7,42,67,0.3); }
+        .lg__msg { font-size: 0.82rem; font-weight: 700; padding: 0.75rem 0.9rem; border-radius: 10px; margin-bottom: 1rem; line-height: 1.45; backdrop-filter: blur(6px); }
+        .lg__msg--err { background: rgba(239,68,68,0.22); border: 1px solid rgba(254,202,202,0.6); color: #fff; }
+        .lg__msg--info { background: rgba(16,185,129,0.22); border: 1px solid rgba(167,243,208,0.6); color: #fff; }
+        .lg__foot { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.75); margin-top: 1.4rem; font-weight: 600; }
       `}</style>
     </div>
   );
