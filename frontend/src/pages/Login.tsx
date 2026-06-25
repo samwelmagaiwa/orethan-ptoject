@@ -197,10 +197,10 @@ function Login() {
       <style>{`
         * { box-sizing: border-box; }
         .lg { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden;
-          background: linear-gradient(135deg, #6cb33f 0%, #2a9d6f 38%, #1d8ad1 74%, #1565c0 100%);
+          background: linear-gradient(120deg, #57b33b 0%, #1f9e74 30%, #1e88e5 66%, #0d6efd 100%);
           font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
         .lg__mesh { position: absolute; inset: 0; pointer-events: none;
-          background: radial-gradient(640px 640px at 82% 14%, rgba(255,255,255,0.28), transparent 62%), radial-gradient(560px 560px at 14% 88%, rgba(124,179,66,0.45), transparent 64%), radial-gradient(520px 520px at 90% 92%, rgba(21,101,192,0.4), transparent 66%); }
+          background: radial-gradient(640px 640px at 82% 12%, rgba(255,255,255,0.26), transparent 62%), radial-gradient(560px 560px at 12% 86%, rgba(102,187,106,0.5), transparent 64%), radial-gradient(560px 560px at 92% 90%, rgba(13,110,253,0.5), transparent 66%), radial-gradient(440px 440px at 60% 50%, rgba(30,136,229,0.22), transparent 70%); }
         .lg__wm { position: fixed; inset: -28%; transform: rotate(-26deg); display: flex; flex-direction: column; justify-content: center; gap: 2.4rem; pointer-events: none; z-index: 0; animation: wmFloat 18s ease-in-out infinite; transform-origin: center; }
         @keyframes wmFloat {
           0%, 100% { transform: rotate(-26deg) translate(0, 0); }
@@ -249,7 +249,7 @@ function Login() {
         .lg__pwic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.8); }
         .lg__row { display: flex; justify-content: flex-end; margin: -0.3rem 0 1rem; }
         .lg__link { background: none; border: none; color: #ffffff; font-weight: 800; font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
-        .lg__btn { width: 100%; padding: 0.95rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#5fb030 0%,#2a9d6f 45%,#1577c4 100%); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 14px 30px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.25); }
+        .lg__btn { width: 100%; padding: 0.95rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#57b33b 0%,#1f9e74 42%,#1e88e5 78%,#0d6efd 100%); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 14px 30px rgba(13,80,180,0.4), inset 0 1px 0 rgba(255,255,255,0.28); }
         .lg__btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
         .lg__btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .lg__back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.8rem; cursor: pointer; padding: 0; margin-bottom: 1rem; }
