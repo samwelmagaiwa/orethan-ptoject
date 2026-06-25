@@ -18,9 +18,10 @@ const inp: React.CSSProperties = { width: "100%", padding: "0.7rem 0.9rem", bord
 
 const Delegations = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const canDelegate = ["managing_director", "general_manager", "admin"].includes(user?.role);
+  const canDelegate = ["managing_director", "general_manager", "loan_manager", "admin"].includes(user?.role);
+  const hasOversight = ["managing_director", "general_manager"].includes(user?.role);
   const [tab, setTab] = useState<"new" | "list">(canDelegate ? "new" : "list");
-  const [scope, setScope] = useState<"mine" | "assigned" | "all">(canDelegate ? "mine" : "assigned");
+  const [scope, setScope] = useState<"mine" | "assigned" | "oversight" | "all">(canDelegate ? "mine" : "assigned");
   const [list, setList] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [success, setSuccess] = useState({ open: false, title: "", message: "" });
@@ -101,7 +102,7 @@ const Delegations = () => {
       ) : (
         <>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.8rem" }}>
-            {([["assigned", "Assigned to Me"], ...(canDelegate ? [["mine", "Created by Me"]] : []), ["all", "All"]] as const).map(([k, l]: any) => (
+            {([["assigned", "Assigned to Me"], ...(canDelegate ? [["mine", "Created by Me"]] : []), ...(hasOversight ? [["oversight", "Oversight (View)"]] : []), ["all", "All"]] as const).map(([k, l]: any) => (
               <button key={k} onClick={() => setScope(k)} style={{ padding: "0.45rem 1rem", borderRadius: 8, border: "1px solid #e2e8f0", background: scope === k ? "#4f46e5" : "white", color: scope === k ? "white" : "#64748b", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>{l}</button>
             ))}
           </div>

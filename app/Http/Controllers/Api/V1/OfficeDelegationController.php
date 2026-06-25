@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OfficeDelegation;
 use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\Notification;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,34 @@ use Illuminate\Support\Facades\Log;
 class OfficeDelegationController extends Controller
 {
     use ApiResponse;
+
+    // Cheo cha juu kinaweza kuona ukaimishaji wa cheo cha chini (read-only oversight)
+    const RANK = [
+        'loan_officer' => 1, 'finance_officer' => 1,
+        'loan_manager' => 2, 'general_manager' => 3, 'managing_director' => 4, 'admin' => 5,
+    ];
+
+    /** Majukumu yaliyo chini ya mtazamaji (oversight). */
+    private function subordinateRoles($user): array
+    {
+        if ($user->isManagingDirector()) return ['loan_manager', 'general_manager'];
+        if ($user->isGeneralManager()) return ['loan_manager'];
+        return [];
+    }
+
+    private function canDelegate($user): bool
+    {
+        return $user->isManagingDirector() || $user->isGeneralManager() || $user->isLoanManager() || $user->isAdmin();
+    }
+
+    private function titleFor(string $role): array
+    {
+        return match ($role) {
+            'general_manager' => ['General Manager', 'Acting General Manager'],
+            'loan_manager' => ['Loan Manager', 'Acting Loan Manager'],
+            default => ['Managing Director', 'Acting Managing Director'],
+        };
+    }
 
     /**
      * Watumishi ambao MD anaweza kuwakaimisha (wote isipokuwa yeye mwenyewe).
@@ -33,11 +62,10 @@ class OfficeDelegationController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$user->isManagingDirector() && !$user->isGeneralManager() && !$user->isAdmin()) {
-            return $this->error('Mkurugenzi Mtendaji au Meneja Mkuu pekee ndiye anaweza kukaimisha madaraka', 403);
+        if (!$this->canDelegate($user)) {
+            return $this->error('Mkurugenzi, Meneja Mkuu au Meneja wa Mikopo pekee ndiye anaweza kukaimisha madaraka', 403);
         }
-        $delegatorTitle = $user->isGeneralManager() ? 'General Manager' : 'Managing Director';
-        $defaultActing = $user->isGeneralManager() ? 'Acting General Manager' : 'Acting Managing Director';
+        [$delegatorTitle, $defaultActing] = $this->titleFor($user->role);
 
         $data = $request->validate([
             'delegate_id' => 'required|exists:users,id',
@@ -76,6 +104,7 @@ class OfficeDelegationController extends Controller
                 'delegator_id' => $user->id,
                 'delegator_name' => $user->name,
                 'delegator_title' => $delegatorTitle,
+                'delegator_role' => $user->role,
                 'delegate_id' => $delegate->id,
                 'delegate_name' => $delegate->name,
                 'delegate_role' => $delegate->role,
@@ -93,7 +122,22 @@ class OfficeDelegationController extends Controller
             ]);
 
             AuditLog::record('office_delegation.created', $user, $del,
-                'MD amekaimisha madaraka kwa ' . $delegate->name, ['from' => $data['from_date'], 'to' => $data['to_date']]);
+                $delegatorTitle . ' amekaimisha madaraka kwa ' . $delegate->name, ['from' => $data['from_date'], 'to' => $data['to_date']]);
+
+            // Arifa: kwa mkaimishwa (kuthibitisha) na kwa wakubwa (read-only oversight)
+            $this->notify($delegate->id, 'delegation', 'You have been delegated authority',
+                $user->name . ' (' . $delegatorTitle . ') has delegated office & authority to you as ' . ($data['acting_title'] ?: $defaultActing) . '. Please review and acknowledge.', '/delegations', ['id' => $del->id]);
+
+            // Wakubwa wa cheo cha mkaimishaji wanaarifiwa kwa ufuatiliaji (kuona tu)
+            $superiorRoles = [];
+            if ($user->isLoanManager()) $superiorRoles = ['general_manager', 'managing_director'];
+            elseif ($user->isGeneralManager()) $superiorRoles = ['managing_director'];
+            if ($superiorRoles) {
+                foreach (User::whereIn('role', $superiorRoles)->pluck('id') as $sid) {
+                    $this->notify($sid, 'delegation_oversight', 'New delegation to review (view only)',
+                        $user->name . ' (' . $delegatorTitle . ') delegated authority to ' . $delegate->name . '. View it for your records.', '/delegations', ['id' => $del->id]);
+                }
+            }
 
             return $this->success($del, 'Fomu ya kukaimisha imewasilishwa kwa ' . $delegate->name);
         } catch (\Exception $e) {
@@ -102,10 +146,23 @@ class OfficeDelegationController extends Controller
         }
     }
 
+    /** Tengeneza arifa kwa mtumiaji. */
+    private function notify($userId, string $type, string $title, string $message, ?string $link = null, array $data = []): void
+    {
+        try {
+            Notification::create([
+                'user_id' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, 'link' => $link, 'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('notify error: ' . $e->getMessage());
+        }
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
-        $scope = $request->query('scope'); // mine | assigned | all
+        $scope = $request->query('scope'); // mine | assigned | oversight | all
+        $below = $this->subordinateRoles($user);
 
         $query = OfficeDelegation::query()->orderByDesc('created_at');
 
@@ -113,12 +170,17 @@ class OfficeDelegationController extends Controller
             $query->where('delegator_id', $user->id);
         } elseif ($scope === 'assigned') {
             $query->where('delegate_id', $user->id);
-        } elseif ($scope === 'all' && !$user->isAdmin()) {
-            $query->where(fn($q) => $q->where('delegator_id', $user->id)->orWhere('delegate_id', $user->id));
+        } elseif ($scope === 'oversight') {
+            // Ukaimishaji wa wasaidizi — kuona tu (read-only)
+            $query->whereIn('delegator_role', $below ?: ['__none__']);
+        } elseif ($scope === 'all' && $user->isAdmin()) {
+            // admin: yote
         } else {
-            // default: MD/GM -> mine, others -> assigned
-            if ($user->isManagingDirector() || $user->isGeneralManager()) $query->where('delegator_id', $user->id);
-            elseif (!$user->isAdmin()) $query->where('delegate_id', $user->id);
+            // default / 'all' for non-admin: mine + assigned + oversight
+            $query->where(function ($q) use ($user, $below) {
+                $q->where('delegator_id', $user->id)->orWhere('delegate_id', $user->id);
+                if ($below) $q->orWhereIn('delegator_role', $below);
+            });
         }
 
         return response()->json(['delegations' => $query->get()]);

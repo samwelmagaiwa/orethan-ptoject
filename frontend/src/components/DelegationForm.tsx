@@ -18,9 +18,12 @@ interface Props {
  */
 const DelegationForm = ({ onSuccess }: Props) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isGM = user?.role === "general_manager";
-  const delegatorTitle = isGM ? "General Manager" : "Managing Director";
-  const defaultActing = isGM ? "Acting General Manager" : "Acting Managing Director";
+  const TITLES: Record<string, [string, string]> = {
+    general_manager: ["General Manager", "Acting General Manager"],
+    loan_manager: ["Loan Manager", "Acting Loan Manager"],
+    managing_director: ["Managing Director", "Acting Managing Director"],
+  };
+  const [delegatorTitle, defaultActing] = TITLES[user?.role] || ["Managing Director", "Acting Managing Director"];
 
   const today = new Date().toISOString().slice(0, 10);
   const blank = { delegate_id: "", acting_title: defaultActing, reason: "", from_date: today, to_date: today, responsibilities: "", limitations: "", handover_notes: "", delegator_signature_img: user?.signature || "", delegator_date: today };

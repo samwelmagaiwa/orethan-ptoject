@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\OverdueController;
 use App\Http\Controllers\Api\V1\PaymentRequestController;
 use App\Http\Controllers\Api\V1\LeaveRequestController;
 use App\Http\Controllers\Api\V1\OfficeDelegationController;
+use App\Http\Controllers\Api\V1\NotificationController;
 
 Route::prefix('v1')->group(function () {
 
@@ -124,6 +125,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/delegations/{id}', [OfficeDelegationController::class, 'destroy']);
         Route::post('/delegations/{id}/acknowledge', [OfficeDelegationController::class, 'acknowledge']);
         Route::post('/delegations/{id}/decline', [OfficeDelegationController::class, 'decline']);
+
+        // ========== NOTIFICATIONS ==========
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========

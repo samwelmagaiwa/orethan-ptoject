@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class OfficeDelegation extends Model
 {
     protected $fillable = [
-        'delegator_id', 'delegator_name', 'delegator_title',
+        'delegator_id', 'delegator_name', 'delegator_title', 'delegator_role',
         'delegate_id', 'delegate_name', 'delegate_role', 'acting_title',
         'reason', 'from_date', 'to_date', 'responsibilities', 'limitations', 'handover_notes',
         'status', 'decline_reason',
