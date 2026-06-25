@@ -94,6 +94,56 @@ class LeaveRequestController extends Controller
         return response()->json(LeaveRequest::findOrFail($id));
     }
 
+    /**
+     * Mwombaji anahariri ombi lililokataliwa kisha kuliwasilisha tena.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = $request->user();
+        $lr = LeaveRequest::findOrFail($id);
+
+        if ($lr->created_by !== ($user->id ?? null) && !$user->isAdmin()) {
+            return $this->error('Unaweza kuhariri maombi yako mwenyewe pekee', 403);
+        }
+        if ($lr->status !== 'rejected') {
+            return $this->error('Maombi yaliyokataliwa pekee ndiyo yanaweza kuhaririwa', 422);
+        }
+
+        $data = $request->validate([
+            'employee_name' => 'required|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'manager' => 'nullable|string|max:255',
+            'absence_type' => 'required|string|in:sick,bereavement,unpaid,personal,maternity,other',
+            'absence_other' => 'nullable|string|max:255',
+            'from_date' => 'required|date',
+            'to_date' => 'required|date|after_or_equal:from_date',
+            'reason' => 'nullable|string',
+            'employee_signature' => 'nullable|string|max:255',
+            'employee_date' => 'nullable|date',
+        ]);
+
+        try {
+            $lr->fill($data);
+            $lr->status = 'manager_review';
+            $lr->rejection_reason = null;
+            foreach ([
+                'manager_name', 'manager_decision', 'manager_comments', 'manager_date',
+                'gm_name', 'gm_decision', 'gm_comments', 'gm_date',
+                'md_name', 'md_comments', 'md_date',
+            ] as $f) {
+                $lr->{$f} = null;
+            }
+            $lr->save();
+
+            AuditLog::record('leave_request.resubmitted', $user, $lr, 'Ombi la likizo limehaririwa na kuwasilishwa tena');
+
+            return $this->success($lr, 'Ombi limehaririwa na kuwasilishwa tena');
+        } catch (\Exception $e) {
+            Log::error('leave request update error: ' . $e->getMessage());
+            return $this->error('Imeshindikana kuhariri ombi', 500);
+        }
+    }
+
     public function approve(Request $request, $id)
     {
         $user = $request->user();

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon } from "lucide-react";
+import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -41,6 +41,7 @@ const LeaveRequests = () => {
     from_date: today, to_date: today, reason: "", employee_signature: user?.name || "", employee_date: today,
   };
   const [form, setForm] = useState<any>(blank);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [comments, setComments] = useState("");
@@ -58,6 +59,7 @@ const LeaveRequests = () => {
     if (status === "md_review") return role === "managing_director";
     return false;
   };
+  const canEdit = (r: any) => r.status === "rejected" && (r.created_by === user?.id || role === "admin");
 
   const load = async () => {
     setLoading(true);
@@ -75,12 +77,27 @@ const LeaveRequests = () => {
     if (!form.employee_name || !form.from_date || !form.to_date) { alert("Please fill employee name and dates."); return; }
     setSubmitting(true);
     try {
-      await axios.post(`${API_BASE}/leave-requests`, form, { headers: headers() });
-      setForm(blank);
+      if (editingId) {
+        await axios.put(`${API_BASE}/leave-requests/${editingId}`, form, { headers: headers() });
+      } else {
+        await axios.post(`${API_BASE}/leave-requests`, form, { headers: headers() });
+      }
+      setForm(blank); setEditingId(null);
       setTab("list"); setScope("mine");
       await load();
-      alert("Leave request submitted.");
+      alert(editingId ? "Request updated and resubmitted." : "Leave request submitted.");
     } catch (e: any) { console.error(e); alert(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
+  };
+
+  const startEdit = (r: any) => {
+    setForm({
+      employee_name: r.employee_name || "", department: r.department || "", manager: r.manager || "",
+      absence_type: r.absence_type || "sick", absence_other: r.absence_other || "",
+      from_date: r.from_date?.slice(0, 10) || today, to_date: r.to_date?.slice(0, 10) || today,
+      reason: r.reason || "", employee_signature: r.employee_signature || user?.name || "",
+      employee_date: r.employee_date?.slice(0, 10) || today,
+    });
+    setEditingId(r.id); setSelected(null); setTab("new");
   };
 
   const openDetail = (r: any) => { setSelected(r); setComments(""); };
@@ -121,6 +138,11 @@ const LeaveRequests = () => {
       {tab === "new" ? (
         <div className="prf-page">
           <div className="prf-card">
+            {editingId && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "0.6rem 0.9rem", marginBottom: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>
+                <Pencil size={15} /> Editing rejected request #{editingId} — it will restart the approval flow on resubmit.
+              </div>
+            )}
             {/* Approval chain strip */}
             <div className="prf-chain">
               {["You", "Manager", "General Manager", "Employer"].map((s, i) => (
@@ -183,9 +205,9 @@ const LeaveRequests = () => {
                 <ShieldCheck size={15} style={{ color: "#10b981" }} /> Submitting routes this request to your Manager for approval.
               </span>
               <div style={{ display: "flex", gap: "0.7rem" }}>
-                <button onClick={() => setForm(blank)} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>Clear</button>
+                <button onClick={() => { setForm(blank); setEditingId(null); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>{editingId ? "Cancel" : "Clear"}</button>
                 <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
-                  <Send size={16} /> {submitting ? "Submitting..." : "Submit Request"}
+                  <Send size={16} /> {submitting ? "Submitting..." : editingId ? "Resubmit Request" : "Submit Request"}
                 </button>
               </div>
             </div>
@@ -221,9 +243,16 @@ const LeaveRequests = () => {
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.64rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.76rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.created_at)}</td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
-                          <button onClick={() => openDetail(r)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
-                            {canDecide(r.status) ? "Review" : "View"}
-                          </button>
+                          <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+                            {canEdit(r) && (
+                              <button onClick={() => startEdit(r)} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.4rem 0.8rem", borderRadius: 8, background: "#fffbeb", border: "1px solid #fde68a", color: "#d97706", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+                                <Pencil size={12} /> Edit
+                              </button>
+                            )}
+                            <button onClick={() => openDetail(r)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+                              {canDecide(r.status) ? "Review" : "View"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -270,7 +299,14 @@ const LeaveRequests = () => {
                   <ApprovalRow title="Employer (Authorisation)" name={selected.md_name} decision={selected.status === "authorized" ? "authorized" : null} date={selected.md_date} comments={selected.md_comments} />
                 </div>
                 {selected.status === "rejected" && (
-                  <p style={{ marginTop: "0.8rem", fontSize: "0.8rem", color: "#dc2626", background: "#fef2f2", padding: "0.7rem", borderRadius: 8, fontWeight: 600 }}>Rejected: {selected.rejection_reason}</p>
+                  <div style={{ marginTop: "0.8rem" }}>
+                    <p style={{ fontSize: "0.8rem", color: "#dc2626", background: "#fef2f2", padding: "0.7rem", borderRadius: 8, fontWeight: 600, margin: 0 }}>Rejected: {selected.rejection_reason}</p>
+                    {canEdit(selected) && (
+                      <button onClick={() => startEdit(selected)} style={{ marginTop: "0.7rem", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#d97706", border: "none", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
+                        <Pencil size={15} /> Edit & Resubmit
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {/* Approval actions */}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight } from "lucide-react";
+import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
@@ -16,6 +16,8 @@ const STATUS_META: Record<string, { label: string; bg: string; color: string }> 
   manager_review: { label: "Awaiting Loan Manager", bg: "#eef2ff", color: "#4f46e5" },
   gm_review: { label: "Awaiting General Manager", bg: "#fff7ed", color: "#ea580c" },
   md_review: { label: "Awaiting Managing Director", bg: "#fdf4ff", color: "#a21caf" },
+  awaiting_disbursement: { label: "Awaiting Cashier Payout", bg: "#ecfeff", color: "#0891b2" },
+  disbursed: { label: "Disbursed / Paid", bg: "#ecfdf5", color: "#059669" },
   authorized: { label: "Authorized", bg: "#ecfdf5", color: "#059669" },
   rejected: { label: "Rejected", bg: "#fef2f2", color: "#dc2626" },
 };
@@ -39,12 +41,14 @@ const PaymentRequests = () => {
     amount: "", amount_in_words: "", applicant_signature: user?.name || "", applicant_date: new Date().toISOString().slice(0, 10),
   };
   const [form, setForm] = useState<any>(blank);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Approval state
   const [adjustedAmount, setAdjustedAmount] = useState("");
   const [comments, setComments] = useState("");
+  const [cashierRef, setCashierRef] = useState("");
   const [acting, setActing] = useState(false);
 
   const headers = () => {
@@ -57,8 +61,10 @@ const PaymentRequests = () => {
     if (status === "manager_review") return role === "loan_manager";
     if (status === "gm_review") return role === "general_manager";
     if (status === "md_review") return role === "managing_director";
+    if (status === "awaiting_disbursement") return role === "finance_officer";
     return false;
   };
+  const canEdit = (r: any) => r.status === "rejected" && (r.created_by === user?.id || role === "admin");
 
   const load = async () => {
     setLoading(true);
@@ -86,22 +92,38 @@ const PaymentRequests = () => {
     if (!form.applicant_name || !form.payable_to || !form.amount) { alert("Please fill applicant, payable to and amount."); return; }
     setSubmitting(true);
     try {
-      await axios.post(`${API_BASE}/payment-requests`, { ...form, amount: Number(form.amount) }, { headers: headers() });
-      setForm(blank);
+      if (editingId) {
+        await axios.put(`${API_BASE}/payment-requests/${editingId}`, { ...form, amount: Number(form.amount) }, { headers: headers() });
+      } else {
+        await axios.post(`${API_BASE}/payment-requests`, { ...form, amount: Number(form.amount) }, { headers: headers() });
+      }
+      setForm(blank); setEditingId(null);
       setTab("list"); setScope("mine");
       await load();
-      alert("Payment request submitted.");
+      alert(editingId ? "Request updated and resubmitted." : "Payment request submitted.");
     } catch (e: any) { console.error(e); alert(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
   };
 
-  const openDetail = (r: any) => { setSelected(r); setAdjustedAmount(""); setComments(""); };
+  const startEdit = (r: any) => {
+    setForm({
+      applicant_name: r.applicant_name || "", department: r.department || "", section: r.section || "",
+      activity_type: r.activity_type || "Loan", activity_detail: r.activity_detail || "",
+      loan_applicant_name: r.loan_applicant_name || "", invoice_path: r.invoice_path || "",
+      mode_of_payment: r.mode_of_payment || "cash", payable_to: r.payable_to || "", currency: r.currency || "TZS",
+      amount: r.amount ?? "", amount_in_words: r.amount_in_words || "",
+      applicant_signature: r.applicant_signature || user?.name || "", applicant_date: r.applicant_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    });
+    setEditingId(r.id); setSelected(null); setTab("new");
+  };
+
+  const openDetail = (r: any) => { setSelected(r); setAdjustedAmount(""); setComments(""); setCashierRef(""); };
 
   const approve = async () => {
     if (!selected) return;
     setActing(true);
     try {
       await axios.post(`${API_BASE}/payment-requests/${selected.id}/approve`, {
-        adjusted_amount: adjustedAmount ? Number(adjustedAmount) : null, comments,
+        adjusted_amount: adjustedAmount ? Number(adjustedAmount) : null, comments, cashier_reference: cashierRef || null,
       }, { headers: headers() });
       setSelected(null); await load();
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
@@ -134,12 +156,17 @@ const PaymentRequests = () => {
       {tab === "new" ? (
         <div className="prf-page">
           <div className="prf-card">
+            {editingId && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "0.6rem 0.9rem", marginBottom: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>
+                <Pencil size={15} /> Editing rejected request #{editingId} — it will restart the approval flow on resubmit.
+              </div>
+            )}
             {/* Approval chain strip */}
             <div className="prf-chain">
-              {["You", "Loan Manager", "General Manager", "Managing Director"].map((s, i) => (
+              {["You", "Loan Manager", "General Manager", "Managing Director", "Cashier Payout"].map((s, i, arr) => (
                 <span key={s} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <span className="prf-chain-pill">{s}</span>
-                  {i < 3 && <ArrowRight size={13} style={{ color: "#94a3b8" }} />}
+                  {i < arr.length - 1 && <ArrowRight size={13} style={{ color: "#94a3b8" }} />}
                 </span>
               ))}
             </div>
@@ -223,12 +250,12 @@ const PaymentRequests = () => {
             {/* FOOTER ACTIONS */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", marginTop: "0.5rem", paddingTop: "1.3rem", borderTop: "1px solid #e2e8f0", flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.76rem", color: "#94a3b8", fontWeight: 600 }}>
-                <ShieldCheck size={15} style={{ color: "#10b981" }} /> Submitting routes this request to the Loan Manager for review.
+                <ShieldCheck size={15} style={{ color: "#10b981" }} /> After MD approval, the Cashier disburses the payment to the applicant.
               </span>
               <div style={{ display: "flex", gap: "0.7rem" }}>
-                <button onClick={() => setForm(blank)} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>Clear</button>
+                <button onClick={() => { setForm(blank); setEditingId(null); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>{editingId ? "Cancel" : "Clear"}</button>
                 <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
-                  <Send size={16} /> {submitting ? "Submitting..." : "Submit Request"}
+                  <Send size={16} /> {submitting ? "Submitting..." : editingId ? "Resubmit Request" : "Submit Request"}
                 </button>
               </div>
             </div>
@@ -264,9 +291,16 @@ const PaymentRequests = () => {
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.66rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.76rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.created_at)}</td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
-                          <button onClick={() => openDetail(r)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
-                            {canDecide(r.status) ? "Review" : "View"}
-                          </button>
+                          <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+                            {canEdit(r) && (
+                              <button onClick={() => startEdit(r)} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.4rem 0.8rem", borderRadius: 8, background: "#fffbeb", border: "1px solid #fde68a", color: "#d97706", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+                                <Pencil size={12} /> Edit
+                              </button>
+                            )}
+                            <button onClick={() => openDetail(r)} style={{ padding: "0.4rem 0.9rem", borderRadius: 8, background: "#eef2ff", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+                              {canDecide(r.status) ? "Review" : "View"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -314,28 +348,48 @@ const PaymentRequests = () => {
                 <div style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <ApprovalRow title="Loan Manager / Head of Loan Dept" name={selected.manager_name} decision={selected.manager_decision} date={selected.manager_date} comments={selected.manager_comments} />
                   <ApprovalRow title="General Manager / Head of HR & Admin" name={selected.gm_name} decision={selected.gm_decision} date={selected.gm_date} comments={selected.gm_comments} />
-                  <ApprovalRow title="Managing Director (Authorisation)" name={selected.md_name} decision={selected.status === "authorized" ? "authorized" : null} date={selected.md_date} comments={selected.md_comments} />
+                  <ApprovalRow title="Managing Director (Authorisation)" name={selected.md_name} decision={selected.md_date ? "approved" : null} date={selected.md_date} comments={selected.md_comments} />
+                  <ApprovalRow title="Cashier / Finance (Disbursement)" name={selected.cashier_name} decision={selected.status === "disbursed" ? "disbursed" : null} date={selected.cashier_date} comments={selected.cashier_comments || (selected.cashier_reference ? `Ref: ${selected.cashier_reference}` : null)} />
                 </div>
                 {selected.status === "rejected" && (
-                  <p style={{ marginTop: "0.8rem", fontSize: "0.8rem", color: "#dc2626", background: "#fef2f2", padding: "0.7rem", borderRadius: 8, fontWeight: 600 }}>Rejected: {selected.rejection_reason}</p>
+                  <div style={{ marginTop: "0.8rem" }}>
+                    <p style={{ fontSize: "0.8rem", color: "#dc2626", background: "#fef2f2", padding: "0.7rem", borderRadius: 8, fontWeight: 600, margin: 0 }}>Rejected: {selected.rejection_reason}</p>
+                    {canEdit(selected) && (
+                      <button onClick={() => startEdit(selected)} style={{ marginTop: "0.7rem", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#d97706", border: "none", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
+                        <Pencil size={15} /> Edit & Resubmit
+                      </button>
+                    )}
+                  </div>
                 )}
 
-                {/* Approval actions */}
+                {/* Approval / Disbursement actions */}
                 {canDecide(selected.status) && (
                   <div style={{ marginTop: "1.2rem", borderTop: "1px solid #f1f5f9", paddingTop: "1.2rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.7rem", fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
-                      <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> Your Decision
+                      <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> {selected.status === "awaiting_disbursement" ? "Cashier Disbursement" : "Your Decision"}
                     </div>
-                    {selected.status !== "md_review" && (
-                      <input type="number" style={{ ...inp, marginBottom: "0.5rem" }} placeholder={`Adjust amount (optional, current ${fmt(selected.final_amount ?? selected.amount, selected.currency)})`} value={adjustedAmount} onChange={(e) => setAdjustedAmount(e.target.value)} />
+                    {selected.status === "awaiting_disbursement" ? (
+                      <>
+                        <input type="text" style={{ ...inp, marginBottom: "0.5rem" }} placeholder="Transaction / Voucher reference (optional)" value={cashierRef} onChange={(e) => setCashierRef(e.target.value)} />
+                        <textarea style={{ ...inp, resize: "vertical" }} rows={2} placeholder="Disbursement notes..." value={comments} onChange={(e) => setComments(e.target.value)} />
+                        <button onClick={approve} disabled={acting} style={{ marginTop: "0.8rem", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.8rem", borderRadius: 10, background: "#0891b2", border: "none", color: "white", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(8,145,178,0.3)" }}>
+                          <Banknote size={16} /> {acting ? "Processing..." : `Disburse ${fmt(selected.final_amount ?? selected.amount, selected.currency)}`}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {selected.status !== "md_review" && (
+                          <input type="number" style={{ ...inp, marginBottom: "0.5rem" }} placeholder={`Adjust amount (optional, current ${fmt(selected.final_amount ?? selected.amount, selected.currency)})`} value={adjustedAmount} onChange={(e) => setAdjustedAmount(e.target.value)} />
+                        )}
+                        <textarea style={{ ...inp, resize: "vertical" }} rows={2} placeholder="Comments / reason..." value={comments} onChange={(e) => setComments(e.target.value)} />
+                        <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.8rem" }}>
+                          <button onClick={reject} disabled={acting} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}><XCircle size={16} /> Not Approved</button>
+                          <button onClick={approve} disabled={acting} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#4f46e5", border: "none", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(79,70,229,0.3)" }}>
+                            <CheckCircle2 size={16} /> {acting ? "Processing..." : selected.status === "md_review" ? "Authorize Payment" : "Approve"}
+                          </button>
+                        </div>
+                      </>
                     )}
-                    <textarea style={{ ...inp, resize: "vertical" }} rows={2} placeholder="Comments / reason..." value={comments} onChange={(e) => setComments(e.target.value)} />
-                    <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.8rem" }}>
-                      <button onClick={reject} disabled={acting} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}><XCircle size={16} /> Not Approved</button>
-                      <button onClick={approve} disabled={acting} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#4f46e5", border: "none", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(79,70,229,0.3)" }}>
-                        <CheckCircle2 size={16} /> {acting ? "Processing..." : selected.status === "md_review" ? "Authorize Payment" : "Approve"}
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

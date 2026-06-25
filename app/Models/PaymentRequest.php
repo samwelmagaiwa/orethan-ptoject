@@ -14,6 +14,7 @@ class PaymentRequest extends Model
         'manager_name', 'manager_decision', 'manager_adjusted_amount', 'manager_comments', 'manager_date',
         'gm_name', 'gm_decision', 'gm_adjusted_amount', 'gm_comments', 'gm_date',
         'md_name', 'md_comments', 'md_date',
+        'cashier_name', 'cashier_comments', 'cashier_reference', 'cashier_date',
         'rejection_reason', 'created_by',
     ];
 
@@ -26,6 +27,7 @@ class PaymentRequest extends Model
         'manager_date' => 'datetime',
         'gm_date' => 'datetime',
         'md_date' => 'datetime',
+        'cashier_date' => 'datetime',
     ];
 
     public function creator()

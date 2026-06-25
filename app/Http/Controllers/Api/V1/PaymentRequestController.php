@@ -22,7 +22,10 @@ class PaymentRequestController extends Controller
         return match ($current) {
             'manager_review' => 'gm_review',
             'gm_review' => 'md_review',
-            'md_review' => 'authorized',
+            // Baada ya MD kuidhinisha, ombi huenda kwa Keshia/Finance kwa malipo
+            'md_review' => 'awaiting_disbursement',
+            // Keshia akilipa, ombi linakamilika
+            'awaiting_disbursement' => 'disbursed',
             default => $current,
         };
     }
@@ -37,6 +40,8 @@ class PaymentRequestController extends Controller
             'manager_review' => $user->isLoanManager(),
             'gm_review' => $user->isGeneralManager(),
             'md_review' => $user->isManagingDirector(),
+            // Hatua ya malipo ni ya Finance Officer / Cashier pekee
+            'awaiting_disbursement' => $user->isFinanceOfficer(),
             default => false,
         };
     }
@@ -102,6 +107,7 @@ class PaymentRequestController extends Controller
             if ($user->isLoanManager()) $query->where('status', 'manager_review');
             elseif ($user->isGeneralManager()) $query->where('status', 'gm_review');
             elseif ($user->isManagingDirector()) $query->where('status', 'md_review');
+            elseif ($user->isFinanceOfficer()) $query->where('status', 'awaiting_disbursement');
             else $query->where('created_by', $user->id);
         }
 
@@ -128,6 +134,7 @@ class PaymentRequestController extends Controller
         $data = $request->validate([
             'adjusted_amount' => 'nullable|numeric|min:1',
             'comments' => 'nullable|string',
+            'cashier_reference' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -152,19 +159,92 @@ class PaymentRequestController extends Controller
                 $pr->md_name = $user->name;
                 $pr->md_comments = $data['comments'] ?? null;
                 $pr->md_date = now();
+            } elseif ($stage === 'awaiting_disbursement') {
+                // Keshia/Finance anatoa malipo kwa mwombaji
+                $pr->cashier_name = $user->name;
+                $pr->cashier_comments = $data['comments'] ?? null;
+                $pr->cashier_reference = $data['cashier_reference'] ?? null;
+                $pr->cashier_date = now();
             }
 
-            $pr->final_amount = $amount;
+            if ($stage !== 'awaiting_disbursement') {
+                $pr->final_amount = $amount;
+            }
             $pr->status = $this->nextStatus($stage);
             $pr->save();
 
-            AuditLog::record('payment_request.approved', $user, $pr,
-                'Ombi la malipo limeidhinishwa (' . $stage . ')', ['decision' => $decision, 'amount' => $amount]);
+            $action = $stage === 'awaiting_disbursement' ? 'payment_request.disbursed' : 'payment_request.approved';
+            $desc = $stage === 'awaiting_disbursement'
+                ? 'Malipo yametolewa kwa mwombaji na keshia'
+                : 'Ombi la malipo limeidhinishwa (' . $stage . ')';
+            AuditLog::record($action, $user, $pr, $desc, ['decision' => $decision, 'amount' => $pr->final_amount]);
 
-            return $this->success($pr, $pr->status === 'authorized' ? 'Malipo yameidhinishwa kikamilifu' : 'Imeidhinishwa, imepelekwa hatua inayofuata');
+            $msg = match ($pr->status) {
+                'awaiting_disbursement' => 'Imeidhinishwa na MD, inasubiri malipo ya keshia',
+                'disbursed' => 'Malipo yametolewa kwa mwombaji kikamilifu',
+                default => 'Imeidhinishwa, imepelekwa hatua inayofuata',
+            };
+            return $this->success($pr, $msg);
         } catch (\Exception $e) {
             Log::error('payment request approve error: ' . $e->getMessage());
             return $this->error('Imeshindikana kuidhinisha', 500);
+        }
+    }
+
+    /**
+     * Mwombaji anahariri ombi lililokataliwa kisha kuliwasilisha tena.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = $request->user();
+        $pr = PaymentRequest::findOrFail($id);
+
+        if ($pr->created_by !== ($user->id ?? null) && !$user->isAdmin()) {
+            return $this->error('Unaweza kuhariri maombi yako mwenyewe pekee', 403);
+        }
+        if ($pr->status !== 'rejected') {
+            return $this->error('Maombi yaliyokataliwa pekee ndiyo yanaweza kuhaririwa', 422);
+        }
+
+        $data = $request->validate([
+            'applicant_name' => 'required|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'section' => 'nullable|string|max:255',
+            'activity_type' => 'required|string|max:255',
+            'activity_detail' => 'nullable|string',
+            'loan_applicant_name' => 'nullable|string|max:255',
+            'invoice_path' => 'nullable|string',
+            'mode_of_payment' => 'required|string|in:cash,cheque,bank_transfer',
+            'payable_to' => 'required|string|max:255',
+            'currency' => 'required|string|in:TZS,USD',
+            'amount' => 'required|numeric|min:1',
+            'amount_in_words' => 'nullable|string',
+            'applicant_signature' => 'nullable|string|max:255',
+            'applicant_date' => 'nullable|date',
+        ]);
+
+        try {
+            $pr->fill($data);
+            $pr->final_amount = $data['amount'];
+            // Anza upya mtiririko wa idhini
+            $pr->status = 'manager_review';
+            $pr->rejection_reason = null;
+            foreach ([
+                'manager_name', 'manager_decision', 'manager_adjusted_amount', 'manager_comments', 'manager_date',
+                'gm_name', 'gm_decision', 'gm_adjusted_amount', 'gm_comments', 'gm_date',
+                'md_name', 'md_comments', 'md_date',
+                'cashier_name', 'cashier_comments', 'cashier_reference', 'cashier_date',
+            ] as $f) {
+                $pr->{$f} = null;
+            }
+            $pr->save();
+
+            AuditLog::record('payment_request.resubmitted', $user, $pr, 'Ombi la malipo limehaririwa na kuwasilishwa tena');
+
+            return $this->success($pr, 'Ombi limehaririwa na kuwasilishwa tena');
+        } catch (\Exception $e) {
+            Log::error('payment request update error: ' . $e->getMessage());
+            return $this->error('Imeshindikana kuhariri ombi', 500);
         }
     }
 
