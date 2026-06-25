@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { User, Building2, CreditCard, Calendar, Calculator, Banknote, FileText, Check, ShieldCheck, ArrowLeft, TrendingUp } from "lucide-react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
-import { letterheadBlock, watermarkBlock } from "../utils/printDoc";
+import { letterheadBlock, watermarkBlock, triggerPrint } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const PAYMENT_METHODS = [{ value: "cash", label: "Cash" }, { value: "bank_transfer", label: "Bank Transfer" }, { value: "mpesa", label: "M-Pesa" }, { value: "airtel_money", label: "Airtel Money" }, { value: "tigo_pesa", label: "Tigo Pesa" }, { value: "halopesa", label: "HaloPesa" }, { value: "cheque", label: "Cheque" }];
@@ -191,8 +191,7 @@ const DisburseLoan = () => {
         if (!win) return;
         win.document.write(`<html><head><title>${title}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;padding:48px 40px;color:#0f172a;background:#f8fafc;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{padding:0;background:#fff}}</style></head><body>${watermarkBlock()}<div style="max-width:700px;margin:0 auto;position:relative;z-index:1">${letterheadBlock()}<div style="height:24px"></div>${body}</div></body></html>`);
         win.document.close();
-        win.focus();
-        setTimeout(() => win.print(), 500);
+        triggerPrint(win);
     };
 
     if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa", fontSize: "16px", color: "#4a5568" }}>Loading...</div>;

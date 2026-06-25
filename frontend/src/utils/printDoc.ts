@@ -41,10 +41,36 @@ const letterheadHtml = letterheadBlock;
  * Faint centered logo watermark — sits behind the document content.
  */
 export const watermarkBlock = () => `
-  <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);opacity:0.05;z-index:0;pointer-events:none">
+  <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);opacity:0.07;z-index:0;pointer-events:none">
     <img src="${logo}" style="width:560px;max-width:80vw" alt="" />
   </div>
 `;
+
+/**
+ * Print only after all images (logo + watermark) have loaded, so the
+ * watermark/letterhead always render. Guards against double print dialogs.
+ */
+export function triggerPrint(win: Window) {
+  let printed = false;
+  const go = () => {
+    if (printed) return;
+    printed = true;
+    win.focus();
+    win.print();
+  };
+  const imgs = Array.from(win.document.images || []);
+  let remaining = imgs.length;
+  if (remaining === 0) { setTimeout(go, 250); return; }
+  imgs.forEach((img) => {
+    if (img.complete) { if (--remaining === 0) go(); }
+    else {
+      img.addEventListener("load", () => { if (--remaining === 0) go(); });
+      img.addEventListener("error", () => { if (--remaining === 0) go(); });
+    }
+  });
+  // Fallback in case load/error never fire
+  setTimeout(go, 2000);
+}
 
 const baseStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -96,6 +122,5 @@ export function printDocument(title: string, bodyHtml: string, ref?: string) {
     </div>
   </body></html>`);
   win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 450);
+  triggerPrint(win);
 }
