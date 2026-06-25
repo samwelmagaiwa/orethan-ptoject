@@ -103,6 +103,7 @@ function Login() {
   return (
     <div className="lg">
       <div className="lg__mesh" />
+      <img src={logo} className="lg__bglogo" alt="" aria-hidden="true" />
       <div className="lg__card">
         <div className="lg__brand">
           <img src={logo} alt="Orethan Microfinance" />
@@ -196,8 +197,15 @@ function Login() {
           font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
         .lg__mesh { position: absolute; inset: 0; pointer-events: none;
           background: radial-gradient(420px 420px at 85% 15%, rgba(29,138,209,0.10), transparent 70%), radial-gradient(420px 420px at 12% 85%, rgba(124,179,66,0.12), transparent 70%); }
-        .lg__card { position: relative; width: 100%; max-width: 430px; background: #fff; border: 1px solid #eef1f6; border-radius: 22px;
-          box-shadow: 0 30px 70px rgba(15,23,42,0.12); padding: 2.2rem 2.2rem 1.6rem; }
+        .lg__bglogo { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(1150px, 96vw); max-height: 96vh; object-fit: contain; opacity: 0.08; pointer-events: none; z-index: 0; filter: saturate(1.1); }
+        .lg__card { position: relative; z-index: 1; width: 100%; max-width: 430px;
+          background: rgba(255,255,255,0.45);
+          backdrop-filter: blur(22px) saturate(1.5);
+          -webkit-backdrop-filter: blur(22px) saturate(1.5);
+          border: 1px solid rgba(255,255,255,0.65);
+          border-radius: 24px;
+          box-shadow: 0 30px 70px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.6);
+          padding: 2.2rem 2.2rem 1.6rem; }
         .lg__brand { text-align: center; margin-bottom: 1.4rem; }
         .lg__brand img { height: 86px; width: auto; object-fit: contain; }
         .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 0.8rem auto 0; max-width: 220px; }
@@ -208,8 +216,9 @@ function Login() {
         form { display: flex; flex-direction: column; gap: 0; }
         .lg__field { margin-bottom: 1rem; }
         .lg__field label { display: block; font-size: 0.72rem; font-weight: 700; color: #475569; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.4px; }
-        .lg__field input { width: 100%; padding: 0.85rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.92rem; font-weight: 600; color: #0f172a; outline: none; transition: all 0.18s; background: #fff; }
-        .lg__field input:focus { border-color: #1d8ad1; box-shadow: 0 0 0 3px rgba(29,138,209,0.12); }
+        .lg__field input { width: 100%; padding: 0.85rem 1rem; border: 1.5px solid rgba(255,255,255,0.7); border-radius: 12px; font-size: 0.92rem; font-weight: 600; color: #0f172a; outline: none; transition: all 0.18s; background: rgba(255,255,255,0.55); }
+        .lg__field input::placeholder { color: #64748b; }
+        .lg__field input:focus { border-color: #1d8ad1; box-shadow: 0 0 0 3px rgba(29,138,209,0.15); background: rgba(255,255,255,0.9); }
         .lg__pw { position: relative; }
         .lg__pw > button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; }
         .lg__pwic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
