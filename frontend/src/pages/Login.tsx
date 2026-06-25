@@ -201,8 +201,27 @@ function Login() {
           font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
         .lg__mesh { position: absolute; inset: 0; pointer-events: none;
           background: radial-gradient(640px 640px at 82% 14%, rgba(255,255,255,0.28), transparent 62%), radial-gradient(560px 560px at 14% 88%, rgba(124,179,66,0.45), transparent 64%), radial-gradient(520px 520px at 90% 92%, rgba(21,101,192,0.4), transparent 66%); }
-        .lg__wm { position: fixed; inset: -25%; transform: rotate(-26deg); display: flex; flex-direction: column; justify-content: center; gap: 2.2rem; pointer-events: none; z-index: 0; }
-        .lg__wm div { font-family: 'Inter', sans-serif; font-size: clamp(4rem, 8vw, 8rem); font-weight: 900; color: rgba(255,255,255,0.13); letter-spacing: 0.35rem; white-space: nowrap; text-align: center; line-height: 1; user-select: none; }
+        .lg__wm { position: fixed; inset: -28%; transform: rotate(-26deg); display: flex; flex-direction: column; justify-content: center; gap: 2.4rem; pointer-events: none; z-index: 0; animation: wmFloat 18s ease-in-out infinite; transform-origin: center; }
+        @keyframes wmFloat {
+          0%, 100% { transform: rotate(-26deg) translate(0, 0); }
+          50% { transform: rotate(-26deg) translate(-48px, 30px); }
+        }
+        .lg__wm div {
+          font-family: 'Inter', sans-serif; font-size: clamp(4rem, 8vw, 8.5rem); font-weight: 900;
+          color: rgba(255,255,255,0.18); letter-spacing: 0.4rem; white-space: nowrap; text-align: center; line-height: 1; user-select: none;
+          text-shadow:
+            1px 1px 0 rgba(255,255,255,0.14),
+            2px 2px 0 rgba(255,255,255,0.11),
+            3px 3px 0 rgba(255,255,255,0.08),
+            4px 4px 0 rgba(7,42,67,0.10),
+            5px 5px 1px rgba(7,42,67,0.10),
+            8px 9px 18px rgba(7,42,67,0.28);
+          animation: wmShine 7s ease-in-out infinite;
+        }
+        .lg__wm div:nth-child(even) { animation-delay: 1.4s; }
+        .lg__wm div:nth-child(3n) { animation-delay: 2.8s; }
+        @keyframes wmShine { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .lg__wm, .lg__wm div, .lg__brand img { animation: none !important; } }
         .lg__card { position: relative; z-index: 1; width: 100%; max-width: 430px;
           background: rgba(255,255,255,0.14);
           backdrop-filter: blur(30px) saturate(1.6);
@@ -212,7 +231,8 @@ function Login() {
           box-shadow: 0 35px 80px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
           padding: 2.2rem 2.2rem 1.6rem; }
         .lg__brand { text-align: center; margin-bottom: 1.4rem; }
-        .lg__brand img { height: 132px; width: auto; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(7,42,67,0.25)); }
+        .lg__brand img { height: 172px; width: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(7,42,67,0.3)); animation: lgLogo 5s ease-in-out infinite; }
+        @keyframes lgLogo { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.02); } }
         .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 1rem auto 0; max-width: 240px; }
         .lg__bars .g { flex: 1; background: linear-gradient(90deg,#7cb342,#aed581); }
         .lg__bars .b { flex: 1; background: linear-gradient(90deg,#1565c0,#1d8ad1); }
