@@ -77,35 +77,27 @@ const Profile = () => {
     <div style={{ minHeight: "100vh", background: "#fdfbf7", padding: "1.2rem 1.5rem 2rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
 
-        {/* HERO BANNER */}
-        <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: "linear-gradient(135deg,#102a43 0%,#1d3a5f 55%,#4f46e5 130%)", boxShadow: "0 16px 40px rgba(15,23,42,0.18)", marginBottom: 70 }}>
-          <div style={{ position: "absolute", top: -50, right: -30, width: 220, height: 220, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-          <div style={{ position: "absolute", bottom: -80, right: 120, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-          <div style={{ height: 150 }} />
-          {/* Avatar overlapping */}
-          <div style={{ position: "absolute", left: 40, bottom: -54, display: "flex", alignItems: "flex-end", gap: 20 }}>
-            <div style={{ position: "relative" }}>
-              <div style={{ width: 124, height: 124, borderRadius: "50%", border: "5px solid #fdfbf7", background: "#fff", boxShadow: "0 10px 24px rgba(15,23,42,0.2)", overflow: "hidden" }}>
-                {user?.avatar
-                  ? <img src={user.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 48 }}>{initial}</div>}
-              </div>
-              <button onClick={() => fileRef.current?.click()} title="Change photo" style={{ position: "absolute", bottom: 6, right: 6, width: 34, height: 34, borderRadius: "50%", background: "#4f46e5", border: "3px solid #fdfbf7", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(79,70,229,0.4)" }}>
-                <Camera size={15} />
-              </button>
-              <input ref={fileRef} type="file" hidden accept="image/*" onChange={onPickPhoto} />
+        {/* COMPACT HEADER */}
+        <div style={{ ...CARD, display: "flex", alignItems: "center", gap: "1.2rem", marginBottom: "1.3rem" }}>
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 92, height: 92, borderRadius: "50%", border: "3px solid #eef1f6", background: "#fff", boxShadow: "0 6px 16px rgba(15,23,42,0.12)", overflow: "hidden" }}>
+              {user?.avatar
+                ? <img src={user.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 36 }}>{initial}</div>}
             </div>
+            <button onClick={() => fileRef.current?.click()} title="Change photo" style={{ position: "absolute", bottom: 2, right: 2, width: 30, height: 30, borderRadius: "50%", background: "#4f46e5", border: "3px solid white", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(79,70,229,0.4)" }}>
+              <Camera size={14} />
+            </button>
+            <input ref={fileRef} type="file" hidden accept="image/*" onChange={onPickPhoto} />
           </div>
-          {/* Name on banner */}
-          <div style={{ position: "absolute", left: 184, bottom: 18, color: "white" }}>
-            <div style={{ fontSize: "1.5rem", fontWeight: 900, letterSpacing: "-0.02em", textShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>{user?.name || "User"}</div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 4, background: "rgba(255,255,255,0.18)", padding: "3px 12px", borderRadius: 20, fontSize: "0.74rem", fontWeight: 700, textTransform: "capitalize" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: "1.4rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em" }}>{user?.name || "User"}</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6, background: "#eef2ff", color: "#4f46e5", padding: "3px 12px", borderRadius: 20, fontSize: "0.74rem", fontWeight: 800, textTransform: "capitalize" }}>
               <BadgeCheck size={13} /> {roleLabel || "—"}
             </div>
+            {uploading && <div style={{ marginTop: 8, fontSize: "0.76rem", fontWeight: 600, color: "#4f46e5" }}>Uploading photo…</div>}
           </div>
         </div>
-
-        {uploading && <div style={{ marginBottom: 12, fontSize: "0.8rem", fontWeight: 600, color: "#4f46e5" }}>Uploading photo…</div>}
 
         {/* CONTENT GRID */}
         <div className="prof-grid">
