@@ -113,6 +113,13 @@ const DisburseLoan = () => {
           </div>`;
         const sectionTitle = (t) => `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#102a43;margin:30px 0 14px;display:flex;align-items:center;gap:10px"><span style="width:18px;height:2px;background:#102a43;display:inline-block"></span>${t}</div>`;
         const kv = (k, v, mono = false) => `<tr><td style="padding:11px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:46%">${k}</td><td style="padding:11px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;${mono ? "font-family:ui-monospace,monospace" : ""}">${v}</td></tr>`;
+        // Field card for the 3-column layout
+        const block = (label, value, opts = {}) => `
+          <div style="background:#f8fafc;border:1px solid #eef1f6;border-radius:10px;padding:12px 14px">
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700">${label}</div>
+            <div style="font-size:13.5px;font-weight:800;color:${opts.color || "#0f172a"};margin-top:5px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
+          </div>`;
+        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${cells.join("")}</div>`;
         return `
 <div style="max-width:700px;margin:0 auto;color:#0f172a">
   <!-- Title row -->
@@ -132,21 +139,21 @@ const DisburseLoan = () => {
   </div>
 
   ${sectionTitle("Borrower Information")}
-  <table style="width:100%;border-collapse:collapse">
-    ${kv("Customer Full Name", loan.name)}
-    ${kv("Client Identification", preview.customer_number, true)}
-    ${kv("Loan Product Type", preview.product_name)}
-    ${kv("Relationship Officer", preview.officer_name)}
-  </table>
+  ${grid3([
+            block("Customer Full Name", loan.name),
+            block("Client Identification", preview.customer_number, { mono: true }),
+            block("Loan Product Type", preview.product_name),
+            block("Relationship Officer", preview.officer_name),
+        ])}
 
   ${sectionTitle("Financial Authorization")}
-  <table style="width:100%;border-collapse:collapse">
-    ${kv("Approved Capital", fmt(approvedAmount))}
-    ${kv(`Processing Fee (${capturedProcessingFeePercent}%)`, fmt(processingFee))}
-    ${kv("Insurance (Credit Life)", fmt(insuranceFee))}
-    ${kv("Facility Charges", fmt(otherCharges))}
-    <tr><td style="padding:13px 0;font-size:13px;font-weight:700;color:#b91c1c">Total Statutory Deductions</td><td style="padding:13px 0;font-size:13px;font-weight:800;color:#b91c1c;text-align:right">– ${fmt(totalCharges)}</td></tr>
-  </table>
+  ${grid3([
+            block("Approved Capital", fmt(approvedAmount)),
+            block(`Processing Fee (${capturedProcessingFeePercent}%)`, fmt(processingFee)),
+            block("Insurance (Credit Life)", fmt(insuranceFee)),
+            block("Facility Charges", fmt(otherCharges)),
+            block("Total Statutory Deductions", "– " + fmt(totalCharges), { color: "#b91c1c" }),
+        ])}
 
   <!-- Net payable: clean bordered highlight (no blue/gradient) -->
   <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #102a43;border-left:6px solid #102a43;border-radius:12px;padding:22px 26px;margin:24px 0">
@@ -158,11 +165,11 @@ const DisburseLoan = () => {
   </div>
 
   ${sectionTitle("Execution Details")}
-  <table style="width:100%;border-collapse:collapse">
-    ${kv("Disbursement Channel", methodLabel)}
-    ${transactionRef ? kv("Transaction Reference", transactionRef, true) : ""}
-    ${kv("Instruction Narration", narration)}
-  </table>
+  ${grid3([
+            block("Disbursement Channel", methodLabel),
+            transactionRef ? block("Transaction Reference", transactionRef, { mono: true }) : block("Transaction Reference", "—"),
+            block("Instruction Narration", narration),
+        ])}
 
   <!-- Signatures -->
   <div style="margin-top:70px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
