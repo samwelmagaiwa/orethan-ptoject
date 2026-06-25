@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil, Printer, Lock } from "lucide-react";
 import { printDocument } from "../utils/printDoc";
 import SignaturePad from "../components/SignaturePad";
+import SuccessModal from "../components/SuccessModal";
+
+const PENDING_STATUSES = ["manager_review", "gm_review", "md_review", "awaiting_disbursement"];
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
@@ -56,6 +59,9 @@ const PaymentRequests = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingReq, setPendingReq] = useState<any>(null);
+  const [success, setSuccess] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: "", message: "" });
+  const [formError, setFormError] = useState("");
 
   // Approval state
   const [adjustedAmount, setAdjustedAmount] = useState("");
@@ -88,6 +94,15 @@ const PaymentRequests = () => {
   };
 
   useEffect(() => { load(); }, [scope]);
+  useEffect(() => { checkPending(); }, []);
+
+  const checkPending = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/payment-requests`, { headers: headers(), params: { scope: "mine" } });
+      const mine = res.data.requests || [];
+      setPendingReq(mine.find((r: any) => PENDING_STATUSES.includes(r.status)) || null);
+    } catch { /* ignore */ }
+  };
 
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
@@ -101,10 +116,15 @@ const PaymentRequests = () => {
     } catch (e) { console.error(e); alert("Upload failed"); } finally { setUploading(false); }
   };
 
+  const blockedByPending = !editingId && !!pendingReq;
+
   const submit = async () => {
-    if (!form.applicant_name || !form.payable_to || !form.amount) { alert("Please fill applicant, payable to and amount."); return; }
+    setFormError("");
+    if (!form.applicant_name || !form.payable_to || !form.amount) { setFormError("Please fill applicant, payable to and amount."); return; }
+    if (blockedByPending) { setFormError("You already have a pending request. Wait until it is completed or rejected."); return; }
     setSubmitting(true);
     try {
+      const wasEditing = !!editingId;
       if (editingId) {
         await axios.put(`${API_BASE}/payment-requests/${editingId}`, { ...form, amount: Number(form.amount) }, { headers: headers() });
       } else {
@@ -112,9 +132,15 @@ const PaymentRequests = () => {
       }
       setForm(blank); setEditingId(null);
       setTab("list"); setScope("mine");
-      await load();
-      alert(editingId ? "Request updated and resubmitted." : "Payment request submitted.");
-    } catch (e: any) { console.error(e); alert(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
+      await load(); await checkPending();
+      setSuccess({
+        open: true,
+        title: wasEditing ? "Request Resubmitted" : "Request Submitted",
+        message: wasEditing
+          ? "Your payment request has been updated and resubmitted to the Loan Manager for review."
+          : "Your payment request has been submitted and routed to the Loan Manager for approval.",
+      });
+    } catch (e: any) { console.error(e); setFormError(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
   };
 
   const startEdit = (r: any) => {
@@ -197,6 +223,11 @@ const PaymentRequests = () => {
             {editingId && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "0.6rem 0.9rem", marginBottom: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>
                 <Pencil size={15} /> Editing rejected request #{editingId} — it will restart the approval flow on resubmit.
+              </div>
+            )}
+            {blockedByPending && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "0.8rem 1rem", marginBottom: "1rem", fontSize: "0.82rem", fontWeight: 700, color: "#b91c1c" }}>
+                <ShieldCheck size={16} /> You already have a pending request (#{pendingReq?.id} · {STATUS_META[pendingReq?.status]?.label}). You can submit a new one once it is completed or rejected.
               </div>
             )}
             {/* Approval chain strip */}
@@ -286,14 +317,18 @@ const PaymentRequests = () => {
               </div>
             </Section>
 
+            {formError && (
+              <div style={{ marginTop: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "0.7rem 0.9rem" }}>{formError}</div>
+            )}
+
             {/* FOOTER ACTIONS */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", marginTop: "0.5rem", paddingTop: "1.3rem", borderTop: "1px solid #e2e8f0", flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.76rem", color: "#94a3b8", fontWeight: 600 }}>
                 <ShieldCheck size={15} style={{ color: "#10b981" }} /> After MD approval, the Cashier disburses the payment to the applicant.
               </span>
               <div style={{ display: "flex", gap: "0.7rem" }}>
-                <button onClick={() => { setForm(blank); setEditingId(null); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>{editingId ? "Cancel" : "Clear"}</button>
-                <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
+                <button onClick={() => { setForm(blank); setEditingId(null); setFormError(""); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>{editingId ? "Cancel" : "Clear"}</button>
+                <button onClick={submit} disabled={submitting || blockedByPending} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: blockedByPending ? "#cbd5e1" : "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: blockedByPending ? "not-allowed" : "pointer", color: "white", boxShadow: blockedByPending ? "none" : "0 6px 16px rgba(16,42,67,0.3)" }}>
                   <Send size={16} /> {submitting ? "Submitting..." : editingId ? "Resubmit Request" : "Submit Request"}
                 </button>
               </div>
@@ -454,6 +489,8 @@ const PaymentRequests = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <SuccessModal open={success.open} title={success.title} message={success.message} onClose={() => setSuccess({ ...success, open: false })} />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

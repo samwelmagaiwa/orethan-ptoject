@@ -52,6 +52,12 @@ class LeaveRequestController extends Controller
             'employee_date' => 'nullable|date',
         ]);
 
+        $hasPending = LeaveRequest::where('created_by', $user->id)
+            ->whereNotIn('status', ['authorized', 'rejected'])->exists();
+        if ($hasPending) {
+            return $this->error('Tayari una ombi la likizo linalosubiri. Subiri lishughulikiwe kabla ya kuwasilisha jipya.', 422);
+        }
+
         try {
             $data['status'] = 'manager_review';
             $data['created_by'] = $user->id ?? null;
@@ -111,6 +117,12 @@ class LeaveRequestController extends Controller
         }
         if ($lr->status !== 'rejected') {
             return $this->error('Maombi yaliyokataliwa pekee ndiyo yanaweza kuhaririwa', 422);
+        }
+        $hasOtherPending = LeaveRequest::where('created_by', $user->id)
+            ->where('id', '!=', $lr->id)
+            ->whereNotIn('status', ['authorized', 'rejected'])->exists();
+        if ($hasOtherPending) {
+            return $this->error('Una ombi jingine linalosubiri. Huwezi kuwasilisha hili tena kwa sasa.', 422);
         }
 
         $data = $request->validate([

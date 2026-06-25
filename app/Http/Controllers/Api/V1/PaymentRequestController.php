@@ -71,6 +71,13 @@ class PaymentRequestController extends Controller
             'applicant_date' => 'nullable|date',
         ]);
 
+        // Zuia maombi mengi: mtumiaji mmoja anaweza kuwa na ombi moja linalosubiri tu
+        $hasPending = PaymentRequest::where('created_by', $user->id)
+            ->whereNotIn('status', ['disbursed', 'rejected'])->exists();
+        if ($hasPending) {
+            return $this->error('Tayari una ombi la malipo linalosubiri. Subiri lishughulikiwe kabla ya kuwasilisha jipya.', 422);
+        }
+
         try {
             $data['status'] = 'manager_review';
             $data['final_amount'] = $data['amount'];
@@ -221,6 +228,13 @@ class PaymentRequestController extends Controller
         }
         if ($pr->status !== 'rejected') {
             return $this->error('Maombi yaliyokataliwa pekee ndiyo yanaweza kuhaririwa', 422);
+        }
+        // Usiruhusu kuwasilisha tena ikiwa kuna ombi jingine linalosubiri
+        $hasOtherPending = PaymentRequest::where('created_by', $user->id)
+            ->where('id', '!=', $pr->id)
+            ->whereNotIn('status', ['disbursed', 'rejected'])->exists();
+        if ($hasOtherPending) {
+            return $this->error('Una ombi jingine linalosubiri. Huwezi kuwasilisha hili tena kwa sasa.', 422);
         }
 
         $data = $request->validate([
