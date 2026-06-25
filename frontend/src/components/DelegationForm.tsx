@@ -62,7 +62,7 @@ const DelegationForm = ({ onSuccess }: Props) => {
         Mimi <strong style={{ color: "#0f172a" }}>{user?.name}</strong> ({delegatorTitle}), kwa kuwa nitakuwa nje ya ofisi, nakaimisha ofisi na madaraka yangu kwa mtumishi niliyemchagua hapa chini kwa kipindi kilichoainishwa.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <div className="dlg-grid3">
         <div>
           <label style={lbl}>Your Role / Cheo Chako</label>
           <input style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title="Your role (auto)" />
@@ -86,7 +86,7 @@ const DelegationForm = ({ onSuccess }: Props) => {
           <label style={lbl}>To / Mpaka <span style={{ color: "#ef4444" }}>*</span></label>
           <input type="date" style={inp} value={form.to_date} onChange={(e) => set("to_date", e.target.value)} />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div>
           <label style={lbl}>Reason for absence / Sababu ya kutokuwepo</label>
           <input style={inp} value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder="e.g. Official travel, leave..." />
         </div>
@@ -122,6 +122,12 @@ const DelegationForm = ({ onSuccess }: Props) => {
           <Send size={16} /> {submitting ? "Submitting..." : "Delegate Authority"}
         </button>
       </div>
+
+      <style>{`
+        .dlg-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem 1.2rem; }
+        @media (max-width: 900px) { .dlg-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 600px) { .dlg-grid3 { grid-template-columns: 1fr; } }
+      `}</style>
     </div>
   );
 };
