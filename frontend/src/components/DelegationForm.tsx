@@ -90,26 +90,26 @@ const DelegationForm = ({ onSuccess }: Props) => {
           <label style={lbl}>Reason for absence / Sababu ya kutokuwepo</label>
           <input style={inp} value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder="e.g. Official travel, leave..." />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={lbl}>Responsibilities &amp; Authority Delegated / Madaraka na Majukumu Yanayokaimishwa <span style={{ color: "#ef4444" }}>*</span></label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={3} value={form.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} placeholder="List the duties and decision-making authority being delegated..." />
+        <div>
+          <label style={lbl}>Responsibilities &amp; Authority / Madaraka <span style={{ color: "#ef4444" }}>*</span></label>
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} placeholder="Duties & decision-making authority being delegated..." />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div>
           <label style={lbl}>Limitations / Mipaka (optional)</label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={2} value={form.limitations} onChange={(e) => set("limitations", e.target.value)} placeholder="e.g. Approvals up to TZS 5,000,000; no new hires..." />
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.limitations} onChange={(e) => set("limitations", e.target.value)} placeholder="e.g. Approvals up to TZS 5,000,000; no new hires..." />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={lbl}>Handover Notes / Maelezo ya Makabidhiano (optional)</label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={2} value={form.handover_notes} onChange={(e) => set("handover_notes", e.target.value)} placeholder="Pending matters, key contacts, ongoing items..." />
+        <div>
+          <label style={lbl}>Handover Notes / Makabidhiano (optional)</label>
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.handover_notes} onChange={(e) => set("handover_notes", e.target.value)} placeholder="Pending matters, key contacts, ongoing items..." />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <SignaturePad label={`${delegatorTitle} Signature / Sahihi`} value={form.delegator_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("delegator_signature_img", d || "")} height={130} />
+        <div style={{ gridColumn: "span 2" }}>
+          <SignaturePad label={`${delegatorTitle} Signature / Sahihi`} value={form.delegator_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("delegator_signature_img", d || "")} height={120} />
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={lbl}>Authorize with your Password / PIN <span style={{ color: "#ef4444" }}>*</span></label>
+        <div>
+          <label style={lbl}>Authorize with Password / PIN <span style={{ color: "#ef4444" }}>*</span></label>
           <div style={{ position: "relative" }}>
             <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-            <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Enter your password / PIN to sign" />
+            <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Password / PIN to sign" />
           </div>
         </div>
       </div>
