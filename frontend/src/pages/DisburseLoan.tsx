@@ -111,7 +111,12 @@ const DisburseLoan = () => {
             <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700">${label}</div>
             <div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:5px;${mono ? "font-family:ui-monospace,monospace;letter-spacing:0.5px" : ""}">${value}</div>
           </div>`;
-        const sectionTitle = (t) => `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#102a43;margin:18px 0 8px;display:flex;align-items:center;gap:10px"><span style="width:18px;height:2px;background:#102a43;display:inline-block"></span>${t}</div>`;
+        const sectionTitle = (t, n) => `
+          <div style="display:flex;align-items:center;gap:13px;margin:22px 0 12px">
+            <span style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#102a43,#1d3a5f);color:#fff;font-size:13px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(16,42,67,0.25)">${n}</span>
+            <span style="font-size:15px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#102a43">${t}</span>
+            <span style="flex:1;height:3px;border-radius:3px;background:linear-gradient(90deg,#7cb342 0%,#1d8ad1 45%,rgba(29,138,209,0) 100%)"></span>
+          </div>`;
         const kv = (k, v, mono = false) => `<tr><td style="padding:11px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:46%">${k}</td><td style="padding:11px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;${mono ? "font-family:ui-monospace,monospace" : ""}">${v}</td></tr>`;
         // Clean stacked label/value for the 3-column layout (no card box)
         const block = (label, value, opts = {}) => `
@@ -138,7 +143,7 @@ const DisburseLoan = () => {
     <div style="background:#fff">${metaCell("Issue Branch", preview.branch)}</div>
   </div>
 
-  ${sectionTitle("Borrower Information")}
+  ${sectionTitle("Borrower Information", 1)}
   ${grid3([
             block("Customer Full Name", loan.name),
             block("Client Identification", preview.customer_number, { mono: true }),
@@ -146,7 +151,7 @@ const DisburseLoan = () => {
             block("Relationship Officer", preview.officer_name),
         ])}
 
-  ${sectionTitle("Financial Authorization")}
+  ${sectionTitle("Financial Authorization", 2)}
   ${grid3([
             block("Approved Capital", fmt(approvedAmount)),
             block(`Processing Fee (${capturedProcessingFeePercent}%)`, fmt(processingFee)),
@@ -164,7 +169,7 @@ const DisburseLoan = () => {
     <div style="font-size:28px;font-weight:900;color:#102a43;letter-spacing:-0.5px">${fmt(netAmount)}</div>
   </div>
 
-  ${sectionTitle("Execution Details")}
+  ${sectionTitle("Execution Details", 3)}
   ${grid3([
             block("Disbursement Channel", methodLabel),
             transactionRef ? block("Transaction Reference", transactionRef, { mono: true }) : block("Transaction Reference", "—"),
