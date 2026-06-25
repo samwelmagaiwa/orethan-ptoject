@@ -1,5 +1,6 @@
 import React from 'react';
 import logo from '../assets/logo.png';
+import LoanChecklistView from './LoanChecklistView';
 
 // Common Loan interface that should match your types
 interface User {
@@ -407,6 +408,9 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                 </div>
               </div>
             </div>
+
+            {/* DOCUMENTATION CHECKLIST cross-checked by the loan officer before submission */}
+            <LoanChecklistView type={loan.type} details={loan.details} />
 
           </div>
 

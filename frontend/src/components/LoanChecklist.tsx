@@ -11,7 +11,7 @@ interface Props {
   onChange: (r: { state: ChecklistState; allResolved: boolean }) => void;
 }
 
-const SECTIONS: Record<string, { title: string; items: { key: string; label: string }[] }> = {
+export const SECTIONS: Record<string, { title: string; items: { key: string; label: string }[] }> = {
   identification: {
     title: "1. PERSONAL IDENTIFICATION",
     items: [
@@ -68,7 +68,7 @@ const SECTIONS: Record<string, { title: string; items: { key: string; label: str
   },
 };
 
-const SECTIONS_BY_CATEGORY: Record<LoanCategory, string[]> = {
+export const SECTIONS_BY_CATEGORY: Record<LoanCategory, string[]> = {
   business: ["identification", "tax", "collateral", "guarantor", "loan_forms"],
   group: ["identification", "tax", "collateral", "guarantor", "loan_forms"],
   employee: ["identification", "financial", "guarantor", "loan_forms"],
