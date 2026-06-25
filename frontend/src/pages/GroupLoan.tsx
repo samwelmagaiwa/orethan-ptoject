@@ -930,11 +930,12 @@ const GroupLoan: React.FC = () => {
                     verified={{
                       id_doc: !!(form.nambaYaKitambulisho || (form as any).nambaYaNida),
                       passport_photo: !!form.passportPhotoUrl,
-                      proof_residence: !!(form.mahaliUnapoishiMtaa || form.mahaliUnapoishiKata),
-                      guarantor_id: !!form.jinaLaMwenyekiti,
+                      proof_residence: !!form.eneoUnaioishi,
+                      guarantor_id: !!(form.mdhamini1JinaKamili || form.jinaLaMwenyekiti),
+                      guarantor_residence: !!form.mdhamini1MahaliAnapoishi,
                       application_form: true,
                       two_guarantors_signed: !!(form.tamkoLaMdhamini && form.tamkoLaMdhaminiWajibika),
-                      loan_agreement: !!form.kikundiKimesainiFomuNgumu,
+                      loan_agreement: !!(form.kikundiKimesainiFomuNgumu || form.mwombajiAmesainiFomuNgumu),
                       credit_consent: !!form.tamkoLaMwombaji,
                       terms_ack: !!form.tamkoLaMwombaji,
                     }}
