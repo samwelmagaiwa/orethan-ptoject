@@ -134,7 +134,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /** Change password (e.g. forced after a default reset). */
+    /** Change password (forced after a default reset), then require an OTP to finish. */
     public function changePassword(Request $request)
     {
         $data = $request->validate([
@@ -142,10 +142,27 @@ class AuthController extends Controller
         ]);
 
         $user = $request->user();
+        $wasReset = (bool) $user->must_change_password;
+
         $user->password = Hash::make($data['new_password']);
         $user->must_change_password = false;
-        $user->save();
 
+        // After a reset-driven change, send a verification code to finish.
+        if ($wasReset) {
+            $otp = (string) random_int(1000, 9999);
+            $user->otp_code = $otp;
+            $user->otp_expires_at = now()->addMinutes(10);
+            $user->save();
+
+            return response()->json([
+                'otp_required' => true,
+                'email' => $user->email,
+                'otp' => $otp, // delivered via the built-in notification (no SMS gateway)
+                'message' => 'Password changed. Enter the verification code to finish.',
+            ]);
+        }
+
+        $user->save();
         return response()->json(['message' => 'Password changed successfully.']);
     }
 

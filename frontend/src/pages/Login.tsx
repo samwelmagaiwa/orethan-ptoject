@@ -93,8 +93,14 @@ function Login() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
-      navigate("/repayment-tracker");
+      const res = await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data.otp_required) {
+        setShownOtp(res.data.otp); setOtp(""); setStep("otp");
+        setInfo("Password changed. Enter the verification code below to finish.");
+        browserNotify("Orethan — Verification Code", `Your one-time code is ${res.data.otp}`);
+      } else {
+        navigate("/repayment-tracker");
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || "Could not change password");
     } finally { setLoading(false); }
@@ -144,7 +150,7 @@ function Login() {
             <button type="button" className="lg__back" onClick={() => { reset(); setStep("login"); }}><ArrowLeft size={15} /> Back</button>
             <div className="lg__icon"><ShieldCheck size={26} /></div>
             <h2>Verify it's you</h2>
-            <p className="lg__sub">First-time sign-in requires a one-time verification code.</p>
+            <p className="lg__sub">Enter the one-time verification code to continue.</p>
             <div className="lg__otpbox">
               <span>Your verification code</span>
               <strong>{shownOtp}</strong>
