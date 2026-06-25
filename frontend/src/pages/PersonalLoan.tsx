@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import SignaturePad from "../components/SignaturePad";
+
+const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
 const PersonalLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -85,6 +88,7 @@ const PersonalLoan: React.FC = () => {
     dhamanaList: [{ aina: "", namba: "", umiliki: "", thamani: "", muonekano: "" }],
     wdhamini1JinaKamili: "", wdhamini1MahaliAnapoishi: "", wdhamini1AmepangaKwake: "", wdhamini1NambaNyumba: "", wdhamini1KaziAnayofanya: "", wdhamini1UhusianoWenu: "", wdhamini1MahaliOfisiYake: "", wdhamini1JinaKampuniBiashara: "", wdhamini1Simu: "",
     wdhamini2JinaKamili: "", wdhamini2MahaliAnapoishi: "", wdhamini2AmepangaKwake: "", wdhamini2NambaNyumba: "", wdhamini2KaziAnayofanya: "", wdhamini2UhusianoWenu: "", wdhamini2MahaliOfisiYake: "", wdhamini2JinaKampuniBiashara: "", wdhamini2Simu: "",
+    applicantSignatureImg: "",
     tamkoLaMwombaji: false,
     mwombajiAmesainiFomuNgumu: false,
     mwombajiAmewekaDoleGumba: false,
@@ -1646,6 +1650,10 @@ const PersonalLoan: React.FC = () => {
                       <label className="checkbox-label"><input type="checkbox" name="mwombajiAmesainiFomuNgumu" checked={form.mwombajiAmesainiFomuNgumu} onChange={handleChange} /> Mwombaji amesaini fomu ngumu?</label>
                       <label className="checkbox-label"><input type="checkbox" name="mwombajiAmewekaDoleGumba" checked={form.mwombajiAmewekaDoleGumba} onChange={handleChange} /> Mwombaji ameweka dole gumba?</label>
                       <label className="checkbox-label" style={{ background: '#eff6ff', borderColor: '#3b82f6', fontWeight: 'bold' }}><input type="checkbox" name="tamkoLaMwombaji" checked={form.tamkoLaMwombaji} onChange={handleChange} /> Nimeisoma na nakubaliana na vigezo vyote</label>
+                    </div>
+                    <div style={{ marginTop: '15px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
+                      <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>SAHIHI YA MWOMBAJI / APPLICANT SIGNATURE</p>
+                      <SignaturePad value={form.applicantSignatureImg || undefined} savedSignature={currentUser?.signature} onChange={(d) => setForm((prev: any) => ({ ...prev, applicantSignatureImg: d || "" }))} height={140} />
                     </div>
                   </div>
 

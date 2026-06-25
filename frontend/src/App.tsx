@@ -26,6 +26,7 @@ import RepaymentTracker from "./pages/RepaymentTracker";
 import OverdueManagement from "./pages/OverdueManagement";
 import PaymentRequests from "./pages/PaymentRequests";
 import LeaveRequests from "./pages/LeaveRequests";
+import Profile from "./pages/Profile";
 import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
@@ -1067,6 +1068,16 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <LeaveRequests />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Profile />
                 </MainLayout>
               </ProtectedRoute>
             }

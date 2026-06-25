@@ -48,6 +48,7 @@ class LeaveRequestController extends Controller
             'to_date' => 'required|date|after_or_equal:from_date',
             'reason' => 'nullable|string',
             'employee_signature' => 'nullable|string|max:255',
+            'employee_signature_img' => 'nullable|string',
             'employee_date' => 'nullable|date',
         ]);
 
@@ -56,6 +57,9 @@ class LeaveRequestController extends Controller
             $data['created_by'] = $user->id ?? null;
             if (empty($data['employee_signature'])) {
                 $data['employee_signature'] = $user->name ?? null;
+            }
+            if (empty($data['employee_signature_img'])) {
+                $data['employee_signature_img'] = $user->signature ?? null;
             }
 
             $lr = LeaveRequest::create($data);
@@ -153,18 +157,30 @@ class LeaveRequestController extends Controller
             return $this->error('Huna ruhusa ya kuidhinisha hatua hii', 403);
         }
 
-        $data = $request->validate(['comments' => 'nullable|string']);
+        $data = $request->validate([
+            'comments' => 'nullable|string',
+            'password' => 'required|string',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return $this->error('Nenosiri si sahihi (PIN verification failed)', 422);
+        }
+
+        $sig = $user->signature;
 
         try {
             $stage = $lr->status;
             if ($stage === 'manager_review') {
                 $lr->manager_name = $user->name; $lr->manager_decision = 'approved';
                 $lr->manager_comments = $data['comments'] ?? null; $lr->manager_date = now();
+                $lr->manager_signature_img = $sig;
             } elseif ($stage === 'gm_review') {
                 $lr->gm_name = $user->name; $lr->gm_decision = 'approved';
                 $lr->gm_comments = $data['comments'] ?? null; $lr->gm_date = now();
+                $lr->gm_signature_img = $sig;
             } elseif ($stage === 'md_review') {
                 $lr->md_name = $user->name; $lr->md_comments = $data['comments'] ?? null; $lr->md_date = now();
+                $lr->md_signature_img = $sig;
             }
 
             $lr->status = $this->nextStatus($stage);
@@ -189,7 +205,14 @@ class LeaveRequestController extends Controller
             return $this->error('Huna ruhusa ya kukataa hatua hii', 403);
         }
 
-        $data = $request->validate(['reason' => 'required|string|min:3']);
+        $data = $request->validate([
+            'reason' => 'required|string|min:3',
+            'password' => 'required|string',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return $this->error('Nenosiri si sahihi (PIN verification failed)', 422);
+        }
 
         try {
             $stage = $lr->status;

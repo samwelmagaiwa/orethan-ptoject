@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil } from "lucide-react";
+import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil, Lock } from "lucide-react";
+import SignaturePad from "../components/SignaturePad";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -38,13 +39,14 @@ const LeaveRequests = () => {
   const today = new Date().toISOString().slice(0, 10);
   const blank = {
     employee_name: user?.name || "", department: "", manager: "", absence_type: "sick", absence_other: "",
-    from_date: today, to_date: today, reason: "", employee_signature: user?.name || "", employee_date: today,
+    from_date: today, to_date: today, reason: "", employee_signature: user?.name || "", employee_signature_img: user?.signature || "", employee_date: today,
   };
   const [form, setForm] = useState<any>(blank);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [comments, setComments] = useState("");
+  const [pin, setPin] = useState("");
   const [acting, setActing] = useState(false);
 
   const headers = () => {
@@ -95,28 +97,31 @@ const LeaveRequests = () => {
       absence_type: r.absence_type || "sick", absence_other: r.absence_other || "",
       from_date: r.from_date?.slice(0, 10) || today, to_date: r.to_date?.slice(0, 10) || today,
       reason: r.reason || "", employee_signature: r.employee_signature || user?.name || "",
+      employee_signature_img: r.employee_signature_img || user?.signature || "",
       employee_date: r.employee_date?.slice(0, 10) || today,
     });
     setEditingId(r.id); setSelected(null); setTab("new");
   };
 
-  const openDetail = (r: any) => { setSelected(r); setComments(""); };
+  const openDetail = (r: any) => { setSelected(r); setComments(""); setPin(""); };
 
   const approve = async () => {
     if (!selected) return;
+    if (!pin.trim()) { alert("Enter your password/PIN to sign this approval."); return; }
     setActing(true);
     try {
-      await axios.post(`${API_BASE}/leave-requests/${selected.id}/approve`, { comments }, { headers: headers() });
-      setSelected(null); await load();
+      await axios.post(`${API_BASE}/leave-requests/${selected.id}/approve`, { comments, password: pin }, { headers: headers() });
+      setSelected(null); setPin(""); await load();
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
   };
 
   const reject = async () => {
     if (!selected || !comments.trim()) { alert("Please provide a reason in comments to reject."); return; }
+    if (!pin.trim()) { alert("Enter your password/PIN to confirm."); return; }
     setActing(true);
     try {
-      await axios.post(`${API_BASE}/leave-requests/${selected.id}/reject`, { reason: comments }, { headers: headers() });
-      setSelected(null); await load();
+      await axios.post(`${API_BASE}/leave-requests/${selected.id}/reject`, { reason: comments, password: pin }, { headers: headers() });
+      setSelected(null); setPin(""); await load();
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
   };
 
@@ -192,10 +197,11 @@ const LeaveRequests = () => {
             {/* SECTION 3: EMPLOYEE AUTHORIZATION */}
             <Section num={3} title="EMPLOYEE AUTHORIZATION / SAHIHI YA MFANYAKAZI">
               <div className="pr-grid3">
-                <div style={{ gridColumn: "span 2" }}>
-                  <Field label="Employee's Signature / Sahihi ya Mfanyakazi"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.employee_signature} onChange={(e) => set("employee_signature", e.target.value)} /></Field>
-                </div>
+                <Field label="Employee's Signature / Sahihi ya Mfanyakazi"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.employee_signature} onChange={(e) => set("employee_signature", e.target.value)} /></Field>
                 <Field label="Date / Tarehe"><input type="date" className="pr-input" style={inp} value={form.employee_date} onChange={(e) => set("employee_date", e.target.value)} /></Field>
+                <div className="pr-span-all">
+                  <SignaturePad label="Signature (draw) / Sahihi" value={form.employee_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("employee_signature_img", d || "")} height={130} />
+                </div>
               </div>
             </Section>
 
@@ -294,9 +300,9 @@ const LeaveRequests = () => {
 
                 {/* Approval trail */}
                 <div style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <ApprovalRow title="Manager / Supervisor" name={selected.manager_name} decision={selected.manager_decision} date={selected.manager_date} comments={selected.manager_comments} />
-                  <ApprovalRow title="General Manager / HR" name={selected.gm_name} decision={selected.gm_decision} date={selected.gm_date} comments={selected.gm_comments} />
-                  <ApprovalRow title="Employer (Authorisation)" name={selected.md_name} decision={selected.status === "authorized" ? "authorized" : null} date={selected.md_date} comments={selected.md_comments} />
+                  <ApprovalRow title="Manager / Supervisor" name={selected.manager_name} decision={selected.manager_decision} date={selected.manager_date} comments={selected.manager_comments} signature={selected.manager_signature_img} />
+                  <ApprovalRow title="General Manager / HR" name={selected.gm_name} decision={selected.gm_decision} date={selected.gm_date} comments={selected.gm_comments} signature={selected.gm_signature_img} />
+                  <ApprovalRow title="Employer (Authorisation)" name={selected.md_name} decision={selected.status === "authorized" ? "authorized" : null} date={selected.md_date} comments={selected.md_comments} signature={selected.md_signature_img} />
                 </div>
                 {selected.status === "rejected" && (
                   <div style={{ marginTop: "0.8rem" }}>
@@ -315,7 +321,16 @@ const LeaveRequests = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.7rem", fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
                       <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> Your Decision / Uamuzi Wako
                     </div>
-                    <textarea style={{ ...inp, resize: "vertical" }} rows={2} placeholder="Comments / Maoni..." value={comments} onChange={(e) => setComments(e.target.value)} />
+                    <textarea style={{ ...inp, resize: "vertical", marginBottom: "0.5rem" }} rows={2} placeholder="Comments / Maoni..." value={comments} onChange={(e) => setComments(e.target.value)} />
+                    {!user?.signature && (
+                      <div style={{ marginBottom: "0.5rem", fontSize: "0.72rem", color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "0.5rem 0.7rem", fontWeight: 600 }}>
+                        Tip: set your signature in <strong>My Signature</strong> so it appears on the signed document.
+                      </div>
+                    )}
+                    <div style={{ position: "relative" }}>
+                      <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                      <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} placeholder="Enter your password / PIN to sign" value={pin} onChange={(e) => setPin(e.target.value)} />
+                    </div>
                     <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.8rem" }}>
                       <button onClick={reject} disabled={acting} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}><XCircle size={16} /> Rejected / Imekataliwa</button>
                       <button onClick={approve} disabled={acting} style={{ flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.75rem", borderRadius: 10, background: "#4f46e5", border: "none", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(79,70,229,0.3)" }}>
@@ -376,7 +391,7 @@ const Info = ({ label, value }: { label: string; value: any }) => (
   </div>
 );
 
-const ApprovalRow = ({ title, name, decision, date, comments }: any) => {
+const ApprovalRow = ({ title, name, decision, date, comments, signature }: any) => {
   const map: Record<string, { label: string; bg: string; color: string }> = {
     approved: { label: "Approved", bg: "#ecfdf5", color: "#059669" },
     authorized: { label: "Authorized", bg: "#ecfdf5", color: "#059669" },
@@ -390,8 +405,13 @@ const ApprovalRow = ({ title, name, decision, date, comments }: any) => {
         {m ? <span style={{ background: m.bg, color: m.color, padding: "2px 9px", borderRadius: 20, fontSize: "0.64rem", fontWeight: 800 }}>{m.label}</span>
           : <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#94a3b8", fontSize: "0.64rem", fontWeight: 700 }}><Clock size={11} /> Pending</span>}
       </div>
-      {name && <div style={{ marginTop: "0.35rem", fontSize: "0.72rem", color: "#64748b" }}>{name} • {fmtDate(date)}</div>}
-      {comments && <div style={{ marginTop: "0.25rem", fontSize: "0.74rem", color: "#334155" }}>{comments}</div>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "0.5rem" }}>
+        <div style={{ flex: 1 }}>
+          {name && <div style={{ marginTop: "0.35rem", fontSize: "0.72rem", color: "#64748b" }}>{name} • {fmtDate(date)}</div>}
+          {comments && <div style={{ marginTop: "0.25rem", fontSize: "0.74rem", color: "#334155" }}>{comments}</div>}
+        </div>
+        {signature && <img src={signature} alt="signature" style={{ height: 38, maxWidth: 130, objectFit: "contain" }} />}
+      </div>
     </div>
   );
 };

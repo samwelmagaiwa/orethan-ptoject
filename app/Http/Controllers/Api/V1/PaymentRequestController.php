@@ -67,6 +67,7 @@ class PaymentRequestController extends Controller
             'amount' => 'required|numeric|min:1',
             'amount_in_words' => 'nullable|string',
             'applicant_signature' => 'nullable|string|max:255',
+            'applicant_signature_img' => 'nullable|string',
             'applicant_date' => 'nullable|date',
         ]);
 
@@ -76,6 +77,10 @@ class PaymentRequestController extends Controller
             $data['created_by'] = $user->id ?? null;
             if (empty($data['applicant_signature'])) {
                 $data['applicant_signature'] = $user->name ?? null;
+            }
+            // Fall back to the applicant's saved profile signature
+            if (empty($data['applicant_signature_img'])) {
+                $data['applicant_signature_img'] = $user->signature ?? null;
             }
 
             $pr = PaymentRequest::create($data);
@@ -135,7 +140,15 @@ class PaymentRequestController extends Controller
             'adjusted_amount' => 'nullable|numeric|min:1',
             'comments' => 'nullable|string',
             'cashier_reference' => 'nullable|string|max:255',
+            'password' => 'required|string',
         ]);
+
+        // PIN / password re-authentication for every signing stage
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return $this->error('Nenosiri si sahihi (PIN verification failed)', 422);
+        }
+
+        $sig = $user->signature; // snapshot the signer's saved signature
 
         try {
             $stage = $pr->status;
@@ -149,22 +162,26 @@ class PaymentRequestController extends Controller
                 $pr->manager_adjusted_amount = $data['adjusted_amount'] ?? null;
                 $pr->manager_comments = $data['comments'] ?? null;
                 $pr->manager_date = now();
+                $pr->manager_signature_img = $sig;
             } elseif ($stage === 'gm_review') {
                 $pr->gm_name = $user->name;
                 $pr->gm_decision = $decision;
                 $pr->gm_adjusted_amount = $data['adjusted_amount'] ?? null;
                 $pr->gm_comments = $data['comments'] ?? null;
                 $pr->gm_date = now();
+                $pr->gm_signature_img = $sig;
             } elseif ($stage === 'md_review') {
                 $pr->md_name = $user->name;
                 $pr->md_comments = $data['comments'] ?? null;
                 $pr->md_date = now();
+                $pr->md_signature_img = $sig;
             } elseif ($stage === 'awaiting_disbursement') {
                 // Keshia/Finance anatoa malipo kwa mwombaji
                 $pr->cashier_name = $user->name;
                 $pr->cashier_comments = $data['comments'] ?? null;
                 $pr->cashier_reference = $data['cashier_reference'] ?? null;
                 $pr->cashier_date = now();
+                $pr->cashier_signature_img = $sig;
             }
 
             if ($stage !== 'awaiting_disbursement') {
@@ -260,7 +277,14 @@ class PaymentRequestController extends Controller
             return $this->error('Huna ruhusa ya kukataa hatua hii', 403);
         }
 
-        $data = $request->validate(['reason' => 'required|string|min:3']);
+        $data = $request->validate([
+            'reason' => 'required|string|min:3',
+            'password' => 'required|string',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return $this->error('Nenosiri si sahihi (PIN verification failed)', 422);
+        }
 
         try {
             $stage = $pr->status;

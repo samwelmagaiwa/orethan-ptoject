@@ -79,4 +79,30 @@ class AuthController extends Controller
     {
         return response()->json($request->user());
     }
+
+    // SAVE DRAWN SIGNATURE (base64 PNG data URL)
+    public function saveSignature(Request $request)
+    {
+        $data = $request->validate([
+            'signature' => 'required|string', // data:image/png;base64,....
+        ]);
+
+        if (!str_starts_with($data['signature'], 'data:image/')) {
+            return response()->json(['message' => 'Invalid signature image'], 422);
+        }
+
+        $user = $request->user();
+        $user->signature = $data['signature'];
+        $user->save();
+
+        return response()->json(['message' => 'Signature saved', 'signature' => $user->signature]);
+    }
+
+    // VERIFY THE CURRENT USER'S PASSWORD/PIN (for re-auth gates)
+    public function verifyPin(Request $request)
+    {
+        $data = $request->validate(['password' => 'required|string']);
+        $ok = Hash::check($data['password'], $request->user()->password);
+        return response()->json(['valid' => $ok], $ok ? 200 : 422);
+    }
 }

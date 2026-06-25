@@ -13,6 +13,7 @@ class LeaveRequest extends Model
         'manager_name', 'manager_decision', 'manager_comments', 'manager_date',
         'gm_name', 'gm_decision', 'gm_comments', 'gm_date',
         'md_name', 'md_comments', 'md_date',
+        'employee_signature_img', 'manager_signature_img', 'gm_signature_img', 'md_signature_img',
         'rejection_reason', 'created_by',
     ];
 
