@@ -149,6 +149,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 <div className="sd-sub">
                   <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>Payment Requests</div>
                   <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>Leave Requests</div>
+                  <div className={`sd-sub__link ${isActive("/delegations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/delegations")}>Office Delegation</div>
                 </div>
               )}
               {canAccessUsers && (

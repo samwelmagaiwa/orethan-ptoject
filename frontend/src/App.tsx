@@ -27,6 +27,7 @@ import OverdueManagement from "./pages/OverdueManagement";
 import PaymentRequests from "./pages/PaymentRequests";
 import LeaveRequests from "./pages/LeaveRequests";
 import Profile from "./pages/Profile";
+import Delegations from "./pages/Delegations";
 import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
@@ -1078,6 +1079,16 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <Profile />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delegations"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Delegations />
                 </MainLayout>
               </ProtectedRoute>
             }

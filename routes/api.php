@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\OverdueController;
 use App\Http\Controllers\Api\V1\PaymentRequestController;
 use App\Http\Controllers\Api\V1\LeaveRequestController;
+use App\Http\Controllers\Api\V1\OfficeDelegationController;
 
 Route::prefix('v1')->group(function () {
 
@@ -112,6 +113,14 @@ Route::prefix('v1')->group(function () {
         Route::put('/leave-requests/{id}', [LeaveRequestController::class, 'update']);
         Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
         Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
+
+        // ========== OFFICE DELEGATION (KUKAIMISHA OFISI NA MADARAKA) ==========
+        Route::get('/delegations/staff', [OfficeDelegationController::class, 'staff']);
+        Route::get('/delegations', [OfficeDelegationController::class, 'index']);
+        Route::post('/delegations', [OfficeDelegationController::class, 'store']);
+        Route::get('/delegations/{id}', [OfficeDelegationController::class, 'show']);
+        Route::post('/delegations/{id}/acknowledge', [OfficeDelegationController::class, 'acknowledge']);
+        Route::post('/delegations/{id}/decline', [OfficeDelegationController::class, 'decline']);
     });
 
     // ========== LOAN SUBMISSION & ACTIONS (Protected) ==========
