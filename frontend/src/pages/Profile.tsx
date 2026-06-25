@@ -33,6 +33,7 @@ const Profile = () => {
   const [savingSig, setSavingSig] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [padKey, setPadKey] = useState(0); // remount the pad when the saved signature loads
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const headers = () => {
@@ -42,7 +43,7 @@ const Profile = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE}/me`, { headers: headers() })
-      .then((r) => { setUser(r.data); setSig(r.data.signature || null); localStorage.setItem("user", JSON.stringify(r.data)); })
+      .then((r) => { setUser(r.data); setSig(r.data.signature || null); setPadKey((k) => k + 1); localStorage.setItem("user", JSON.stringify(r.data)); })
       .catch(() => {});
   }, []);
 
@@ -120,7 +121,7 @@ const Profile = () => {
             <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 1rem", lineHeight: 1.5 }}>
               Draw your signature below. It auto-stamps on documents you approve (Payment Requests, Leave Requests, vouchers) and pre-fills on forms you sign.
             </p>
-            <SignaturePad value={sig || undefined} onChange={setSig} height={190} />
+            <SignaturePad key={padKey} value={sig || undefined} onChange={setSig} height={190} />
             <button onClick={saveSignature} disabled={savingSig} style={{ marginTop: "1.2rem", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 1.7rem", borderRadius: 10, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
               <Save size={16} /> {savingSig ? "Saving..." : "Save Signature"}
             </button>

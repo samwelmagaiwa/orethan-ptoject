@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Inbox, PlusCircle, X, CheckCircle2, XCircle, Clock, Lock, UserCheck } from "lucide-react";
 import SuccessModal from "../components/SuccessModal";
 import DelegationForm from "../components/DelegationForm";
+import SignatureReuse from "../components/SignatureReuse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -180,6 +181,7 @@ const Delegations = () => {
                       <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> Acknowledge this delegation
                     </div>
                     <textarea style={{ ...inp, resize: "vertical", marginBottom: "0.5rem" }} rows={2} placeholder="Reason (required only if declining)..." value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} />
+                    <SignatureReuse signature={user?.signature} />
                     <div style={{ position: "relative" }}>
                       <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                       <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} placeholder="Enter your password / PIN" value={ackPin} onChange={(e) => setAckPin(e.target.value)} />

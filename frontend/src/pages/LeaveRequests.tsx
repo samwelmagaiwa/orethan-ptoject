@@ -5,6 +5,7 @@ import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle,
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
 import DelegationForm from "../components/DelegationForm";
+import SignatureReuse from "../components/SignatureReuse";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review"];
 
@@ -382,11 +383,7 @@ const LeaveRequests = () => {
                       <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> Your Decision / Uamuzi Wako
                     </div>
                     <textarea style={{ ...inp, resize: "vertical", marginBottom: "0.5rem" }} rows={2} placeholder="Comments / Maoni..." value={comments} onChange={(e) => setComments(e.target.value)} />
-                    {!user?.signature && (
-                      <div style={{ marginBottom: "0.5rem", fontSize: "0.72rem", color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "0.5rem 0.7rem", fontWeight: 600 }}>
-                        Tip: set your signature in <strong>My Signature</strong> so it appears on the signed document.
-                      </div>
-                    )}
+                    <SignatureReuse signature={user?.signature} />
                     <div style={{ position: "relative" }}>
                       <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                       <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} placeholder="Enter your password / PIN to sign" value={pin} onChange={(e) => setPin(e.target.value)} />

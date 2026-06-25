@@ -5,6 +5,7 @@ import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Pap
 import { printDocument } from "../utils/printDoc";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
+import SignatureReuse from "../components/SignatureReuse";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review", "awaiting_disbursement"];
 
@@ -460,11 +461,7 @@ const PaymentRequests = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.7rem", fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
                       <ShieldCheck size={16} style={{ color: "#4f46e5" }} /> {selected.status === "awaiting_disbursement" ? "Cashier Disbursement" : "Your Decision"}
                     </div>
-                    {!user?.signature && (
-                      <div style={{ marginBottom: "0.6rem", fontSize: "0.72rem", color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "0.5rem 0.7rem", fontWeight: 600 }}>
-                        Tip: set your signature in <strong>My Signature</strong> so it appears on the signed document.
-                      </div>
-                    )}
+                    <SignatureReuse signature={user?.signature} />
                     {selected.status === "awaiting_disbursement" ? (
                       <>
                         <input type="text" style={{ ...inp, marginBottom: "0.5rem" }} placeholder="Transaction / Voucher reference (optional)" value={cashierRef} onChange={(e) => setCashierRef(e.target.value)} />
