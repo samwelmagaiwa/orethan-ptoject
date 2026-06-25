@@ -213,6 +213,7 @@ const LeaveRequests = () => {
             <Section num={1} title="LEAVE INFORMATION / TAARIFA ZA LIKIZO">
               <div className="pr-grid3">
                 <Field label="Employee Name / Jina la Mfanyakazi" required><input className="pr-input" style={inp} value={form.employee_name} onChange={(e) => set("employee_name", e.target.value)} /></Field>
+                <Field label="Role / Cheo"><input className="pr-input" style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title="Your role (auto)" /></Field>
                 <Field label="Department / Idara"><input className="pr-input" style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
                 <Field label="Manager / Mkuu wa Kazi"><input className="pr-input" style={inp} value={form.manager} onChange={(e) => set("manager", e.target.value)} /></Field>
               </div>
@@ -347,6 +348,7 @@ const LeaveRequests = () => {
               <div style={{ padding: "1.3rem 1.5rem", overflowY: "auto" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem 1.2rem", fontSize: "0.82rem" }}>
                   <Info label="Employee" value={selected.employee_name} />
+                  <Info label="Role" value={selected.employee_role ? String(selected.employee_role).replace(/_/g, " ") : "—"} />
                   <Info label="Department" value={selected.department} />
                   <Info label="Manager" value={selected.manager} />
                   <Info label="Type of Absence" value={ABSENCE_TYPES[selected.absence_type] || selected.absence_type} />

@@ -157,7 +157,7 @@ const Delegations = () => {
               </div>
               <div style={{ padding: "1.3rem 1.5rem", overflowY: "auto" }}>
                 <div style={{ background: "#f8fafc", border: "1px solid #eef1f6", borderRadius: 12, padding: "1rem 1.1rem", fontSize: "0.85rem", color: "#334155", lineHeight: 1.6, marginBottom: "1.1rem" }}>
-                  <strong style={{ color: "#0f172a" }}>{selected.delegator_name}</strong> ({selected.delegator_title}) delegates authority to <strong style={{ color: "#0f172a" }}>{selected.delegate_name}</strong> as <strong style={{ color: "#4f46e5" }}>{selected.acting_title}</strong> from <strong>{fmtDate(selected.from_date)}</strong> to <strong>{fmtDate(selected.to_date)}</strong>.
+                  <strong style={{ color: "#0f172a" }}>{selected.delegator_name}</strong> ({selected.delegator_title}) delegates authority to <strong style={{ color: "#0f172a" }}>{selected.delegate_name}</strong>{selected.delegate_role ? ` (${String(selected.delegate_role).replace(/_/g, " ")})` : ""} as <strong style={{ color: "#4f46e5" }}>{selected.acting_title}</strong> from <strong>{fmtDate(selected.from_date)}</strong> to <strong>{fmtDate(selected.to_date)}</strong>.
                 </div>
                 <Field label="Reason / Sababu" value={selected.reason} />
                 <Field label="Responsibilities & Authority / Madaraka" value={selected.responsibilities} />

@@ -81,6 +81,7 @@ class PaymentRequestController extends Controller
         try {
             $data['status'] = 'manager_review';
             $data['final_amount'] = $data['amount'];
+            $data['applicant_role'] = $user->role;
             $data['created_by'] = $user->id ?? null;
             if (empty($data['applicant_signature'])) {
                 $data['applicant_signature'] = $user->name ?? null;

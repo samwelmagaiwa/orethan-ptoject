@@ -64,6 +64,10 @@ const DelegationForm = ({ onSuccess }: Props) => {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
         <div>
+          <label style={lbl}>Your Role / Cheo Chako</label>
+          <input style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title="Your role (auto)" />
+        </div>
+        <div>
           <label style={lbl}>Delegate To / Mkaimishwa <span style={{ color: "#ef4444" }}>*</span></label>
           <select style={inp} value={form.delegate_id} onChange={(e) => set("delegate_id", e.target.value)}>
             <option value="">— Select staff —</option>

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class PaymentRequest extends Model
 {
     protected $fillable = [
-        'applicant_name', 'department', 'section', 'activity_type', 'activity_detail',
+        'applicant_name', 'department', 'section', 'applicant_role', 'activity_type', 'activity_detail',
         'loan_applicant_name', 'invoice_path', 'mode_of_payment', 'payable_to', 'currency',
         'amount', 'amount_in_words', 'applicant_signature', 'applicant_date',
         'status', 'final_amount',

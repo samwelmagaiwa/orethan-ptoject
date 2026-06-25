@@ -71,6 +71,7 @@ class LeaveRequestController extends Controller
 
         try {
             $data['status'] = $this->initialStatus($user);
+            $data['employee_role'] = $user->role;
             $data['created_by'] = $user->id ?? null;
             if (empty($data['employee_signature'])) {
                 $data['employee_signature'] = $user->name ?? null;

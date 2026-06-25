@@ -57,6 +57,11 @@ class OfficeDelegationController extends Controller
             return $this->error('Nenosiri si sahihi (PIN verification failed)', 422);
         }
 
+        // Huwezi kujikaimisha mwenyewe
+        if ((int) $data['delegate_id'] === (int) $user->id) {
+            return $this->error('Huwezi kukaimisha madaraka kwako mwenyewe (You cannot delegate authority to yourself)', 422);
+        }
+
         // Zuia kukaimisha mara mbili kwa kipindi kinachoendelea
         $hasActive = OfficeDelegation::where('delegator_id', $user->id)
             ->where('status', 'pending')->exists();
@@ -73,6 +78,7 @@ class OfficeDelegationController extends Controller
                 'delegator_title' => $delegatorTitle,
                 'delegate_id' => $delegate->id,
                 'delegate_name' => $delegate->name,
+                'delegate_role' => $delegate->role,
                 'acting_title' => $data['acting_title'] ?: $defaultActing,
                 'reason' => $data['reason'] ?? null,
                 'from_date' => $data['from_date'],

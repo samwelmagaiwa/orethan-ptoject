@@ -254,6 +254,7 @@ const PaymentRequests = () => {
                 <Field label="Full Name of Applicant" required><input className="pr-input" style={inp} value={form.applicant_name} onChange={(e) => set("applicant_name", e.target.value)} /></Field>
                 <Field label="Department"><input className="pr-input" style={inp} value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
                 <Field label="Section"><input className="pr-input" style={inp} value={form.section} onChange={(e) => set("section", e.target.value)} /></Field>
+                <Field label="Role / Cheo"><input className="pr-input" style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title="Your role (auto)" /></Field>
               </div>
             </Section>
 
@@ -418,6 +419,7 @@ const PaymentRequests = () => {
                   <Info label="Applicant" value={selected.applicant_name} />
                   <Info label="Department" value={selected.department} />
                   <Info label="Section" value={selected.section} />
+                  <Info label="Role" value={selected.applicant_role ? String(selected.applicant_role).replace(/_/g, " ") : "—"} />
                   <Info label="Activity" value={selected.activity_type} />
                   <Info label="Loan Applicant" value={selected.loan_applicant_name} />
                   <Info label="Mode of Payment" value={String(selected.mode_of_payment).replace("_", " ")} />
