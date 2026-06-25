@@ -10,6 +10,7 @@ const GroupLoan: React.FC = () => {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
   const isInitialized = useRef(false);
+  const DRAFT_TYPE = 'group';
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [checklistResolved, setChecklistResolved] = useState(false);
@@ -101,8 +102,10 @@ const GroupLoan: React.FC = () => {
     kikundiKimesainiFomuNgumu: false,
     kikundiKimewekaDoleGumba: false,
 
-    // Photo URL for Draft & Edit Persistence
+    // Photo URLs for Draft & Edit Persistence
     passportPhotoUrl: "",
+    guarantor1PhotoUrl: "",
+    guarantor2PhotoUrl: "",
   });
 
 
@@ -145,6 +148,8 @@ const GroupLoan: React.FC = () => {
   const [streets, setStreets] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
+  const [guarantor1Photo, setGuarantor1Photo] = useState<File | null>(null);
+  const [guarantor2Photo, setGuarantor2Photo] = useState<File | null>(null);
 
   const getPhotoUrl = (url: string | undefined | null) => {
     if (!url) return "";
@@ -154,19 +159,23 @@ const GroupLoan: React.FC = () => {
     return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passport' | 'guarantor1' | 'guarantor2' = 'passport') => {
 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setPassportPhoto(file);
+    // Local preview
+    if (type === 'passport') setPassportPhoto(file);
+    else if (type === 'guarantor1') setGuarantor1Photo(file);
+    else if (type === 'guarantor2') setGuarantor2Photo(file);
 
+    // Immediate upload for draft persistence
     try {
       const token = localStorage.getItem("token");
       const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const formData = new FormData();
       formData.append("photo", file, file.name);
-      formData.append("applicant_name", `${form.jinaKamiliLaMwombaji || 'Applicant'}_passport`);
+      formData.append("applicant_name", `${form.jinaKamiliLaMwombaji || 'Applicant'}_${type}`);
 
       const res = await axios.post(`${API_BASE}/upload/passport`, formData, {
         headers: { Authorization: token ? `Bearer ${token}` : "" },
@@ -176,29 +185,30 @@ const GroupLoan: React.FC = () => {
       if (url) {
         setForm(prev => ({
           ...prev,
-          passportPhotoUrl: url
+          [`${type}PhotoUrl`]: url
         }));
       }
     } catch (error) {
-      console.error(`Upload error:`, error);
+      console.error(`Upload error for ${type}:`, error);
       showAlert("Imeshindwa kupakia picha. Tafadhali jaribu tena.", "error");
     }
   };
 
 
-  // Persistence: Load
+  // Persistence: Load draft from BACKEND on mount
   useEffect(() => {
-    if (isInitialized.current) return;
+    const token = localStorage.getItem('token');
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
-    if (editId) {
-      setIsEditMode(true);
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
-      axios.get(`${API_BASE}/loans/${editId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
+    const loadDraft = async () => {
+      // Priority 0: Edit Mode (load a submitted loan)
+      if (editId) {
+        setIsEditMode(true);
+        setLoading(true);
+        try {
+          const res = await axios.get(`${API_BASE}/loans/${editId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           const loan = res.data;
           if (loan && loan.details) {
             setForm(prev => ({
@@ -208,61 +218,92 @@ const GroupLoan: React.FC = () => {
               simu: loan.phone,
               kiasiChaMkopo: loan.amount.toString(),
               passportPhotoUrl: loan.passport_photo || loan.details.passportPhotoUrl || "",
+              guarantor1PhotoUrl: loan.guarantor_1_photo || loan.details.guarantor1PhotoUrl || "",
+              guarantor2PhotoUrl: loan.guarantor_2_photo || loan.details.guarantor2PhotoUrl || "",
             }));
           }
-
-        })
-        .catch(err => {
-          console.error("Error fetching loan for edit:", err);
-        })
-        .finally(() => {
+        } catch (e) {
+          console.error("Error fetching loan for edit:", e);
+        } finally {
           setLoading(false);
           isInitialized.current = true;
-        });
-      return;
-    }
-
-    const savedFormStr = localStorage.getItem("group_loan_draft");
-
-    if (savedFormStr) {
-      try {
-        const parsed = JSON.parse(savedFormStr);
-        if (parsed.form && Object.values(parsed.form).some((v: any) => v !== "" && v !== false)) {
-          setDraftData(parsed);
-          setShowDraftModal(true);
         }
-      } catch (e) {
-        console.error("Failed to parse draft", e);
+        return; // Skip normal draft loading
       }
-    }
 
-    // Auto-generate Fomu No if empty
-    setForm(prev => {
-      if (!prev.fomuNo) {
-        const randomNum = Math.floor(100000 + Math.random() * 900000);
-        return { ...prev, fomuNo: `GRP-${randomNum}` };
+      // Load an existing backend draft (offer to resume)
+      if (token) {
+        try {
+          const res = await axios.get(`${API_BASE}/drafts/${DRAFT_TYPE}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.data.draft && res.data.draft.form &&
+            Object.values(res.data.draft.form).some((v: any) => v !== '' && v !== false)) {
+            setDraftData(res.data.draft);
+            setShowDraftModal(true);
+          } else {
+            isInitialized.current = true;
+          }
+        } catch {
+          isInitialized.current = true;
+        }
+      } else {
+        isInitialized.current = true;
       }
-      return prev;
-    });
 
-    fetchRegions();
+      // Auto-generate Fomu No if empty
+      setForm(prev => {
+        if (!prev.fomuNo) {
+          const randomNum = Math.floor(100000 + Math.random() * 900000);
+          return { ...prev, fomuNo: `GRP-${randomNum}` };
+        }
+        return prev;
+      });
+
+      fetchRegions();
+    };
+
+    loadDraft();
   }, []);
 
-  // Persistence: Save
+  // Persistence: Auto-save draft to BACKEND on change (debounced 2s)
   useEffect(() => {
-    localStorage.setItem('group_loan_draft', JSON.stringify({ form, step: currentStep }));
+    if (!isInitialized.current) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
+    const timer = setTimeout(() => {
+      axios.post(`${API_BASE}/drafts`, {
+        type: DRAFT_TYPE,
+        data: form,
+        step: currentStep,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(e => console.error('Draft save error', e));
+    }, 2000); // debounce 2s to avoid hammering the API
+
+    return () => clearTimeout(timer);
   }, [form, currentStep]);
 
   const handleRestoreDraft = () => {
     if (draftData) {
-      setForm(draftData.form);
+      setForm(prev => ({ ...prev, ...draftData.form }));
       setCurrentStep(draftData.step);
+      isInitialized.current = true;
+      setShowDraftModal(false);
     }
-    setShowDraftModal(false);
   };
 
   const handleDiscardDraft = () => {
-    localStorage.removeItem('group_loan_draft');
+    const token = localStorage.getItem('token');
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+    if (token) {
+      axios.delete(`${API_BASE}/drafts/${DRAFT_TYPE}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(e => console.error('Draft delete error', e));
+    }
+    isInitialized.current = true;
     setShowDraftModal(false);
   };
 
@@ -464,10 +505,14 @@ const GroupLoan: React.FC = () => {
         amount: cleanNumber(form.kiasiChaMkopo),
         type: "group",
         passport_photo: form.passportPhotoUrl,
+        guarantor_1_photo: form.guarantor1PhotoUrl,
+        guarantor_2_photo: form.guarantor2PhotoUrl,
         details: {
           ...form,
           documentation_checklist: checklistState,
           passportPhotoUrl: form.passportPhotoUrl,
+          guarantor1PhotoUrl: form.guarantor1PhotoUrl,
+          guarantor2PhotoUrl: form.guarantor2PhotoUrl,
         },
       };
 
@@ -477,6 +522,13 @@ const GroupLoan: React.FC = () => {
         data: payload,
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+
+      // Clear the saved draft after a successful submission
+      if (!isEditMode && token) {
+        axios.delete(`${API_BASE}/drafts/${DRAFT_TYPE}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => { /* non-blocking */ });
+      }
 
       showAlert(successMessage, "success");
       setTimeout(() => {
@@ -852,26 +904,34 @@ const GroupLoan: React.FC = () => {
             {/* SEHEMU 5: TAMKO NA WASILISHA */}
             {currentStep === 4 && (
               <div className="tamko-container">
-                {/* Passport Upload (Previous Design Style) */}
+                {/* Triple Photo Upload Row — applicant + both guarantors (mirrors personal loan) */}
                 <div className="tamko-card">
-                  <p><strong>PAKIA PICHA YA PASSPORT *</strong></p>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ width: '150px', height: '150px', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9f9f9' }}>
-                      {form.passportPhotoUrl ? (
-                        <img src={getPhotoUrl(form.passportPhotoUrl)} alt="Passport" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : passportPhoto ? (
-                        <img src={URL.createObjectURL(passportPhoto)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ fontSize: '0.8rem', color: '#666' }}>Hakuna Picha</span>
-                      )}
-                    </div>
-                    <label className="upload-btn" style={{ background: '#102a43', color: '#fff', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>
-                      {form.passportPhotoUrl || passportPhoto ? 'Badilisha Picha' : 'Pakia Passport Size'}
-                      <input type="file" hidden accept="image/*" onChange={handlePhotoSelect} onClick={(e) => (e.target as any).value = null} />
-                    </label>
-
+                  <p style={{ marginBottom: '4px' }}><strong>PAKIA PICHA ZA PASSPORT *</strong></p>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 14px' }}>Picha ya mwombaji na za wadhamini wawili zinahitajika kwa ajili ya utambulisho kwenye mfumo.</p>
+                  <div className="group-photo-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                    {[
+                      { type: 'passport', url: form.passportPhotoUrl, file: passportPhoto, title: 'PICHA YA MWOMBAJI', color: '#102a43' },
+                      { type: 'guarantor1', url: form.guarantor1PhotoUrl, file: guarantor1Photo, title: 'MDHAMINI (MUME/MKE/NDUGU)', color: '#f59e0b' },
+                      { type: 'guarantor2', url: form.guarantor2PhotoUrl, file: guarantor2Photo, title: 'MDHAMINI (MWENYEKITI)', color: '#10b981' },
+                    ].map((p) => (
+                      <div key={p.type} style={{ border: '1px solid #e2e8f0', borderTop: `4px solid ${p.color}`, borderRadius: '8px', padding: '12px', background: '#fff' }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e293b', margin: '0 0 8px', textAlign: 'center', letterSpacing: '0.3px' }}>{p.title}</p>
+                        <div style={{ width: '100%', height: '150px', border: '2px dashed #cbd5e1', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', marginBottom: '10px' }}>
+                          {p.url ? (
+                            <img src={getPhotoUrl(p.url)} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : p.file ? (
+                            <img src={URL.createObjectURL(p.file)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Hakuna Picha</span>
+                          )}
+                        </div>
+                        <label className="upload-btn" style={{ display: 'block', textAlign: 'center', background: p.color, color: '#fff', padding: '8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>
+                          {p.url || p.file ? 'Badilisha Picha' : 'Pakia Picha'}
+                          <input type="file" hidden accept="image/*" onChange={(e) => handlePhotoSelect(e, p.type as 'passport' | 'guarantor1' | 'guarantor2')} onClick={(e) => (e.target as any).value = null} />
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Picha ya passport inahitajika kwa ajili ya utambulisho wako kwenye mfumo.</p>
                 </div>
 
                 <div className="tamko-card">
@@ -925,6 +985,7 @@ const GroupLoan: React.FC = () => {
                       proof_residence: !!form.eneoUnaioishi,
                       guarantor_id: !!(form.mdhamini1JinaKamili || form.jinaLaMwenyekiti),
                       guarantor_residence: !!form.mdhamini1MahaliAnapoishi,
+                      guarantor_photos: !!(form.guarantor1PhotoUrl || form.guarantor2PhotoUrl),
                       application_form: true,
                       two_guarantors_signed: !!(form.tamkoLaMdhamini && form.tamkoLaMdhaminiWajibika),
                       loan_agreement: !!(form.kikundiKimesainiFomuNgumu || form.mwombajiAmesainiFomuNgumu),
@@ -1286,6 +1347,7 @@ const GroupLoan: React.FC = () => {
         
         @media (max-width: 800px) {
           .page-container { padding: 10px; margin-top: -24px; border-radius: 0; }
+          .group-photo-row { grid-template-columns: 1fr !important; }
           .form-portal-content { flex-direction: column; align-items: flex-start; gap: 10px; }
           .form-scroll { padding: 12px; max-height: none; }
           .form-table, .form-table tbody, .form-table tr, .form-table td, .form-table th {

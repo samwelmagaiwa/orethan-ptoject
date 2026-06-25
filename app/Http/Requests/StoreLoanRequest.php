@@ -26,6 +26,8 @@ class StoreLoanRequest extends FormRequest
             'type' => 'required|string|max:50',
             'details' => 'required|array',
             'passport_photo' => 'nullable|string',
+            'guarantor_1_photo' => 'nullable|string',
+            'guarantor_2_photo' => 'nullable|string',
         ];
     }
 }
