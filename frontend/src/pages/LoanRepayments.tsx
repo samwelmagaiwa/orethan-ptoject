@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import { printReceipt, type ReceiptData } from "../utils/receipt";
 
 // INLINE SVG ICONS
 const IconArrowLeft = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
@@ -27,6 +28,7 @@ const LoanRepayments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   useEffect(() => {
     fetchCustomerAndLoans();
@@ -68,7 +70,7 @@ const LoanRepayments: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
-      await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
+      const res = await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
         amount: Number(amount),
         payment_date: paymentDate,
         payment_method: method,
@@ -77,6 +79,9 @@ const LoanRepayments: React.FC = () => {
       }, {
         headers: { Authorization: token ? `Bearer ${token}` : "" }
       });
+
+      const rcpt = res.data?.data?.receipt;
+      if (rcpt) setReceipt(rcpt);
 
       setModalMessage("Malipo yamefanikiwa kurekodiwa!");
       setModalType("success");
@@ -129,6 +134,26 @@ const LoanRepayments: React.FC = () => {
         type={modalType}
         onClose={() => setShowModal(false)}
       />
+
+      {receipt && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.55)" }}>
+          <div style={{ width: "100%", maxWidth: 440, borderRadius: 20, background: "white", overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.4)", fontFamily: "'Inter',sans-serif" }}>
+            <div style={{ background: "linear-gradient(135deg,#059669,#065f46)", padding: "1.6rem 1.5rem", color: "white", textAlign: "center" }}>
+              <h2 style={{ fontSize: "1.2rem", fontWeight: 900, margin: 0 }}>Payment Recorded</h2>
+              <p style={{ margin: "0.3rem 0 0", fontSize: "0.82rem", opacity: 0.9, fontWeight: 600 }}>TZS {Math.round(receipt.amount_paid).toLocaleString()} · {receipt.receipt_number}</p>
+            </div>
+            <div style={{ padding: "1.4rem 1.5rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem" }}>
+                <button onClick={() => printReceipt(receipt, "a4")} style={lrRcptBtn("#102a43")}>🖨 A4 Receipt</button>
+                <button onClick={() => printReceipt(receipt, "a4")} style={lrRcptBtn("#1d8ad1")}>⬇ Download PDF</button>
+                <button onClick={() => printReceipt(receipt, "80mm")} style={lrRcptBtn("#475569")}>🖨 Thermal 80mm</button>
+                <button onClick={() => printReceipt(receipt, "58mm")} style={lrRcptBtn("#475569")}>🖨 Thermal 58mm</button>
+              </div>
+              <button onClick={() => setReceipt(null)} style={{ width: "100%", marginTop: "0.9rem", padding: "0.7rem", borderRadius: 12, background: "#f1f5f9", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#64748b" }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button onClick={() => navigate(`/customers/${id}`)} style={{ background: 'none', border: 'none', color: '#64748b', fontWeight: '600', cursor: 'pointer', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <IconArrowLeft /> Rudi kwa Mteja
@@ -292,5 +317,11 @@ const LoanRepayments: React.FC = () => {
     </div>
   );
 };
+
+const lrRcptBtn = (bg: string): React.CSSProperties => ({
+  display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+  padding: "0.75rem", borderRadius: 12, background: bg, border: "none", color: "white",
+  fontWeight: 700, fontSize: "0.8rem", cursor: "pointer",
+});
 
 export default LoanRepayments;

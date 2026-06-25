@@ -247,18 +247,27 @@ class LoanService
                 throw new \Exception("Payment amount $amount exceeds remaining balance $remaining");
             }
 
+            $balanceBefore = $remaining;
+            $receivedBy = $data['received_by'] ?? ($user->name ?? null);
+
             $repayment = \App\Models\Repayment::create([
                 'loan_id' => $loan->id,
                 'amount' => $amount,
                 'payment_date' => $data['payment_date'],
                 'payment_method' => $data['payment_method'],
                 'transaction_id' => $data['transaction_id'] ?? null,
-                'collector_name' => $data['received_by'] ?? ($user->name ?? null),
+                'collector_name' => $receivedBy,
                 'notes' => $data['notes'] ?? null,
-                'receipt_number' => 'RCP-' . strtoupper(uniqid()),
                 'status' => 'completed',
                 'recorded_by' => $user->id ?? 1,
             ]);
+
+            // Clean sequential receipt & transaction numbers (need the persisted id)
+            $stamp = \Carbon\Carbon::parse($data['payment_date'])->format('Ymd');
+            $seq = str_pad((string) $repayment->id, 5, '0', STR_PAD_LEFT);
+            $repayment->receipt_number = 'RCP-' . $stamp . '-' . $seq;
+            $transactionNumber = $data['transaction_id'] ?: ('TXN-' . $stamp . '-' . $seq);
+            $repayment->save();
 
             $loan->total_paid = round(($loan->total_paid ?? 0) + $amount);
             $loan->remaining_balance = round($loan->amount - $loan->total_paid);
@@ -273,12 +282,38 @@ class LoanService
 
             $loan->save();
 
-            // Update schedules
+            // Update schedules and resolve the next due date
             $this->updateSchedules($loan, $amount);
+            $nextSchedule = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date', 'asc')->first();
+
+            // Digital verification code (tamper-evident short hash)
+            $verification = strtoupper(substr(hash('sha256', $repayment->receipt_number . '|' . $loan->id . '|' . $amount . '|' . $loan->remaining_balance), 0, 12));
+
+            $loan->loadMissing('customer');
+            $receipt = [
+                'receipt_number' => $repayment->receipt_number,
+                'transaction_number' => $transactionNumber,
+                'payment_date' => \Carbon\Carbon::parse($data['payment_date'])->toDateString(),
+                'payment_time' => $repayment->created_at?->format('H:i:s'),
+                'customer_name' => $loan->name,
+                'customer_number' => $loan->customer?->customer_number ?? ('CUST-' . str_pad((string) ($loan->customer_id ?? 0), 6, '0', STR_PAD_LEFT)),
+                'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                'phone' => $loan->phone ?? $loan->customer?->phone_number,
+                'original_amount' => round($loan->amount),
+                'balance_before' => round($balanceBefore),
+                'amount_paid' => $amount,
+                'balance_after' => round($loan->remaining_balance),
+                'next_due_date' => $nextSchedule?->due_date?->toDateString() ?? $loan->next_payment_date,
+                'payment_method' => $data['payment_method'],
+                'received_by' => $receivedBy,
+                'verification_code' => $verification,
+                'fully_paid' => $loan->remaining_balance <= 0,
+            ];
 
             return [
                 'repayment' => $repayment,
-                'loan' => $loan->fresh()
+                'loan' => $loan->fresh(),
+                'receipt' => $receipt,
             ];
         });
     }

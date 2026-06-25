@@ -9,8 +9,9 @@ import {
   RefreshCw, TrendingUp, DollarSign, PieChart as PieIcon,
   Users, CheckCircle2, AlertCircle, Wallet, AlertTriangle,
   Search, Filter, ArrowUpRight, Clock, Activity,
-  Calendar, Send, Eye, Phone, X
+  Calendar, Send, Eye, Phone, X, Printer, Download, Receipt as ReceiptIcon
 } from "lucide-react";
+import { printReceipt, type ReceiptData } from "../utils/receipt";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -50,6 +51,12 @@ interface Summary {
 
 const fmt = (val: any) => `TZS ${Math.round(Number(val) || 0).toLocaleString()}`;
 
+const rcptBtn = (bg: string): React.CSSProperties => ({
+  display: "flex", alignItems: "center", justifyContent: "center", gap: "0.45rem",
+  padding: "0.75rem", borderRadius: 12, background: bg, border: "none", color: "white",
+  fontWeight: 700, fontSize: "0.8rem", cursor: "pointer",
+});
+
 const SECTION_GAP = "0.75rem";
 const CARD_SHADOW = "0 6px 18px rgba(15,23,42,0.07)";
 const CARD_STYLE: React.CSSProperties = {
@@ -75,6 +82,7 @@ const RepaymentTracker = () => {
   const [notes, setNotes] = useState("");
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   // Repayment schedule modal
   const [showSchedule, setShowSchedule] = useState(false);
@@ -124,11 +132,13 @@ const RepaymentTracker = () => {
     if (isNaN(amount) || amount <= 0 || !selectedLoan) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
+      const res = await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
         amount, payment_date: paymentDate, payment_method: paymentMethod, transaction_id: transactionId, received_by: receivedBy, notes,
       }, { headers: { Authorization: `Bearer ${token}` } });
       setShowRepaymentModal(false);
       setRepaymentAmount(""); setTransactionId(""); setReceivedBy(""); setNotes("");
+      const rcpt = res.data?.data?.receipt;
+      if (rcpt) setReceipt(rcpt);
       await loadData();
     } catch (e) {
       console.error(e);
@@ -609,6 +619,34 @@ const RepaymentTracker = () => {
                     </tbody>
                   </table>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── RECEIPT (PRINT / DOWNLOAD) MODAL ─── */}
+      <AnimatePresence>
+        {receipt && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+              style={{ width: "100%", maxWidth: 440, borderRadius: 20, background: "white", overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
+              <div style={{ background: "linear-gradient(135deg,#059669,#065f46)", padding: "1.6rem 1.5rem", color: "white", textAlign: "center" }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.8rem" }}><CheckCircle2 size={30} /></div>
+                <h2 style={{ fontSize: "1.2rem", fontWeight: 900, margin: 0 }}>Payment Recorded</h2>
+                <p style={{ margin: "0.3rem 0 0", fontSize: "0.82rem", opacity: 0.9, fontWeight: 600 }}>{fmt(receipt.amount_paid)} · {receipt.receipt_number}</p>
+              </div>
+              <div style={{ padding: "1.4rem 1.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center", marginBottom: "1rem", fontSize: "0.82rem", fontWeight: 700, color: "#475569" }}>
+                  <ReceiptIcon size={16} style={{ color: "#059669" }} /> Print or download the receipt
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem" }}>
+                  <button onClick={() => printReceipt(receipt, "a4")} style={rcptBtn("#102a43")}><Printer size={16} /> A4 Receipt</button>
+                  <button onClick={() => printReceipt(receipt, "a4")} style={rcptBtn("#1d8ad1")}><Download size={16} /> Download PDF</button>
+                  <button onClick={() => printReceipt(receipt, "80mm")} style={rcptBtn("#475569")}><Printer size={16} /> Thermal 80mm</button>
+                  <button onClick={() => printReceipt(receipt, "58mm")} style={rcptBtn("#475569")}><Printer size={16} /> Thermal 58mm</button>
+                </div>
+                <button onClick={() => setReceipt(null)} style={{ width: "100%", marginTop: "0.9rem", padding: "0.7rem", borderRadius: 12, background: "#f1f5f9", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#64748b" }}>Done</button>
               </div>
             </motion.div>
           </div>
