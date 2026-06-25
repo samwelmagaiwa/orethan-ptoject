@@ -940,7 +940,7 @@ const GroupLoan: React.FC = () => {
                   <p>Pia nakubali kutembelewa na Afisa mikopo sehemu ya biashara yangu na nyumbani kwangu na kupata taarifa muhimu kutoka kwa watu wengine kwa ajili ya uhakiki wa taarifa zangu kwa matumizi ya ofisi.</p>
                   <p>Pia Kwa kujaza fomu hii natoa ridhaa kwa mkopeshaji kutoa taarifa zangu kwenye Taasisi za Kuchakata Taarifa za Wakopaji (CRB) na wadau wengine kama ilivyoanishwa kwenye sheria na miongozo inayotolewa na Benki Kuu Ya Tanzania pamoja na Tume ya Ulinzi wa Taarifa Binafsi.</p>
 
-                  <div className="tamko-checkbox-group">
+                  <div className="tamko-checkbox-group tamko-checkbox-group--2col">
                     <label className="checkbox-label"><input type="checkbox" name="mwombajiAmesainiFomuNgumu" checked={form.mwombajiAmesainiFomuNgumu} onChange={handleChange} /> Je MWOMBAJI amesaini kwenye fomu ngumu ya mkopo?</label>
                     <label className="checkbox-label"><input type="checkbox" name="mwombajiAmewekaDoleGumba" checked={form.mwombajiAmewekaDoleGumba} onChange={handleChange} /> Je MWOMBAJI ameweka dole gumba kwenye karatasi ngumu ya mkopo?</label>
                   </div>
@@ -951,7 +951,7 @@ const GroupLoan: React.FC = () => {
                   <div className="input-box" style={{ marginBottom: "15px" }}><input type="text" name="tamkoLaMdhaminiUhusiano" placeholder=" " value={form.tamkoLaMdhaminiUhusiano} onChange={handleChange} /><label>Uhusiano wako na mwombaji</label></div>
                   <p>Mimi <strong>{form.mdhamini1JinaKamili || "_________________________"}</strong> Uhusiano <strong>{form.tamkoLaMdhaminiUhusiano || "________"}</strong> ninakiri kuwa na taarifa juu ya mkopo wa Tsh <strong>{form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : "___________"}</strong> uliyoombwa na <strong>{form.jinaKamiliLaMwombaji || "______________"}</strong> kutoka Orethan Microfinance. Dhamana tajwa hapo juu nazifahamu na nipo tayari zitolewe kama dhamana kwa mujibu wa masharti na taratibu zilizokubaliwa na mkopaji na mkopeshaji.</p>
 
-                  <div className="tamko-checkbox-group">
+                  <div className="tamko-checkbox-group tamko-checkbox-group--2col">
                     <label className="checkbox-label"><input type="checkbox" name="mdhaminiAmesainiFomuNgumu" checked={form.mdhaminiAmesainiFomuNgumu} onChange={handleChange} /> Je MDHAMINI amesaini kwenye fomu ngumu ya mkopo?</label>
                     <label className="checkbox-label"><input type="checkbox" name="mdhaminiAmewekaDoleGumba" checked={form.mdhaminiAmewekaDoleGumba} onChange={handleChange} /> Je MDHAMINI ameweka dole gumba kwenye karatasi ngumu ya mkopo?</label>
                   </div>
@@ -961,7 +961,7 @@ const GroupLoan: React.FC = () => {
                   <p><strong>TAMKO LA MDHAMINI ( MWENYEKITI)</strong></p>
                   <p>1. Mimi <strong>{form.jinaLaMwenyekiti || "_______________________"}</strong> nakubali kumdhamini <strong>{form.jinaKamiliLaMwombaji || "________________________"}</strong> aliyeomba mkopo wa Tsh <strong>{form.kiasiChaMkopo || "____________"}</strong> kutoka Orethan Microfinance. Nakiri kwamba taarifa zote nilizozitoa hapo juu ni sahihi kadiri ya ufahamu wangu. Pia, ninatambua na kukubali kwamba nitawajibika kulipa mkopo Pamoja na wajumbe wote wa kikundi endapo mkopaji atashindwa kulipa kama ilivyoainishwa kwenye mkataba.</p>
 
-                  <div className="tamko-checkbox-group">
+                  <div className="tamko-checkbox-group tamko-checkbox-group--2col">
                     <label className="checkbox-label"><input type="checkbox" name="kikundiKimesainiFomuNgumu" checked={form.kikundiKimesainiFomuNgumu} onChange={handleChange} /> Je MWENYEKITI amesaini kwenye fomu ngumu ya mkopo?</label>
                     <label className="checkbox-label"><input type="checkbox" name="kikundiKimewekaDoleGumba" checked={form.kikundiKimewekaDoleGumba} onChange={handleChange} /> Je MWENYEKITI ameweka dole gumba kwenye karatasi ngumu ya mkopo?</label>
                   </div>
@@ -1301,6 +1301,11 @@ const GroupLoan: React.FC = () => {
           border-radius: 8px;
           border: 1px dashed #cbd5e1;
         }
+        .tamko-checkbox-group--2col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+        }
 
         .nav-buttons {
           display: flex;
@@ -1348,6 +1353,7 @@ const GroupLoan: React.FC = () => {
         @media (max-width: 800px) {
           .page-container { padding: 10px; margin-top: -24px; border-radius: 0; }
           .group-photo-row { grid-template-columns: 1fr !important; }
+          .tamko-checkbox-group--2col { grid-template-columns: 1fr; }
           .form-portal-content { flex-direction: column; align-items: flex-start; gap: 10px; }
           .form-scroll { padding: 12px; max-height: none; }
           .form-table, .form-table tbody, .form-table tr, .form-table td, .form-table th {
