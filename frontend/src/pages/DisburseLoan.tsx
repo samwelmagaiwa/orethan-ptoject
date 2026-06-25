@@ -111,15 +111,15 @@ const DisburseLoan = () => {
             <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700">${label}</div>
             <div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:5px;${mono ? "font-family:ui-monospace,monospace;letter-spacing:0.5px" : ""}">${value}</div>
           </div>`;
-        const sectionTitle = (t) => `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#102a43;margin:30px 0 14px;display:flex;align-items:center;gap:10px"><span style="width:18px;height:2px;background:#102a43;display:inline-block"></span>${t}</div>`;
+        const sectionTitle = (t) => `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#102a43;margin:18px 0 8px;display:flex;align-items:center;gap:10px"><span style="width:18px;height:2px;background:#102a43;display:inline-block"></span>${t}</div>`;
         const kv = (k, v, mono = false) => `<tr><td style="padding:11px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:46%">${k}</td><td style="padding:11px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;${mono ? "font-family:ui-monospace,monospace" : ""}">${v}</td></tr>`;
-        // Field card for the 3-column layout
+        // Clean stacked label/value for the 3-column layout (no card box)
         const block = (label, value, opts = {}) => `
-          <div style="background:#f8fafc;border:1px solid #eef1f6;border-radius:10px;padding:12px 14px">
+          <div style="padding:8px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700">${label}</div>
-            <div style="font-size:13.5px;font-weight:800;color:${opts.color || "#0f172a"};margin-top:5px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
+            <div style="font-size:13px;font-weight:700;color:${opts.color || "#0f172a"};margin-top:4px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
           </div>`;
-        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${cells.join("")}</div>`;
+        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 28px">${cells.join("")}</div>`;
         return `
 <div style="max-width:700px;margin:0 auto;color:#0f172a">
   <!-- Title row -->
@@ -156,12 +156,12 @@ const DisburseLoan = () => {
         ])}
 
   <!-- Net payable: clean bordered highlight (no blue/gradient) -->
-  <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #102a43;border-left:6px solid #102a43;border-radius:12px;padding:22px 26px;margin:24px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #102a43;border-left:6px solid #102a43;border-radius:12px;padding:16px 24px;margin:18px 0">
     <div>
       <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:#64748b;font-weight:700">Net Payable Amount</div>
-      <div style="font-size:13px;color:#94a3b8;font-weight:600;margin-top:4px">Amount disbursed to the borrower</div>
+      <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-top:3px">Amount disbursed to the borrower</div>
     </div>
-    <div style="font-size:30px;font-weight:900;color:#102a43;letter-spacing:-0.5px">${fmt(netAmount)}</div>
+    <div style="font-size:28px;font-weight:900;color:#102a43;letter-spacing:-0.5px">${fmt(netAmount)}</div>
   </div>
 
   ${sectionTitle("Execution Details")}
@@ -172,13 +172,13 @@ const DisburseLoan = () => {
         ])}
 
   <!-- Signatures -->
-  <div style="margin-top:70px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
-    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:12px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Prepared / Cashier</div></div>
-    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:12px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Authorized By</div></div>
-    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:12px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Received By (Client)</div></div>
+  <div style="margin-top:48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
+    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Prepared / Cashier</div></div>
+    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Authorized By</div></div>
+    <div style="text-align:center"><div style="border-top:1.5px solid #0f172a;padding-top:10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:1px">Received By (Client)</div></div>
   </div>
 
-  <div style="margin-top:34px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:18px;font-style:italic">Valid only when officially stamped and authorized · REF: ${accountNumber} · Generated ${new Date().toLocaleString("en-GB")}</div>
+  <div style="margin-top:24px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:14px;font-style:italic">Valid only when officially stamped and authorized · REF: ${accountNumber} · Generated ${new Date().toLocaleString("en-GB")}</div>
 </div>`;
     };
 
