@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2, Trash2 } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
+import ConfirmModal from "./ConfirmModal";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -118,6 +119,7 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
 
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [viewerDoc, setViewerDoc] = useState<{ url: string; name: string; mimeType: string } | null>(null);
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
 
   const handleUpload = async (key: string, file: File) => {
     setUploadingKey(key);
@@ -182,13 +184,16 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                     <div className="ckl-foot">
                       <div className="ckl-doc-actions">
                         {!item.noUpload && (
-                          <label className="ckl-doc-btn" title={st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}>
+                          <label
+                            className={`ckl-doc-btn ${st.skip ? "ckl-doc-btn--muted" : ""}`}
+                            title={st.skip ? "Imerukwa — futa 'Proceed without' kwanza" : st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}
+                          >
                             {uploadingKey === item.key ? <Loader2 size={12} className="ckl-spin" /> : <Paperclip size={12} />}
                             <input
                               type="file"
                               accept="image/*,application/pdf"
                               hidden
-                              disabled={uploadingKey === item.key}
+                              disabled={uploadingKey === item.key || st.skip}
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) handleUpload(item.key, file);
@@ -211,9 +216,7 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                                 type="button"
                                 className="ckl-doc-btn ckl-doc-btn--delete"
                                 title="Futa Nyaraka"
-                                onClick={() => {
-                                  if (window.confirm("Futa nyaraka hii?")) removeAttachment(item.key);
-                                }}
+                                onClick={() => setConfirmDeleteKey(item.key)}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -255,6 +258,7 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
         .ckl-doc-btn--view:hover { background: #bfdbfe; }
         .ckl-doc-btn--delete { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
         .ckl-doc-btn--delete:hover { background: #fecaca; }
+        .ckl-doc-btn--muted { opacity: 0.4; cursor: not-allowed; pointer-events: none; background: #f1f5f9; color: #94a3b8; }
         .ckl-spin { animation: ckl-spin 0.8s linear infinite; }
         @keyframes ckl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .ckl-tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.64rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; }
@@ -272,6 +276,20 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
         name={viewerDoc?.name}
         mimeType={viewerDoc?.mimeType}
         onClose={() => setViewerDoc(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDeleteKey}
+        title="Futa Nyaraka"
+        message="Una hakika unataka kufuta nyaraka hii? Utahitaji kuipakia tena au kutumia 'Proceed without'."
+        type="danger"
+        confirmText="Ndio, Futa"
+        cancelText="Ghairi"
+        onConfirm={() => {
+          if (confirmDeleteKey) removeAttachment(confirmDeleteKey);
+          setConfirmDeleteKey(null);
+        }}
+        onCancel={() => setConfirmDeleteKey(null)}
       />
     </div>
   );
