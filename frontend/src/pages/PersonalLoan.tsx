@@ -49,6 +49,8 @@ const PersonalLoan: React.FC = () => {
     kaziYaMumeMke: "",
     jinaLaMwajiriWaMumeMke: "",
     simuYaOfisiYaMumeMke: "",
+    anuaniYaEneoLaKaziMumeMke: "",
+    idadiYaUtegemezi: "",
     umeajiriwa: "", // New field for conditional Step 2
 
 
@@ -409,6 +411,8 @@ const PersonalLoan: React.FC = () => {
       "nambaYaKitambulishoMumeMke",
       "kaziYaMumeMke",
       "simuYaOfisiYaMumeMke",
+      "anuaniYaEneoLaKaziMumeMke",
+      "idadiYaUtegemezi",
       "nambaYaNyumba",
       "umilikiWaMakaziMengine",
       "uraia"
@@ -982,6 +986,10 @@ const PersonalLoan: React.FC = () => {
                     <tr>
                       <td colSpan={6}><strong>Jina la mwajiri</strong><br /><input type="text" name="jinaLaMwajiriWaMumeMke" value={form.jinaLaMwajiriWaMumeMke} onChange={handleChange} /></td>
                       <td colSpan={6}><strong>Simu ya ofisi</strong><br /><input type="tel" name="simuYaOfisiYaMumeMke" value={form.simuYaOfisiYaMumeMke} onChange={handleChange} /></td>
+                    </tr>
+                    <tr>
+                      <td colSpan={6}><strong>Anuani ya eneo la kazi</strong><br /><input type="text" name="anuaniYaEneoLaKaziMumeMke" placeholder="Mfano: Posta mpya" value={form.anuaniYaEneoLaKaziMumeMke} onChange={handleChange} /></td>
+                      <td colSpan={6}><strong>Idadi ya utegemezi</strong><br /><input type="number" name="idadiYaUtegemezi" placeholder="Mfano: 3" value={form.idadiYaUtegemezi} onChange={handleChange} /></td>
                     </tr>
                   </tbody>
                 </table>
