@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
+import { Eye } from "lucide-react";
 import { SECTIONS, SECTIONS_BY_CATEGORY, type LoanCategory } from "./LoanChecklist";
+import DocumentViewerModal from "./DocumentViewerModal";
 
-type ItemState = { checked?: boolean; skip?: boolean };
+type ItemState = { checked?: boolean; skip?: boolean; attachmentUrl?: string; attachmentName?: string; attachmentType?: string };
 
 interface Props {
   /** loan type as stored on the loan record */
@@ -24,6 +26,7 @@ const deriveCategory = (type?: string, details?: Record<string, any> | null): Lo
  * Bypassed ("Proceed without"), so approvers can review before approving.
  */
 const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
+  const [viewerDoc, setViewerDoc] = useState<{ url: string; name: string; mimeType: string } | null>(null);
   const data: Record<string, ItemState> | undefined = details?.documentation_checklist;
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) return null;
 
@@ -57,8 +60,20 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
                 return (
                   <div key={item.key} className={`ckv-row ckv-row--${status}`}>
                     <span className="ckv-label">{item.label}</span>
-                    <span className={`ckv-tag ckv-tag--${status}`}>
-                      {status === "ok" ? "✓ IMETHIBITISHWA" : status === "skip" ? "↷ IMERUKWA (Proceed without)" : "✕ HAIJAJAZWA"}
+                    <span className="ckv-row-right">
+                      {st.attachmentUrl && (
+                        <button
+                          type="button"
+                          className="ckv-view-btn no-print"
+                          title="Tazama Nyaraka"
+                          onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
+                        >
+                          <Eye size={11} /> Tazama
+                        </button>
+                      )}
+                      <span className={`ckv-tag ckv-tag--${status}`}>
+                        {status === "ok" ? "✓ IMETHIBITISHWA" : status === "skip" ? "↷ IMERUKWA (Proceed without)" : "✕ HAIJAJAZWA"}
+                      </span>
                     </span>
                   </div>
                 );
@@ -83,6 +98,9 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
         .ckv-row--skip { background: #fffbeb; border-color: #fde68a; }
         .ckv-row--miss { background: #fef2f2; border-color: #fecaca; }
         .ckv-label { font-size: 12px; font-weight: 600; color: #1e293b; line-height: 1.3; }
+        .ckv-row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .ckv-view-btn { display: inline-flex; align-items: center; gap: 3px; background: #dbeafe; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; cursor: pointer; }
+        .ckv-view-btn:hover { background: #bfdbfe; }
         .ckv-tag { font-size: 9px; font-weight: 900; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.2px; }
         .ckv-tag--ok { color: #16a34a; }
         .ckv-tag--skip { color: #b45309; }
@@ -91,6 +109,14 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
         @media (max-width: 900px) { .ckv-body { column-count: 1; } }
         @media print { .ckv-body { column-count: 2; } .ckv-summary { display: none !important; } }
       `}</style>
+
+      <DocumentViewerModal
+        isOpen={!!viewerDoc}
+        url={viewerDoc?.url ?? null}
+        name={viewerDoc?.name}
+        mimeType={viewerDoc?.mimeType}
+        onClose={() => setViewerDoc(null)}
+      />
     </div>
   );
 };

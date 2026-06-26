@@ -806,4 +806,26 @@ class LoanController extends Controller
             'photo_url' => Storage::url($path)
         ]);
     }
+
+    // UPLOAD A DOCUMENTATION-CHECKLIST ATTACHMENT (NYARAKA) - accepts PDF or image
+    public function uploadDocument(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'document_key' => 'nullable|string|max:60',
+            'applicant_name' => 'nullable|string',
+        ]);
+
+        $file = $request->file('file');
+        $key = preg_replace('/[^a-zA-Z0-9_]/', '_', $request->document_key ?? 'nyaraka');
+        $namePart = preg_replace('/[^a-zA-Z0-9]/', '_', $request->applicant_name ?? 'applicant');
+        $filename = time() . '_' . $namePart . '_' . $key . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('documents', $filename, 'public');
+
+        return response()->json([
+            'document_url' => Storage::url($path),
+            'name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getClientMimeType(),
+        ]);
+    }
 }

@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ShieldCheck, AlertTriangle, RotateCcw } from "lucide-react";
+import axios from "axios";
+import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2 } from "lucide-react";
+import DocumentViewerModal from "./DocumentViewerModal";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export type LoanCategory = "business" | "group" | "employee";
-type ItemState = { checked: boolean; skip: boolean };
+type ItemState = { checked: boolean; skip: boolean; attachmentUrl?: string; attachmentName?: string; attachmentType?: string };
 export type ChecklistState = Record<string, ItemState>;
 
 interface Props {
@@ -105,11 +109,37 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, JSON.stringify(verified)]);
 
-  const toggleCheck = (k: string) => setState((p) => ({ ...p, [k]: { checked: !p[k].checked, skip: false } }));
+  const toggleCheck = (k: string) => setState((p) => ({ ...p, [k]: { ...p[k], checked: !p[k].checked, skip: false } }));
   const toggleSkip = (k: string) => setState((p) => {
     const skip = !p[k].skip;
-    return { ...p, [k]: { checked: skip ? false : p[k].checked, skip } };
+    return { ...p, [k]: { ...p[k], checked: skip ? false : p[k].checked, skip } };
   });
+
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [viewerDoc, setViewerDoc] = useState<{ url: string; name: string; mimeType: string } | null>(null);
+
+  const handleUpload = async (key: string, file: File) => {
+    setUploadingKey(key);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_key", key);
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`${API_BASE}/upload/document`, formData, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      const { document_url, name, mime_type } = res.data;
+      setState((p) => ({
+        ...p,
+        [key]: { ...p[key], checked: true, skip: false, attachmentUrl: document_url, attachmentName: name, attachmentType: mime_type },
+      }));
+    } catch (err) {
+      console.error("Document upload failed", err);
+      alert("Imeshindwa kupakia nyaraka. Tafadhali jaribu tena.");
+    } finally {
+      setUploadingKey(null);
+    }
+  };
 
   const totalUnresolved = allKeys.filter((k) => !(verified[k] || state[k]?.checked || state[k]?.skip)).length;
 
@@ -142,6 +172,32 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                       <span className="ckl-label">{item.label}</span>
                     </label>
                     <div className="ckl-foot">
+                      <div className="ckl-doc-actions">
+                        <label className="ckl-doc-btn" title={st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}>
+                          {uploadingKey === item.key ? <Loader2 size={12} className="ckl-spin" /> : <Paperclip size={12} />}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            hidden
+                            disabled={uploadingKey === item.key}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUpload(item.key, file);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        {st.attachmentUrl && (
+                          <button
+                            type="button"
+                            className="ckl-doc-btn ckl-doc-btn--view"
+                            title="Tazama Nyaraka"
+                            onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
+                          >
+                            <Eye size={12} />
+                          </button>
+                        )}
+                      </div>
                       {isVerified ? (
                         <span className="ckl-tag ckl-tag--ok"><ShieldCheck size={11} /> Auto-verified</span>
                       ) : st.skip ? (
@@ -167,7 +223,14 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
         .ckl-box { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #cbd5e1; background: #fff; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; margin-top: 1px; }
         .ckl-box.on { background: #10b981; border-color: #10b981; }
         .ckl-label { font-size: 0.78rem; font-weight: 600; color: #1e293b; line-height: 1.35; }
-        .ckl-foot { display: flex; justify-content: flex-end; }
+        .ckl-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; }
+        .ckl-doc-actions { display: flex; align-items: center; gap: 0.3rem; }
+        .ckl-doc-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; cursor: pointer; flex-shrink: 0; }
+        .ckl-doc-btn:hover { background: #e2e8f0; }
+        .ckl-doc-btn--view { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+        .ckl-doc-btn--view:hover { background: #bfdbfe; }
+        .ckl-spin { animation: ckl-spin 0.8s linear infinite; }
+        @keyframes ckl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .ckl-tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.64rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; }
         .ckl-tag--ok { background: #d1fae5; color: #059669; }
         .ckl-skipbtn { background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b; font-size: 0.64rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; cursor: pointer; }
@@ -176,6 +239,14 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
         @media (max-width: 900px) { .ckl-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
         @media (max-width: 600px) { .ckl-grid { grid-template-columns: 1fr; } }
       `}</style>
+
+      <DocumentViewerModal
+        isOpen={!!viewerDoc}
+        url={viewerDoc?.url ?? null}
+        name={viewerDoc?.name}
+        mimeType={viewerDoc?.mimeType}
+        onClose={() => setViewerDoc(null)}
+      />
     </div>
   );
 };

@@ -69,6 +69,9 @@ Route::prefix('v1')->group(function () {
     // ✅ ROUTE YA UPLOAD PASSPORT PHOTO - Kwa ajili ya kupakia picha ya passport
     Route::post('/upload/passport', [LoanController::class, 'uploadPassport']);
 
+    // ✅ ROUTE YA UPLOAD NYARAKA (DOCUMENTATION CHECKLIST ATTACHMENTS) - PDF au picha
+    Route::post('/upload/document', [LoanController::class, 'uploadDocument']);
+
     // ========== REPAYMENT ROUTES (Protected) ==========
     Route::middleware('auth:sanctum')->group(function () {
         // OFFICER APPLICATIONS
