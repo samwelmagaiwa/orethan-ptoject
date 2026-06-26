@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 import { SECTIONS, SECTIONS_BY_CATEGORY, type LoanCategory } from "./LoanChecklist";
 import DocumentViewerModal from "./DocumentViewerModal";
+import { resolveFileUrl } from "../utils/resolveFileUrl";
 
 type ItemState = { checked?: boolean; skip?: boolean; attachmentUrl?: string; attachmentName?: string; attachmentType?: string };
 
@@ -33,10 +34,22 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
   const category = deriveCategory(type, details);
   const sectionKeys = SECTIONS_BY_CATEGORY[category];
 
-  const allKeys = sectionKeys.flatMap((s) => SECTIONS[s].items.map((i) => i.key));
+  const allItems = sectionKeys.flatMap((s) => SECTIONS[s].items);
+  const allKeys = allItems.map((i) => i.key);
   const bypassed = allKeys.filter((k) => data[k]?.skip).length;
   const confirmed = allKeys.filter((k) => data[k]?.checked && !data[k]?.skip).length;
   const missing = allKeys.filter((k) => !data[k]?.checked && !data[k]?.skip).length;
+
+  const attachments = allItems
+    .filter((item) => !!data[item.key]?.attachmentUrl)
+    .map((item) => ({
+      key: item.key,
+      label: item.label,
+      url: data[item.key].attachmentUrl as string,
+      name: data[item.key].attachmentName || item.label,
+      mimeType: data[item.key].attachmentType || "",
+    }));
+  const isImage = (mimeType: string, url: string) => mimeType.includes("image") || /\.(jpe?g|png|gif|webp)$/i.test(url);
 
   return (
     <div className="pdf-section ckv-section">
@@ -47,6 +60,32 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
         {bypassed > 0 && <span className="ckv-pill ckv-pill--skip">{bypassed} Zimerukwa / Proceed-without</span>}
         {missing > 0 && <span className="ckv-pill ckv-pill--miss">{missing} Hazijajazwa / Missing</span>}
       </div>
+
+      {attachments.length > 0 && (
+        <div className="ckv-gallery no-print">
+          <div className="ckv-gallery-title">NYARAKA ZILIZOPAKIWA / UPLOADED ATTACHMENTS — {attachments.length}</div>
+          <div className="ckv-gallery-grid">
+            {attachments.map((att) => (
+              <button
+                type="button"
+                key={att.key}
+                className="ckv-gallery-card"
+                onClick={() => setViewerDoc({ url: att.url, name: att.name, mimeType: att.mimeType })}
+              >
+                <div className="ckv-gallery-thumb">
+                  {isImage(att.mimeType, att.url) ? (
+                    <img src={resolveFileUrl(att.url)} alt={att.label} />
+                  ) : (
+                    <FileText size={28} />
+                  )}
+                </div>
+                <span className="ckv-gallery-label">{att.label}</span>
+                <span className="ckv-gallery-view"><Eye size={11} /> Tazama</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="ckv-body">
         {sectionKeys.map((sk) => {
@@ -89,6 +128,16 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
         .ckv-pill--ok { background: #dcfce7; color: #166534; }
         .ckv-pill--skip { background: #fef3c7; color: #b45309; }
         .ckv-pill--miss { background: #fee2e2; color: #991b1b; }
+
+        .ckv-gallery { padding: 14px 60px 0; }
+        .ckv-gallery-title { font-size: 11px; font-weight: 900; color: #102a43; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+        .ckv-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .ckv-gallery-card { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .ckv-gallery-card:hover { border-color: #1e5fae; box-shadow: 0 4px 12px rgba(30, 95, 174, 0.12); transform: translateY(-1px); }
+        .ckv-gallery-thumb { width: 100%; height: 64px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; overflow: hidden; }
+        .ckv-gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .ckv-gallery-label { font-size: 10.5px; font-weight: 700; color: #1e293b; line-height: 1.25; }
+        .ckv-gallery-view { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 800; color: #1e5fae; }
 
         .ckv-body { padding: 14px 60px 24px; column-count: 2; column-gap: 28px; }
         .ckv-group { break-inside: avoid; margin-bottom: 16px; }

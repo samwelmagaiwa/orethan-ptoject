@@ -109,7 +109,6 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, JSON.stringify(verified)]);
 
-  const toggleCheck = (k: string) => setState((p) => ({ ...p, [k]: { ...p[k], checked: !p[k].checked, skip: false } }));
   const toggleSkip = (k: string) => setState((p) => {
     const skip = !p[k].skip;
     return { ...p, [k]: { ...p[k], checked: skip ? false : p[k].checked, skip } };
@@ -147,7 +146,7 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: totalUnresolved ? "#fffbeb" : "#ecfdf5", border: `1px solid ${totalUnresolved ? "#fde68a" : "#a7f3d0"}`, borderRadius: 10, padding: "0.7rem 1rem", marginBottom: "1rem", fontSize: "0.82rem", fontWeight: 600, color: totalUnresolved ? "#92400e" : "#047857" }}>
         {totalUnresolved
-          ? <><AlertTriangle size={16} /> {totalUnresolved} document(s) not yet confirmed. Tick the ones you have, or use “Proceed without” to bypass missing items.</>
+          ? <><AlertTriangle size={16} /> {totalUnresolved} document(s) not yet confirmed. Pakia (upload) the nyaraka you have, or use “Proceed without” to bypass missing items.</>
           : <><ShieldCheck size={16} /> All documents confirmed or bypassed — you can submit the request.</>}
       </div>
 
@@ -164,10 +163,10 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                 return (
                   <div key={item.key} className="ckl-item" style={{
                     borderColor: isVerified ? "#10b981" : st.skip ? "#f59e0b" : st.checked ? "#3b82f6" : (resolved ? "#e2e8f0" : "#fca5a5"),
-                    background: isVerified ? "#ecfdf5" : st.skip ? "#fffbeb" : "#fff",
+                    background: isVerified ? "#ecfdf5" : st.skip ? "#fffbeb" : st.checked ? "#eff6ff" : "#fff",
                   }}>
-                    <label className="ckl-check" style={{ cursor: isVerified || st.skip ? "default" : "pointer" }}>
-                      <input type="checkbox" checked={isVerified || st.checked} disabled={isVerified || st.skip} onChange={() => toggleCheck(item.key)} />
+                    <label className="ckl-check" style={{ cursor: "default" }}>
+                      <input type="checkbox" checked={isVerified || st.checked} disabled readOnly />
                       <span className={`ckl-box ${(isVerified || st.checked) ? "on" : ""}`}>{(isVerified || st.checked) && <Check size={12} />}</span>
                       <span className="ckl-label">{item.label}</span>
                     </label>
@@ -200,6 +199,8 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                       </div>
                       {isVerified ? (
                         <span className="ckl-tag ckl-tag--ok"><ShieldCheck size={11} /> Auto-verified</span>
+                      ) : st.checked && st.attachmentUrl ? (
+                        <span className="ckl-tag ckl-tag--ok"><Check size={11} /> Imepakiwa</span>
                       ) : st.skip ? (
                         <button type="button" className="ckl-skipbtn ckl-skipbtn--on" onClick={() => toggleSkip(item.key)}><RotateCcw size={11} /> Bypassed — undo</button>
                       ) : (
