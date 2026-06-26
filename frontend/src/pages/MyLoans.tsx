@@ -76,19 +76,6 @@ const MyLoans = () => {
   const totalPages = Math.max(1, Math.ceil(loans.length / entriesPerPage));
   const pagedLoans = loans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
-  const getStatusStep = (status: string) => {
-    switch (status) {
-      case 'loan_officer': return 0;
-      case 'manager_review': return 1;
-      case 'gm_review': return 2;
-      case 'md_review': return 3;
-      case 'approved': return 4;
-      case 'disbursed':
-      case 'completed': return 5;
-      default: return 0;
-    }
-  };
-
   const viewDetails = (loan: Loan) => {
     setSelectedLoan(loan);
     setShowDetailsModal(true);
@@ -151,41 +138,6 @@ const MyLoans = () => {
       </div>
 
       <div className="table-container full-width">
-        <div className="row-header-actions">
-          <div className="header-title-group">
-            <h2 style={{ margin: 0 }}>Submitted Applications</h2>
-            {loans.length > 0 && (
-              <div className="workflow-stepper header-stepper">
-                {[
-                  { label: 'Officer', role: 'Loan Officer' },
-                  { label: 'LM', role: 'Loan Manager' },
-                  { label: 'GM', role: 'General Manager' },
-                  { label: 'MD', role: 'Managing Director' },
-                  { label: 'Final', role: 'Complete' }
-                ].map((step, i) => {
-                  const targetLoan = selectedLoan || loans[0];
-                  const currentStep = getStatusStep(targetLoan.status);
-                  const isCompleted = i < currentStep;
-                  const isActive = i === currentStep;
-                  const isReturned = targetLoan.status === 'loan_officer' && (targetLoan as any).rejection_metadata;
-
-                  return (
-                    <div key={i} className={`step-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`}>
-                      <div className="step-circle" title={step.role}>
-                        {isCompleted ? '✓' : i + 1}
-                      </div>
-                      <div className="step-label">{step.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <button className="refresh-button" onClick={fetchLoans}>
-            Reload
-          </button>
-        </div>
-
         <div className="entries-filter-row">
           <label className="entries-filter">
             Show
@@ -197,6 +149,9 @@ const MyLoans = () => {
             </select>
             entries
           </label>
+          <button className="refresh-button" onClick={fetchLoans}>
+            Reload
+          </button>
         </div>
 
         {loading ? (
@@ -464,7 +419,10 @@ const MyLoans = () => {
 
         .entries-filter-row {
           display: flex;
-          justify-content: flex-start;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
           margin-bottom: 16px;
         }
 
@@ -728,112 +686,6 @@ const MyLoans = () => {
            border: 1px solid #fed7aa;
         }
 
-         .workflow-stepper {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .header-stepper {
-          margin-left: 40px;
-        }
-
-        .header-title-group {
-          display: flex;
-          align-items: center;
-        }
-
-        .row-header-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 25px;
-        }
-
-        .step-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          min-width: 60px;
-        }
-
-        .step-item:not(:last-child)::after {
-          content: '';
-          position: absolute;
-          top: 15px;
-          left: calc(50% + 15px);
-          width: calc(100% - 15px);
-          height: 3px;
-          background: #e2e8f0;
-          z-index: 1;
-        }
-
-        .step-item.completed:not(:last-child)::after {
-          background: #16a34a;
-        }
-
-        .step-item.active:not(:last-child)::after {
-          background: #facc15; /* Yellow for non-reached/pending stages */
-        }
-
-        .step-circle {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 700;
-          color: #94a3b8;
-          position: relative;
-          z-index: 2;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .step-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #94a3b8;
-          margin-top: 6px;
-          text-transform: uppercase;
-          text-align: center;
-          white-space: nowrap;
-        }
-
-        .step-item.completed .step-circle {
-          background: #16a34a;
-          border-color: #16a34a;
-          color: white;
-          box-shadow: 0 0 15px rgba(22, 163, 74, 0.3);
-        }
-
-        .step-item.completed .step-label {
-          color: #16a34a;
-        }
-
-        .step-item.active .step-circle {
-          border-color: #facc15; /* Yellow */
-          color: #854d0e;
-          background: #fef9c3;
-          box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-          transform: scale(1.1);
-        }
-
-        /* Not yet reached stages also follow yellow/pending aesthetic in line */
-        .step-item:not(.completed) .step-circle {
-          border-color: #fde047;
-          background: #fefce8;
-        }
-
-        .step-item.active .step-label {
-          color: #854d0e;
-        }
-
         /* MODALS */
         .modal-overlay {
           position: fixed;
@@ -986,12 +838,6 @@ const MyLoans = () => {
           }
           .modal-large {
             width: 95%;
-          }
-          .workflow-stepper {
-            flex-wrap: wrap;
-          }
-          .step-item:not(:last-child)::after {
-            display: none;
           }
         }
       `}</style>
