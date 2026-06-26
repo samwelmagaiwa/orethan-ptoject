@@ -90,16 +90,8 @@ const GroupLoan: React.FC = () => {
     mdhamini2JinaLaKampuni: "",
     mdhamini2Simu: "",
 
-    // SEHEMU 6: TAARIFA ZA DHAMANA
-    dhamanaAinaYaDhamana: "",
-    dhamanaNambaYaUsajili: "",
-    dhamanaUmiliki: "",
-    dhamanaThamaniYaDhamana: "",
-    dhamanaThamaniYakeKwaSasa: "",
-    dhamanaUmri: "",
-    dhamanaMmilikiWamiliki: "",
-    dhamanaRangiMuonekanoWaDhamana: "",
-    dhamanaMahaliIlipo: "",
+    // SEHEMU 6: TAARIFA ZA DHAMANA (repeatable — ONGEZA DHAMANA)
+    dhamanaList: [{ aina: "", namba: "", umiliki: "", thamaniYaDhamana: "", thamaniYaSasa: "", umri: "", mmilikiWamiliki: "", muonekano: "", mahaliIlipo: "" }] as { aina: string; namba: string; umiliki: string; thamaniYaDhamana: string; thamaniYaSasa: string; umri: string; mmilikiWamiliki: string; muonekano: string; mahaliIlipo: string }[],
     tamkoLaMwombaji: false,
     mwombajiAmesainiFomuNgumu: false,
     mwombajiAmewekaDoleGumba: false,
@@ -136,7 +128,6 @@ const GroupLoan: React.FC = () => {
       "kiasiChaMkopo",
       "kiasiGaniChaRejesho",
       "kiasiKikundiKinadaiwa",
-      "dhamanaThamaniYakeKwaSasa",
     ];
     return moneyKeys.includes(name) || name.toLowerCase().includes("kiasi") || name.toLowerCase().includes("thamani");
   };
@@ -396,6 +387,33 @@ const GroupLoan: React.FC = () => {
     validateField(name, finalValue);
   };
 
+  const handleAddCollateral = () => {
+    setForm(prev => ({
+      ...prev,
+      dhamanaList: [...prev.dhamanaList, { aina: "", namba: "", umiliki: "", thamaniYaDhamana: "", thamaniYaSasa: "", umri: "", mmilikiWamiliki: "", muonekano: "", mahaliIlipo: "" }]
+    }));
+  };
+
+  const handleRemoveCollateral = (index: number) => {
+    if (form.dhamanaList.length <= 1) return;
+    setForm(prev => ({
+      ...prev,
+      dhamanaList: prev.dhamanaList.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCollateralChange = (index: number, field: string, value: string) => {
+    let finalValue = value;
+    if (field === "thamaniYaDhamana" || field === "thamaniYaSasa") {
+      finalValue = value.replace(/[^0-9]/g, '');
+    }
+    setForm(prev => {
+      const newList = [...prev.dhamanaList];
+      newList[index] = { ...newList[index], [field]: finalValue };
+      return { ...prev, dhamanaList: newList };
+    });
+  };
+
   const fetchRegions = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -461,7 +479,7 @@ const GroupLoan: React.FC = () => {
       0: ["jinaKamiliLaMwombaji", "jinsia", "tareheYaKuzaliwa", "simu", "nambaYaKitambulisho", "haliYaNdoa", "eneoUnaioishi"],
       1: ["jinaLaMwenyekiti", "jinaLaKatibu", "anuaniYaMakaziYaKikundi", "nambaYaUsajiliWaKikundi", "mkoa", "wilaya", "kata", "kijijiMtaa", "idadiYaWanachamaMe", "idadiYaWanachamaKe"],
       2: ["jinaLaMradi", "ainaYaMradi", "mahaliMradiUpoMkoa", "mahaliMradiUpoWilaya", "mahaliMradiUpoKata", "wastaniWaKipatoKwaMwezi", "wastaniWaMatumiziKwaMwezi", "kiasiChaMkopo", "mudaWaLipaMkopo", "kiasiGaniChaRejesho"],
-      3: ["dhamanaAinaYaDhamana", "dhamanaNambaYaUsajili", "dhamanaUmiliki", "dhamanaThamaniYakeKwaSasa", "dhamanaRangiMuonekanoWaDhamana", "mdhamini1JinaKamili", "mdhamini1Simu"]
+      3: ["mdhamini1JinaKamili", "mdhamini1Simu"]
     };
 
     const fieldLabels: Record<string, string> = {
@@ -492,11 +510,6 @@ const GroupLoan: React.FC = () => {
       kiasiChaMkopo: "Kiasi cha Mkopo",
       mudaWaLipaMkopo: "Muda wa kulipa Mkopo",
       kiasiGaniChaRejesho: "Kiasi cha rejesho",
-      dhamanaAinaYaDhamana: "Aina ya Dhamana",
-      dhamanaNambaYaUsajili: "Namba ya usajili ya dhamana",
-      dhamanaUmiliki: "Umiliki wa dhamana",
-      dhamanaThamaniYakeKwaSasa: "Thamani ya dhamana",
-      dhamanaRangiMuonekanoWaDhamana: "Muonekano wa dhamana",
       mdhamini1JinaKamili: "Jina kamili la Mdhamini (Mwenyekiti)",
       mdhamini1Simu: "Simu ya Mdhamini"
     };
@@ -509,6 +522,20 @@ const GroupLoan: React.FC = () => {
         missingFields.push(fieldLabels[field] || field);
       }
     });
+
+    // Step 3: Validate dhamanaList — only critical fields, across all entries
+    if (currentStep === 3) {
+      form.dhamanaList.forEach((dhamana, index) => {
+        if (!dhamana.aina) {
+          setErrors(prev => ({ ...prev, [`dhamanaList.${index}.aina`]: "Sehemu hii inahitajika" }));
+          if (!missingFields.includes("Aina ya Dhamana")) missingFields.push("Aina ya Dhamana");
+        }
+        if (!dhamana.thamaniYaSasa) {
+          setErrors(prev => ({ ...prev, [`dhamanaList.${index}.thamaniYaSasa`]: "Sehemu hii inahitajika" }));
+          if (!missingFields.includes("Thamani ya dhamana")) missingFields.push("Thamani ya dhamana");
+        }
+      });
+    }
 
     if (missingFields.length === 0 && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -554,6 +581,12 @@ const GroupLoan: React.FC = () => {
       const method = isEditMode ? "put" : "post";
       const url = isEditMode ? `${API_BASE}/loans/${editId}` : `${API_BASE}/loans`;
 
+      const cleanedDhamanaList = form.dhamanaList.map(d => ({
+        ...d,
+        thamaniYaDhamana: cleanNumber(d.thamaniYaDhamana),
+        thamaniYaSasa: cleanNumber(d.thamaniYaSasa),
+      }));
+
       const payload = {
         name: form.jinaKamiliLaMwombaji,
         phone: form.simu,
@@ -568,6 +601,7 @@ const GroupLoan: React.FC = () => {
           passportPhotoUrl: form.passportPhotoUrl,
           guarantor1PhotoUrl: form.guarantor1PhotoUrl,
           guarantor2PhotoUrl: form.guarantor2PhotoUrl,
+          dhamanaList: cleanedDhamanaList,
         },
       };
 
@@ -979,26 +1013,56 @@ const GroupLoan: React.FC = () => {
                   </tbody>
                 </table>
 
-                <div className="section-divider" style={{ marginTop: "20px" }}>SEHEMU 4C: TAARIFA ZA DHAMANA</div>
-                <table className="form-table">
-                  <tbody>
-                    <tr>
-                      <td colSpan={4}><strong>Aina ya Dhamana</strong><br /><input type="text" name="dhamanaAinaYaDhamana" placeholder="Mfano: Pikipiki" value={form.dhamanaAinaYaDhamana} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Namba ya usajili</strong><br /><input type="text" name="dhamanaNambaYaUsajili" placeholder="Mfano: MC 123 ABC" value={form.dhamanaNambaYaUsajili} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Thamani ya Dhamana</strong><br /><input type="text" name="dhamanaThamaniYaDhamana" placeholder="Mfano: 2,000,000" value={form.dhamanaThamaniYaDhamana ? formatMoney(Number(form.dhamanaThamaniYaDhamana)) : ""} onChange={handleChange} /></td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4}><strong>Thamani yake kwa sasa</strong><br /><input type="text" name="dhamanaThamaniYakeKwaSasa" placeholder="Mfano: 1,500,000" value={form.dhamanaThamaniYakeKwaSasa ? formatMoney(Number(form.dhamanaThamaniYakeKwaSasa)) : ""} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Umri</strong><br /><input type="text" name="dhamanaUmri" placeholder="Mfano: Miaka 2" value={form.dhamanaUmri} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Umiliki</strong><br /><input type="text" name="dhamanaUmiliki" placeholder="Mfano: Kwangu" value={form.dhamanaUmiliki} onChange={handleChange} /></td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4}><strong>Mmiliki/Wamiliki</strong><br /><input type="text" name="dhamanaMmilikiWamiliki" placeholder="Majina ya wamiliki" value={form.dhamanaMmilikiWamiliki} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Rangi/Muonekano wa Dhamana</strong><br /><input type="text" name="dhamanaRangiMuonekanoWaDhamana" placeholder="Mfano: Nyeusi, safi" value={form.dhamanaRangiMuonekanoWaDhamana} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Mahali Ilipo</strong><br /><input type="text" name="dhamanaMahaliIlipo" placeholder="Mfano: Nyumbani" value={form.dhamanaMahaliIlipo} onChange={handleChange} /></td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: "20px" }}>
+                  <div className="section-divider" style={{ margin: 0 }}>SEHEMU 4C: TAARIFA ZA DHAMANA</div>
+                  <button
+                    type="button"
+                    onClick={handleAddCollateral}
+                    style={{ background: '#102a43', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}
+                  >
+                    <span>+</span> ONGEZA DHAMANA
+                  </button>
+                </div>
+
+                {form.dhamanaList.map((dhamana, index) => (
+                  <div key={index} style={{ position: 'relative', marginTop: '12px' }}>
+                    {form.dhamanaList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCollateral(index)}
+                        style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 1, background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '4px', padding: '4px 8px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        ONDOA
+                      </button>
+                    )}
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', margin: '0 0 6px', textTransform: 'uppercase' }}>Dhamana Na. {index + 1}</div>
+                    <table className="form-table">
+                      <tbody>
+                        <tr>
+                          <td colSpan={4}><strong>Aina ya Dhamana</strong><br />
+                            <input type="text" placeholder="Mfano: Pikipiki" className={errors[`dhamanaList.${index}.aina`] ? "input-error" : ""} value={dhamana.aina} onChange={(e) => handleCollateralChange(index, "aina", e.target.value)} />
+                            {errors[`dhamanaList.${index}.aina`] && <span className="error-text">{errors[`dhamanaList.${index}.aina`]}</span>}
+                          </td>
+                          <td colSpan={4}><strong>Namba ya usajili</strong><br /><input type="text" placeholder="Mfano: MC 123 ABC" value={dhamana.namba} onChange={(e) => handleCollateralChange(index, "namba", e.target.value)} /></td>
+                          <td colSpan={4}><strong>Thamani ya Dhamana</strong><br /><input type="text" placeholder="Mfano: 2,000,000" value={dhamana.thamaniYaDhamana ? formatMoney(Number(dhamana.thamaniYaDhamana)) : ""} onChange={(e) => handleCollateralChange(index, "thamaniYaDhamana", e.target.value)} /></td>
+                        </tr>
+                        <tr>
+                          <td colSpan={4}><strong>Thamani yake kwa sasa</strong><br />
+                            <input type="text" placeholder="Mfano: 1,500,000" className={errors[`dhamanaList.${index}.thamaniYaSasa`] ? "input-error" : ""} value={dhamana.thamaniYaSasa ? formatMoney(Number(dhamana.thamaniYaSasa)) : ""} onChange={(e) => handleCollateralChange(index, "thamaniYaSasa", e.target.value)} />
+                            {errors[`dhamanaList.${index}.thamaniYaSasa`] && <span className="error-text">{errors[`dhamanaList.${index}.thamaniYaSasa`]}</span>}
+                          </td>
+                          <td colSpan={4}><strong>Umri</strong><br /><input type="text" placeholder="Mfano: Miaka 2" value={dhamana.umri} onChange={(e) => handleCollateralChange(index, "umri", e.target.value)} /></td>
+                          <td colSpan={4}><strong>Umiliki</strong><br /><input type="text" placeholder="Mfano: Kwangu" value={dhamana.umiliki} onChange={(e) => handleCollateralChange(index, "umiliki", e.target.value)} /></td>
+                        </tr>
+                        <tr>
+                          <td colSpan={4}><strong>Mmiliki/Wamiliki</strong><br /><input type="text" placeholder="Majina ya wamiliki" value={dhamana.mmilikiWamiliki} onChange={(e) => handleCollateralChange(index, "mmilikiWamiliki", e.target.value)} /></td>
+                          <td colSpan={4}><strong>Rangi/Muonekano wa Dhamana</strong><br /><input type="text" placeholder="Mfano: Nyeusi, safi" value={dhamana.muonekano} onChange={(e) => handleCollateralChange(index, "muonekano", e.target.value)} /></td>
+                          <td colSpan={4}><strong>Mahali Ilipo</strong><br /><input type="text" placeholder="Mfano: Nyumbani" value={dhamana.mahaliIlipo} onChange={(e) => handleCollateralChange(index, "mahaliIlipo", e.target.value)} /></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
               </div>
             )}
 
