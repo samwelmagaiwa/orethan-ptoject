@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -27,6 +27,18 @@ const Users = () => {
 
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
+  const [openMenuFor, setOpenMenuFor] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuFor(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -267,9 +279,21 @@ const Users = () => {
                         </span>
                       </td>
                       <td className="actions-cell">
-                        <button className="edit-btn" onClick={() => startEdit(user)}>Edit</button>
-                        <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => toggleLock(user)}>{user.is_locked ? "Unlock" : "Lock"}</button>
-                        <button className="delete-btn" onClick={() => deleteUser(user.id)}>Delete</button>
+                        <button
+                          className="kebab-btn"
+                          onClick={() => setOpenMenuFor(openMenuFor === user.id ? null : user.id)}
+                          aria-label="Actions"
+                        >
+                          &#8942;
+                        </button>
+                        {openMenuFor === user.id && (
+                          <div className="actions-dropdown" ref={menuRef}>
+                            <div className="actions-dropdown-title">Actions</div>
+                            <button className="edit-btn" onClick={() => { startEdit(user); setOpenMenuFor(null); }}>Edit</button>
+                            <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => { toggleLock(user); setOpenMenuFor(null); }}>{user.is_locked ? "Unlock" : "Lock"}</button>
+                            <button className="delete-btn" onClick={() => { deleteUser(user.id); setOpenMenuFor(null); }}>Delete</button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -504,8 +528,60 @@ const Users = () => {
         }
 
         .actions-cell {
+          position: relative;
+          text-align: center;
+        }
+
+        .kebab-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-size: 20px;
+          line-height: 1;
+          padding: 4px 12px;
+          border-radius: 8px;
+          color: #475569;
+          transition: background 0.2s;
+        }
+
+        .kebab-btn:hover {
+          background: #f1f5f9;
+        }
+
+        .actions-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 8px;
+          margin-top: 4px;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+          padding: 10px;
           display: flex;
+          flex-direction: column;
           gap: 8px;
+          min-width: 150px;
+          z-index: 50;
+          text-align: left;
+        }
+
+        .actions-dropdown-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          padding: 0 4px 6px;
+          border-bottom: 1px solid #f1f5f9;
+          margin-bottom: 2px;
+        }
+
+        .actions-dropdown .edit-btn,
+        .actions-dropdown .lock-btn,
+        .actions-dropdown .delete-btn {
+          width: 100%;
+          text-align: center;
         }
 
         .edit-btn {
@@ -670,9 +746,6 @@ const Users = () => {
           .users-header {
             flex-direction: column;
             align-items: stretch;
-          }
-          .actions-cell {
-            flex-direction: column;
           }
           .search-bar input {
             max-width: 100%;
