@@ -211,8 +211,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Management — the loan manager reaches Customers via APPROVALS > Manager Review */}
-          {canAccessManagement && userRole !== "loan_manager" && (
+          {/* Management — loan_manager and admin already reach Customers via APPROVALS > Manager Review */}
+          {canAccessManagement && userRole !== "loan_manager" && userRole !== "admin" && (
             <>
               <div className="sd-sec">{!isCollapsed ? "MANAGEMENT" : "─"}</div>
               <div className={`sd-item ${isActive("/customers") || location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => {
