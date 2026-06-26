@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import AlertModal from "../components/AlertModal";
@@ -31,7 +32,7 @@ const ManagingDirector = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<'down' | 'up'>('down');
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
@@ -55,8 +56,15 @@ const ManagingDirector = () => {
         setActiveDropdown(null);
       }
     };
+    const handleReposition = () => setActiveDropdown(null);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+    };
   }, []);
 
   const fetchLoans = async () => {
@@ -79,10 +87,15 @@ const ManagingDirector = () => {
     if (activeDropdown === id) {
       setActiveDropdown(null);
     } else {
-      const buttonRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const spaceBelow = windowHeight - buttonRect.bottom;
-      setDropdownPosition(spaceBelow < 200 ? 'up' : 'down');
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      const menuWidth = 170;
+      const estimatedMenuHeight = 220;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow >= estimatedMenuHeight + 8
+        ? rect.bottom + 8
+        : Math.max(8, rect.top - estimatedMenuHeight - 8);
+      const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+      setMenuPos({ top, left });
       setActiveDropdown(id);
     }
     event.stopPropagation();
@@ -312,8 +325,8 @@ const ManagingDirector = () => {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                       </button>
 
-                      {activeDropdown === loan.id && (
-                        <div ref={dropdownRef} className={`action-dropdown ${dropdownPosition}`}>
+                      {activeDropdown === loan.id && menuPos && createPortal(
+                        <div ref={dropdownRef} className="action-dropdown" style={{ top: menuPos.top, left: menuPos.left }}>
                           {loan.status === 'md_review' ? (
                             <>
                               <button
@@ -349,7 +362,8 @@ const ManagingDirector = () => {
                               </button>
                             </>
                           )}
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </td>
                   </tr>
@@ -654,28 +668,17 @@ const ManagingDirector = () => {
         }
 
         .action-dropdown {
-          position: absolute;
-          right: 0;
+          position: fixed;
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-          z-index: 100;
+          z-index: 1000;
           width: 170px;
           padding: 8px;
           display: flex;
           flex-direction: column;
           gap: 4px;
-        }
-
-        .action-dropdown.down {
-          top: 100%;
-          margin-top: 8px;
-        }
-
-        .action-dropdown.up {
-          bottom: 100%;
-          margin-bottom: 8px;
         }
 
         .action-dropdown button {
