@@ -192,18 +192,30 @@ const Customers: React.FC = () => {
     const [showDisburseModal, setShowDisburseModal] = useState(false);
     const [disburseForm, setDisburseForm] = useState({ amount: "", method: "cash", disbursement_date: "", transaction_reference: "" });
 
-    const toggleDropdown = (id: number, e: React.MouseEvent) => {
+    const getActionButtonCount = (loan: Loan) => {
+        const isFinance = user?.role === 'finance_officer';
+        const canApproveHere = (user?.role === 'admin') ||
+            (user?.role === 'loan_manager' && loan.status === 'manager_review') ||
+            (user?.role === 'general_manager' && loan.status === 'gm_review') ||
+            (user?.role === 'managing_director' && loan.status === 'md_review');
+
+        if (isFinance) return (loan.status === 'approved' || loan.status === 'disbursed') ? 2 : 1;
+        if (canApproveHere) return 4;
+        return 2;
+    };
+
+    const toggleDropdown = (id: number, e: React.MouseEvent, buttonCount: number) => {
         e.stopPropagation();
         if (activeDropdown === id) {
             setActiveDropdown(null);
         } else {
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const dropdownHeight = 220;
+            const dropdownHeight = 16 + buttonCount * 42 + 20;
             const spaceBelow = window.innerHeight - rect.bottom;
             const openUpward = spaceBelow < dropdownHeight;
             setDropdownCoords({
-                top: openUpward ? rect.top - dropdownHeight : rect.bottom + 8,
-                left: rect.right - 170,
+                top: Math.max(8, openUpward ? rect.top - dropdownHeight - 8 : rect.bottom + 8),
+                left: Math.min(Math.max(8, rect.right - 170), window.innerWidth - 170 - 8),
             });
             setActiveDropdown(id);
         }
@@ -652,7 +664,7 @@ const Customers: React.FC = () => {
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'right', position: 'relative' }}>
-                                                <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e)}>
+                                                <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, getActionButtonCount(loan))}>
                                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                                                 </button>
 
