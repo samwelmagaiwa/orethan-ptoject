@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2 } from "lucide-react";
+import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2, Trash2 } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -15,7 +15,7 @@ interface Props {
   onChange: (r: { state: ChecklistState; allResolved: boolean }) => void;
 }
 
-export const SECTIONS: Record<string, { title: string; items: { key: string; label: string }[] }> = {
+export const SECTIONS: Record<string, { title: string; items: { key: string; label: string; noUpload?: boolean }[] }> = {
   identification: {
     title: "1. PERSONAL IDENTIFICATION",
     items: [
@@ -63,11 +63,13 @@ export const SECTIONS: Record<string, { title: string; items: { key: string; lab
   loan_forms: {
     title: "7. LOAN APPLICATION FORMS",
     items: [
-      { key: "application_form", label: "Completed Loan Application Form" },
-      { key: "two_guarantors_signed", label: "Form Signed by Two Guarantors" },
-      { key: "loan_agreement", label: "Signed Loan Agreement" },
-      { key: "credit_consent", label: "Credit Reference / Credit Report Consent" },
-      { key: "terms_ack", label: "Terms & Conditions Acknowledgment" },
+      // These are in-form declarations/checkboxes, not scannable documents —
+      // verification-only, no upload affordance (matches original behaviour).
+      { key: "application_form", label: "Completed Loan Application Form", noUpload: true },
+      { key: "two_guarantors_signed", label: "Form Signed by Two Guarantors", noUpload: true },
+      { key: "loan_agreement", label: "Signed Loan Agreement", noUpload: true },
+      { key: "credit_consent", label: "Credit Reference / Credit Report Consent", noUpload: true },
+      { key: "terms_ack", label: "Terms & Conditions Acknowledgment", noUpload: true },
     ],
   },
 };
@@ -140,6 +142,13 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
     }
   };
 
+  const removeAttachment = (key: string) => {
+    setState((p) => ({
+      ...p,
+      [key]: { ...p[key], checked: false, attachmentUrl: undefined, attachmentName: undefined, attachmentType: undefined },
+    }));
+  };
+
   const totalUnresolved = allKeys.filter((k) => !(verified[k] || state[k]?.checked || state[k]?.skip)).length;
 
   return (
@@ -172,30 +181,44 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                     </label>
                     <div className="ckl-foot">
                       <div className="ckl-doc-actions">
-                        <label className="ckl-doc-btn" title={st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}>
-                          {uploadingKey === item.key ? <Loader2 size={12} className="ckl-spin" /> : <Paperclip size={12} />}
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            hidden
-                            disabled={uploadingKey === item.key}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleUpload(item.key, file);
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-                        {st.attachmentUrl && (
-                          <button
-                            type="button"
-                            className="ckl-doc-btn ckl-doc-btn--view"
-                            title="Tazama Nyaraka"
-                            onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
-                          >
-                            <Eye size={12} />
-                          </button>
+                        {!item.noUpload && (
+                          <label className="ckl-doc-btn" title={st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}>
+                            {uploadingKey === item.key ? <Loader2 size={12} className="ckl-spin" /> : <Paperclip size={12} />}
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              hidden
+                              disabled={uploadingKey === item.key}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUpload(item.key, file);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
                         )}
+                        {st.attachmentUrl && (
+                            <>
+                              <button
+                                type="button"
+                                className="ckl-doc-btn ckl-doc-btn--view"
+                                title="Tazama Nyaraka"
+                                onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
+                              >
+                                <Eye size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                className="ckl-doc-btn ckl-doc-btn--delete"
+                                title="Futa Nyaraka"
+                                onClick={() => {
+                                  if (window.confirm("Futa nyaraka hii?")) removeAttachment(item.key);
+                                }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </>
+                          )}
                       </div>
                       {isVerified ? (
                         <span className="ckl-tag ckl-tag--ok"><ShieldCheck size={11} /> Auto-verified</span>
@@ -230,6 +253,8 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
         .ckl-doc-btn:hover { background: #e2e8f0; }
         .ckl-doc-btn--view { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
         .ckl-doc-btn--view:hover { background: #bfdbfe; }
+        .ckl-doc-btn--delete { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+        .ckl-doc-btn--delete:hover { background: #fecaca; }
         .ckl-spin { animation: ckl-spin 0.8s linear infinite; }
         @keyframes ckl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .ckl-tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.64rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; }
