@@ -31,7 +31,7 @@ $data = [
     'details' => ['baruaPepe' => 'test@test.com'],
 ];
 
-$service = new LoanService();
+$service = $app->make(LoanService::class);
 $loan = $service->createLoan($data);
 
 echo "Created Loan ID: " . $loan->id . "\n";

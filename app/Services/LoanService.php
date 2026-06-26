@@ -4,11 +4,16 @@ namespace App\Services;
 
 use App\Models\Loan;
 use App\Models\Customer;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class LoanService
 {
+    public function __construct(protected AccountingService $accounting)
+    {
+    }
+
     /**
      * Handle loan submission logic.
      */
@@ -190,6 +195,8 @@ class LoanService
                 'disbursed_by' => $user->id ?? 1,
             ]);
 
+            $this->accounting->postLoanDisbursement($disbursement, $user);
+
             // 2. Generate Repayment Schedule from the disbursement date (using captured interest rate)
             $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? 3) / 100;
             $loan->generateSchedule($loan->termMonths(), $interestRate, $loan->repaymentFrequency(), $disbursementDate);
@@ -266,7 +273,7 @@ class LoanService
             $stamp = \Carbon\Carbon::parse($data['payment_date'])->format('Ymd');
             $seq = str_pad((string) $repayment->id, 5, '0', STR_PAD_LEFT);
             $repayment->receipt_number = 'RCP-' . $stamp . '-' . $seq;
-            $transactionNumber = $data['transaction_id'] ?: ('TXN-' . $stamp . '-' . $seq);
+            $transactionNumber = ($data['transaction_id'] ?? null) ?: ('TXN-' . $stamp . '-' . $seq);
             $repayment->save();
 
             $loan->total_paid = round(($loan->total_paid ?? 0) + $amount);
@@ -282,8 +289,14 @@ class LoanService
 
             $loan->save();
 
-            // Update schedules and resolve the next due date
-            $this->updateSchedules($loan, $amount);
+            // Update schedules, capture the principal/interest split, and resolve the next due date
+            $split = $this->updateSchedules($loan, $amount);
+            $repayment->principal_amount = $split['principal'];
+            $repayment->interest_amount = $split['interest'];
+            $repayment->save();
+
+            $this->accounting->postRepayment($repayment, $user);
+
             $nextSchedule = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date', 'asc')->first();
 
             // Digital verification code (tamper-evident short hash)
@@ -350,6 +363,16 @@ class LoanService
             $repayment->reversed_at = now();
             $repayment->save();
 
+            // Reverse the GL posting too, if this repayment had one (older repayments
+            // recorded before the accounting module existed will not have one).
+            $originalEntry = \App\Models\JournalEntry::where('reference_type', 'repayment')
+                ->where('reference_id', $repayment->id)
+                ->where('status', 'posted')
+                ->first();
+            if ($originalEntry) {
+                $this->accounting->reverseJournalEntry($originalEntry, $user, $data['reason']);
+            }
+
             return [
                 'repayment' => $repayment,
                 'loan' => $loan->fresh()
@@ -357,8 +380,19 @@ class LoanService
         });
     }
 
-    protected function updateSchedules(Loan $loan, $paidAmount)
+    /**
+     * Apply $paidAmount against outstanding schedules in due-date order (unchanged
+     * behavior). Additionally derives how much of the applied amount was principal
+     * vs interest, pro-rated per schedule's fixed principal:interest ratio, purely
+     * for reporting/GL purposes -- this does not alter any balance/status logic.
+     *
+     * @return array{principal: float, interest: float}
+     */
+    protected function updateSchedules(Loan $loan, $paidAmount): array
     {
+        $totalApplied = 0.0;
+        $principalApplied = 0.0;
+
         $schedules = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date', 'asc')->get();
         foreach ($schedules as $schedule) {
             if ($paidAmount <= 0)
@@ -366,6 +400,11 @@ class LoanService
 
             $remainingOnSchedule = $schedule->total_amount - ($schedule->amount_paid ?? 0);
             $paymentToApply = min($paidAmount, $remainingOnSchedule);
+
+            if ($schedule->total_amount > 0) {
+                $principalApplied += $paymentToApply * ((float) $schedule->principal_amount / (float) $schedule->total_amount);
+            }
+            $totalApplied += $paymentToApply;
 
             $schedule->amount_paid = ($schedule->amount_paid ?? 0) + $paymentToApply;
             if ($schedule->amount_paid >= $schedule->total_amount) {
@@ -375,5 +414,12 @@ class LoanService
 
             $paidAmount -= $paymentToApply;
         }
+
+        $principalApplied = round($principalApplied, 2);
+        // Interest is the remainder so principal + interest always equals the exact
+        // amount applied to schedules (avoids rounding drift breaking GL balance).
+        $interestApplied = round($totalApplied - $principalApplied, 2);
+
+        return ['principal' => $principalApplied, 'interest' => $interestApplied];
     }
 }

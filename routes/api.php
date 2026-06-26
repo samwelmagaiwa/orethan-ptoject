@@ -12,6 +12,12 @@ use App\Http\Controllers\Api\V1\PaymentRequestController;
 use App\Http\Controllers\Api\V1\LeaveRequestController;
 use App\Http\Controllers\Api\V1\OfficeDelegationController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ChartOfAccountController;
+use App\Http\Controllers\Api\V1\JournalEntryController;
+use App\Http\Controllers\Api\V1\AccountingReportController;
+use App\Http\Controllers\Api\V1\BankReconciliationController;
+use App\Http\Controllers\Api\V1\RiskReportController;
+use App\Http\Controllers\Api\V1\FinancialReportController;
 
 Route::prefix('v1')->group(function () {
 
@@ -169,6 +175,41 @@ Route::prefix('v1')->group(function () {
         Route::get('/drafts/{type}', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'show']);
         Route::post('/drafts', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'save']);
         Route::delete('/drafts/{type}', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'destroy']);
+    });
+
+    // ========== ACCOUNTING MODULE (Admin / Finance Officer / Managing Director) ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/accounting/chart-of-accounts', [ChartOfAccountController::class, 'index']);
+        Route::post('/accounting/chart-of-accounts', [ChartOfAccountController::class, 'store']);
+        Route::put('/accounting/chart-of-accounts/{id}', [ChartOfAccountController::class, 'update']);
+        Route::delete('/accounting/chart-of-accounts/{id}', [ChartOfAccountController::class, 'destroy']);
+
+        Route::get('/accounting/journal-entries', [JournalEntryController::class, 'index']);
+        Route::post('/accounting/journal-entries', [JournalEntryController::class, 'store']);
+        Route::get('/accounting/journal-entries/{id}', [JournalEntryController::class, 'show']);
+        Route::post('/accounting/journal-entries/{id}/reverse', [JournalEntryController::class, 'reverse']);
+
+        Route::get('/accounting/general-ledger', [AccountingReportController::class, 'generalLedger']);
+        Route::get('/accounting/trial-balance', [AccountingReportController::class, 'trialBalance']);
+        Route::get('/accounting/income-statement', [AccountingReportController::class, 'incomeStatement']);
+        Route::get('/accounting/balance-sheet', [AccountingReportController::class, 'balanceSheet']);
+        Route::get('/accounting/cash-book', [AccountingReportController::class, 'cashBook']);
+
+        Route::get('/accounting/bank-reconciliations', [BankReconciliationController::class, 'index']);
+        Route::post('/accounting/bank-reconciliations', [BankReconciliationController::class, 'store']);
+        Route::get('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'show']);
+    });
+
+    // ========== RISK & FINANCIAL REPORTS (Admin / Finance Officer / Managing Director) ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/reports/risk/par-summary', [RiskReportController::class, 'parSummary']);
+        Route::get('/reports/risk/default-analysis', [RiskReportController::class, 'defaultAnalysis']);
+
+        Route::get('/reports/financial/executive-summary', [FinancialReportController::class, 'executiveSummary']);
+        Route::get('/reports/financial/collections', [FinancialReportController::class, 'collectionsReport']);
+        Route::get('/reports/financial/interest-income', [FinancialReportController::class, 'interestIncomeReport']);
+        Route::get('/reports/financial/penalties', [FinancialReportController::class, 'penaltiesReport']);
+        Route::get('/reports/financial/profit-and-loss', [FinancialReportController::class, 'profitAndLoss']);
     });
 
     // Location routes (Public)

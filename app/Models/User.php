@@ -94,4 +94,13 @@ class User extends Authenticatable
     {
         return $this->role === 'finance_officer';
     }
+
+    /**
+     * Accounting module, Risk Reports, and Financial Reports are shared by
+     * Admin, Finance Officer/Cashier, and Managing Director.
+     */
+    public function canAccessAccounting()
+    {
+        return $this->isAdmin() || $this->isFinanceOfficer() || $this->isManagingDirector();
+    }
 }
