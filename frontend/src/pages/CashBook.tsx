@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 
@@ -9,6 +10,7 @@ interface GLLine { date: string; entry_number: string; description: string; debi
 interface AccountLedger { account: { id: number; code: string; name: string }; opening_balance: number; closing_balance: number; lines: GLLine[]; }
 
 const CashBook = () => {
+  const navigate = useNavigate();
   const [from, setFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<{ accounts: AccountLedger[]; combined_opening_balance: number; combined_closing_balance: number } | null>(null);
@@ -39,6 +41,7 @@ const CashBook = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="cb-card">
+        <div className="cb-accent-bar" />
         <div className="cb-header">
           <div>
             <h1>Cash Book</h1>
@@ -67,7 +70,10 @@ const CashBook = () => {
               <div className="cb-empty">No cash/bank accounts flagged in the Chart of Accounts</div>
             ) : data.accounts.map(acc => (
               <div className="cb-account-block" key={acc.account.id}>
-                <div className="cb-account-title">{acc.account.code} — {acc.account.name} <span className="cb-account-balance">Closing: TZS {fmt(acc.closing_balance)}</span></div>
+                <div className="cb-account-title">
+                  <span className="cb-account-name" onClick={() => navigate(`/accounting/general-ledger?account_id=${acc.account.id}`)}>{acc.account.code} — {acc.account.name}</span>
+                  <span className="cb-account-balance">Closing: TZS {fmt(acc.closing_balance)}</span>
+                </div>
                 <table>
                   <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
                   <tbody>
@@ -93,26 +99,30 @@ const CashBook = () => {
 
       <style>{`
         .cb-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .cb-card { max-width: 1300px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .cb-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 14px; }
-        .cb-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .cb-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .cb-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .cb-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
+        .cb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .cb-header p { font-size: 13px; color: #64748b; margin: 0; }
         .cb-filters { display: flex; align-items: center; gap: 8px; }
         .cb-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .cb-filters span { font-size: 12px; color: #64748b; }
-        .cb-filters button { background: #0f172a; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .cb-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .cb-filters button:hover { background: #1e5fae; }
         .cb-summary { display: flex; gap: 24px; margin-bottom: 22px; padding: 16px; background: #f8fafc; border-radius: 12px; flex-wrap: wrap; }
         .cb-summary div { display: flex; flex-direction: column; gap: 4px; }
         .cb-summary span { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; }
-        .cb-summary strong { font-size: 16px; color: #0f172a; }
+        .cb-summary strong { font-size: 16px; color: #102a43; }
         .cb-account-block { margin-bottom: 28px; }
-        .cb-account-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .cb-account-title { font-size: 14px; font-weight: 700; color: #102a43; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .cb-account-name { color: #1e5fae; cursor: pointer; }
+        .cb-account-name:hover { text-decoration: underline; }
         .cb-account-balance { font-size: 13px; color: #059669; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 10px; background: #f8fafc; color: #334155; font-size: 11px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
         .cb-entry-number { font-family: monospace; font-weight: 600; }
-        .cb-balance { font-weight: 700; color: #0f172a; }
+        .cb-balance { font-weight: 700; color: #102a43; }
         .cb-empty { text-align: center; padding: 40px; color: #64748b; }
         .cb-empty-small { text-align: center; padding: 16px; color: #94a3b8; }
       `}</style>

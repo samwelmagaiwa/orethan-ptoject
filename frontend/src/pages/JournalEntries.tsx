@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -20,10 +21,11 @@ interface Entry {
   entry_date: string;
   description: string;
   status: "posted" | "reversed";
-  lines: { id: number; debit: number; credit: number; description?: string; account: { code: string; name: string } }[];
+  lines: { id: number; debit: number; credit: number; description?: string; account: { id: number; code: string; name: string } }[];
 }
 
 const JournalEntries = () => {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [accounts, setAccounts] = useState<{ id: number; code: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +128,7 @@ const JournalEntries = () => {
       <ConfirmModal isOpen={confirm.isOpen} title={confirm.title} message={confirm.message} type={confirm.type} onConfirm={confirm.onConfirm} onCancel={() => setConfirm({ ...confirm, isOpen: false })} />
 
       <div className="je-card">
+        <div className="je-accent-bar" />
         <div className="je-header">
           <div>
             <h1>Journal Entries</h1>
@@ -166,7 +169,7 @@ const JournalEntries = () => {
                             <tbody>
                               {entry.lines.map(line => (
                                 <tr key={line.id}>
-                                  <td>{line.account.code} — {line.account.name}</td>
+                                  <td className="je-account-link" onClick={() => navigate(`/accounting/general-ledger?account_id=${line.account.id}`)}>{line.account.code} — {line.account.name}</td>
                                   <td>{line.description || "—"}</td>
                                   <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
                                   <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
@@ -190,10 +193,14 @@ const JournalEntries = () => {
           <div className="je-modal-content" onClick={e => e.stopPropagation()}>
             <h2>New Journal Entry</h2>
             <div className="je-modal-form">
-              <div className="je-field-row">
-                <div className="je-field"><label>Date</label><input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} /></div>
-                <div className="je-field" style={{ flex: 2 }}><label>Description</label><input type="text" placeholder="e.g. Office rent for June 2026" value={description} onChange={e => setDescription(e.target.value)} /></div>
-              </div>
+              <table className="je-header-fields">
+                <tbody>
+                  <tr>
+                    <td><strong>Date</strong><br /><input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} /></td>
+                    <td colSpan={2}><strong>Description</strong><br /><input type="text" placeholder="e.g. Office rent for June 2026" value={description} onChange={e => setDescription(e.target.value)} /></td>
+                  </tr>
+                </tbody>
+              </table>
 
               <table className="je-line-editor">
                 <thead><tr><th>Account</th><th>Debit</th><th>Credit</th><th>Description</th><th></th></tr></thead>
@@ -234,17 +241,19 @@ const JournalEntries = () => {
 
       <style>{`
         .je-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .je-card { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .je-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
-        .je-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .je-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .je-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .je-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
+        .je-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .je-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .je-add-btn { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .je-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .je-add-btn:hover { background: #1e5fae; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
         .je-row { cursor: pointer; }
         .je-row:hover { background: #f8fafc; }
-        .je-number { font-weight: 700; font-family: monospace; color: #0f172a; }
+        .je-number { font-weight: 700; font-family: monospace; color: #102a43; }
         .je-status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .je-status.posted { background: #ecfdf5; color: #059669; }
         .je-status.reversed { background: #fef2f2; color: #dc2626; }
@@ -253,15 +262,17 @@ const JournalEntries = () => {
         .je-lines-table { width: 100%; }
         .je-lines-table th { background: #eef2f7; font-size: 11px; }
         .je-lines-table td { font-size: 12px; border-bottom: 1px solid #e2e8f0; }
+        .je-account-link { color: #1e5fae; font-weight: 600; cursor: pointer; }
+        .je-account-link:hover { text-decoration: underline; }
         .je-empty { text-align: center; padding: 40px; color: #64748b; }
         .je-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .je-modal-content { background: white; border-radius: 20px; padding: 26px; width: 700px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
-        .je-modal-content h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 18px; }
+        .je-modal-content { background: white; border-radius: 20px; padding: 26px; width: 760px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
+        .je-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 18px; }
         .je-modal-form { display: flex; flex-direction: column; gap: 14px; }
-        .je-field-row { display: flex; gap: 12px; }
-        .je-field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-        .je-field label { font-size: 12px; font-weight: 600; color: #334155; }
-        .je-field input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
+        .je-header-fields { border-collapse: collapse; margin-bottom: 4px; }
+        .je-header-fields td { padding: 6px 10px 6px 0; border: none; }
+        .je-header-fields strong { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 6px; }
+        .je-header-fields input { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
         .je-line-editor th { font-size: 11px; padding: 8px; }
         .je-line-editor td { padding: 6px; }
         .je-line-editor select, .je-line-editor input { width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; }
@@ -272,7 +283,8 @@ const JournalEntries = () => {
         .je-balance-check.off { background: #fef2f2; color: #dc2626; }
         .je-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .je-cancel-btn { background: #e2e8f0; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .je-save-btn { background: #0f172a; color: white; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .je-save-btn { background: #102a43; color: white; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .je-save-btn:hover:not(:disabled) { background: #1e5fae; }
         .je-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
     </div>

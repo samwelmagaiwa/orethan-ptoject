@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 
@@ -9,8 +10,12 @@ interface Account { id: number; code: string; name: string; }
 interface GLLine { date: string; entry_number: string; description: string; debit: number; credit: number; running_balance: number; }
 
 const GeneralLedger = () => {
+  const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accountId, setAccountId] = useState<number | "">("");
+  const [accountId, setAccountId] = useState<number | "">(() => {
+    const fromUrl = searchParams.get("account_id");
+    return fromUrl ? Number(fromUrl) : "";
+  });
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [ledger, setLedger] = useState<{ account: any; opening_balance: number; closing_balance: number; lines: GLLine[] } | null>(null);
@@ -24,19 +29,27 @@ const GeneralLedger = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE}/accounting/chart-of-accounts`, { params: { active_only: true }, headers: authHeaders() })
-      .then(res => setAccounts(res.data.data || []))
+      .then(res => {
+        setAccounts(res.data.data || []);
+        // Arrived from a drill-through link (e.g. Trial Balance / Cash Book) — load immediately.
+        if (searchParams.get("account_id")) {
+          load(Number(searchParams.get("account_id")));
+        }
+      })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const load = async () => {
-    if (!accountId) {
+  const load = async (overrideAccountId?: number) => {
+    const id = overrideAccountId ?? accountId;
+    if (!id) {
       setModal({ isOpen: true, title: "Select Account", message: "Please choose an account to view its ledger", type: "warning" });
       return;
     }
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE}/accounting/general-ledger`, {
-        params: { account_id: accountId, from: from || undefined, to: to || undefined },
+        params: { account_id: id, from: from || undefined, to: to || undefined },
         headers: authHeaders(),
       });
       setLedger(res.data.data);
@@ -52,6 +65,7 @@ const GeneralLedger = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="gl-card">
+        <div className="gl-accent-bar" />
         <div className="gl-header">
           <h1>General Ledger</h1>
           <p>Every posted transaction for a single account, with a running balance</p>
@@ -64,7 +78,7 @@ const GeneralLedger = () => {
           </select>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
           <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-          <button className="gl-load-btn" onClick={load}>Load</button>
+          <button className="gl-load-btn" onClick={() => load()}>Load</button>
         </div>
 
         {loading && <div className="gl-empty">Loading...</div>}
@@ -101,22 +115,25 @@ const GeneralLedger = () => {
 
       <style>{`
         .gl-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .gl-card { max-width: 1300px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .gl-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .gl-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; position: relative; }
+        .gl-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .gl-header { margin-top: 6px; }
+        .gl-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .gl-header p { font-size: 13px; color: #64748b; margin: 0 0 20px; }
         .gl-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .gl-filters select, .gl-filters input { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
         .gl-filters select { flex: 1; min-width: 240px; }
-        .gl-load-btn { background: #0f172a; color: white; border: none; padding: 9px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .gl-load-btn { background: #102a43; color: white; border: none; padding: 9px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .gl-load-btn:hover { background: #1e5fae; }
         .gl-summary { display: flex; gap: 24px; margin-bottom: 18px; padding: 16px; background: #f8fafc; border-radius: 12px; flex-wrap: wrap; }
         .gl-summary div { display: flex; flex-direction: column; gap: 4px; }
         .gl-summary span { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; }
-        .gl-summary strong { font-size: 15px; color: #0f172a; }
+        .gl-summary strong { font-size: 15px; color: #102a43; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 11px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
         .gl-entry-number { font-family: monospace; font-weight: 600; }
-        .gl-balance { font-weight: 700; color: #0f172a; }
+        .gl-balance { font-weight: 700; color: #102a43; }
         .gl-empty { text-align: center; padding: 40px; color: #64748b; }
       `}</style>
     </div>

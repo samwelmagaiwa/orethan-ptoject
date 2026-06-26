@@ -64,6 +64,7 @@ const FinancialReports = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="fr-card">
+        <div className="fr-accent-bar" />
         <div className="fr-header">
           <div>
             <h1>Financial Reports</h1>
@@ -176,21 +177,23 @@ const FinancialReports = () => {
 
       <style>{`
         .fr-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .fr-card { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .fr-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; flex-wrap: wrap; gap: 14px; }
-        .fr-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .fr-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .fr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .fr-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 18px; flex-wrap: wrap; gap: 14px; }
+        .fr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .fr-header p { font-size: 13px; color: #64748b; margin: 0; }
         .fr-filters { display: flex; align-items: center; gap: 8px; }
         .fr-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .fr-filters span { font-size: 12px; color: #64748b; }
-        .fr-filters button { background: #0f172a; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .fr-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .fr-filters button:hover { background: #1e5fae; }
         .fr-tabs { display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
         .fr-tab { background: none; border: none; padding: 10px 16px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
-        .fr-tab.active { color: #0f172a; border-bottom-color: #0f172a; }
+        .fr-tab.active { color: #102a43; border-bottom-color: #22c55e; }
         .fr-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
         .fr-kpi { background: #f8fafc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
         .fr-kpi span { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; }
-        .fr-kpi strong { font-size: 17px; color: #0f172a; }
+        .fr-kpi strong { font-size: 17px; color: #102a43; }
         .fr-kpi-net { background: #ecfdf5; }
         .fr-kpi-net strong { color: #059669; }
         .fr-total-line { font-size: 14px; color: #334155; margin-bottom: 16px; }

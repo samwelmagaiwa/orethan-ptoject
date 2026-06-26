@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
 
-interface Row { code: string; name: string; type: string; debit: number; credit: number; }
+interface Row { id: number; code: string; name: string; type: string; debit: number; credit: number; }
 
 const TrialBalance = () => {
+  const navigate = useNavigate();
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<{ rows: Row[]; total_debit: number; total_credit: number; is_balanced: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,10 +39,11 @@ const TrialBalance = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="tb-card">
+        <div className="tb-accent-bar" />
         <div className="tb-header">
           <div>
             <h1>Trial Balance</h1>
-            <p>Every account's balance as of a date — total debits must equal total credits</p>
+            <p>Every account's balance as of a date — click a code to open its ledger</p>
           </div>
           <div className="tb-filters">
             <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
@@ -61,7 +64,7 @@ const TrialBalance = () => {
                   <tr><td colSpan={5} className="tb-empty">No posted transactions yet</td></tr>
                 ) : data.rows.map(r => (
                   <tr key={r.code}>
-                    <td className="tb-code">{r.code}</td>
+                    <td className="tb-code" onClick={() => navigate(`/accounting/general-ledger?account_id=${r.id}`)}>{r.code}</td>
                     <td>{r.name}</td>
                     <td style={{ textTransform: "capitalize" }}>{r.type}</td>
                     <td>{r.debit > 0 ? fmt(r.debit) : "—"}</td>
@@ -86,18 +89,21 @@ const TrialBalance = () => {
 
       <style>{`
         .tb-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .tb-card { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .tb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px; }
-        .tb-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .tb-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .tb-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .tb-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
+        .tb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .tb-header p { font-size: 13px; color: #64748b; margin: 0; }
         .tb-filters { display: flex; gap: 10px; }
         .tb-filters input { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
-        .tb-filters button { background: #0f172a; color: white; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tb-filters button { background: #102a43; color: white; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tb-filters button:hover { background: #1e5fae; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 11px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
-        tfoot td { border-top: 2px solid #0f172a; border-bottom: none; padding-top: 14px; }
-        .tb-code { font-weight: 700; font-family: monospace; }
+        tfoot td { border-top: 2px solid #102a43; border-bottom: none; padding-top: 14px; }
+        .tb-code { font-weight: 700; font-family: monospace; color: #1e5fae; cursor: pointer; }
+        .tb-code:hover { text-decoration: underline; }
         .tb-empty { text-align: center; padding: 40px; color: #64748b; }
         .tb-balance-flag { margin-top: 18px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; text-align: center; }
         .tb-balance-flag.ok { background: #ecfdf5; color: #059669; }

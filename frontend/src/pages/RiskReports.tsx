@@ -52,6 +52,7 @@ const RiskReports = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="rr-card">
+        <div className="rr-accent-bar" />
         <div className="rr-header">
           <h1>Risk Reports</h1>
           <p>Portfolio at Risk (PAR) and default analysis</p>
@@ -135,16 +136,18 @@ const RiskReports = () => {
 
       <style>{`
         .rr-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .rr-card { max-width: 1300px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .rr-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .rr-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .rr-header { margin-top: 6px; }
+        .rr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .rr-header p { font-size: 13px; color: #64748b; margin: 0 0 20px; }
         .rr-portfolio-line { font-size: 14px; color: #334155; margin-bottom: 18px; }
         .rr-par-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
-        .rr-par-card { background: #0f172a; color: white; border-radius: 14px; padding: 18px; text-align: center; }
+        .rr-par-card { background: linear-gradient(135deg, #102a43 0%, #1e5fae 100%); color: white; border-radius: 14px; padding: 18px; text-align: center; }
         .rr-par-label { font-size: 12px; font-weight: 700; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
         .rr-par-pct { font-size: 28px; font-weight: 800; margin: 6px 0; }
         .rr-par-amount { font-size: 12px; opacity: 0.85; }
-        .rr-section-title { font-size: 14px; font-weight: 700; color: #0f172a; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+        .rr-section-title { font-size: 14px; font-weight: 700; color: #102a43; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
         .rr-risk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
         .rr-risk-card { border-radius: 14px; padding: 16px; text-align: center; }
         .rr-risk-count { font-size: 26px; font-weight: 800; }

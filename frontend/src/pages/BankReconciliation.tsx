@@ -87,6 +87,7 @@ const BankReconciliation = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
       <div className="br-card">
+        <div className="br-accent-bar" />
         <div className="br-header">
           <div>
             <h1>Bank Reconciliation</h1>
@@ -124,17 +125,21 @@ const BankReconciliation = () => {
           <div className="br-modal-content" onClick={e => e.stopPropagation()}>
             <h2>New Bank Reconciliation</h2>
             <div className="br-modal-form">
-              <div className="br-field-row">
-                <div className="br-field">
-                  <label>Cash/Bank Account</label>
-                  <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
-                    <option value="">Select account</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
-                  </select>
-                </div>
-                <div className="br-field"><label>Statement Date</label><input type="date" value={statementDate} onChange={e => setStatementDate(e.target.value)} /></div>
-                <div className="br-field"><label>Statement Balance</label><input type="number" value={statementBalance} onChange={e => setStatementBalance(e.target.value)} /></div>
-              </div>
+              <table className="br-form-table">
+                <tbody>
+                  <tr>
+                    <td>
+                      <strong>Cash/Bank Account</strong>
+                      <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
+                        <option value="">Select account</option>
+                        {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+                      </select>
+                    </td>
+                    <td><strong>Statement Date</strong><input type="date" value={statementDate} onChange={e => setStatementDate(e.target.value)} /></td>
+                    <td><strong>Statement Balance</strong><input type="number" value={statementBalance} onChange={e => setStatementBalance(e.target.value)} /></td>
+                  </tr>
+                </tbody>
+              </table>
 
               <div className="br-items-section">
                 <div className="br-items-header">
@@ -167,11 +172,13 @@ const BankReconciliation = () => {
 
       <style>{`
         .br-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .br-card { max-width: 1300px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .br-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
-        .br-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .br-card { max-width: 1700px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .br-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .br-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
+        .br-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .br-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .br-add-btn { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .br-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .br-add-btn:hover { background: #1e5fae; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 11px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
@@ -180,10 +187,13 @@ const BankReconciliation = () => {
         .br-status.draft { background: #fffbeb; color: #d97706; }
         .br-empty { text-align: center; padding: 40px; color: #64748b; }
         .br-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .br-modal-content { background: white; border-radius: 20px; padding: 26px; width: 680px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
-        .br-modal-content h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 18px; }
+        .br-modal-content { background: white; border-radius: 20px; padding: 26px; width: 720px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
+        .br-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 18px; }
         .br-modal-form { display: flex; flex-direction: column; gap: 16px; }
-        .br-field-row { display: flex; gap: 12px; }
+        .br-form-table { border-collapse: collapse; }
+        .br-form-table td { padding: 8px 10px 8px 0; border: none; vertical-align: top; }
+        .br-form-table strong { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 6px; }
+        .br-form-table input, .br-form-table select { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
         .br-field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
         .br-field label { font-size: 12px; font-weight: 600; color: #334155; }
         .br-field input, .br-field select, .br-field textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
@@ -197,7 +207,8 @@ const BankReconciliation = () => {
         .br-remove-btn { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 26px; height: 26px; font-size: 14px; cursor: pointer; }
         .br-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .br-cancel-btn { background: #e2e8f0; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .br-save-btn { background: #0f172a; color: white; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .br-save-btn { background: #102a43; color: white; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .br-save-btn:hover { background: #1e5fae; }
       `}</style>
     </div>
   );

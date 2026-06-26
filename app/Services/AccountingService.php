@@ -307,6 +307,7 @@ class AccountingService
             $totalCredit += $creditColumn;
 
             $rows[] = [
+                'id' => $account->id,
                 'code' => $account->code,
                 'name' => $account->name,
                 'type' => $account->type,
@@ -334,11 +335,11 @@ class AccountingService
         $from = $from ?? now()->startOfYear()->toDateString();
 
         $income = ChartOfAccount::where('type', 'income')->where('is_active', true)->orderBy('code')->get()
-            ->map(fn($a) => ['code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($to, $from)])
+            ->map(fn($a) => ['id' => $a->id, 'code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($to, $from)])
             ->filter(fn($r) => abs($r['amount']) > 0.01)->values();
 
         $expense = ChartOfAccount::where('type', 'expense')->where('is_active', true)->orderBy('code')->get()
-            ->map(fn($a) => ['code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($to, $from)])
+            ->map(fn($a) => ['id' => $a->id, 'code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($to, $from)])
             ->filter(fn($r) => abs($r['amount']) > 0.01)->values();
 
         $totalIncome = round($income->sum('amount'), 2);
@@ -365,7 +366,7 @@ class AccountingService
         $asOf = $asOf ?? now()->toDateString();
 
         $section = fn(string $type) => ChartOfAccount::where('type', $type)->where('is_active', true)->orderBy('code')->get()
-            ->map(fn($a) => ['code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($asOf)])
+            ->map(fn($a) => ['id' => $a->id, 'code' => $a->code, 'name' => $a->name, 'amount' => $a->balance($asOf)])
             ->filter(fn($r) => abs($r['amount']) > 0.01)->values();
 
         $assets = $section('asset');
@@ -375,7 +376,7 @@ class AccountingService
         $netIncomeToDate = $this->incomeStatement(null, $asOf);
         $currentEarnings = $netIncomeToDate['net_income'];
         if (abs($currentEarnings) > 0.01) {
-            $equity->push(['code' => null, 'name' => 'Current Period Earnings', 'amount' => $currentEarnings]);
+            $equity->push(['id' => null, 'code' => null, 'name' => 'Current Period Earnings', 'amount' => $currentEarnings]);
         }
 
         $totalAssets = round($assets->sum('amount'), 2);
