@@ -64,19 +64,6 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
     return val;
   };
 
-  const getStatusStep = (status: string) => {
-    switch (status) {
-      case 'loan_officer': return 0;
-      case 'manager_review': return 1;
-      case 'gm_review': return 2;
-      case 'md_review': return 3;
-      case 'approved': return 4;
-      case 'disbursed':
-      case 'completed': return 5;
-      default: return 0;
-    }
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-large animate-slide-up print-container" onClick={(e) => e.stopPropagation()}>
@@ -85,50 +72,6 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
         </button>
         <div className="pdf-form-body">
           <div className="pdf-document-paper">
-            {/* COMPACT SINGLE-ROW: STEPPER + REJECTION */}
-            <div className="compact-workflow-row no-print">
-              {/* INLINE STEP PILLS */}
-              {[
-                { label: 'OFFICER', role: 'Loan Officer' },
-                { label: 'LM', role: 'Loan Manager' },
-                { label: 'GM', role: 'General Manager' },
-                { label: 'MD', role: 'Managing Director' },
-                { label: 'FINAL', role: 'Complete' }
-              ].map((step, i) => {
-                const currentStep = getStatusStep(loan.status);
-                const isCompleted = i < currentStep;
-                const isActive = i === currentStep;
-                const isReturned = loan.status === 'loan_officer' && loan.rejection_metadata;
-                return (
-                  <div key={i} className="inline-step-group">
-                    <div className={`inline-step-pill ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`} title={step.role}>
-                      <span className="inline-step-circle">{isCompleted ? 'OK' : i + 1}</span>
-                      <span className="inline-step-label">{step.label}</span>
-                    </div>
-                    {i < 4 && <span className="inline-step-connector" />}
-                  </div>
-                );
-              })}
-
-              {/* REJECTION PANEL - same row */}
-              {loan.rejection_metadata && (
-                <>
-                  <span className="row-divider" />
-                  <div className="rejection-info-inline">
-                    <span className="alert-badge">REJECTED / RETURNED</span>
-                    <span className="alert-info-text">
-                      By <strong>{loan.rejection_metadata.rejector_name}</strong>
-                      <span className="role-tag">({loan.rejection_metadata.rejector_role.replace(/_/g, ' ').toUpperCase()})</span>
-                    </span>
-                    <span className="row-divider-thin" />
-                    <span className="alert-reason-text">Sababu: <strong>{loan.rejection_metadata.reason}</strong></span>
-                    <span className="row-divider-thin" />
-                    <span className="alert-date-text">{new Date(loan.rejection_metadata.date).toLocaleDateString()}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
             {/* PDF HEADER */}
             <div className="pdf-page-header">
               <div className="header-top-row">
@@ -467,6 +410,13 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
              -webkit-print-color-adjust: exact;
              print-color-adjust: exact;
           }
+
+          /* Shrink the header so it doesn't eat up most of page 1 and push
+             SEHEMU 1 (and everything after it) onto a near-blank page 2. */
+          .pdf-page-header { padding: 6px 30px !important; }
+          .logo-image-main { height: 70px !important; max-width: 130px !important; }
+          .form-title { font-size: 18px !important; padding-bottom: 2px !important; }
+          .form-code { font-size: 11px !important; }
         }
 
         .modal-overlay {
@@ -603,243 +553,6 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
         .animate-slide-up { animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .rejection-alert-stunning.single-row {
-          background: linear-gradient(90deg, #fff5f5 0%, #fff 100%);
-          border: 1px solid #fca5a5;
-          border-left: 6px solid #ef4444;
-          border-radius: 12px;
-          margin: 0 60px 20px 60px;
-          padding: 12px 24px;
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-          animation: slideIn 0.4s ease-out;
-        }
-
-        .alert-divider {
-          width: 1px;
-          height: 24px;
-          background: #fca5a5;
-          opacity: 0.5;
-        }
-
-        .alert-badge {
-          background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px;
-          font-size: 10px; font-weight: 800; letter-spacing: 0.5px; white-space: nowrap;
-        }
-
-        .alert-info-text { font-size: 14px; color: #1e293b; white-space: nowrap; }
-        .alert-info-text strong { color: #1e293b; padding-left: 4px; }
-        .role-tag { font-size: 11px; color: #64748b; margin-left: 4px; font-weight: 700; text-transform: uppercase; }
-        
-        .alert-reason-text { font-size: 14px; color: #ef4444; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .alert-reason-text strong { color: #475569; font-weight: 500; margin-left: 5px; }
-
-        .alert-spacer { flex-grow: 1; }
-        .alert-date-text { font-size: 11px; color: #94a3b8; font-weight: 700; white-space: nowrap; }
-
-        /* SINGLE-ROW COMPACT WORKFLOW */
-        .compact-workflow-row {
-          background: #f8fafc;
-          border-bottom: 2px solid #1a1a1a;
-          padding: 6px 24px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: nowrap;
-          overflow-x: auto;
-          min-height: 36px;
-        }
-
-        .inline-step-group {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        }
-
-        .inline-step-pill {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 8px;
-          border-radius: 20px;
-          border: 1.5px solid #e2e8f0;
-          background: white;
-          font-size: 10px;
-          font-weight: 700;
-          color: #94a3b8;
-          white-space: nowrap;
-        }
-
-        .inline-step-circle {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #f1f5f9;
-          border: 1.5px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 9px;
-          font-weight: 800;
-          flex-shrink: 0;
-        }
-
-        .inline-step-label {
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-
-        .inline-step-connector {
-          display: inline-block;
-          width: 16px;
-          height: 2px;
-          background: #e2e8f0;
-          flex-shrink: 0;
-        }
-
-        /* Completed state */
-        .inline-step-pill.completed {
-          border-color: #16a34a;
-          background: #f0fdf4;
-          color: #16a34a;
-        }
-        .inline-step-pill.completed .inline-step-circle {
-          background: #16a34a;
-          border-color: #16a34a;
-          color: white;
-        }
-        .inline-step-group:has(.completed) + .inline-step-group .inline-step-connector,
-        .inline-step-connector.done { background: #16a34a; }
-
-        /* Active state */
-        .inline-step-pill.active {
-          border-color: #f59e0b;
-          background: #fffbeb;
-          color: #b45309;
-        }
-        .inline-step-pill.active .inline-step-circle {
-          border-color: #f59e0b;
-          background: #fffbeb;
-          color: #b45309;
-        }
-
-        /* Returned/rejected active state */
-        .inline-step-pill.returned.active {
-          border-color: #ef4444;
-          background: #fff5f5;
-          color: #ef4444;
-        }
-        .inline-step-pill.returned.active .inline-step-circle {
-          border-color: #ef4444;
-          background: #fff5f5;
-          color: #ef4444;
-        }
-
-        /* Rejection info inline */
-        .row-divider {
-          width: 1px;
-          height: 22px;
-          background: #cbd5e1;
-          margin: 0 8px;
-          flex-shrink: 0;
-        }
-        .row-divider-thin {
-          width: 1px;
-          height: 16px;
-          background: #fca5a5;
-          margin: 0 4px;
-          flex-shrink: 0;
-        }
-        .rejection-info-inline {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: nowrap;
-        }
-
-        .alert-badge {
-          background: #ef4444; color: white; padding: 2px 7px; border-radius: 4px;
-          font-size: 9px; font-weight: 800; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0;
-        }
-
-        .alert-info-text { font-size: 11px; color: #1e293b; white-space: nowrap; }
-        .alert-info-text strong { color: #0f172a; margin-left: 3px; }
-        .role-tag { font-size: 10px; color: #64748b; margin-left: 3px; font-weight: 700; }
-        .alert-reason-text { font-size: 11px; color: #ef4444; font-weight: 700; white-space: nowrap; }
-        .alert-reason-text strong { color: #475569; font-weight: 500; margin-left: 3px; }
-        .alert-date-text { font-size: 10px; color: #94a3b8; font-weight: 700; white-space: nowrap; }
-
-        .alert-divider { width: 1px; height: 24px; background: #e2e8f0; }
-
-        .approval-history-list {
-          padding: 20px 60px;
-          background: #fafafa;
-        }
-
-        .approval-history-item {
-          margin-bottom: 20px;
-          padding: 15px;
-          border-radius: 12px;
-          border-left: 4px solid #cbd5e1;
-          background: white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-
-        .history-approved { border-left-color: #10b981; }
-        .history-rejected { border-left-color: #ef4444; }
-
-        .history-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 10px;
-          flex-wrap: wrap;
-        }
-
-        .history-role {
-          font-size: 10px;
-          font-weight: 800;
-          color: #64748b;
-          background: #f1f5f9;
-          padding: 2px 8px;
-          border-radius: 4px;
-        }
-
-        .history-user { font-size: 13px; color: #1e293b; }
-        .history-date { font-size: 11px; color: #94a3b8; font-weight: 600; margin-left: auto; }
-        
-        .history-status-badge {
-          font-size: 10px;
-          font-weight: 800;
-          padding: 2px 8px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-
-        .history-status-badge.status-approved { background: #dcfce7; color: #166534; }
-        .history-status-badge.status-rejected { background: #fee2e2; color: #991b1b; }
-        .history-status-badge { background: #f1f5f9; color: #475569; }
-
-        .history-comment {
-          font-size: 14px;
-          color: #334155;
-          line-height: 1.5;
-          padding: 10px;
-          background: #f8fafc;
-          border-radius: 8px;
-        }
-
-        .history-comment strong { color: #64748b; font-size: 12px; margin-right: 5px; }
-
-        .history-divider {
-          height: 1px;
-          background: #e2e8f0;
-          margin-top: 20px;
-        }
       `}</style>
         </div>
       </div>
