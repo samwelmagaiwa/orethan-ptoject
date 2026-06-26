@@ -231,6 +231,50 @@ const GroupLoan: React.FC = () => {
         return; // Skip normal draft loading
       }
 
+      // Priority 1: Check localStorage for calculator return flag (fast path)
+      const localStr = localStorage.getItem('group_loan_draft');
+      if (localStr) {
+        try {
+          const parsed = JSON.parse(localStr);
+          if (parsed.isReturningFromCalculator) {
+            if (token) {
+              try {
+                const res = await axios.get(`${API_BASE}/drafts/${DRAFT_TYPE}`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.data.draft) {
+                  const merged = { ...res.data.draft.form, ...parsed.form };
+                  setForm(prev => ({ ...prev, ...merged }));
+                  setCurrentStep(parsed.step ?? res.data.draft.step ?? 0);
+                } else {
+                  setForm(prev => ({ ...prev, ...parsed.form }));
+                  setCurrentStep(parsed.step ?? 0);
+                }
+              } catch {
+                setForm(prev => ({ ...prev, ...parsed.form }));
+                setCurrentStep(parsed.step ?? 0);
+              }
+            } else {
+              setForm(prev => ({ ...prev, ...parsed.form }));
+              setCurrentStep(parsed.step ?? 0);
+            }
+            localStorage.removeItem('group_loan_draft');
+            isInitialized.current = true;
+
+            // Auto-generate Fomu No if empty
+            setForm(prev => {
+              if (!prev.fomuNo) {
+                const randomNum = Math.floor(100000 + Math.random() * 900000);
+                return { ...prev, fomuNo: `GRP-${randomNum}` };
+              }
+              return prev;
+            });
+            fetchRegions();
+            return;
+          }
+        } catch { /* ignore bad localStorage */ }
+      }
+
       // Load an existing backend draft (offer to resume)
       if (token) {
         try {
@@ -796,14 +840,26 @@ const GroupLoan: React.FC = () => {
                         </select>
                         {errors.mahaliMradiUpoKata && <span className="error-text">{errors.mahaliMradiUpoKata}</span>}
                       </td>
-                      <td colSpan={4}><strong>Wastani wa kipato kwa mwezi (TZS)</strong><br />
-                        <input type="text" name="wastaniWaKipatoKwaMwezi" placeholder="Mfano: 1,500,000" className={errors.wastaniWaKipatoKwaMwezi ? "input-error" : ""} value={form.wastaniWaKipatoKwaMwezi ? formatMoney(Number(form.wastaniWaKipatoKwaMwezi)) : ""} onChange={handleChange} />
+                      <td colSpan={4}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <strong>Wastani wa kipato kwa mwezi (TZS)</strong>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/?fromLoan=true&type=group')}
+                            style={{ background: '#102a43', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800 }}
+                          >
+                            CALCULATOR
+                          </button>
+                        </div>
+                        <input type="text" name="wastaniWaKipatoKwaMwezi" readOnly placeholder="Mfano: 1,500,000" className={errors.wastaniWaKipatoKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.wastaniWaKipatoKwaMwezi ? formatMoney(Number(form.wastaniWaKipatoKwaMwezi)) : ""} onChange={handleChange} />
+                        <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.wastaniWaKipatoKwaMwezi && <span className="error-text">{errors.wastaniWaKipatoKwaMwezi}</span>}
                       </td>
                     </tr>
                     <tr>
                       <td colSpan={6}><strong>Wastani wa matumizi kwa mwezi (TZS)</strong><br />
-                        <input type="text" name="wastaniWaMatumiziKwaMwezi" placeholder="Mfano: 600,000" className={errors.wastaniWaMatumiziKwaMwezi ? "input-error" : ""} value={form.wastaniWaMatumiziKwaMwezi ? formatMoney(Number(form.wastaniWaMatumiziKwaMwezi)) : ""} onChange={handleChange} />
+                        <input type="text" name="wastaniWaMatumiziKwaMwezi" readOnly placeholder="Mfano: 600,000" className={errors.wastaniWaMatumiziKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.wastaniWaMatumiziKwaMwezi ? formatMoney(Number(form.wastaniWaMatumiziKwaMwezi)) : ""} onChange={handleChange} />
+                        <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.wastaniWaMatumiziKwaMwezi && <span className="error-text">{errors.wastaniWaMatumiziKwaMwezi}</span>}
                       </td>
                       <td colSpan={6}><strong>Mradi umeanza lini</strong><br /><input type="text" name="mradiUmeanzaLini" placeholder="Mfano: Januari 2022" value={form.mradiUmeanzaLini} onChange={handleChange} /></td>
@@ -816,15 +872,18 @@ const GroupLoan: React.FC = () => {
                   <tbody>
                     <tr>
                       <td colSpan={4}><strong>Kiasi cha Mkopo (TZS)</strong><br />
-                        <input type="text" name="kiasiChaMkopo" placeholder="Mfano: 3,000,000" className={errors.kiasiChaMkopo ? "input-error" : ""} value={form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : ""} onChange={handleChange} />
+                        <input type="text" name="kiasiChaMkopo" readOnly placeholder="Mfano: 3,000,000" className={errors.kiasiChaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : ""} onChange={handleChange} />
+                        <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.kiasiChaMkopo && <span className="error-text">{errors.kiasiChaMkopo}</span>}
                       </td>
                       <td colSpan={4}><strong>Muda wa kulipa Mkopo</strong><br />
-                        <input type="text" name="mudaWaLipaMkopo" placeholder="Mfano: Miezi 12" className={errors.mudaWaLipaMkopo ? "input-error" : ""} value={form.mudaWaLipaMkopo} onChange={handleChange} />
+                        <input type="text" name="mudaWaLipaMkopo" readOnly placeholder="Mfano: Miezi 12" className={errors.mudaWaLipaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.mudaWaLipaMkopo} onChange={handleChange} />
+                        <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.mudaWaLipaMkopo && <span className="error-text">{errors.mudaWaLipaMkopo}</span>}
                       </td>
                       <td colSpan={4}><strong>Kiasi cha rejesho bila matatizo (TZS)</strong><br />
-                        <input type="text" name="kiasiGaniChaRejesho" placeholder="Mfano: 250,000" className={errors.kiasiGaniChaRejesho ? "input-error" : ""} value={form.kiasiGaniChaRejesho ? formatMoney(Number(form.kiasiGaniChaRejesho)) : ""} onChange={handleChange} />
+                        <input type="text" name="kiasiGaniChaRejesho" readOnly placeholder="Mfano: 250,000" className={errors.kiasiGaniChaRejesho ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiasiGaniChaRejesho ? formatMoney(Number(form.kiasiGaniChaRejesho)) : ""} onChange={handleChange} />
+                        <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.kiasiGaniChaRejesho && <span className="error-text">{errors.kiasiGaniChaRejesho}</span>}
                       </td>
                     </tr>

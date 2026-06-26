@@ -71,6 +71,14 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const fromLoan = searchParams.get("fromLoan") === "true";
+  // Which loan form launched the calculator (defaults to personal for back-compat)
+  const loanType = searchParams.get("type") === "group" ? "group" : "personal";
+  const returnRoute = loanType === "group" ? "/group-loan" : "/personal-loan";
+  const bridgeKey = `${loanType}_loan_draft`;
+  // Calculator outputs map to different field names on each form
+  const fieldMap = loanType === "group"
+    ? { income: "wastaniWaKipatoKwaMwezi", expenses: "wastaniWaMatumiziKwaMwezi", amount: "kiasiChaMkopo" }
+    : { income: "wastaniKipatoKwaMwezi", expenses: "wastaniMatumiziKwaMwezi", amount: "kiasiMkopo" };
 
   const [loanAmount, setLoanAmount] = useState<number>(1000000);
   const [loanPeriod, setLoanPeriod] = useState<number>(12);
@@ -90,13 +98,13 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   useEffect(() => {
     // Pre-populate from draft if exists
     if (fromLoan) {
-      const draft = localStorage.getItem("personal_loan_draft");
+      const draft = localStorage.getItem(bridgeKey);
       if (draft) {
         try {
           const parsed = JSON.parse(draft);
-          if (parsed.form?.wastaniKipatoKwaMwezi) setIncome(parsed.form.wastaniKipatoKwaMwezi);
-          if (parsed.form?.wastaniMatumiziKwaMwezi) setExpenses(parsed.form.wastaniMatumiziKwaMwezi);
-          if (parsed.form?.kiasiMkopo) setLoanAmount(Number(parsed.form.kiasiMkopo.replace(/[^0-9]/g, '')) || 1000000);
+          if (parsed.form?.[fieldMap.income]) setIncome(parsed.form[fieldMap.income]);
+          if (parsed.form?.[fieldMap.expenses]) setExpenses(parsed.form[fieldMap.expenses]);
+          if (parsed.form?.[fieldMap.amount]) setLoanAmount(Number(String(parsed.form[fieldMap.amount]).replace(/[^0-9]/g, '')) || 1000000);
         } catch (e) {
           console.error("Draft parsing error", e);
         }
@@ -184,18 +192,26 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
     const token = localStorage.getItem("token");
     const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
-    const calculatorFields = {
-      wastaniKipatoKwaMwezi: income,
-      wastaniMatumiziKwaMwezi: expenses,
-      kiasiMkopo: loanAmount.toString(),
-      mudaKulipaMkopo: `Miezi ${loanPeriod}`,
-      kwaTarakimu: loanPeriod.toString(),
-      kiasiRejeshoBilaMatatizo: Math.round(monthlyPayment).toString(),
-      repaymentFrequency: repaymentFrequency,
-      kiwakocha_Riba: interestRate.toString(),
-      ainaYaRiba: interestType,
-      adaYaUchakataji: processingFee.toString()
-    };
+    const calculatorFields: Record<string, string> = loanType === "group"
+      ? {
+        wastaniWaKipatoKwaMwezi: income,
+        wastaniWaMatumiziKwaMwezi: expenses,
+        kiasiChaMkopo: loanAmount.toString(),
+        mudaWaLipaMkopo: `Miezi ${loanPeriod}`,
+        kiasiGaniChaRejesho: Math.round(monthlyPayment).toString(),
+      }
+      : {
+        wastaniKipatoKwaMwezi: income,
+        wastaniMatumiziKwaMwezi: expenses,
+        kiasiMkopo: loanAmount.toString(),
+        mudaKulipaMkopo: `Miezi ${loanPeriod}`,
+        kwaTarakimu: loanPeriod.toString(),
+        kiasiRejeshoBilaMatatizo: Math.round(monthlyPayment).toString(),
+        repaymentFrequency: repaymentFrequency,
+        kiwakocha_Riba: interestRate.toString(),
+        ainaYaRiba: interestType,
+        adaYaUchakataji: processingFee.toString()
+      };
 
     // Merge with existing backend draft if user is logged in
     let mergedForm = calculatorFields;
@@ -209,7 +225,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 
     try {
       if (token) {
-        const res = await axios.get(`${API_BASE}/drafts/personal`, {
+        const res = await axios.get(`${API_BASE}/drafts/${loanType}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.draft?.form) {
@@ -218,7 +234,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
         }
         // Save merged draft back to backend
         await axios.post(`${API_BASE}/drafts`, {
-          type: 'personal',
+          type: loanType,
           data: mergedForm,
           step: targetStep,
         }, { headers: { Authorization: `Bearer ${token}` } });
@@ -228,7 +244,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
     }
 
     // Set light localStorage bridge for the isReturningFromCalculator flag
-    localStorage.setItem("personal_loan_draft", JSON.stringify({
+    localStorage.setItem(bridgeKey, JSON.stringify({
       form: calculatorFields, // only calculator fields as a hint
       step: targetStep,
       isReturningFromCalculator: true
@@ -236,7 +252,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 
     // Navigation will happen as loader is finishing its animation
     setTimeout(() => {
-      navigate("/personal-loan");
+      navigate(returnRoute);
     }, 2400); // Navigate earlier so page is ready before fade-out starts at 2.6s
   };
 
@@ -258,7 +274,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
       <div className="calc-header" style={{ position: 'relative' }}>
         {fromLoan && (
           <button
-            onClick={() => navigate("/personal-loan")}
+            onClick={() => navigate(returnRoute)}
             style={{
               position: 'absolute',
               left: '0',
