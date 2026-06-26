@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import LoanDetailsModal from "../components/LoanDetailsModal";
@@ -33,6 +34,7 @@ const MyLoans = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loanToDelete, setLoanToDelete] = useState<Loan | null>(null);
 
@@ -42,6 +44,7 @@ const MyLoans = () => {
 
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchLoans();
@@ -49,14 +52,40 @@ const MyLoans = () => {
     // Close menu when clicking outside
     const handleClickOutside = () => setActiveMenu(null);
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    // Reposition is stale once the page scrolls/resizes -- just close the menu.
+    const handleReposition = () => setActiveMenu(null);
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
   }, []);
 
   // Keep the current page in range whenever the page size or the underlying list changes.
   useEffect(() => {
-    const maxPage = Math.max(1, Math.ceil(loans.length / entriesPerPage));
+    const maxPage = Math.max(1, Math.ceil(filteredLoans.length / entriesPerPage));
     if (currentPage > maxPage) setCurrentPage(maxPage);
-  }, [loans.length, entriesPerPage, currentPage]);
+  }, [loans.length, entriesPerPage, currentPage, search]);
+
+  const toggleMenu = (loanId: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (activeMenu === loanId) {
+      setActiveMenu(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 170;
+    const estimatedMenuHeight = 16 + 4 * 42 + 20; // 4 fixed actions: View / Fungua Mapendekezo / Edit / Delete
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= estimatedMenuHeight + 8
+      ? rect.bottom + 8
+      : Math.max(8, rect.top - estimatedMenuHeight - 8);
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    setMenuPos({ top, left });
+    setActiveMenu(loanId);
+  };
 
   const fetchLoans = () => {
     const token = localStorage.getItem("token");
@@ -73,8 +102,9 @@ const MyLoans = () => {
       .finally(() => setLoading(false));
   };
 
-  const totalPages = Math.max(1, Math.ceil(loans.length / entriesPerPage));
-  const pagedLoans = loans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+  const filteredLoans = loans.filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
+  const totalPages = Math.max(1, Math.ceil(filteredLoans.length / entriesPerPage));
+  const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
   const viewDetails = (loan: Loan) => {
     setSelectedLoan(loan);
@@ -149,9 +179,18 @@ const MyLoans = () => {
             </select>
             entries
           </label>
-          <button className="refresh-button" onClick={fetchLoans}>
-            Reload
-          </button>
+          <div className="filter-right-group">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by client name..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            />
+            <button className="refresh-button" onClick={fetchLoans}>
+              Reload
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -160,6 +199,11 @@ const MyLoans = () => {
           <div className="empty-state">
             <p>No applications found</p>
             <span>You haven't submitted any applications yet</span>
+          </div>
+        ) : filteredLoans.length === 0 ? (
+          <div className="empty-state">
+            <p>No matching applications</p>
+            <span>No client name matches "{search}"</span>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -223,10 +267,7 @@ const MyLoans = () => {
                     <td style={{ textAlign: 'center', position: 'relative' }}>
                       <button
                         className="action-menu-trigger"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenu(activeMenu === loan.id ? null : loan.id);
-                        }}
+                        onClick={(e) => toggleMenu(loan.id, e)}
                       >
                         <div className="dots-vertical">
                           <span></span>
@@ -235,8 +276,8 @@ const MyLoans = () => {
                         </div>
                       </button>
 
-                      {activeMenu === loan.id && (
-                        <div className={`action-dropdown ${(index === pagedLoans.length - 1 && pagedLoans.length > 1) || (index === pagedLoans.length - 2 && pagedLoans.length > 2) ? 'drop-up' : ''}`}>
+                      {activeMenu === loan.id && menuPos && createPortal(
+                        <div className="action-dropdown" style={{ top: menuPos.top, left: menuPos.left }}>
                           <button onClick={() => viewDetails(loan)}>
                             View
                           </button>
@@ -257,7 +298,8 @@ const MyLoans = () => {
                           >
                             Delete
                           </button>
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </td>
                   </tr>
@@ -267,10 +309,10 @@ const MyLoans = () => {
           </div>
         )}
 
-        {!loading && loans.length > 0 && (
+        {!loading && filteredLoans.length > 0 && (
           <div className="pagination-row">
             <span className="pagination-info">
-              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, loans.length)} of {loans.length}
+              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, filteredLoans.length)} of {filteredLoans.length}
             </span>
             <div className="pagination-buttons">
               <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
@@ -445,6 +487,32 @@ const MyLoans = () => {
           font-weight: 600;
         }
 
+        .filter-right-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .search-input {
+          padding: 7px 12px;
+          border: 1px solid #cbb88a;
+          border-radius: 6px;
+          background: #fdfbf5;
+          color: #3f3318;
+          font-size: 13px;
+          width: 220px;
+        }
+
+        .search-input::placeholder {
+          color: #b3a276;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #8a7338;
+          box-shadow: 0 0 0 2px rgba(138, 115, 56, 0.15);
+        }
+
         .table-wrapper {
           overflow-x: auto;
           min-height: 400px; /* Ensure enough space for dropdowns */
@@ -561,37 +629,21 @@ const MyLoans = () => {
         }
 
         .action-dropdown {
-          position: absolute;
-          right: 0;
-          top: 100%;
+          position: fixed;
           background: #fdfbf5;
           border-radius: 12px;
           box-shadow: 0 10px 25px rgba(0,0,0,0.1);
           border: 1px solid #e3d7b0;
-          z-index: 100;
-          min-width: 140px;
+          z-index: 1000;
+          min-width: 170px;
           padding: 6px;
           display: flex;
           flex-direction: column;
           animation: slideIn 0.2s ease;
-          transform-origin: top right;
         }
 
-        .action-dropdown.drop-up {
-          top: auto;
-          bottom: 100%;
-          margin-bottom: 8px;
-          transform-origin: bottom right;
-          animation: slideUp 0.2s ease;
-        }
-        
         @keyframes slideIn {
-          from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px) scale(0.95); }
+          from { opacity: 0; transform: translateY(-6px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
