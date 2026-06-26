@@ -40,6 +40,9 @@ const MyLoans = () => {
   const [alertMsg, setAlertMsg] = useState("");
   const [alertType, setAlertType] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     fetchLoans();
 
@@ -48,6 +51,12 @@ const MyLoans = () => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  // Keep the current page in range whenever the page size or the underlying list changes.
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(loans.length / entriesPerPage));
+    if (currentPage > maxPage) setCurrentPage(maxPage);
+  }, [loans.length, entriesPerPage, currentPage]);
 
   const fetchLoans = () => {
     const token = localStorage.getItem("token");
@@ -63,6 +72,9 @@ const MyLoans = () => {
       .catch((err) => console.log(err))
       .finally(() => setLoading(false));
   };
+
+  const totalPages = Math.max(1, Math.ceil(loans.length / entriesPerPage));
+  const pagedLoans = loans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
   const getStatusStep = (status: string) => {
     switch (status) {
@@ -170,8 +182,21 @@ const MyLoans = () => {
             )}
           </div>
           <button className="refresh-button" onClick={fetchLoans}>
-            Refresh Applications
+            Reload
           </button>
+        </div>
+
+        <div className="entries-filter-row">
+          <label className="entries-filter">
+            Show
+            <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            entries
+          </label>
         </div>
 
         {loading ? (
@@ -195,9 +220,9 @@ const MyLoans = () => {
                 </tr>
               </thead>
               <tbody>
-                {loans.map((loan, index) => (
+                {pagedLoans.map((loan, index) => (
                   <tr key={loan.id}>
-                    <td className="col-number">{index + 1}</td>
+                    <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
                     <td>
                       <div className="client-info">
                         <span className="client-name">{loan.name}</span>
@@ -256,7 +281,7 @@ const MyLoans = () => {
                       </button>
 
                       {activeMenu === loan.id && (
-                        <div className={`action-dropdown ${(index === loans.length - 1 && loans.length > 1) || (index === loans.length - 2 && loans.length > 2) ? 'drop-up' : ''}`}>
+                        <div className={`action-dropdown ${(index === pagedLoans.length - 1 && pagedLoans.length > 1) || (index === pagedLoans.length - 2 && pagedLoans.length > 2) ? 'drop-up' : ''}`}>
                           <button onClick={() => viewDetails(loan)}>
                             View
                           </button>
@@ -284,6 +309,19 @@ const MyLoans = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && loans.length > 0 && (
+          <div className="pagination-row">
+            <span className="pagination-info">
+              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, loans.length)} of {loans.length}
+            </span>
+            <div className="pagination-buttons">
+              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <span className="pagination-page">{currentPage} / {totalPages}</span>
+              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+            </div>
           </div>
         )}
       </div>
@@ -323,7 +361,7 @@ const MyLoans = () => {
           padding: 0 10px 20px 10px;
           margin-top: -24px; /* Perfectly negate the 24px layout padding */
           min-height: 100vh;
-          background: #f8fafc;
+          background: #f5efe0;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           display: flex;
           flex-direction: column;
@@ -345,19 +383,19 @@ const MyLoans = () => {
         }
 
         .refresh-button {
-          background: #0f172a;
-          color: white;
-          border: none;
+          background: #fdfbf5;
+          color: #5c4a1f;
+          border: 1px solid #cbb88a;
           padding: 8px 20px;
-          border-radius: 30px;
+          border-radius: 6px;
           font-size: 13px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
           transition: background 0.2s;
         }
 
         .refresh-button:hover {
-          background: #1e293b;
+          background: #efe6d0;
         }
 
         .stats-row {
@@ -369,16 +407,16 @@ const MyLoans = () => {
           position: sticky;
           top: 0px;
           z-index: 10;
-          background: #f8fafc;
+          background: #f5efe0;
           padding: 0 0 20px 0; /* Zero top padding to "touch" the layout boundary */
         }
 
         .stat-box {
-          background: white;
+          background: #fdfbf5;
           border-radius: 12px;
           padding: 24px;
-          border: 1px solid #e2e8f0;
-          border-left: 4px solid #0f172a; /* Stunning accent border */
+          border: 1px solid #e3d7b0;
+          border-left: 4px solid #8a7338; /* Olive accent border */
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
           transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -391,7 +429,7 @@ const MyLoans = () => {
         .stat-label {
           font-size: 13px;
           font-weight: 600;
-          color: #64748b;
+          color: #8a7a52;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           margin-bottom: 12px;
@@ -400,15 +438,15 @@ const MyLoans = () => {
         .stat-number {
           font-size: 32px;
           font-weight: 800;
-          color: #0f172a;
+          color: #4a3c1a;
           line-height: 1;
         }
 
         .table-container {
-          background: white;
+          background: #fdfbf5;
           border-radius: 16px;
           padding: 24px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #e3d7b0;
           width: 100%;
         }
 
@@ -420,8 +458,33 @@ const MyLoans = () => {
         .table-container h2 {
           font-size: 18px;
           font-weight: 600;
-          color: #0f172a;
+          color: #4a3c1a;
           margin: 0 0 20px 0;
+        }
+
+        .entries-filter-row {
+          display: flex;
+          justify-content: flex-start;
+          margin-bottom: 16px;
+        }
+
+        .entries-filter {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #5c4a1f;
+        }
+
+        .entries-filter select {
+          padding: 5px 10px;
+          border: 1px solid #cbb88a;
+          border-radius: 6px;
+          background: #fdfbf5;
+          color: #5c4a1f;
+          font-size: 13px;
+          font-weight: 600;
         }
 
         .table-wrapper {
@@ -438,26 +501,74 @@ const MyLoans = () => {
         th {
           text-align: left;
           padding: 12px 16px;
-          background: #f8fafc;
-          color: #334155;
+          background: #efe6d0;
+          color: #5c4a1f;
           font-size: 13px;
-          font-weight: 600;
-          border-bottom: 1px solid #e2e8f0;
+          font-weight: 700;
+          border-bottom: 1px solid #ddd0a0;
         }
 
         td {
           padding: 14px 16px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #f0e8d4;
           font-size: 14px;
-          color: #1e293b;
+          color: #3f3318;
         }
 
         tr:nth-child(even) {
-          background: #f8fafc;
+          background: #faf6ea;
         }
 
         tr:hover {
-          background: #f1f5f9 !important;
+          background: #f3ecd6 !important;
+        }
+
+        .pagination-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #e3d7b0;
+        }
+
+        .pagination-info {
+          font-size: 12px;
+          color: #8a7a52;
+        }
+
+        .pagination-buttons {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .pagination-buttons button {
+          background: #fdfbf5;
+          color: #5c4a1f;
+          border: 1px solid #cbb88a;
+          padding: 6px 16px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .pagination-buttons button:hover:not(:disabled) {
+          background: #efe6d0;
+        }
+
+        .pagination-buttons button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .pagination-page {
+          font-size: 12px;
+          font-weight: 700;
+          color: #5c4a1f;
         }
 
         .action-menu-trigger {
@@ -474,7 +585,7 @@ const MyLoans = () => {
         }
 
         .action-menu-trigger:hover {
-          background: #f1f5f9;
+          background: #efe6d0;
         }
 
         .dots-vertical {
@@ -486,7 +597,7 @@ const MyLoans = () => {
         .dots-vertical span {
           width: 4px;
           height: 4px;
-          background: #64748b;
+          background: #8a7a52;
           border-radius: 50%;
         }
 
@@ -494,10 +605,10 @@ const MyLoans = () => {
           position: absolute;
           right: 0;
           top: 100%;
-          background: white;
+          background: #fdfbf5;
           border-radius: 12px;
           box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-          border: 1px solid #e2e8f0;
+          border: 1px solid #e3d7b0;
           z-index: 100;
           min-width: 140px;
           padding: 6px;
@@ -532,40 +643,40 @@ const MyLoans = () => {
           text-align: left;
           font-size: 13px;
           font-weight: 500;
-          color: #475569;
+          color: #5c4a1f;
           cursor: pointer;
           border-radius: 8px;
           transition: all 0.2s;
         }
 
         .action-dropdown button:hover {
-          background: #f1f5f9;
-          color: #0f172a;
+          background: #efe6d0;
+          color: #4a3c1a;
         }
 
         .action-dropdown button.text-danger {
           color: #ef4444;
         }
-        
+
         .action-dropdown button.muted {
           opacity: 0.5;
           cursor: not-allowed;
-          background: #f1f5f9;
+          background: #f3ecd6;
           filter: grayscale(1);
         }
-        
+
         .action-dropdown button.text-danger:hover {
            background: #fef2f2;
         }
 
         .col-number {
           width: 50px;
-          color: #64748b;
+          color: #8a7a52;
         }
 
         .col-amount {
           font-weight: 500;
-          color: #0f172a;
+          color: #4a3c1a;
         }
 
         .client-info {
@@ -580,12 +691,12 @@ const MyLoans = () => {
         }
 
         .loan-type-badge {
-          background: #e2e8f0;
+          background: #efe6d0;
           padding: 4px 10px;
           border-radius: 30px;
           font-size: 12px;
           font-weight: 500;
-          color: #475569;
+          color: #7a6a3f;
         }
 
         .status-badge {
