@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -28,6 +29,7 @@ const Users = () => {
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
   const [openMenuFor, setOpenMenuFor] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -36,9 +38,33 @@ const Users = () => {
         setOpenMenuFor(null);
       }
     };
+    const handleReposition = () => setOpenMenuFor(null);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+    };
   }, []);
+
+  const openActionsMenu = (e: React.MouseEvent<HTMLButtonElement>, userId: number) => {
+    if (openMenuFor === userId) {
+      setOpenMenuFor(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 170;
+    const estimatedMenuHeight = 190;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= estimatedMenuHeight + 8
+      ? rect.bottom + 4
+      : Math.max(8, rect.top - estimatedMenuHeight - 4);
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    setMenuPos({ top, left });
+    setOpenMenuFor(userId);
+  };
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -281,18 +307,19 @@ const Users = () => {
                       <td className="actions-cell">
                         <button
                           className="kebab-btn"
-                          onClick={() => setOpenMenuFor(openMenuFor === user.id ? null : user.id)}
+                          onClick={(e) => openActionsMenu(e, user.id)}
                           aria-label="Actions"
                         >
                           &#8942;
                         </button>
-                        {openMenuFor === user.id && (
-                          <div className="actions-dropdown" ref={menuRef}>
+                        {openMenuFor === user.id && menuPos && createPortal(
+                          <div className="actions-dropdown" ref={menuRef} style={{ top: menuPos.top, left: menuPos.left }}>
                             <div className="actions-dropdown-title">Actions</div>
                             <button className="edit-btn" onClick={() => { startEdit(user); setOpenMenuFor(null); }}>Edit</button>
                             <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => { toggleLock(user); setOpenMenuFor(null); }}>{user.is_locked ? "Unlock" : "Lock"}</button>
                             <button className="delete-btn" onClick={() => { deleteUser(user.id); setOpenMenuFor(null); }}>Delete</button>
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </td>
                     </tr>
@@ -374,7 +401,7 @@ const Users = () => {
         }
 
         .users-card {
-          max-width: 1300px;
+          max-width: 1700px;
           margin: 0 auto;
           background: white;
           border-radius: 20px;
@@ -549,10 +576,7 @@ const Users = () => {
         }
 
         .actions-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 8px;
-          margin-top: 4px;
+          position: fixed;
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 14px;
@@ -562,7 +586,7 @@ const Users = () => {
           flex-direction: column;
           gap: 8px;
           min-width: 150px;
-          z-index: 50;
+          z-index: 1000;
           text-align: left;
         }
 
