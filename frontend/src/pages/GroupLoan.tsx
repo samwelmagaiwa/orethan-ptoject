@@ -80,6 +80,16 @@ const GroupLoan: React.FC = () => {
     mdhamini1JinaLaKampuni: "",
     mdhamini1Simu: "",
 
+    // SEHEMU 4B: MDHAMINI NO. 2 (MME, MKE AU NDUGU)
+    mdhamini2JinaKamili: "",
+    mdhamini2MahaliAnapoishi: "",
+    mdhamini2NambaYaNyumba: "",
+    mdhamini2AmepangaKwake: "",
+    mdhamini2KaziAnayofanya: "",
+    mdhamini2MahaliIlipoOfisi: "",
+    mdhamini2JinaLaKampuni: "",
+    mdhamini2Simu: "",
+
     // SEHEMU 6: TAARIFA ZA DHAMANA
     dhamanaAinaYaDhamana: "",
     dhamanaNambaYaUsajili: "",
@@ -938,7 +948,37 @@ const GroupLoan: React.FC = () => {
                   </tbody>
                 </table>
 
-                <div className="section-divider" style={{ marginTop: "20px" }}>SEHEMU 4B: TAARIFA ZA DHAMANA</div>
+                <div className="section-divider" style={{ marginTop: "20px" }}>SEHEMU 4B: MDHAMINI NO. 2 (MME, MKE AU NDUGU)</div>
+                <table className="form-table">
+                  <tbody>
+                    <tr>
+                      <td colSpan={4}><strong>Jina kamili la Mdhamini</strong><br />
+                        <input type="text" name="mdhamini2JinaKamili" placeholder="Jina la Mdhamini (Mume/Mke/Ndugu)" className={errors.mdhamini2JinaKamili ? "input-error" : ""} value={form.mdhamini2JinaKamili} onChange={handleChange} />
+                        {errors.mdhamini2JinaKamili && <span className="error-text">{errors.mdhamini2JinaKamili}</span>}
+                      </td>
+                      <td colSpan={4}><strong>Mahali Anapoishi</strong><br /><input type="text" name="mdhamini2MahaliAnapoishi" placeholder="Mfano: Sinza, Mtaa wa Palestina" value={form.mdhamini2MahaliAnapoishi} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Namba ya nyumba</strong><br /><input type="text" name="mdhamini2NambaYaNyumba" placeholder="Mfano: 123" value={form.mdhamini2NambaYaNyumba} onChange={handleChange} /></td>
+                    </tr>
+                    <tr>
+                      <td colSpan={4}><strong>Amepanga kwake</strong><br />
+                        <select name="mdhamini2AmepangaKwake" value={form.mdhamini2AmepangaKwake} onChange={handleChange}>
+                          <option value="">Chagua</option><option value="Amepanga">Amepanga</option><option value="Kwake">Kwake</option>
+                        </select>
+                      </td>
+                      <td colSpan={4}><strong>Kazi Anayofanya</strong><br /><input type="text" name="mdhamini2KaziAnayofanya" placeholder="Mfano: Mwalimu / Mfanyabiashara" value={form.mdhamini2KaziAnayofanya} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Simu</strong><br />
+                        <input type="tel" name="mdhamini2Simu" placeholder="Mfano: 07XXXXXXXX" className={errors.mdhamini2Simu ? "input-error" : ""} value={form.mdhamini2Simu} onChange={handleChange} />
+                        {errors.mdhamini2Simu && <span className="error-text">{errors.mdhamini2Simu}</span>}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={6}><strong>Mahali ilipo Ofisi</strong><br /><input type="text" name="mdhamini2MahaliIlipoOfisi" placeholder="Mfano: Posta mpya" value={form.mdhamini2MahaliIlipoOfisi} onChange={handleChange} /></td>
+                      <td colSpan={6}><strong>Jina la kampuni/biashara</strong><br /><input type="text" name="mdhamini2JinaLaKampuni" placeholder="Mfano: Mama Ntilie" value={form.mdhamini2JinaLaKampuni} onChange={handleChange} /></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="section-divider" style={{ marginTop: "20px" }}>SEHEMU 4C: TAARIFA ZA DHAMANA</div>
                 <table className="form-table">
                   <tbody>
                     <tr>
