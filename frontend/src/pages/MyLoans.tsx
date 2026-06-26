@@ -458,7 +458,7 @@ const MyLoans = () => {
 
         th {
           text-align: left;
-          padding: 12px 16px;
+          padding: 8px 16px;
           background: #efe6d0;
           color: #5c4a1f;
           font-size: 13px;
@@ -467,10 +467,11 @@ const MyLoans = () => {
         }
 
         td {
-          padding: 14px 16px;
+          padding: 7px 16px;
           border-bottom: 1px solid #f0e8d4;
           font-size: 14px;
           color: #3f3318;
+          line-height: 1.3;
         }
 
         tr:nth-child(even) {
