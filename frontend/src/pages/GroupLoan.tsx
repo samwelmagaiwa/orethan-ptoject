@@ -94,6 +94,7 @@ const GroupLoan: React.FC = () => {
     dhamanaAinaYaDhamana: "",
     dhamanaNambaYaUsajili: "",
     dhamanaUmiliki: "",
+    dhamanaThamaniYaDhamana: "",
     dhamanaThamaniYakeKwaSasa: "",
     dhamanaUmri: "",
     dhamanaMmilikiWamiliki: "",
@@ -984,16 +985,17 @@ const GroupLoan: React.FC = () => {
                     <tr>
                       <td colSpan={4}><strong>Aina ya Dhamana</strong><br /><input type="text" name="dhamanaAinaYaDhamana" placeholder="Mfano: Pikipiki" value={form.dhamanaAinaYaDhamana} onChange={handleChange} /></td>
                       <td colSpan={4}><strong>Namba ya usajili</strong><br /><input type="text" name="dhamanaNambaYaUsajili" placeholder="Mfano: MC 123 ABC" value={form.dhamanaNambaYaUsajili} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Umiliki</strong><br /><input type="text" name="dhamanaUmiliki" placeholder="Mfano: Kwangu" value={form.dhamanaUmiliki} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Thamani ya Dhamana</strong><br /><input type="text" name="dhamanaThamaniYaDhamana" placeholder="Mfano: 2,000,000" value={form.dhamanaThamaniYaDhamana ? formatMoney(Number(form.dhamanaThamaniYaDhamana)) : ""} onChange={handleChange} /></td>
                     </tr>
                     <tr>
                       <td colSpan={4}><strong>Thamani yake kwa sasa</strong><br /><input type="text" name="dhamanaThamaniYakeKwaSasa" placeholder="Mfano: 1,500,000" value={form.dhamanaThamaniYakeKwaSasa ? formatMoney(Number(form.dhamanaThamaniYakeKwaSasa)) : ""} onChange={handleChange} /></td>
                       <td colSpan={4}><strong>Umri</strong><br /><input type="text" name="dhamanaUmri" placeholder="Mfano: Miaka 2" value={form.dhamanaUmri} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Mmiliki/Wamiliki</strong><br /><input type="text" name="dhamanaMmilikiWamiliki" placeholder="Majina ya wamiliki" value={form.dhamanaMmilikiWamiliki} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Umiliki</strong><br /><input type="text" name="dhamanaUmiliki" placeholder="Mfano: Kwangu" value={form.dhamanaUmiliki} onChange={handleChange} /></td>
                     </tr>
                     <tr>
-                      <td colSpan={6}><strong>Rangi/Muonekano wa Dhamana</strong><br /><input type="text" name="dhamanaRangiMuonekanoWaDhamana" placeholder="Mfano: Nyeusi, safi" value={form.dhamanaRangiMuonekanoWaDhamana} onChange={handleChange} /></td>
-                      <td colSpan={6}><strong>Mahali Ilipo</strong><br /><input type="text" name="dhamanaMahaliIlipo" placeholder="Mfano: Nyumbani" value={form.dhamanaMahaliIlipo} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Mmiliki/Wamiliki</strong><br /><input type="text" name="dhamanaMmilikiWamiliki" placeholder="Majina ya wamiliki" value={form.dhamanaMmilikiWamiliki} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Rangi/Muonekano wa Dhamana</strong><br /><input type="text" name="dhamanaRangiMuonekanoWaDhamana" placeholder="Mfano: Nyeusi, safi" value={form.dhamanaRangiMuonekanoWaDhamana} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Mahali Ilipo</strong><br /><input type="text" name="dhamanaMahaliIlipo" placeholder="Mfano: Nyumbani" value={form.dhamanaMahaliIlipo} onChange={handleChange} /></td>
                     </tr>
                   </tbody>
                 </table>
