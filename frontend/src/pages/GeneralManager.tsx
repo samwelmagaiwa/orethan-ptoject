@@ -37,12 +37,16 @@ const GeneralManager = () => {
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
   const [searchQuery, setSearchQuery] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredLoans = loans.filter(l =>
     l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.phone?.includes(searchQuery)
   );
+  const totalPages = Math.max(1, Math.ceil(filteredLoans.length / entriesPerPage));
+  const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -67,6 +71,11 @@ const GeneralManager = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(filteredLoans.length / entriesPerPage));
+    if (currentPage > maxPage) setCurrentPage(maxPage);
+  }, [filteredLoans.length, entriesPerPage, currentPage]);
+
   const fetchLoans = async () => {
     setLoading(true);
     try {
@@ -80,19 +89,6 @@ const GeneralManager = () => {
       console.log(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusStep = (status: string) => {
-    switch (status) {
-      case 'loan_officer': return 0;
-      case 'manager_review': return 1;
-      case 'gm_review': return 2;
-      case 'md_review': return 3;
-      case 'approved': return 4;
-      case 'disbursed':
-      case 'completed': return 5;
-      default: return 0;
     }
   };
 
@@ -242,7 +238,7 @@ const GeneralManager = () => {
           <div className="stat-label">Total Handled</div>
           <div className="stat-number">{loans.length}</div>
         </div>
-        <div className="stat-box" style={{ borderLeftColor: '#3b82f6' }}>
+        <div className="stat-box" style={{ borderLeftColor: '#6b5a2e' }}>
           <div className="stat-label">Current Role</div>
           <div className="stat-number" style={{ fontSize: '24px' }}>General Manager</div>
         </div>
@@ -253,26 +249,37 @@ const GeneralManager = () => {
       </div>
 
       <div className="table-container full-width">
-        <div className="table-header-premium" style={{ justifyContent: 'flex-end' }}>
-          <div className="search-wrapper">
-            <div className="search-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        <div className="table-header-premium">
+          <label className="entries-filter">
+            Show
+            <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            entries
+          </label>
+          <div className="header-right-group">
+            <div className="search-wrapper">
+              <div className="search-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Tafuta mwombaji..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Tafuta mwombaji..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <button className="refresh-btn-header" onClick={fetchLoans}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
+              Refresh
+            </button>
           </div>
         </div>
-        <button className="refresh-btn-header" onClick={fetchLoans}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-          Refresh Applications
-        </button>
-      </div>
 
-      <div className="table-wrapper">
+        <div className="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -290,13 +297,13 @@ const GeneralManager = () => {
             {filteredLoans.length === 0 ? (
               <tr><td colSpan={8} className="table-empty">Hakuna maombi yaliyopatikana.</td></tr>
             ) : (
-              filteredLoans.map((loan, index) => (
+              pagedLoans.map((loan, index) => (
                 <tr
                   key={loan.id}
                   onClick={() => setSelectedLoan(loan)}
                   className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                 >
-                  <td className="col-number">{index + 1}</td>
+                  <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
                   <td>
                     <div className="client-info">
                       <div className="avatar">{loan.name.charAt(0)}</div>
@@ -407,6 +414,20 @@ const GeneralManager = () => {
             )}
           </tbody>
         </table>
+        </div>
+
+        {!loading && filteredLoans.length > 0 && (
+          <div className="pagination-row">
+            <span className="pagination-info">
+              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, filteredLoans.length)} of {filteredLoans.length}
+            </span>
+            <div className="pagination-buttons">
+              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <span className="pagination-page">{currentPage} / {totalPages}</span>
+              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {
@@ -473,7 +494,7 @@ const GeneralManager = () => {
           padding: 0 10px 20px 10px;
           margin-top: -24px;
           min-height: 100vh;
-          background: #f8fafc;
+          background: #f5efe0;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           display: flex;
           flex-direction: column;
@@ -484,21 +505,21 @@ const GeneralManager = () => {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
-          margin-bottom: 32px;
+          margin-bottom: 12px;
           width: 100%;
           position: sticky;
           top: 0px;
           z-index: 10;
-          background: #f8fafc;
-          padding: 0 0 20px 0;
+          background: #f5efe0;
+          padding: 0 0 8px 0;
         }
 
         .stat-box {
-          background: white;
+          background: #fdfbf5;
           border-radius: 12px;
           padding: 24px;
-          border: 1px solid #e2e8f0;
-          border-left: 4px solid #0f172a;
+          border: 1px solid #e3d7b0;
+          border-left: 4px solid #8a7338;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
           transition: transform 0.2s;
         }
@@ -510,7 +531,7 @@ const GeneralManager = () => {
         .stat-label {
           font-size: 13px;
           font-weight: 600;
-          color: #64748b;
+          color: #8a7a52;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           margin-bottom: 12px;
@@ -519,14 +540,14 @@ const GeneralManager = () => {
         .stat-number {
           font-size: 32px;
           font-weight: 800;
-          color: #0f172a;
+          color: #4a3c1a;
         }
 
         .table-container {
-          background: white;
+          background: #fdfbf5;
           border-radius: 12px;
           padding: 24px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #e3d7b0;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
@@ -540,22 +561,81 @@ const GeneralManager = () => {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 25px;
+          gap: 16px;
+          flex-wrap: wrap;
         }
 
-        .header-title-group {
+        .entries-filter {
           display: flex;
           align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #5c4a1f;
         }
 
-        .header-stepper {
-           margin-left: 30px;
+        .entries-filter select {
+          padding: 5px 10px;
+          border: 1px solid #cbb88a;
+          border-radius: 6px;
+          background: #fdfbf5;
+          color: #5c4a1f;
+          font-size: 13px;
+          font-weight: 600;
         }
 
-        .table-header-premium h2 {
-          font-size: 18px;
+        .header-right-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .pagination-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #e3d7b0;
+        }
+
+        .pagination-info {
+          font-size: 12px;
+          color: #8a7a52;
+        }
+
+        .pagination-buttons {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .pagination-buttons button {
+          background: #fdfbf5;
+          color: #5c4a1f;
+          border: 1px solid #cbb88a;
+          padding: 6px 16px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .pagination-buttons button:hover:not(:disabled) {
+          background: #efe6d0;
+        }
+
+        .pagination-buttons button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .pagination-page {
+          font-size: 12px;
           font-weight: 700;
-          color: #0f172a;
-          margin: 0;
+          color: #5c4a1f;
         }
 
         .refresh-btn-header {
@@ -563,23 +643,56 @@ const GeneralManager = () => {
           align-items: center;
           gap: 8px;
           padding: 8px 16px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
+          background: #fdfbf5;
+          border: 1px solid #cbb88a;
           border-radius: 8px;
           font-size: 13px;
           font-weight: 600;
-          color: #64748b;
+          color: #5c4a1f;
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .refresh-btn-header:hover {
-          background: #f1f5f9;
-          color: #0f172a;
+          background: #efe6d0;
+          color: #4a3c1a;
         }
 
         .table-wrapper {
           overflow-x: auto;
+        }
+
+        .search-wrapper {
+          position: relative;
+          width: 280px;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #b3a276;
+          display: flex;
+          align-items: center;
+        }
+
+        .search-wrapper input {
+          width: 100%;
+          padding: 9px 14px 9px 42px;
+          background: #fdfbf5;
+          border: 1.5px solid #e3d7b0;
+          border-radius: 14px;
+          font-size: 14px;
+          color: #3f3318;
+          transition: all 0.2s;
+        }
+
+        .search-wrapper input:focus {
+          outline: none;
+          border-color: #8a7338;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(138, 115, 56, 0.1);
         }
 
         table {
@@ -590,36 +703,42 @@ const GeneralManager = () => {
         th {
           text-align: left;
           padding: 12px 16px;
-          background: #f8fafc;
-          color: #64748b;
+          background: #efe6d0;
+          color: #5c4a1f;
           font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 1px;
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 1px solid #ddd0a0;
         }
 
         td {
           padding: 16px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #f0e8d4;
           font-size: 14px;
-          color: #1e293b;
+          color: #3f3318;
+        }
+
+        .table-empty {
+          text-align: center;
+          padding: 40px;
+          color: #8a7a52;
         }
 
         tr:hover {
-          background: #fdfbf7;
+          background: #f3ecd6;
           cursor: pointer;
         }
 
         tr.selected-row {
-          background: #f1f5f9 !important;
-          box-shadow: inset 4px 0 0 #0f172a;
+          background: #efe6d0 !important;
+          box-shadow: inset 4px 0 0 #8a7338;
         }
 
         .avatar {
           width: 32px;
           height: 32px;
-          background: #0f172a;
+          background: #5c4a1f;
           color: white;
           border-radius: 8px;
           display: flex;
@@ -637,7 +756,7 @@ const GeneralManager = () => {
 
         .client-name {
           font-weight: 600;
-          color: #0f172a;
+          color: #4a3c1a;
         }
 
         .active-count {
@@ -669,7 +788,7 @@ const GeneralManager = () => {
         .dots-button {
           background: none;
           border: none;
-          color: #94a3b8;
+          color: #8a7a52;
           cursor: pointer;
           padding: 4px;
           border-radius: 6px;
@@ -677,14 +796,14 @@ const GeneralManager = () => {
         }
 
         .dots-button:hover {
-          background: #f1f5f9;
-          color: #0f172a;
+          background: #efe6d0;
+          color: #4a3c1a;
         }
 
         .action-dropdown {
           position: fixed;
-          background: white;
-          border: 1px solid #e2e8f0;
+          background: #fdfbf5;
+          border: 1px solid #e3d7b0;
           border-radius: 12px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
           z-index: 1000;
@@ -695,101 +814,55 @@ const GeneralManager = () => {
           gap: 4px;
         }
 
+        .action-dropdown button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 8px 12px;
+          border: none;
+          background: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #5c4a1f;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+        }
+
+        .action-dropdown button:hover {
+          background: #efe6d0;
+          color: #4a3c1a;
+        }
+
+        .action-dropdown button.approve-action {
+          color: #8b5cf6;
+        }
+
+        .action-dropdown button.approve-action:hover {
+          background: #f5f3ff;
+        }
+
+        .action-dropdown button.reject-action {
+          color: #ef4444;
+        }
+
+        .action-dropdown button.reject-action:hover {
+          background: #fef2f2;
+        }
+
+        .action-dropdown button.muted {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         .status-badge {
           display: inline-block;
           font-size: 11px;
           border-radius: 30px;
         }
 
-        /* STEPPER STYLES */
-        .workflow-stepper {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .step-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          min-width: 60px;
-        }
-
-        .step-item:not(:last-child)::after {
-          content: '';
-          position: absolute;
-          top: 15px;
-          left: calc(50% + 15px);
-          width: calc(100% - 15px);
-          height: 3px;
-          background: #e2e8f0;
-          z-index: 1;
-        }
-
-        .step-item.completed:not(:last-child)::after {
-          background: #16a34a;
-        }
-
-        .step-item.active:not(:last-child)::after {
-          background: #facc15;
-        }
-
-        .step-circle {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 700;
-          color: #94a3b8;
-          position: relative;
-          z-index: 2;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .step-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #94a3b8;
-          margin-top: 6px;
-          text-transform: uppercase;
-          text-align: center;
-          white-space: nowrap;
-        }
-
-        .step-item.completed .step-circle {
-          background: #16a34a;
-          border-color: #16a34a;
-          color: white;
-          box-shadow: 0 0 15px rgba(22, 163, 74, 0.3);
-        }
-
-        .step-item.completed .step-label {
-          color: #16a34a;
-        }
-
-        .step-item.active .step-circle {
-          border-color: #facc15;
-          color: #854d0e;
-          background: #fef9c3;
-          box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-          transform: scale(1.1);
-        }
-
-        .step-item:not(.completed) .step-circle {
-          border-color: #fde047;
-          background: #fefce8;
-        }
-
-        .step-item.active .step-label {
-          color: #854d0e;
-        }
 
         /* SKELETON LOADING STYLES */
         .skeleton-row td {

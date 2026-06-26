@@ -66,6 +66,8 @@ const Customers: React.FC = () => {
         total_value: 0
     });
     const [searchQuery, setSearchQuery] = useState("");
+    const [entriesPerPage, setEntriesPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
@@ -146,6 +148,16 @@ const Customers: React.FC = () => {
         l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         l.phone.includes(searchQuery)
     );
+
+    const currentListLength = user?.role === "admin" ? filteredCustomers.length : filteredLoans.length;
+    const totalPages = Math.max(1, Math.ceil(currentListLength / entriesPerPage));
+    const pagedCustomers = filteredCustomers.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+    const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
+    useEffect(() => {
+        const maxPage = Math.max(1, Math.ceil(currentListLength / entriesPerPage));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+    }, [currentListLength, entriesPerPage, currentPage]);
 
     const renderLoanStatusLabel = (loan: Loan) => {
         if (loan.status === 'manager_review') {
@@ -515,7 +527,17 @@ const Customers: React.FC = () => {
 
             {/* TABLE CONTAINER */}
             <div className="table-container full-width">
-                <div className="table-header-premium" style={{ justifyContent: 'flex-end' }}>
+                <div className="table-header-premium">
+                    <label className="entries-filter">
+                        Show
+                        <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        entries
+                    </label>
                     <div className="search-wrapper">
                         <div className="search-icon">
                             <IconSearch />
@@ -524,7 +546,7 @@ const Customers: React.FC = () => {
                             type="text"
                             placeholder={user?.role === "admin" ? "Tafuta mteja..." : "Tafuta mwombaji..."}
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />
                     </div>
                 </div>
@@ -575,7 +597,7 @@ const Customers: React.FC = () => {
                                 filteredCustomers.length === 0 ? (
                                     <tr><td colSpan={6} className="table-empty">Hakuna mteja aliyepatikana.</td></tr>
                                 ) : (
-                                    filteredCustomers.map((customer) => (
+                                    pagedCustomers.map((customer) => (
                                         <tr key={customer.id}>
                                             <td>
                                                 <div className="client-info">
@@ -632,13 +654,13 @@ const Customers: React.FC = () => {
                                 filteredLoans.length === 0 ? (
                                     <tr><td colSpan={7} className="table-empty">Hakuna maombi yanayosubiri.</td></tr>
                                 ) : (
-                                    filteredLoans.map((loan, index) => (
+                                    pagedLoans.map((loan, index) => (
                                         <tr
                                             key={loan.id}
                                             onClick={() => setSelectedLoan(loan)}
                                             className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                                         >
-                                            <td>{index + 1}</td>
+                                            <td>{(currentPage - 1) * entriesPerPage + index + 1}</td>
                                             <td>
                                                 <div className="client-info">
                                                     <div className="avatar">{loan.name.charAt(0)}</div>
@@ -771,6 +793,19 @@ const Customers: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {!loading && currentListLength > 0 && (
+                    <div className="pagination-row">
+                        <span className="pagination-info">
+                            Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, currentListLength)} of {currentListLength}
+                        </span>
+                        <div className="pagination-buttons">
+                            <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+                            <span className="pagination-page">{currentPage} / {totalPages}</span>
+                            <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Approve Modal with Comments */}
@@ -877,7 +912,7 @@ const Customers: React.FC = () => {
                     padding: 0 5px 20px 5px;
                     margin-top: -12px;
                     min-height: 100vh;
-                    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 280px);
+                    background: #f5efe0;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -887,20 +922,20 @@ const Customers: React.FC = () => {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
                     gap: 24px;
-                    margin-bottom: 32px;
+                    margin-bottom: 12px;
                     width: 100%;
                     position: sticky;
                     top: 0px;
                     z-index: 10;
-                    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
-                    padding: 4px 0 20px 0;
+                    background: #f5efe0;
+                    padding: 4px 0 8px 0;
                 }
 
                 .stat-box {
-                    background: white;
+                    background: #fdfbf5;
                     border-radius: 18px;
                     padding: 22px 24px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #e3d7b0;
                     box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.06);
                     transition: transform 0.25s ease, box-shadow 0.25s ease;
                     display: flex;
@@ -955,7 +990,7 @@ const Customers: React.FC = () => {
                 .stat-label {
                     font-size: 12.5px;
                     font-weight: 700;
-                    color: #64748b;
+                    color: #8a7a52;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                     margin-bottom: 8px;
@@ -964,15 +999,15 @@ const Customers: React.FC = () => {
                 .stat-number {
                     font-size: 26px;
                     font-weight: 800;
-                    color: #0f172a;
+                    color: #4a3c1a;
                     letter-spacing: -0.01em;
                 }
 
                 .table-container {
-                    background: white;
+                    background: #fdfbf5;
                     border-radius: 20px;
                     padding: 26px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #e3d7b0;
                     box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.1);
                 }
 
@@ -984,12 +1019,79 @@ const Customers: React.FC = () => {
                 .table-header-premium {
                     display: flex;
                     justify-content: space-between;
-                    align-items: flex-end;
+                    align-items: center;
                     margin-bottom: 8px;
                     flex-wrap: wrap;
                     gap: 16px;
                     padding-bottom: 8px;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid #f0e8d4;
+                }
+
+                .entries-filter {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #5c4a1f;
+                }
+
+                .entries-filter select {
+                    padding: 5px 10px;
+                    border: 1px solid #cbb88a;
+                    border-radius: 6px;
+                    background: #fdfbf5;
+                    color: #5c4a1f;
+                    font-size: 13px;
+                    font-weight: 600;
+                }
+
+                .pagination-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin-top: 16px;
+                    padding-top: 16px;
+                    border-top: 1px solid #e3d7b0;
+                }
+
+                .pagination-info {
+                    font-size: 12px;
+                    color: #8a7a52;
+                }
+
+                .pagination-buttons {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .pagination-buttons button {
+                    background: #fdfbf5;
+                    color: #5c4a1f;
+                    border: 1px solid #cbb88a;
+                    padding: 6px 16px;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+
+                .pagination-buttons button:hover:not(:disabled) {
+                    background: #efe6d0;
+                }
+
+                .pagination-buttons button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                .pagination-page {
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #5c4a1f;
                 }
 
                 @media (max-width: 900px) {
@@ -1014,31 +1116,32 @@ const Customers: React.FC = () => {
                     left: 14px;
                     top: 50%;
                     transform: translateY(-50%);
-                    color: #94a3b8;
+                    color: #b3a276;
                     transition: color 0.2s;
                 }
 
                 .search-wrapper input {
                     width: 100%;
-                    padding: 11px 14px 11px 42px;
+                    padding: 9px 14px 9px 42px;
                     border-radius: 12px;
-                    border: 1.5px solid #e2e8f0;
-                    background: #f8fafc;
+                    border: 1.5px solid #e3d7b0;
+                    background: #fdfbf5;
                     font-size: 14px;
+                    color: #3f3318;
                     outline: none;
                     transition: all 0.2s;
                     box-sizing: border-box;
                 }
 
                 .search-wrapper input:focus {
-                    border-color: #2563eb;
+                    border-color: #8a7338;
                     background: white;
-                    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+                    box-shadow: 0 0 0 4px rgba(138, 115, 56, 0.1);
                 }
 
                 .search-wrapper input:focus + .search-icon,
                 .search-wrapper:has(input:focus) .search-icon {
-                    color: #2563eb;
+                    color: #8a7338;
                 }
 
                 .table-wrapper {
@@ -1055,13 +1158,13 @@ const Customers: React.FC = () => {
                 th {
                     text-align: left;
                     padding: 14px 16px;
-                    background: #f8fafc;
-                    color: #64748b;
+                    background: #efe6d0;
+                    color: #5c4a1f;
                     font-size: 11px;
                     font-weight: 700;
                     text-transform: uppercase;
                     letter-spacing: 0.08em;
-                    border-bottom: 1.5px solid #e2e8f0;
+                    border-bottom: 1.5px solid #ddd0a0;
                 }
 
                 th:first-child {
@@ -1074,24 +1177,24 @@ const Customers: React.FC = () => {
 
                 td {
                     padding: 16px;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid #f0e8d4;
                     font-size: 14px;
-                    color: #1e293b;
+                    color: #3f3318;
                     transition: background 0.15s;
                 }
 
                 tr:nth-child(even) {
-                    background: #fbfcfe;
+                    background: #faf6ea;
                 }
 
                 tr:hover td {
-                    background: #f0f5ff !important;
+                    background: #f3ecd6 !important;
                     cursor: pointer;
                 }
 
                 tr.selected-row td {
-                    background: #eef2ff !important;
-                    box-shadow: inset 3px 0 0 #2563eb;
+                    background: #efe6d0 !important;
+                    box-shadow: inset 3px 0 0 #8a7338;
                 }
 
                 .client-info {
@@ -1103,7 +1206,7 @@ const Customers: React.FC = () => {
                 .avatar {
                     width: 38px;
                     height: 38px;
-                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    background: #5c4a1f;
                     color: white;
                     border-radius: 11px;
                     display: flex;
@@ -1111,13 +1214,13 @@ const Customers: React.FC = () => {
                     justify-content: center;
                     font-weight: 700;
                     font-size: 15px;
-                    box-shadow: 0 4px 10px -2px rgba(37, 99, 235, 0.4);
+                    box-shadow: 0 4px 10px -2px rgba(92, 74, 31, 0.4);
                     flex-shrink: 0;
                 }
 
                 .client-name {
                     font-weight: 600;
-                    color: #0f172a;
+                    color: #4a3c1a;
                 }
 
                 .active-count {
@@ -1142,7 +1245,7 @@ const Customers: React.FC = () => {
 
                 .col-amount {
                     font-weight: 700;
-                    color: #0f172a;
+                    color: #4a3c1a;
                 }
 
                 .arrears-badge {
@@ -1178,17 +1281,17 @@ const Customers: React.FC = () => {
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.2s;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #e3d7b0;
                 }
 
                 .btn-profile {
-                    background: white;
-                    color: #1e293b;
+                    background: #fdfbf5;
+                    color: #5c4a1f;
                 }
 
                 .btn-profile:hover {
-                    background: #f8fafc;
-                    border-color: #cbd5e1;
+                    background: #efe6d0;
+                    border-color: #cbb88a;
                 }
 
                 .btn-repay {
@@ -1205,7 +1308,7 @@ const Customers: React.FC = () => {
                 .dots-button {
                     background: none;
                     border: none;
-                    color: #94a3b8;
+                    color: #8a7a52;
                     cursor: pointer;
                     padding: 6px;
                     border-radius: 8px;
@@ -1213,14 +1316,14 @@ const Customers: React.FC = () => {
                 }
 
                 .dots-button:hover {
-                    background: #f1f5f9;
-                    color: #1e293b;
+                    background: #efe6d0;
+                    color: #4a3c1a;
                 }
 
                 .action-dropdown--fixed {
                     position: fixed;
-                    background: white;
-                    border: 1px solid #e2e8f0;
+                    background: #fdfbf5;
+                    border: 1px solid #e3d7b0;
                     border-radius: 12px;
                     box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
                     z-index: 10000;
@@ -1242,15 +1345,15 @@ const Customers: React.FC = () => {
                     border-radius: 8px;
                     font-size: 13px;
                     font-weight: 600;
-                    color: #475569;
+                    color: #5c4a1f;
                     cursor: pointer;
                     transition: all 0.2s;
                     text-align: left;
                 }
 
                 .action-dropdown button:hover:not(:disabled) {
-                    background: #f8fafc;
-                    color: #0f172a;
+                    background: #efe6d0;
+                    color: #4a3c1a;
                 }
 
                 .action-dropdown button.approve-action {
@@ -1277,91 +1380,6 @@ const Customers: React.FC = () => {
                     transform: scale(1.05);
                 }
 
-                /* STEPPER STYLES */
-                .workflow-stepper {
-                    display: flex;
-                    gap: 12px;
-                    align-items: center;
-                }
-
-                .step-item {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    position: relative;
-                    min-width: 50px;
-                }
-
-                .step-item:not(:last-child)::after {
-                    content: '';
-                    position: absolute;
-                    top: 12px;
-                    left: calc(50% + 12px);
-                    width: calc(100% - 12px);
-                    height: 2px;
-                    background: #e2e8f0;
-                    z-index: 1;
-                }
-
-                .step-item.completed:not(:last-child)::after {
-                    background: #16a34a;
-                }
-
-                .step-item.active:not(:last-child)::after {
-                    background: #facc15;
-                }
-
-                .step-circle {
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 50%;
-                    background: white;
-                    border: 2px solid #e2e8f0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 10px;
-                    font-weight: 700;
-                    color: #94a3b8;
-                    position: relative;
-                    z-index: 2;
-                    transition: all 0.3s;
-                }
-
-                .step-label {
-                    font-size: 9px;
-                    font-weight: 700;
-                    color: #94a3b8;
-                    margin-top: 4px;
-                    text-transform: uppercase;
-                    text-align: center;
-                }
-
-                .step-item.completed .step-circle {
-                    background: #16a34a;
-                    border-color: #16a34a;
-                    color: white;
-                }
-
-                .step-item.completed .step-label {
-                    color: #16a34a;
-                }
-
-                .step-item.active .step-circle {
-                    border-color: #facc15;
-                    color: #854d0e;
-                    background: #fef9c3;
-                    transform: scale(1.1);
-                }
-
-                .step-item:not(.completed) .step-circle {
-                    border-color: #fde047;
-                    background: #fefce8;
-                }
-
-                .step-item.active .step-label {
-                    color: #854d0e;
-                }
 
                 .modal-overlay {
                     position: fixed;
