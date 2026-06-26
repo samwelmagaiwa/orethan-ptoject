@@ -81,6 +81,7 @@ const GroupLoan: React.FC = () => {
     mdhamini1Simu: "",
 
     // SEHEMU 4B: MDHAMINI NO. 2 (MME, MKE AU NDUGU)
+    mdhamini2Uhusiano: "",
     mdhamini2JinaKamili: "",
     mdhamini2MahaliAnapoishi: "",
     mdhamini2NambaYaNyumba: "",
@@ -385,6 +386,12 @@ const GroupLoan: React.FC = () => {
 
     setForm({ ...form, [name]: finalValue });
     validateField(name, finalValue);
+  };
+
+  // Selecting the guarantor's relationship in SEHEMU 4B also fills the
+  // "Uhusiano wako na mwombaji" field used in TAMKO LA MDHAMINI (MUME/MKE/NDUGU).
+  const handleMdhamini2UhusianoChange = (value: string) => {
+    setForm(prev => ({ ...prev, mdhamini2Uhusiano: value, tamkoLaMdhaminiUhusiano: value }));
   };
 
   const handleAddCollateral = () => {
@@ -987,6 +994,24 @@ const GroupLoan: React.FC = () => {
                 <table className="form-table">
                   <tbody>
                     <tr>
+                      <td colSpan={12}><strong>Uhusiano na Mwombaji</strong><br />
+                        <div className="mdhamini2-uhusiano-radios">
+                          {["Mume", "Mke", "Ndugu"].map((opt) => (
+                            <label key={opt} className="mdhamini2-uhusiano-radio">
+                              <input
+                                type="radio"
+                                name="mdhamini2Uhusiano"
+                                value={opt}
+                                checked={form.mdhamini2Uhusiano === opt}
+                                onChange={() => handleMdhamini2UhusianoChange(opt)}
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
                       <td colSpan={4}><strong>Jina kamili la Mdhamini</strong><br />
                         <input type="text" name="mdhamini2JinaKamili" placeholder="Jina la Mdhamini (Mume/Mke/Ndugu)" className={errors.mdhamini2JinaKamili ? "input-error" : ""} value={form.mdhamini2JinaKamili} onChange={handleChange} />
                         {errors.mdhamini2JinaKamili && <span className="error-text">{errors.mdhamini2JinaKamili}</span>}
@@ -1113,7 +1138,11 @@ const GroupLoan: React.FC = () => {
 
                 <div className="tamko-card">
                   <p><strong>TAMKO LA MDHAMINI (MUME/ MKE/ NDUGU)</strong></p>
-                  <div className="input-box" style={{ marginBottom: "15px" }}><input type="text" name="tamkoLaMdhaminiUhusiano" placeholder=" " value={form.tamkoLaMdhaminiUhusiano} onChange={handleChange} /><label>Uhusiano wako na mwombaji</label></div>
+                  <div className="input-box" style={{ marginBottom: "4px" }}>
+                    <input type="text" name="tamkoLaMdhaminiUhusiano" placeholder=" " readOnly value={form.tamkoLaMdhaminiUhusiano} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.25)' }} />
+                    <label>Uhusiano wako na mwombaji</label>
+                  </div>
+                  <small style={{ color: '#94a3b8', fontSize: '0.7rem', display: 'block', marginBottom: '15px' }}>Chagua Uhusiano katika SEHEMU 4B hapo juu</small>
                   <p>Mimi <strong>{form.mdhamini1JinaKamili || "_________________________"}</strong> Uhusiano <strong>{form.tamkoLaMdhaminiUhusiano || "________"}</strong> ninakiri kuwa na taarifa juu ya mkopo wa Tsh <strong>{form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : "___________"}</strong> uliyoombwa na <strong>{form.jinaKamiliLaMwombaji || "______________"}</strong> kutoka Orethan Microfinance. Dhamana tajwa hapo juu nazifahamu na nipo tayari zitolewe kama dhamana kwa mujibu wa masharti na taratibu zilizokubaliwa na mkopaji na mkopeshaji.</p>
 
                   <div className="tamko-checkbox-group tamko-checkbox-group--2col">
@@ -1481,6 +1510,29 @@ const GroupLoan: React.FC = () => {
           display: grid;
           grid-template-columns: 1fr 1fr;
           align-items: start;
+        }
+
+        .mdhamini2-uhusiano-radios {
+          display: flex;
+          gap: 18px;
+          flex-wrap: wrap;
+          padding: 6px 0 2px;
+        }
+        .mdhamini2-uhusiano-radio {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+          cursor: pointer;
+        }
+        .mdhamini2-uhusiano-radio input[type="radio"] {
+          width: 16px;
+          height: 16px;
+          accent-color: #1a3a5c;
+          cursor: pointer;
+          margin: 0;
         }
 
         .nav-buttons {
