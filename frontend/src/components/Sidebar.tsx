@@ -25,6 +25,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [showUsers, setShowUsers] = useState(false);
   const [showFinance, setShowFinance] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
+  const [showAccounting, setShowAccounting] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -77,6 +79,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessUsers = userRole === "admin";
   const canAccessApprovals = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
   const canAccessManagement = canAccessApprovals;
+  const canAccessAccounting = userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director";
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
@@ -226,6 +229,43 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
                 {!isCollapsed && <span className="sd-item__text">Wateja (Customers)</span>}
               </div>
+            </>
+          )}
+
+          {/* Accounting Module — Admin / Finance Officer / Managing Director */}
+          {canAccessAccounting && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? "ACCOUNTING" : "─"}</div>
+              <div className={`sd-item ${isActive("/accounting") ? "sd-item--active" : ""}`} onClick={() => setShowAccounting(!showAccounting)} title="Accounting">
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">Accounting</span>}
+                {!isCollapsed && <span className={`sd-item__arrow ${showAccounting ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
+              </div>
+              {(showAccounting || isActive("/accounting")) && !isCollapsed && (
+                <div className="sd-sub">
+                  <div className={`sd-sub__link ${isActive("/accounting/chart-of-accounts") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/chart-of-accounts")}>Chart of Accounts</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/journal-entries") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/journal-entries")}>Journal Entries</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/general-ledger") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/general-ledger")}>General Ledger</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/trial-balance") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/trial-balance")}>Trial Balance</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/income-statement") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/income-statement")}>Income Statement</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/balance-sheet") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/balance-sheet")}>Balance Sheet</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/cash-book") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/cash-book")}>Cash Book</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/bank-reconciliation") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/bank-reconciliation")}>Bank Reconciliation</div>
+                </div>
+              )}
+
+              <div className="sd-sec">{!isCollapsed ? "REPORTS" : "─"}</div>
+              <div className={`sd-item ${isActive("/reports") ? "sd-item--active" : ""}`} onClick={() => setShowReports(!showReports)} title="Reports">
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">Reports</span>}
+                {!isCollapsed && <span className={`sd-item__arrow ${showReports ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
+              </div>
+              {(showReports || isActive("/reports")) && !isCollapsed && (
+                <div className="sd-sub">
+                  <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>Risk Reports</div>
+                  <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>Financial Reports</div>
+                </div>
+              )}
             </>
           )}
         </nav>

@@ -32,6 +32,17 @@ import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
 import DisburseLoan from "./pages/DisburseLoan";
 
+import ChartOfAccounts from "./pages/ChartOfAccounts";
+import JournalEntries from "./pages/JournalEntries";
+import GeneralLedger from "./pages/GeneralLedger";
+import TrialBalance from "./pages/TrialBalance";
+import IncomeStatement from "./pages/IncomeStatement";
+import BalanceSheet from "./pages/BalanceSheet";
+import CashBook from "./pages/CashBook";
+import BankReconciliation from "./pages/BankReconciliation";
+import RiskReports from "./pages/RiskReports";
+import FinancialReports from "./pages/FinancialReports";
+
 // =========================
 // AXIOS INTERCEPTORS
 // =========================
@@ -1066,6 +1077,21 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* ========== ACCOUNTING MODULE ========== */}
+          <Route path="/accounting/chart-of-accounts" element={<ProtectedRoute><MainLayout><ChartOfAccounts /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/journal-entries" element={<ProtectedRoute><MainLayout><JournalEntries /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/general-ledger" element={<ProtectedRoute><MainLayout><GeneralLedger /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/trial-balance" element={<ProtectedRoute><MainLayout><TrialBalance /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/income-statement" element={<ProtectedRoute><MainLayout><IncomeStatement /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/balance-sheet" element={<ProtectedRoute><MainLayout><BalanceSheet /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/cash-book" element={<ProtectedRoute><MainLayout><CashBook /></MainLayout></ProtectedRoute>} />
+          <Route path="/accounting/bank-reconciliation" element={<ProtectedRoute><MainLayout><BankReconciliation /></MainLayout></ProtectedRoute>} />
+
+          {/* ========== RISK & FINANCIAL REPORTS ========== */}
+          <Route path="/reports/risk" element={<ProtectedRoute><MainLayout><RiskReports /></MainLayout></ProtectedRoute>} />
+          <Route path="/reports/financial" element={<ProtectedRoute><MainLayout><FinancialReports /></MainLayout></ProtectedRoute>} />
+
           <Route
             path="/payment-requests"
             element={
