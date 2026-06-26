@@ -851,14 +851,14 @@ const GroupLoan: React.FC = () => {
                             CALCULATOR
                           </button>
                         </div>
-                        <input type="text" name="wastaniWaKipatoKwaMwezi" readOnly placeholder="Mfano: 1,500,000" className={errors.wastaniWaKipatoKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.wastaniWaKipatoKwaMwezi ? formatMoney(Number(form.wastaniWaKipatoKwaMwezi)) : ""} onChange={handleChange} />
+                        <input type="text" name="wastaniWaKipatoKwaMwezi" readOnly placeholder="Mfano: 1,500,000" className={errors.wastaniWaKipatoKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)' }} value={form.wastaniWaKipatoKwaMwezi ? formatMoney(Number(form.wastaniWaKipatoKwaMwezi)) : ""} onChange={handleChange} />
                         <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.wastaniWaKipatoKwaMwezi && <span className="error-text">{errors.wastaniWaKipatoKwaMwezi}</span>}
                       </td>
                     </tr>
                     <tr>
                       <td colSpan={6}><strong>Wastani wa matumizi kwa mwezi (TZS)</strong><br />
-                        <input type="text" name="wastaniWaMatumiziKwaMwezi" readOnly placeholder="Mfano: 600,000" className={errors.wastaniWaMatumiziKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.wastaniWaMatumiziKwaMwezi ? formatMoney(Number(form.wastaniWaMatumiziKwaMwezi)) : ""} onChange={handleChange} />
+                        <input type="text" name="wastaniWaMatumiziKwaMwezi" readOnly placeholder="Mfano: 600,000" className={errors.wastaniWaMatumiziKwaMwezi ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)' }} value={form.wastaniWaMatumiziKwaMwezi ? formatMoney(Number(form.wastaniWaMatumiziKwaMwezi)) : ""} onChange={handleChange} />
                         <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.wastaniWaMatumiziKwaMwezi && <span className="error-text">{errors.wastaniWaMatumiziKwaMwezi}</span>}
                       </td>
@@ -872,17 +872,17 @@ const GroupLoan: React.FC = () => {
                   <tbody>
                     <tr>
                       <td colSpan={4}><strong>Kiasi cha Mkopo (TZS)</strong><br />
-                        <input type="text" name="kiasiChaMkopo" readOnly placeholder="Mfano: 3,000,000" className={errors.kiasiChaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : ""} onChange={handleChange} />
+                        <input type="text" name="kiasiChaMkopo" readOnly placeholder="Mfano: 3,000,000" className={errors.kiasiChaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)' }} value={form.kiasiChaMkopo ? formatMoney(Number(form.kiasiChaMkopo)) : ""} onChange={handleChange} />
                         <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.kiasiChaMkopo && <span className="error-text">{errors.kiasiChaMkopo}</span>}
                       </td>
                       <td colSpan={4}><strong>Muda wa kulipa Mkopo</strong><br />
-                        <input type="text" name="mudaWaLipaMkopo" readOnly placeholder="Mfano: Miezi 12" className={errors.mudaWaLipaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.mudaWaLipaMkopo} onChange={handleChange} />
+                        <input type="text" name="mudaWaLipaMkopo" readOnly placeholder="Mfano: Miezi 12" className={errors.mudaWaLipaMkopo ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)' }} value={form.mudaWaLipaMkopo} onChange={handleChange} />
                         <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.mudaWaLipaMkopo && <span className="error-text">{errors.mudaWaLipaMkopo}</span>}
                       </td>
                       <td colSpan={4}><strong>Kiasi cha rejesho bila matatizo (TZS)</strong><br />
-                        <input type="text" name="kiasiGaniChaRejesho" readOnly placeholder="Mfano: 250,000" className={errors.kiasiGaniChaRejesho ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold' }} value={form.kiasiGaniChaRejesho ? formatMoney(Number(form.kiasiGaniChaRejesho)) : ""} onChange={handleChange} />
+                        <input type="text" name="kiasiGaniChaRejesho" readOnly placeholder="Mfano: 250,000" className={errors.kiasiGaniChaRejesho ? "input-error" : ""} style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed', fontWeight: 'bold', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)' }} value={form.kiasiGaniChaRejesho ? formatMoney(Number(form.kiasiGaniChaRejesho)) : ""} onChange={handleChange} />
                         <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Tumia Calculator hapo juu</small>
                         {errors.kiasiGaniChaRejesho && <span className="error-text">{errors.kiasiGaniChaRejesho}</span>}
                       </td>
