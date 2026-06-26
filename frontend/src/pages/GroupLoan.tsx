@@ -1287,7 +1287,18 @@ const GroupLoan: React.FC = () => {
           max-height: calc(100vh - 300px);
           overflow-y: auto;
         }
-        
+
+        .section-divider {
+          background: #1a3a5c;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 13px;
+          margin-bottom: 15px;
+          margin-top: 5px;
+        }
+
         .form-table {
           width: 100%;
           border-collapse: collapse;
