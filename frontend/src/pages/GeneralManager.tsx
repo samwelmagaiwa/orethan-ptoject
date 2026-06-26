@@ -96,13 +96,13 @@ const GeneralManager = () => {
     }
   };
 
-  const toggleDropdown = (id: number, event: React.MouseEvent) => {
+  const toggleDropdown = (id: number, event: React.MouseEvent, buttonCount: number) => {
     if (activeDropdown === id) {
       setActiveDropdown(null);
     } else {
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
       const menuWidth = 170;
-      const estimatedMenuHeight = 270;
+      const estimatedMenuHeight = 16 + buttonCount * 42 + 20;
       const spaceBelow = window.innerHeight - rect.bottom;
       const top = spaceBelow >= estimatedMenuHeight + 8
         ? rect.bottom + 8
@@ -348,7 +348,7 @@ const GeneralManager = () => {
                     )}
                   </td>
                   <td style={{ textAlign: 'right', position: 'relative' }}>
-                    <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e)}>
+                    <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'gm_review' ? 4 : 2)}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                     </button>
 
