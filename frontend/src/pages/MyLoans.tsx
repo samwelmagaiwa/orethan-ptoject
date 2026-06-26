@@ -399,13 +399,13 @@ const MyLoans = () => {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
-          margin-bottom: 32px;
+          margin-bottom: 12px;
           width: 100%;
           position: sticky;
           top: 0px;
           z-index: 10;
           background: #f5efe0;
-          padding: 0 0 20px 0; /* Zero top padding to "touch" the layout boundary */
+          padding: 0 0 8px 0; /* Zero top padding to "touch" the layout boundary */
         }
 
         .stat-box {
