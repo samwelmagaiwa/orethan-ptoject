@@ -305,7 +305,7 @@ class LoanController extends Controller
 
         // Confirm the operator's identity via password/PIN
         if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
-            return $this->error('Password confirmation failed. Please re-enter your password.', 422);
+            return $this->error('The password you entered is incorrect. Please try again.', 422);
         }
 
         try {
