@@ -178,7 +178,7 @@ function EmployeeLoan() {
             />
           </div>
 
-          <button type="submit" disabled={loading || !checklistResolved} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
+          <button type="submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
             {loading ? "Submitting..." : "Submit Application"}
           </button>
 

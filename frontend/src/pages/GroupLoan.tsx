@@ -483,10 +483,42 @@ const GroupLoan: React.FC = () => {
     setPortalTarget(document.getElementById("navbar-portal"));
   }, []);
 
-  const nextStep = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    // Validate all fields in current step before proceeding
+  const fieldLabels: Record<string, string> = {
+    jinaKamiliLaMwombaji: "Jina kamili la mwombaji",
+    jinsia: "Jinsia",
+    tareheYaKuzaliwa: "Tarehe ya kuzaliwa",
+    simu: "Simu",
+    nambaYaKitambulisho: "Namba ya Kitambulisho",
+    haliYaNdoa: "Hali ya Ndoa",
+    eneoUnaioishi: "Eneo unaioishi",
+    jinaLaMwenyekiti: "Jina la Mwenyekiti",
+    jinaLaKatibu: "Jina la Katibu",
+    anuaniYaMakaziYaKikundi: "Anuani ya Makazi ya kikundi",
+    nambaYaUsajiliWaKikundi: "Namba ya usajili wa kikundi",
+    mkoa: "Mkoa",
+    wilaya: "Wilaya",
+    kata: "Kata",
+    kijijiMtaa: "Kijiji/mtaa",
+    idadiYaWanachamaMe: "Idadi ya wanachama (ME)",
+    idadiYaWanachamaKe: "Idadi ya wanachama (KE)",
+    jinaLaMradi: "Jina la Mradi",
+    ainaYaMradi: "Aina ya Mradi",
+    mahaliMradiUpoMkoa: "Mkoa wa Mradi",
+    mahaliMradiUpoWilaya: "Wilaya ya Mradi",
+    mahaliMradiUpoKata: "Kata ya Mradi",
+    wastaniWaKipatoKwaMwezi: "Wastani wa kipato kwa mwezi",
+    wastaniWaMatumiziKwaMwezi: "Wastani wa matumizi kwa mwezi",
+    kiasiChaMkopo: "Kiasi cha Mkopo",
+    mudaWaLipaMkopo: "Muda wa kulipa Mkopo",
+    kiasiGaniChaRejesho: "Kiasi cha rejesho",
+    mdhamini1JinaKamili: "Jina kamili la Mdhamini (Mwenyekiti)",
+    mdhamini1Simu: "Simu ya Mdhamini"
+  };
 
+  // Returns the list of missing/invalid field labels for a given wizard step,
+  // and records the per-field error state as a side effect so navigating the
+  // officer back to that step highlights exactly which fields need attention.
+  const getMissingFieldsForStep = (step: number): string[] => {
     const stepFields: Record<number, string[]> = {
       0: ["jinaKamiliLaMwombaji", "jinsia", "tareheYaKuzaliwa", "simu", "nambaYaKitambulisho", "haliYaNdoa", "eneoUnaioishi"],
       1: ["jinaLaMwenyekiti", "jinaLaKatibu", "anuaniYaMakaziYaKikundi", "nambaYaUsajiliWaKikundi", "mkoa", "wilaya", "kata", "kijijiMtaa", "idadiYaWanachamaMe", "idadiYaWanachamaKe"],
@@ -494,40 +526,8 @@ const GroupLoan: React.FC = () => {
       3: ["mdhamini1JinaKamili", "mdhamini1Simu"]
     };
 
-    const fieldLabels: Record<string, string> = {
-      jinaKamiliLaMwombaji: "Jina kamili la mwombaji",
-      jinsia: "Jinsia",
-      tareheYaKuzaliwa: "Tarehe ya kuzaliwa",
-      simu: "Simu",
-      nambaYaKitambulisho: "Namba ya Kitambulisho",
-      haliYaNdoa: "Hali ya Ndoa",
-      eneoUnaioishi: "Eneo unaioishi",
-      jinaLaMwenyekiti: "Jina la Mwenyekiti",
-      jinaLaKatibu: "Jina la Katibu",
-      anuaniYaMakaziYaKikundi: "Anuani ya Makazi ya kikundi",
-      nambaYaUsajiliWaKikundi: "Namba ya usajili wa kikundi",
-      mkoa: "Mkoa",
-      wilaya: "Wilaya",
-      kata: "Kata",
-      kijijiMtaa: "Kijiji/mtaa",
-      idadiYaWanachamaMe: "Idadi ya wanachama (ME)",
-      idadiYaWanachamaKe: "Idadi ya wanachama (KE)",
-      jinaLaMradi: "Jina la Mradi",
-      ainaYaMradi: "Aina ya Mradi",
-      mahaliMradiUpoMkoa: "Mkoa wa Mradi",
-      mahaliMradiUpoWilaya: "Wilaya ya Mradi",
-      mahaliMradiUpoKata: "Kata ya Mradi",
-      wastaniWaKipatoKwaMwezi: "Wastani wa kipato kwa mwezi",
-      wastaniWaMatumiziKwaMwezi: "Wastani wa matumizi kwa mwezi",
-      kiasiChaMkopo: "Kiasi cha Mkopo",
-      mudaWaLipaMkopo: "Muda wa kulipa Mkopo",
-      kiasiGaniChaRejesho: "Kiasi cha rejesho",
-      mdhamini1JinaKamili: "Jina kamili la Mdhamini (Mwenyekiti)",
-      mdhamini1Simu: "Simu ya Mdhamini"
-    };
-
-    const currentFields = stepFields[currentStep] || [];
-    let missingFields: string[] = [];
+    const currentFields = stepFields[step] || [];
+    const missingFields: string[] = [];
     currentFields.forEach(field => {
       const error = validateField(field, (form as any)[field]);
       if (error && error !== "Namba ya simu haijakamilika (Mshano: 07XXXXXXXX)") {
@@ -536,7 +536,7 @@ const GroupLoan: React.FC = () => {
     });
 
     // Step 3: Validate dhamanaList — only critical fields, across all entries
-    if (currentStep === 3) {
+    if (step === 3) {
       form.dhamanaList.forEach((dhamana, index) => {
         if (!dhamana.aina) {
           setErrors(prev => ({ ...prev, [`dhamanaList.${index}.aina`]: "Sehemu hii inahitajika" }));
@@ -548,6 +548,27 @@ const GroupLoan: React.FC = () => {
         }
       });
     }
+
+    // Step 4: Declarations + passport photo
+    if (step === 4) {
+      if (!form.tamkoLaMwombaji) missingFields.push("Tamko la Mwombaji");
+      if (!form.tamkoLaMdhamini) missingFields.push("Tamko la Mdhamini");
+      if (!form.tamkoLaMdhaminiWajibika) missingFields.push("Tamko la Mdhamini Kuwajibika");
+      if (!form.passportPhotoUrl) missingFields.push("Picha ya Passport");
+    }
+
+    // Step 5: Documentation checklist must be resolved
+    if (step === 5 && !checklistResolved) {
+      missingFields.push("Orodha ya Uhakiki wa Nyaraka");
+    }
+
+    return missingFields;
+  };
+
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    const missingFields = getMissingFieldsForStep(currentStep);
 
     if (missingFields.length === 0 && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -570,19 +591,17 @@ const GroupLoan: React.FC = () => {
 
     if (currentStep < steps.length - 1) return;
 
-    if (!form.tamkoLaMwombaji || !form.tamkoLaMdhamini || !form.tamkoLaMdhaminiWajibika) {
-      showAlert("Tafadhali kubali tamko la mwombaji na wadhamini", "warning");
-      return;
-    }
-
-    if (!form.passportPhotoUrl) {
-      showAlert("Tafadhali pakia picha ya passport", "warning");
-      return;
-    }
-
-    if (!checklistResolved) {
-      showAlert("Tafadhali kamilisha orodha ya uhakiki wa nyaraka — weka tiki kwenye nyaraka ulizonazo, au bonyeza 'Proceed without' kwa zinazokosekana.", "warning");
-      return;
+    // Full validation sweep across every step — catches anything missed or
+    // changed after the officer moved past that step, and returns them to
+    // the exact step with the problem instead of failing silently.
+    for (let step = 0; step <= 5; step++) {
+      const missingFields = getMissingFieldsForStep(step);
+      if (missingFields.length > 0) {
+        setCurrentStep(step);
+        window.scrollTo(0, 0);
+        showAlert(`Tafadhali jaza/kamilisha sehemu hizi kwenye "${steps[step]}" kabla ya kuwasilisha:\n• ${missingFields.join("\n• ")}`, "error");
+        return;
+      }
     }
 
     try {
@@ -1223,7 +1242,7 @@ const GroupLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading || !checklistResolved} title={!checklistResolved ? "Kamilisha orodha ya uhakiki kwanza" : ""} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
+              <button type="submit" className="btn-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
                 {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}

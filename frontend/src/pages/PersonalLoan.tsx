@@ -566,9 +566,47 @@ const PersonalLoan: React.FC = () => {
     setPortalTarget(document.getElementById("navbar-portal"));
   }, []);
 
-  const nextStep = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
+  const fieldLabels: Record<string, string> = {
+    umeajiriwa: "Umeajiriwa?",
+    jinaKamiliLaMwombaji: "Jina kamili la mwombaji",
+    jinsia: "Jinsia",
+    tareheYaKuzaliwa: "Tarehe ya kuzaliwa",
+    nambaYaSimu: "Namba ya simu",
+    nambaYaKitambulisho: "Namba ya kitambulisho",
+    haliYaNdoa: "Hali ya ndoa",
+    mahaliUnapoishiMkoa: "Mkoa",
+    mahaliUnapoishiWilaya: "Wilaya",
+    mahaliUnapoishiKata: "Kata",
+    mahaliUnapoishiMtaa: "Mtaa",
+    jinaLaKampuniYaMwajiri: "Jina la kampuni/mwajiri",
+    anuaniYaOfisiYaMwajiri: "Anuani ya ofisi ya mwajiri",
+    wadhifa: "Wadhifa wako",
+    tareheYaKuanzaKazi: "Tarehe ya kuanza kazi",
+    mshaharaKwaMwezi: "Mshahara kwa mwezi",
+    ainaYaAjira: "Aina ya ajira",
+    jinaLaBiashara: "Jina la biashara",
+    ainaYaBiashara: "Aina ya biashara",
+    mahaliBiasharaIlipo: "Mahali biashara ilipo",
+    umfanyaBiasharaTanguLini: "Umefanya biashara tangu lini",
+    kiasiMkopo: "Kiasi cha Mkopo",
+    wastaniKipatoKwaMwezi: "Wastani wa mapato kwa mwezi",
+    wastaniMatumiziKwaMwezi: "Wastani wa matumizi kwa mwezi",
+    kwaManeno: "Kiasi kwa maneno",
+    mudaKulipaMkopo: "Muda wa kulipa mkopo",
+    kwaTarakimu: "Muda kwa tarakimu",
+    kiasiRejeshoBilaMatatizo: "Rejesho unaloweza kulipa",
+    chanzoMapato: "Chanzo cha Mapato",
+    malengoMkopo: "Malengo ya Mkopo",
+    wdhamini1JinaKamili: "Jina kamili la Mdhamini 1",
+    wdhamini1Simu: "Simu ya Mdhamini 1",
+    wdhamini2JinaKamili: "Jina kamili la Mdhamini 2",
+    wdhamini2Simu: "Simu ya Mdhamini 2",
+  };
 
+  // Returns the list of missing/invalid field labels for a given wizard step,
+  // and records the per-field error state as a side effect (so navigating the
+  // officer back to that step highlights exactly which fields need attention.
+  const getMissingFieldsForStep = (step: number): string[] => {
     const stepFields: Record<number, string[]> = {
       0: ["jinaKamiliLaMwombaji", "jinsia", "tareheYaKuzaliwa", "nambaYaSimu", "nambaYaKitambulisho", "haliYaNdoa", "mahaliUnapoishiMkoa", "mahaliUnapoishiWilaya", "mahaliUnapoishiKata", "mahaliUnapoishiMtaa"],
       1: ["umeajiriwa"],
@@ -576,7 +614,7 @@ const PersonalLoan: React.FC = () => {
       3: ["wdhamini1JinaKamili", "wdhamini1Simu", "wdhamini2JinaKamili", "wdhamini2Simu"]
     };
 
-    if (currentStep === 1) {
+    if (step === 1) {
       if (form.umeajiriwa === "Ndio") {
         stepFields[1].push("jinaLaKampuniYaMwajiri", "anuaniYaOfisiYaMwajiri", "wadhifa", "tareheYaKuanzaKazi", "mshaharaKwaMwezi", "ainaYaAjira");
       } else if (form.umeajiriwa === "Hapana") {
@@ -584,45 +622,8 @@ const PersonalLoan: React.FC = () => {
       }
     }
 
-    const fieldLabels: Record<string, string> = {
-      umeajiriwa: "Umeajiriwa?",
-      jinaKamiliLaMwombaji: "Jina kamili la mwombaji",
-      jinsia: "Jinsia",
-      tareheYaKuzaliwa: "Tarehe ya kuzaliwa",
-      nambaYaSimu: "Namba ya simu",
-      nambaYaKitambulisho: "Namba ya kitambulisho",
-      haliYaNdoa: "Hali ya ndoa",
-      mahaliUnapoishiMkoa: "Mkoa",
-      mahaliUnapoishiWilaya: "Wilaya",
-      mahaliUnapoishiKata: "Kata",
-      mahaliUnapoishiMtaa: "Mtaa",
-      jinaLaKampuniYaMwajiri: "Jina la kampuni/mwajiri",
-      anuaniYaOfisiYaMwajiri: "Anuani ya ofisi ya mwajiri",
-      wadhifa: "Wadhifa wako",
-      tareheYaKuanzaKazi: "Tarehe ya kuanza kazi",
-      mshaharaKwaMwezi: "Mshahara kwa mwezi",
-      ainaYaAjira: "Aina ya ajira",
-      jinaLaBiashara: "Jina la biashara",
-      ainaYaBiashara: "Aina ya biashara",
-      mahaliBiasharaIlipo: "Mahali biashara ilipo",
-      umfanyaBiasharaTanguLini: "Umefanya biashara tangu lini",
-      kiasiMkopo: "Kiasi cha Mkopo",
-      wastaniKipatoKwaMwezi: "Wastani wa mapato kwa mwezi",
-      wastaniMatumiziKwaMwezi: "Wastani wa matumizi kwa mwezi",
-      kwaManeno: "Kiasi kwa maneno",
-      mudaKulipaMkopo: "Muda wa kulipa mkopo",
-      kwaTarakimu: "Muda kwa tarakimu",
-      kiasiRejeshoBilaMatatizo: "Rejesho unaloweza kulipa",
-      chanzoMapato: "Chanzo cha Mapato",
-      malengoMkopo: "Malengo ya Mkopo",
-      wdhamini1JinaKamili: "Jina kamili la Mdhamini 1",
-      wdhamini1Simu: "Simu ya Mdhamini 1",
-      wdhamini2JinaKamili: "Jina kamili la Mdhamini 2",
-      wdhamini2Simu: "Simu ya Mdhamini 2",
-    };
-
-    const currentFields = stepFields[currentStep] || [];
-    let missingFields: string[] = [];
+    const currentFields = stepFields[step] || [];
+    const missingFields: string[] = [];
 
     currentFields.forEach(field => {
       const error = validateField(field, (form as any)[field]);
@@ -632,7 +633,7 @@ const PersonalLoan: React.FC = () => {
     });
 
     // Step 2: Validate dhamanaList — only critical fields
-    if (currentStep === 2) {
+    if (step === 2) {
       form.dhamanaList.forEach((dhamana, index) => {
         if (!dhamana.aina) {
           setErrors(prev => ({ ...prev, [`dhamanaList.${index}.aina`]: "Sehemu hii inahitajika" }));
@@ -653,6 +654,26 @@ const PersonalLoan: React.FC = () => {
       }
     }
 
+    // Step 4: Declarations (tamko) must be accepted
+    if (step === 4) {
+      if (!form.tamkoLaMwombaji) missingFields.push("Tamko la Mwombaji");
+      if (!form.tamkoMdhamini1) missingFields.push("Tamko la Mdhamini 1");
+      if (!form.tamkoMdhamini2) missingFields.push("Tamko la Mdhamini 2");
+    }
+
+    // Step 5: Documentation checklist must be resolved
+    if (step === 5 && !checklistResolved) {
+      missingFields.push("Orodha ya Uhakiki wa Nyaraka");
+    }
+
+    return missingFields;
+  };
+
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    const missingFields = getMissingFieldsForStep(currentStep);
+
     if (missingFields.length === 0 && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
@@ -672,14 +693,17 @@ const PersonalLoan: React.FC = () => {
 
     if (currentStep < steps.length - 1) return;
 
-    if (!form.tamkoLaMwombaji || !form.tamkoMdhamini1 || !form.tamkoMdhamini2) {
-      showAlert("Tafadhali kubali tamko la mwombaji na wadhamini wote wawili", "warning");
-      return;
-    }
-
-    if (!checklistResolved) {
-      showAlert("Tafadhali kamilisha orodha ya uhakiki wa nyaraka — weka tiki kwenye nyaraka ulizonazo, au bonyeza 'Proceed without' kwa zinazokosekana.", "warning");
-      return;
+    // Full validation sweep across every step — catches anything missed or
+    // changed after the officer moved past that step, and returns them to
+    // the exact step with the problem instead of failing silently.
+    for (let step = 0; step <= 5; step++) {
+      const missingFields = getMissingFieldsForStep(step);
+      if (missingFields.length > 0) {
+        setCurrentStep(step);
+        window.scrollTo(0, 0);
+        showAlert(`Tafadhali jaza/kamilisha sehemu hizi kwenye "${steps[step]}" kabla ya kuwasilisha:\n• ${missingFields.join("\n• ")}`, "error");
+        return;
+      }
     }
 
     const cleanNumber = (val: any) => {
@@ -1500,7 +1524,12 @@ const PersonalLoan: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
 
+            {/* STEP 4: DHAMANA NA WADHAMINI */}
+            {currentStep === 3 && (
+              <div className="form-section">
                 {/* SEHEMU 7: WADHAMINI */}
                 <div style={{ marginTop: '40px' }}>
 
@@ -1758,7 +1787,7 @@ const PersonalLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading || !checklistResolved} title={!checklistResolved ? "Kamilisha orodha ya uhakiki kwanza" : ""} style={{ opacity: (!checklistResolved || loading) ? 0.6 : 1 }}>
+              <button type="submit" className="btn-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
                 {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}
