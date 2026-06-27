@@ -23,7 +23,6 @@ const buildAccountNumber = (loan: any, dateStr: string) => {
     else if (type === "employee" || umeajiriwa === "Ndio") prefix = "EMPL";
     return `${prefix}-ZKM-${d}-${m}-${y}-${seq}`.toUpperCase();
 };
-const CHECKLIST = [{ key: "identity_verified", label: "Customer Identity Verified" }, { key: "agreement_signed", label: "Loan Agreement Signed" }, { key: "guarantor_signed", label: "Guarantor Signed" }, { key: "charges_confirmed", label: "Charges Confirmed" }, { key: "customer_present", label: "Customer Present" }, { key: "payment_verified", label: "Payment Details Verified" }];
 
 const DisburseLoan = () => {
     const { id } = useParams();
@@ -41,7 +40,6 @@ const DisburseLoan = () => {
     const [transactionRef, setTransactionRef] = useState("");
     const [disbursementDate, setDisbursementDate] = useState(new Date().toISOString().slice(0, 10));
     const [narration, setNarration] = useState("");
-    const [checks, setChecks] = useState<Record<string, boolean>>({});
     const [confirm, setConfirm] = useState(false);
     const [password, setPassword] = useState("");
 
@@ -72,8 +70,7 @@ const DisburseLoan = () => {
     const approvedAmount = Number(loan?.amount || 0);
     const totalCharges = Number(processingFee || 0) + Number(insuranceFee || 0) + Number(otherCharges || 0);
     const netAmount = approvedAmount - totalCharges;
-    const allChecked = CHECKLIST.every((c) => checks[c.key]);
-    const canDisburse = !alreadyDisbursed && allChecked && confirm && password.trim().length > 0 && netAmount >= 0 && !submitting;
+    const canDisburse = !alreadyDisbursed && confirm && password.trim().length > 0 && netAmount >= 0 && !submitting;
     const setDetail = (k: string, v: string) => setPayDetails((p) => ({ ...p, [k]: v }));
 
     const handleDisburse = async () => {
@@ -91,7 +88,6 @@ const DisburseLoan = () => {
                 payment_details: method === "cash" ? { cashier: payDetails.cashier || "", cash_drawer: payDetails.cash_drawer || "" } : payDetails,
                 narration,
                 branch: preview?.branch || null,
-                verification: { ...checks },
                 confirm: true,
                 password,
             });
@@ -291,8 +287,8 @@ const DisburseLoan = () => {
 
                     <hr style={{ border: "none", borderTop: "2px solid #f1f5f9", margin: "40px 0" }} />
 
-                    {/* LOWER SECTIONS: 3-COLUMN GRID */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "30px" }}>
+                    {/* LOWER SECTIONS: 2-COLUMN GRID */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
 
                         {/* COLUMN 1: FINANCIAL EXECUTION */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -347,7 +343,7 @@ const DisburseLoan = () => {
                         </div>
 
                         {/* COLUMN 2: PAYOUT & DOCS */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "32px", borderLeft: "1px dashed #e2e8f0", borderRight: "1px dashed #e2e8f0", padding: "0 24px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "32px", borderLeft: "1px dashed #e2e8f0", padding: "0 24px" }}>
                             {/* Payout Method */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                                 <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
@@ -397,26 +393,6 @@ const DisburseLoan = () => {
                             </div>
                         </div>
 
-                        {/* COLUMN 3: AUTHORIZATION */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                            <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                <ShieldCheck size={20} /> Final Authorization
-                            </h3>
-
-                            <div>
-                                <span style={{ display: "block", fontSize: "12px", fontWeight: 800, color: "#94a3b8", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>Verification Checklist</span>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                    {CHECKLIST.map((c) => (
-                                        <label key={c.key} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", background: checks[c.key] ? "#f0fdf4" : "#f8fafc", borderRadius: "8px", cursor: "pointer", border: checks[c.key] ? "1px solid #10b981" : "1px solid #e2e8f0", transition: "all 0.2s" }}>
-                                            <input type="checkbox" checked={!!checks[c.key]} onChange={e => setChecks({ ...checks, [c.key]: e.target.checked })} style={{ width: "16px", height: "16px", accentColor: "#10b981" }} />
-                                            <span style={{ fontSize: "12px", fontWeight: 600, color: checks[c.key] ? "#065f46" : "#475569" }}>{c.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-
-                        </div>
                     </div>
 
                 </div>

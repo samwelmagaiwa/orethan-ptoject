@@ -298,15 +298,6 @@ class LoanController extends Controller
             'narration' => 'nullable|string|max:255',
             'branch' => 'nullable|string|max:120',
 
-            // Verification checklist — all six must be confirmed
-            'verification' => 'required|array',
-            'verification.identity_verified' => 'accepted',
-            'verification.agreement_signed' => 'accepted',
-            'verification.guarantor_signed' => 'accepted',
-            'verification.charges_confirmed' => 'accepted',
-            'verification.customer_present' => 'accepted',
-            'verification.payment_verified' => 'accepted',
-
             // Final confirmation
             'confirm' => 'accepted',
             'password' => 'required|string',
