@@ -22,6 +22,7 @@ const GroupLoan: React.FC = () => {
   const [draftData, setDraftData] = useState<{ form: any; step: number } | null>(null);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
+  const [alertOnAck, setAlertOnAck] = useState<(() => void) | null>(null);
 
   const [form, setForm] = useState({
     fomuNo: "",
@@ -137,10 +138,24 @@ const GroupLoan: React.FC = () => {
     return moneyKeys.includes(name) || name.toLowerCase().includes("kiasi") || name.toLowerCase().includes("thamani");
   };
 
-  const showAlert = (message: string, type: "success" | "error" | "info" | "warning" = "info") => {
+  const showAlert = (message: string, type: "success" | "error" | "info" | "warning" = "info", onAck?: () => void) => {
     setModalMessage(message);
     setModalType(type);
     setShowModal(true);
+    setAlertOnAck(() => onAck ?? null);
+  };
+
+  // Scrolls to the first invalid/required field on the active step once it
+  // has rendered, so the officer lands exactly where they need to fix it.
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const el = document.querySelector(".input-error");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }, 100);
   };
 
   const cleanNumber = (val: any) => {
@@ -574,7 +589,7 @@ const GroupLoan: React.FC = () => {
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
     } else if (missingFields.length > 0) {
-      showAlert(`Tafadhali jaza sehemu hizi zinazohitajika: ${missingFields.join(", ")}`, "error");
+      showAlert(`Tafadhali jaza sehemu hizi zinazohitajika: ${missingFields.join(", ")}`, "error", scrollToFirstError);
     }
   };
 
@@ -597,9 +612,14 @@ const GroupLoan: React.FC = () => {
     for (let step = 0; step <= 5; step++) {
       const missingFields = getMissingFieldsForStep(step);
       if (missingFields.length > 0) {
-        setCurrentStep(step);
-        window.scrollTo(0, 0);
-        showAlert(`Tafadhali jaza/kamilisha sehemu hizi kwenye "${steps[step]}" kabla ya kuwasilisha:\n• ${missingFields.join("\n• ")}`, "error");
+        showAlert(
+          `Tafadhali jaza/kamilisha sehemu hizi kwenye "${steps[step]}" kabla ya kuwasilisha:\n• ${missingFields.join("\n• ")}`,
+          "error",
+          () => {
+            setCurrentStep(step);
+            scrollToFirstError();
+          }
+        );
         return;
       }
     }
@@ -1648,7 +1668,13 @@ const GroupLoan: React.FC = () => {
         isOpen={showModal}
         message={modalMessage}
         type={modalType}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          if (alertOnAck) {
+            alertOnAck();
+            setAlertOnAck(null);
+          }
+        }}
       />
     </div>
   );

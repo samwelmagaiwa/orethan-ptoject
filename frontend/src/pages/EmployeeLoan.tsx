@@ -19,6 +19,7 @@ function EmployeeLoan() {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
+  const [alertOnAck, setAlertOnAck] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("employee_loan_draft");
@@ -29,10 +30,24 @@ function EmployeeLoan() {
     localStorage.setItem("employee_loan_draft", JSON.stringify(form));
   }, [form]);
 
-  const showAlert = (message: string, type: "success" | "error" | "info" | "warning" = "info") => {
+  const showAlert = (message: string, type: "success" | "error" | "info" | "warning" = "info", onAck?: () => void) => {
     setModalMessage(message);
     setModalType(type);
     setShowModal(true);
+    setAlertOnAck(() => onAck ?? null);
+  };
+
+  // Scrolls to the first invalid/required field once it has rendered, so
+  // the officer lands exactly where they need to fix it.
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const el = document.querySelector(".input-error");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }, 100);
   };
 
   const validateField = (name: string, value: string) => {
@@ -56,16 +71,25 @@ function EmployeeLoan() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    let hasError = false;
+    const fieldLabels: Record<string, string> = {
+      employer: "Employer Name",
+      employeeId: "Employee ID",
+      amount: "Loan Amount (TZS)",
+    };
+    const missingFields: string[] = [];
     Object.keys(form).forEach(key => {
+      if (key === "collateralPhotos") return;
       const error = validateField(key, (form as any)[key]);
-      if (error) hasError = true;
+      if (error) missingFields.push(fieldLabels[key] || key);
     });
 
-    if (hasError) return;
+    if (missingFields.length > 0) {
+      showAlert(`Please fill in these required fields:\n• ${missingFields.join("\n• ")}`, "error", scrollToFirstError);
+      return;
+    }
 
     if (!checklistResolved) {
-      showAlert("Please complete the documentation checklist — tick the documents you have or use 'Proceed without' for missing items.", "warning");
+      showAlert("Please complete the documentation checklist — tick the documents you have or use 'Proceed without' for missing items.", "warning", scrollToFirstError);
       return;
     }
 
@@ -281,7 +305,13 @@ function EmployeeLoan() {
         isOpen={showModal}
         message={modalMessage}
         type={modalType}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          if (alertOnAck) {
+            alertOnAck();
+            setAlertOnAck(null);
+          }
+        }}
       />
     </div>
   );
