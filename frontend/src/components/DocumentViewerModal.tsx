@@ -6,13 +6,14 @@ interface Props {
   url: string | null;
   name?: string | null;
   mimeType?: string | null;
+  note?: string | null;
   onClose: () => void;
 }
 
 const isPdf = (url: string, mimeType?: string | null) =>
   (mimeType || "").includes("pdf") || url.toLowerCase().endsWith(".pdf");
 
-const DocumentViewerModal = ({ isOpen, url, name, mimeType, onClose }: Props) => {
+const DocumentViewerModal = ({ isOpen, url, name, mimeType, note, onClose }: Props) => {
   if (!isOpen || !url) return null;
   const resolved = resolveFileUrl(url);
   const pdf = isPdf(resolved, mimeType);
@@ -36,6 +37,12 @@ const DocumentViewerModal = ({ isOpen, url, name, mimeType, onClose }: Props) =>
             <img src={resolved} alt={name || "Nyaraka"} className="dvm-image" />
           )}
         </div>
+        {note && (
+          <div className="dvm-note">
+            <span className="dvm-note-label">Maelezo ya Picha (Note)</span>
+            <p className="dvm-note-text">{note}</p>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -51,6 +58,9 @@ const DocumentViewerModal = ({ isOpen, url, name, mimeType, onClose }: Props) =>
         .dvm-body { flex: 1; overflow: auto; background: #f1f5f9; display: flex; align-items: flex-start; justify-content: center; }
         .dvm-frame { width: 100%; height: 100%; border: none; }
         .dvm-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+        .dvm-note { flex-shrink: 0; padding: 12px 18px; background: #fffbeb; border-top: 1px solid #fde68a; max-height: 25%; overflow-y: auto; }
+        .dvm-note-label { display: block; font-size: 10px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+        .dvm-note-text { font-size: 13px; color: #1e293b; margin: 0; line-height: 1.4; white-space: pre-wrap; }
       `}</style>
     </div>
   );

@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
+import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
 
 const GroupLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -110,6 +111,9 @@ const GroupLoan: React.FC = () => {
     passportPhotoUrl: "",
     guarantor1PhotoUrl: "",
     guarantor2PhotoUrl: "",
+
+    // Customer Collateral Directory (field photos of collateral items + notes)
+    collateralPhotos: [] as CollateralPhoto[],
   });
 
 
@@ -470,7 +474,8 @@ const GroupLoan: React.FC = () => {
     "SEHEMU 3: TAARIFA ZA MIRADI NA MKOPO",
     "SEHEMU 4: MDHAMINI NA DHAMANA",
     "TAMKO NA PASSPORT",
-    "ORODHA YA UHAKIKI WA NYARAKA"
+    "ORODHA YA UHAKIKI WA NYARAKA",
+    "DIRECTORI YA DHAMANA"
   ];
 
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -1187,6 +1192,18 @@ const GroupLoan: React.FC = () => {
                       terms_ack: !!form.tamkoLaMwombaji,
                     }}
                     onChange={(r) => { setChecklistResolved(r.allResolved); setChecklistState(r.state); }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {currentStep === 6 && (
+              <div className="tamko-container">
+                <div className="tamko-card" style={{ borderLeft: 'none' }}>
+                  <CollateralDirectory
+                    clientName={form.jinaKamiliLaMwombaji}
+                    photos={form.collateralPhotos}
+                    onChange={(photos) => setForm({ ...form, collateralPhotos: photos })}
                   />
                 </div>
               </div>

@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
+import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
 
 function EmployeeLoan() {
   const [form, setForm] = useState({
     employer: "",
     employeeId: "",
     amount: "",
+    collateralPhotos: [] as CollateralPhoto[],
   });
   const [checklistResolved, setChecklistResolved] = useState(false);
   const [checklistState, setChecklistState] = useState<any>({});
@@ -20,7 +22,7 @@ function EmployeeLoan() {
 
   useEffect(() => {
     const saved = localStorage.getItem("employee_loan_draft");
-    if (saved) setForm(JSON.parse(saved));
+    if (saved) setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
   }, []);
 
   useEffect(() => {
@@ -82,6 +84,7 @@ function EmployeeLoan() {
             employeeId: form.employeeId,
             umeajiriwa: "Ndio", // employee loans are by definition for employed applicants
             documentation_checklist: checklistState,
+            collateralPhotos: form.collateralPhotos,
           },
         }
       );
@@ -94,6 +97,7 @@ function EmployeeLoan() {
         employer: "",
         employeeId: "",
         amount: "",
+        collateralPhotos: [],
       });
 
     } catch (error: any) {
@@ -160,6 +164,14 @@ function EmployeeLoan() {
               category="employee"
               verified={{ application_form: true }}
               onChange={(r) => { setChecklistResolved(r.allResolved); setChecklistState(r.state); }}
+            />
+          </div>
+
+          <div style={{ background: "#fff", borderRadius: 12, padding: 16, marginBottom: 4 }}>
+            <CollateralDirectory
+              clientName={form.employer}
+              photos={form.collateralPhotos}
+              onChange={(photos) => setForm({ ...form, collateralPhotos: photos })}
             />
           </div>
 

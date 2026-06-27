@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from '../assets/logo.png';
 import LoanChecklistView from './LoanChecklistView';
+import CollateralDirectory from './CollateralDirectory';
 
 // Common Loan interface that should match your types
 interface User {
@@ -354,6 +355,16 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
 
             {/* DOCUMENTATION CHECKLIST cross-checked by the loan officer before submission */}
             <LoanChecklistView type={loan.type} details={loan.details} />
+
+            {Array.isArray(loan.details?.collateralPhotos) && loan.details.collateralPhotos.length > 0 && (
+              <div className="pdf-section">
+                <CollateralDirectory
+                  clientName={loan.name}
+                  photos={loan.details.collateralPhotos}
+                  readOnly
+                />
+              </div>
+            )}
 
           </div>
 
