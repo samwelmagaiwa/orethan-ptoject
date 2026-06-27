@@ -189,7 +189,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
               </div>
 
               <div className="cdir-assets">
-                {photo.items.map((item) => (
+                {(photo.items || []).map((item) => (
                   <div key={item.id} className={`cdir-asset-row ${!item.jina ? "cdir-asset-row-empty" : ""}`}>
                     <button
                       type="button"
@@ -212,7 +212,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
                     </div>
                   </div>
                 ))}
-                {photo.items.length === 0 && (
+                {(photo.items || []).length === 0 && (
                   <p className="cdir-asset-none">Hakuna mali iliyounganishwa na picha hii.</p>
                 )}
               </div>
