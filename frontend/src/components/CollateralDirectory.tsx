@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { Camera, Trash2, Eye, Loader2, Image as ImageIcon, Plus, X } from "lucide-react";
+import { Camera, Trash2, Eye, Loader2, Image as ImageIcon, X } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
@@ -129,14 +129,6 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
     onChange?.(photos.filter((_, i) => i !== index));
   };
 
-  const addAssetRow = (photoIndex: number) => {
-    onChange?.(photos.map((p, i) => (i === photoIndex ? { ...p, items: [...p.items, newAssetLink()] } : p)));
-  };
-
-  const removeAssetRow = (photoIndex: number, itemId: string) => {
-    onChange?.(photos.map((p, i) => (i === photoIndex ? { ...p, items: p.items.filter((it) => it.id !== itemId) } : p)));
-  };
-
   const applyAssetSelection = (photoIndex: number, itemId: string, option: ChattelOption) => {
     onChange?.(
       photos.map((p, i) =>
@@ -218,23 +210,12 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
                       <span className="cdir-asset-label">THAMANI DHAMANA (70%)</span>
                       <span className={item.thamaniDhamana ? "cdir-asset-money cdir-asset-money-green" : "cdir-asset-money"}>{item.thamaniDhamana ? formatMoney(item.thamaniDhamana) : "-"}</span>
                     </div>
-                    {!readOnly && (
-                      <button type="button" className="cdir-asset-remove" onClick={() => removeAssetRow(index, item.id)} title="Futa mali hii">
-                        <X size={13} />
-                      </button>
-                    )}
                   </div>
                 ))}
                 {photo.items.length === 0 && (
-                  <p className="cdir-asset-none">{readOnly ? "Hakuna mali iliyounganishwa na picha hii." : "Bado hakuna mali iliyounganishwa. Bonyeza “ONGEZA MALI” hapa chini."}</p>
+                  <p className="cdir-asset-none">Hakuna mali iliyounganishwa na picha hii.</p>
                 )}
               </div>
-
-              {!readOnly && (
-                <button type="button" className="cdir-add-asset-btn" onClick={() => addAssetRow(index)}>
-                  <Plus size={13} /> ONGEZA MALI
-                </button>
-              )}
 
               {!readOnly && (
                 <button type="button" className="cdir-delete-btn" onClick={() => setConfirmDeleteIndex(index)}>
@@ -313,7 +294,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
 
         .cdir-assets { display: flex; flex-direction: column; gap: 6px; }
         .cdir-asset-row {
-          display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 6px; align-items: stretch;
+          display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 6px; align-items: stretch;
           border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #f8fafc;
         }
         .cdir-asset-row-empty { border-color: #fca5a5; border-style: dashed; background: #fff5f5; }
@@ -329,19 +310,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
         .cdir-asset-value-col { display: flex; flex-direction: column; gap: 2px; padding: 2px 4px; }
         .cdir-asset-money { font-size: 0.76rem; font-weight: 800; color: #94a3b8; }
         .cdir-asset-money-green { color: #16a34a; }
-        .cdir-asset-remove {
-          display: flex; align-items: center; justify-content: center; background: #fee2e2; color: #dc2626;
-          border: 1px solid #fecaca; border-radius: 5px; cursor: pointer; padding: 0 6px;
-        }
-        .cdir-asset-remove:hover { background: #fecaca; }
         .cdir-asset-none { font-size: 0.72rem; color: #94a3b8; margin: 0; font-style: italic; }
-
-        .cdir-add-asset-btn {
-          display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #e0f2fe;
-          color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px 0; font-size: 0.72rem;
-          font-weight: 800; cursor: pointer;
-        }
-        .cdir-add-asset-btn:hover { background: #bae6fd; }
 
         .cdir-delete-btn {
           display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #fee2e2;
