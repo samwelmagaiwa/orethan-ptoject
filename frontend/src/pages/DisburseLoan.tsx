@@ -408,43 +408,39 @@ const DisburseLoan = () => {
                                         <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", lineHeight: "1.4" }}>I confirm details are correct for net amount of {fmt(netAmount)}.</span>
                                     </label>
                                 </div>
+
+                                {/* ACTION BUTTONS — same row, beneath the confirmation field */}
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={() => printDoc("Voucher", buildVoucherBody())}
+                                        style={{ flex: 1, padding: "11px 6px", border: "1px solid #c7d2fe", borderRadius: "10px", fontSize: "11px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)", color: "#4338ca", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", transition: "all 0.25s ease", boxShadow: "0 2px 8px rgba(99,102,241,0.12)" }}
+                                        onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(99,102,241,0.28)"; e.currentTarget.style.background = "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)"; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.12)"; e.currentTarget.style.background = "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)"; }}>
+                                        <FileText size={15} /> Voucher
+                                    </button>
+                                    <button onClick={() => printDoc("Agreement", buildAgreementBody())}
+                                        style={{ flex: 1, padding: "11px 6px", border: "1px solid #bbf7d0", borderRadius: "10px", fontSize: "11px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", color: "#15803d", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", transition: "all 0.25s ease", boxShadow: "0 2px 8px rgba(34,197,94,0.12)" }}
+                                        onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(34,197,94,0.28)"; e.currentTarget.style.background = "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)"; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(34,197,94,0.12)"; e.currentTarget.style.background = "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)"; }}>
+                                        <FileText size={15} /> Agreement
+                                    </button>
+                                    <button onClick={() => navigate(-1)}
+                                        style={{ flex: 1, padding: "11px 6px", border: "1px solid #e2e8f0", borderRadius: "10px", fontSize: "11px", fontWeight: 700, cursor: "pointer", background: "white", color: "#64748b", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", transition: "all 0.25s ease" }}
+                                        onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#dc2626"; e.currentTarget.style.borderColor = "#fecaca"; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}>
+                                        Discard
+                                    </button>
+                                    <button onClick={handleDisburse} disabled={!canDisburse || submitting}
+                                        style={{ flex: 1.4, padding: "11px 6px", border: "none", borderRadius: "10px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", cursor: canDisburse ? "pointer" : "not-allowed", background: canDisburse ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" : "#cbd5e1", color: canDisburse ? "white" : "#94a3b8", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", transition: "all 0.25s ease", boxShadow: canDisburse ? "0 4px 14px rgba(59, 130, 246, 0.4)" : "none" }}
+                                        onMouseOver={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(59, 130, 246, 0.5)"; e.currentTarget.style.background = "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"; } }}
+                                        onMouseOut={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(59, 130, 246, 0.4)"; e.currentTarget.style.background = "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"; } }}>
+                                        {submitting ? "..." : "💰 Disburse"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                     </div>
 
-                </div>
-
-                {/* ACTION BUTTONS */}
-                <div style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)", padding: "28px 40px", display: "flex", gap: "16px", justifyContent: "space-between", alignItems: "center", borderTop: "2px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", gap: "14px" }}>
-                        <button onClick={() => printDoc("Voucher", buildVoucherBody())}
-                            style={{ padding: "14px 28px", border: "1px solid #c7d2fe", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)", color: "#4338ca", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.3s ease", boxShadow: "0 2px 8px rgba(99,102,241,0.1)" }}
-                            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(99,102,241,0.25)"; e.currentTarget.style.background = "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)"; }}
-                            onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.1)"; e.currentTarget.style.background = "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)"; }}>
-                            <FileText size={16} /> Voucher
-                        </button>
-                        <button onClick={() => printDoc("Agreement", buildAgreementBody())}
-                            style={{ padding: "14px 28px", border: "1px solid #bbf7d0", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", color: "#15803d", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.3s ease", boxShadow: "0 2px 8px rgba(34,197,94,0.1)" }}
-                            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(34,197,94,0.25)"; e.currentTarget.style.background = "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)"; }}
-                            onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(34,197,94,0.1)"; e.currentTarget.style.background = "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)"; }}>
-                            <FileText size={16} /> Agreement
-                        </button>
-                    </div>
-                    <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                        <button onClick={() => navigate(-1)}
-                            style={{ padding: "14px 28px", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "white", color: "#64748b", transition: "all 0.3s ease" }}
-                            onMouseOver={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#dc2626"; e.currentTarget.style.borderColor = "#fecaca"; }}
-                            onMouseOut={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}>
-                            Discard
-                        </button>
-                        <button onClick={handleDisburse} disabled={!canDisburse || submitting}
-                            style={{ padding: "14px 36px", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", cursor: canDisburse ? "pointer" : "not-allowed", background: canDisburse ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" : "#cbd5e1", color: canDisburse ? "white" : "#94a3b8", transition: "all 0.3s ease", boxShadow: canDisburse ? "0 6px 20px rgba(59, 130, 246, 0.4)" : "none", display: "flex", alignItems: "center", gap: "10px" }}
-                            onMouseOver={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 30px rgba(59, 130, 246, 0.5)"; e.currentTarget.style.background = "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"; } }}
-                            onMouseOut={(e) => { if (canDisburse) { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(59, 130, 246, 0.4)"; e.currentTarget.style.background = "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"; } }}>
-                            {submitting ? "Processing..." : "💰 Disburse Funds"}
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
