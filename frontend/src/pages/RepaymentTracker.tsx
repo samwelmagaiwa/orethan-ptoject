@@ -573,51 +573,69 @@ const RepaymentTracker = () => {
         {showSchedule && (
           <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              style={{ width: "100%", maxWidth: 760, maxHeight: "85vh", borderRadius: 20, background: "white", boxShadow: "0 25px 60px rgba(0,0,0,0.4)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <div style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", padding: "1.3rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h2 style={{ fontSize: "1.2rem", fontWeight: 900, margin: 0 }}>Repayment Schedule</h2>
-                  {scheduleData && <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", opacity: 0.85, fontWeight: 600 }}>{scheduleData.customer} • {scheduleData.loan_number}</p>}
+              style={{ width: "100%", maxWidth: 780, maxHeight: "85vh", borderRadius: 24, background: "#fffcf6", border: "1px solid #e3d7b0", boxShadow: "0 30px 70px rgba(74,60,26,0.35)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ position: "relative", background: "linear-gradient(135deg, #102a43 0%, #1d3a5f 55%, #2c5282 100%)", padding: "1.5rem 1.7rem 1.7rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "flex-start", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(226,188,138,0.12)" }} />
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.62rem", fontWeight: 800, letterSpacing: "1.5px", textTransform: "uppercase", color: "#e2bc8a", background: "rgba(226,188,138,0.15)", padding: "4px 10px", borderRadius: 20, marginBottom: 10 }}>
+                    <Calendar size={11} /> Loan Repayment Plan
+                  </span>
+                  <h2 style={{ fontSize: "1.35rem", fontWeight: 900, margin: 0, letterSpacing: "-0.3px" }}>Repayment Schedule</h2>
+                  {scheduleData && <p style={{ margin: "0.35rem 0 0", fontSize: "0.8rem", color: "#cbd9ea", fontWeight: 700, letterSpacing: "0.3px" }}>{scheduleData.customer} <span style={{ color: "#e2bc8a" }}>•</span> {scheduleData.loan_number}</p>}
                 </div>
-                <button onClick={() => setShowSchedule(false)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+                <button onClick={() => setShowSchedule(false)} style={{ position: "relative", zIndex: 1, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.25)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.26)"; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.14)"; }}>
+                  <X size={18} />
+                </button>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, #e2bc8a, #c19a6b 50%, #e2bc8a)" }} />
               </div>
-              <div style={{ padding: "1.2rem 1.5rem", overflowY: "auto" }}>
+              <div style={{ padding: "1.3rem 1.6rem 1.6rem", overflowY: "auto", background: "#fffcf6" }}>
                 {scheduleLoading ? (
-                  <div style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Loading schedule...</div>
+                  <div style={{ textAlign: "center", padding: "3rem", color: "#8a7338", fontWeight: 600 }}>Loading schedule...</div>
                 ) : (
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr>
-                        {["Installment", "Due Date", "Principal", "Interest", "Total", "Status"].map((h, i) => (
-                          <th key={h} style={{ textAlign: i >= 2 && i <= 4 ? "right" : "left", padding: "0 0.7rem 0.8rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(scheduleData?.schedule || []).map((s) => {
-                        const cfg = s.status === "paid"
-                          ? { bg: "#ecfdf5", color: "#059669", label: "🟢 Paid" }
-                          : s.status === "overdue"
-                            ? { bg: "#fef2f2", color: "#dc2626", label: "🔴 Overdue" }
-                            : { bg: "#fffbeb", color: "#d97706", label: "🟡 Pending" };
-                        return (
-                          <tr key={s.installment_number} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            <td style={{ padding: "0.8rem 0.7rem", fontWeight: 800, color: "#334155", fontSize: "0.82rem" }}>#{s.installment_number}</td>
-                            <td style={{ padding: "0.8rem 0.7rem", fontSize: "0.8rem", color: "#64748b" }}>{new Date(s.due_date).toLocaleDateString("en-GB")}</td>
-                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{fmt(s.principal_amount)}</td>
-                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: "0.82rem" }}>{fmt(s.interest_amount)}</td>
-                            <td style={{ padding: "0.8rem 0.7rem", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(s.total_amount)}</td>
-                            <td style={{ padding: "0.8rem 0.7rem" }}>
-                              <span style={{ background: cfg.bg, color: cfg.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, whiteSpace: "nowrap" }}>{cfg.label}</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {scheduleData && scheduleData.schedule.length === 0 && (
-                        <tr><td colSpan={6} style={{ textAlign: "center", padding: "2.5rem", color: "#94a3b8", fontWeight: 600 }}>No schedule generated for this loan</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <div style={{ borderRadius: 16, border: "1px solid #efe6d0", overflow: "hidden", background: "#ffffff" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: "#f8f1de" }}>
+                          {["Installment", "Due Date", "Principal", "Interest", "Total", "Status"].map((h, i) => (
+                            <th key={h} style={{ textAlign: i >= 2 && i <= 4 ? "right" : "left", padding: "0.85rem 0.9rem", fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.2px", color: "#8a7338", borderBottom: "1.5px solid #efe6d0" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(scheduleData?.schedule || []).map((s, idx) => {
+                          const cfg = s.status === "paid"
+                            ? { bg: "#ecfdf5", color: "#059669", dot: "#10b981", label: "Paid" }
+                            : s.status === "overdue"
+                              ? { bg: "#fef2f2", color: "#dc2626", dot: "#ef4444", label: "Overdue" }
+                              : { bg: "#fff7e6", color: "#b45309", dot: "#f59e0b", label: "Pending" };
+                          return (
+                            <tr key={s.installment_number} style={{ background: idx % 2 === 0 ? "#ffffff" : "#fffcf6", borderBottom: "1px solid #f5efe0", transition: "background 0.15s" }}
+                              onMouseOver={(e) => { e.currentTarget.style.background = "#fbf3e0"; }}
+                              onMouseOut={(e) => { e.currentTarget.style.background = idx % 2 === 0 ? "#ffffff" : "#fffcf6"; }}>
+                              <td style={{ padding: "0.85rem 0.9rem" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 30, height: 24, padding: "0 8px", borderRadius: 8, background: "#102a43", color: "#e2bc8a", fontWeight: 800, fontSize: "0.74rem" }}>#{s.installment_number}</span>
+                              </td>
+                              <td style={{ padding: "0.85rem 0.9rem", fontSize: "0.8rem", color: "#7a6a4a", fontWeight: 600 }}>{new Date(s.due_date).toLocaleDateString("en-GB")}</td>
+                              <td style={{ padding: "0.85rem 0.9rem", textAlign: "right", fontWeight: 700, color: "#3f3318", fontSize: "0.82rem" }}>{fmt(s.principal_amount)}</td>
+                              <td style={{ padding: "0.85rem 0.9rem", textAlign: "right", fontWeight: 700, color: "#8a7a52", fontSize: "0.82rem" }}>{fmt(s.interest_amount)}</td>
+                              <td style={{ padding: "0.85rem 0.9rem", textAlign: "right", fontWeight: 900, color: "#102a43", fontSize: "0.86rem" }}>{fmt(s.total_amount)}</td>
+                              <td style={{ padding: "0.85rem 0.9rem" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: cfg.bg, color: cfg.color, padding: "5px 12px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, whiteSpace: "nowrap" }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot, display: "inline-block" }} />
+                                  {cfg.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {scheduleData && scheduleData.schedule.length === 0 && (
+                          <tr><td colSpan={6} style={{ textAlign: "center", padding: "2.5rem", color: "#8a7338", fontWeight: 600 }}>No schedule generated for this loan</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </motion.div>
