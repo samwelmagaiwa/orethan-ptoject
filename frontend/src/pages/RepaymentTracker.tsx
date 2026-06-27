@@ -211,16 +211,16 @@ const RepaymentTracker = () => {
     <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif", color: "#1e293b" }}>
 
       {/* ─── STAT CARDS — SEPARATE BORDERED CARDS WITH SPACING (WRAPPING) ─── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(225px, 1fr))", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
         {statCards.map((card, i) => (
           <div key={i} className="rt-stat-card"
-            style={{ ...CARD_STYLE, padding: "1.15rem 1.2rem", display: "flex", alignItems: "center", gap: "0.85rem", transition: "all 0.2s" }}>
+            style={{ ...CARD_STYLE, padding: "1.15rem 1.2rem", display: "flex", alignItems: "center", gap: "0.85rem", transition: "all 0.2s", overflow: "hidden" }}>
             <div style={{ width: 44, height: 44, borderRadius: "12px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(15,23,42,0.12)" }}>
               <span style={{ transform: "scale(0.85)" }}>{card.icon}</span>
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
               <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", color: "#94a3b8", margin: "0 0 0.3rem", lineHeight: 1.25, wordBreak: "break-word" }}>{card.label}</p>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap" }}>{card.value}</h3>
+              <h3 title={String(card.value)} style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.value}</h3>
             </div>
           </div>
         ))}
@@ -580,7 +580,6 @@ const RepaymentTracker = () => {
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.62rem", fontWeight: 800, letterSpacing: "1.5px", textTransform: "uppercase", color: "#e2bc8a", background: "rgba(226,188,138,0.15)", padding: "4px 10px", borderRadius: 20, marginBottom: 10 }}>
                     <Calendar size={11} /> Loan Repayment Plan
                   </span>
-                  <h2 style={{ fontSize: "1.35rem", fontWeight: 900, margin: 0, letterSpacing: "-0.3px" }}>Repayment Schedule</h2>
                   {scheduleData && <p style={{ margin: "0.35rem 0 0", fontSize: "0.8rem", color: "#cbd9ea", fontWeight: 700, letterSpacing: "0.3px" }}>{scheduleData.customer} <span style={{ color: "#e2bc8a" }}>•</span> {scheduleData.loan_number}</p>}
                 </div>
                 <button onClick={() => setShowSchedule(false)} style={{ position: "relative", zIndex: 1, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.25)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}
