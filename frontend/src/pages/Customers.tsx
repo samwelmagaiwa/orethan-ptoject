@@ -6,6 +6,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
+import { printDocument } from "../utils/printDoc";
 
 // INLINE SVG ICONS FOR PREMIUM LOOK
 const IconSearch = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
@@ -383,43 +384,20 @@ const Customers: React.FC = () => {
 
     const printVoucher = (loan: Loan) => {
         setActiveDropdown(null);
-        const win = window.open("", "_blank", "width=480,height=640");
-        if (!win) return;
-        win.document.write(`
-            <html>
-            <head><title>Hati ya Malipo - #${loan.id}</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
-                h2 { margin-bottom: 4px; }
-                .sub { color: #64748b; font-size: 13px; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-                td { padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-                td:first-child { color: #64748b; }
-                td:last-child { text-align: right; font-weight: 700; }
-                .footer { margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; }
-            </style>
-            </head>
-            <body>
-                <h2>Hati ya Malipo / Disbursement Voucher</h2>
-                <div class="sub">Imetolewa: ${new Date().toLocaleString()}</div>
-                <table>
-                    <tr><td>Namba ya Akaunti</td><td>${loan.loan_account_number || "—"}</td></tr>
-                    <tr><td>ID Mkopo</td><td>#${loan.id}</td></tr>
-                    <tr><td>Mwombaji</td><td>${loan.name}</td></tr>
-                    <tr><td>Simu</td><td>${loan.phone || "N/A"}</td></tr>
-                    <tr><td>Aina ya Mkopo</td><td style="text-transform:capitalize">${loan.type}</td></tr>
-                    <tr><td>Kiasi Kilichotolewa</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
-                    <tr><td>Deni Lililobaki</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
-                    <tr><td>Tarehe ya Kwanza ya Kulipa</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
-                    <tr><td>Hali ya Mkopo</td><td style="color:#16a34a;font-weight:700">ACTIVE</td></tr>
-                </table>
-                <div class="footer">Hati hii imetolewa na mfumo wa Orethan Microfinance</div>
-            </body>
-            </html>
-        `);
-        win.document.close();
-        win.focus();
-        win.print();
+        const bodyHtml = `
+            <table>
+                <tr><td>Namba ya Akaunti</td><td>${loan.loan_account_number || "—"}</td></tr>
+                <tr><td>ID Mkopo</td><td>#${loan.id}</td></tr>
+                <tr><td>Mwombaji</td><td>${loan.name}</td></tr>
+                <tr><td>Simu</td><td>${loan.phone || "N/A"}</td></tr>
+                <tr><td>Aina ya Mkopo</td><td style="text-transform:capitalize">${loan.type}</td></tr>
+                <tr><td>Kiasi Kilichotolewa</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
+                <tr><td>Deni Lililobaki</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
+                <tr><td>Tarehe ya Kwanza ya Kulipa</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
+                <tr><td>Hali ya Mkopo</td><td style="color:#16a34a;font-weight:700">ACTIVE</td></tr>
+            </table>
+        `;
+        printDocument("Hati ya Malipo / Disbursement Voucher", bodyHtml, `#${loan.id}`);
     };
 
     const deleteLoan = (id: number) => {
