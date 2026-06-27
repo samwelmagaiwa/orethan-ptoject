@@ -43,7 +43,25 @@ const DisburseLoan = () => {
     const [confirm, setConfirm] = useState(false);
     const [password, setPassword] = useState("");
 
+    const getLoggedInUserName = () => {
+        try {
+            const stored = localStorage.getItem("user");
+            if (stored) {
+                const u = JSON.parse(stored);
+                return u.name || "";
+            }
+        } catch { /* ignore parsing errors */ }
+        return "";
+    };
+
     useEffect(() => { fetchPreview(); }, [id]);
+
+    // Cashier processing the disbursement is always the logged-in user —
+    // capture their name automatically instead of asking them to type it.
+    useEffect(() => {
+        const name = getLoggedInUserName();
+        if (name) setPayDetails((p) => ({ ...p, cashier: p.cashier || name }));
+    }, []);
 
     const fetchPreview = async () => {
         setLoading(true);
@@ -351,7 +369,7 @@ const DisburseLoan = () => {
                                 </h3>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                     <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Selected Channel</span>
-                                    <select value={method} onChange={(e) => { setMethod(e.target.value); setPayDetails({}); }} style={{ width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontWeight: 600, outline: "none", color: "#0f172a" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}>
+                                    <select value={method} onChange={(e) => { const newMethod = e.target.value; setMethod(newMethod); setPayDetails(newMethod === "cash" ? { cashier: getLoggedInUserName() } : {}); }} style={{ width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontWeight: 600, outline: "none", color: "#0f172a" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}>
                                         {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                                     </select>
                                 </div>
@@ -375,14 +393,14 @@ const DisburseLoan = () => {
                                 )}
                             </div>
 
-                            {/* Admin PIN */}
+                            {/* Cashier PIN */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                                 <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                    <ShieldCheck size={18} /> Admin Authorization
+                                    <ShieldCheck size={18} /> Cashier Authorization
                                 </h3>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                        <span style={{ fontSize: "12px", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Admin PIN / Password</span>
+                                        <span style={{ fontSize: "12px", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Your PIN / Password</span>
                                         <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", color: "#0f172a", fontSize: "16px", letterSpacing: "2px", outline: "none" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
                                     </div>
                                     <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", padding: "14px", background: confirm ? "#eff6ff" : "#f8fafc", borderRadius: "8px", border: confirm ? "1px solid #3b82f6" : "1px dashed #cbd5e1" }}>
