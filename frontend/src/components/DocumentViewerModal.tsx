@@ -1,19 +1,32 @@
 import { X, Download } from "lucide-react";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
 
+interface AssetLink {
+  id: string;
+  jina: string;
+  thamaniSoko: string;
+  thamaniDhamana: string;
+}
+
 interface Props {
   isOpen: boolean;
   url: string | null;
   name?: string | null;
   mimeType?: string | null;
-  note?: string | null;
+  items?: AssetLink[];
   onClose: () => void;
 }
 
 const isPdf = (url: string, mimeType?: string | null) =>
   (mimeType || "").includes("pdf") || url.toLowerCase().endsWith(".pdf");
 
-const DocumentViewerModal = ({ isOpen, url, name, mimeType, note, onClose }: Props) => {
+const formatMoney = (v: string) => {
+  const n = Number(v);
+  if (!n) return "-";
+  return `TZS ${n.toLocaleString("en-US")}`;
+};
+
+const DocumentViewerModal = ({ isOpen, url, name, mimeType, items, onClose }: Props) => {
   if (!isOpen || !url) return null;
   const resolved = resolveFileUrl(url);
   const pdf = isPdf(resolved, mimeType);
@@ -37,10 +50,18 @@ const DocumentViewerModal = ({ isOpen, url, name, mimeType, note, onClose }: Pro
             <img src={resolved} alt={name || "Nyaraka"} className="dvm-image" />
           )}
         </div>
-        {note && (
+        {items && items.length > 0 && (
           <div className="dvm-note">
-            <span className="dvm-note-label">Maelezo ya Picha (Note)</span>
-            <p className="dvm-note-text">{note}</p>
+            <span className="dvm-note-label">Mali Zilizounganishwa na Picha Hii</span>
+            <div className="dvm-asset-list">
+              {items.filter((it) => it.jina).map((it) => (
+                <div key={it.id} className="dvm-asset-row">
+                  <span><strong>JINA LA MALI:</strong> {it.jina}</span>
+                  <span><strong>THAMANI SOKO KWA SASA (TZS):</strong> {formatMoney(it.thamaniSoko)}</span>
+                  <span className="dvm-asset-green"><strong>THAMANI DHAMANA (70%):</strong> {formatMoney(it.thamaniDhamana)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -60,7 +81,9 @@ const DocumentViewerModal = ({ isOpen, url, name, mimeType, note, onClose }: Pro
         .dvm-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
         .dvm-note { flex-shrink: 0; padding: 12px 18px; background: #fffbeb; border-top: 1px solid #fde68a; max-height: 25%; overflow-y: auto; }
         .dvm-note-label { display: block; font-size: 10px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
-        .dvm-note-text { font-size: 13px; color: #1e293b; margin: 0; line-height: 1.4; white-space: pre-wrap; }
+        .dvm-asset-list { display: flex; flex-direction: column; gap: 8px; }
+        .dvm-asset-row { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: #1e293b; background: #fff; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; }
+        .dvm-asset-green { color: #16a34a; }
       `}</style>
     </div>
   );

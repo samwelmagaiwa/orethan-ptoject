@@ -1,17 +1,31 @@
 import { useState } from "react";
 import axios from "axios";
-import { Camera, Trash2, Eye, Loader2, Image as ImageIcon } from "lucide-react";
+import { Camera, Trash2, Eye, Loader2, Image as ImageIcon, Plus, X } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
+export interface CollateralAssetLink {
+  id: string;
+  jina: string;
+  thamaniSoko: string;
+  thamaniDhamana: string;
+}
+
 export interface CollateralPhoto {
   url: string;
   name: string;
   mimeType: string;
-  note: string;
+  items: CollateralAssetLink[];
+}
+
+/** One option sourced from the FOMU YA KUWEKA REHANI MALI (Chattel Form) item list. */
+export interface ChattelOption {
+  jina: string;
+  thamaniSoko: string;
+  thamaniDhamana: string;
 }
 
 interface Props {
@@ -19,14 +33,77 @@ interface Props {
   onChange?: (photos: CollateralPhoto[]) => void;
   /** Used to label the directory, e.g. the applicant's name once filled in. */
   clientName?: string;
-  /** Approver view: hide upload/delete/edit-note, show notes as static text. */
+  /** Approver view: hide upload/delete/add-asset, show linked assets as static text. */
   readOnly?: boolean;
+  /** Mali list from FOMU YA KUWEKA REHANI MALI, used to populate the selection popup. */
+  chattelOptions?: ChattelOption[];
 }
 
-const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }: Props) => {
+const formatMoney = (v: string) => {
+  const n = Number(v);
+  if (!n) return "";
+  return n.toLocaleString("en-US");
+};
+
+const newAssetLink = (): CollateralAssetLink => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  jina: "",
+  thamaniSoko: "",
+  thamaniDhamana: "",
+});
+
+const AssetPickerModal = ({
+  options,
+  onSelect,
+  onClose,
+}: {
+  options: ChattelOption[];
+  onSelect: (option: ChattelOption) => void;
+  onClose: () => void;
+}) => {
+  const valid = options.filter((o) => o.jina.trim());
+  return (
+    <div className="cdir-picker-overlay" onClick={onClose}>
+      <div className="cdir-picker-card" onClick={(e) => e.stopPropagation()}>
+        <div className="cdir-picker-header">
+          <div>
+            <p className="cdir-picker-title">CHAGUA MALI</p>
+            <p className="cdir-picker-subtitle">
+              Kutoka FOMU YA KUWEKA REHANI MALI (CHATTEL FORM) — Tafadhali orodhesha mali unazoweka kama dhamana hapa chini
+            </p>
+          </div>
+          <button type="button" className="cdir-picker-close" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="cdir-picker-body">
+          {valid.length === 0 ? (
+            <div className="cdir-picker-empty">
+              <p>Hakuna mali zilizoorodheshwa kwenye Fomu ya Rehani Mali bado.</p>
+              <span>Tafadhali jaza FOMU YA KUWEKA REHANI MALI kwanza kabla ya kuchagua hapa.</span>
+            </div>
+          ) : (
+            valid.map((opt, i) => (
+              <button type="button" key={i} className="cdir-picker-option" onClick={() => onSelect(opt)}>
+                <span className="cdir-picker-option-name">{opt.jina}</span>
+                <span className="cdir-picker-option-values">
+                  <span>Thamani Soko: <strong>{opt.thamaniSoko ? `TZS ${formatMoney(opt.thamaniSoko)}` : "-"}</strong></span>
+                  <span className="cdir-picker-option-green">Thamani Dhamana (70%): <strong>{opt.thamaniDhamana ? `TZS ${formatMoney(opt.thamaniDhamana)}` : "-"}</strong></span>
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, chattelOptions = [] }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [viewerPhoto, setViewerPhoto] = useState<CollateralPhoto | null>(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<{ photoIndex: number; itemId: string } | null>(null);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -39,7 +116,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
       const { document_url, name, mime_type } = res.data;
-      onChange?.([...photos, { url: document_url, name, mimeType: mime_type, note: "" }]);
+      onChange?.([...photos, { url: document_url, name, mimeType: mime_type, items: [newAssetLink()] }]);
     } catch (err) {
       console.error("Collateral photo upload failed", err);
       alert("Imeshindwa kupakia picha. Tafadhali jaribu tena.");
@@ -48,12 +125,34 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
     }
   };
 
-  const updateNote = (index: number, note: string) => {
-    onChange?.(photos.map((p, i) => (i === index ? { ...p, note } : p)));
-  };
-
   const removePhoto = (index: number) => {
     onChange?.(photos.filter((_, i) => i !== index));
+  };
+
+  const addAssetRow = (photoIndex: number) => {
+    onChange?.(photos.map((p, i) => (i === photoIndex ? { ...p, items: [...p.items, newAssetLink()] } : p)));
+  };
+
+  const removeAssetRow = (photoIndex: number, itemId: string) => {
+    onChange?.(photos.map((p, i) => (i === photoIndex ? { ...p, items: p.items.filter((it) => it.id !== itemId) } : p)));
+  };
+
+  const applyAssetSelection = (photoIndex: number, itemId: string, option: ChattelOption) => {
+    onChange?.(
+      photos.map((p, i) =>
+        i === photoIndex
+          ? {
+              ...p,
+              items: p.items.map((it) =>
+                it.id === itemId
+                  ? { ...it, jina: option.jina, thamaniSoko: option.thamaniSoko, thamaniDhamana: option.thamaniDhamana }
+                  : it
+              ),
+            }
+          : p
+      )
+    );
+    setPickerTarget(null);
   };
 
   return (
@@ -61,7 +160,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
       <div className="cdir-header">
         <div>
           <p className="cdir-title">DIRECTORI YA DHAMANA YA MTEJA{clientName ? ` — ${clientName.toUpperCase()}` : ""}</p>
-          <p className="cdir-hint">Pakia picha za mali zote zilizopigwa picha shambani/eneo la mteja kama dhamana ya mkopo. Andika maelezo mafupi ya kila picha.</p>
+          <p className="cdir-hint">Pakia picha za mali zote zilizopigwa picha shambani/eneo la mteja kama dhamana ya mkopo, kisha unganisha kila picha na mali yake kutoka Fomu ya Rehani Mali.</p>
         </div>
         {!readOnly && (
           <label className="cdir-add-btn">
@@ -96,17 +195,47 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
                 <img src={resolveFileUrl(photo.url)} alt={photo.name} />
                 <span className="cdir-view-overlay"><Eye size={16} /> Tazama</span>
               </div>
-              {readOnly ? (
-                photo.note && <p className="cdir-note-static"><span>Maelezo:</span> {photo.note}</p>
-              ) : (
-                <textarea
-                  className="cdir-note-input"
-                  placeholder="Andika maelezo ya mali hii (mfano: Pikipiki, namba ya usajili T123ABC)..."
-                  value={photo.note}
-                  onChange={(e) => updateNote(index, e.target.value)}
-                  rows={2}
-                />
+
+              <div className="cdir-assets">
+                {photo.items.map((item) => (
+                  <div key={item.id} className={`cdir-asset-row ${!item.jina ? "cdir-asset-row-empty" : ""}`}>
+                    <button
+                      type="button"
+                      className="cdir-asset-name"
+                      disabled={readOnly}
+                      onClick={() => !readOnly && setPickerTarget({ photoIndex: index, itemId: item.id })}
+                    >
+                      <span className="cdir-asset-label">JINA LA MALI</span>
+                      <span className={item.jina ? "cdir-asset-value" : "cdir-asset-placeholder"}>
+                        {item.jina || (readOnly ? "-" : "Chagua mali...")}
+                      </span>
+                    </button>
+                    <div className="cdir-asset-value-col">
+                      <span className="cdir-asset-label">THAMANI SOKO (TZS)</span>
+                      <span className={item.thamaniSoko ? "cdir-asset-money cdir-asset-money-green" : "cdir-asset-money"}>{item.thamaniSoko ? formatMoney(item.thamaniSoko) : "-"}</span>
+                    </div>
+                    <div className="cdir-asset-value-col">
+                      <span className="cdir-asset-label">THAMANI DHAMANA (70%)</span>
+                      <span className={item.thamaniDhamana ? "cdir-asset-money cdir-asset-money-green" : "cdir-asset-money"}>{item.thamaniDhamana ? formatMoney(item.thamaniDhamana) : "-"}</span>
+                    </div>
+                    {!readOnly && (
+                      <button type="button" className="cdir-asset-remove" onClick={() => removeAssetRow(index, item.id)} title="Futa mali hii">
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {photo.items.length === 0 && (
+                  <p className="cdir-asset-none">{readOnly ? "Hakuna mali iliyounganishwa na picha hii." : "Bado hakuna mali iliyounganishwa. Bonyeza “ONGEZA MALI” hapa chini."}</p>
+                )}
+              </div>
+
+              {!readOnly && (
+                <button type="button" className="cdir-add-asset-btn" onClick={() => addAssetRow(index)}>
+                  <Plus size={13} /> ONGEZA MALI
+                </button>
               )}
+
               {!readOnly && (
                 <button type="button" className="cdir-delete-btn" onClick={() => setConfirmDeleteIndex(index)}>
                   <Trash2 size={13} /> Futa Picha
@@ -122,14 +251,14 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
         url={viewerPhoto?.url ?? null}
         name={viewerPhoto?.name}
         mimeType={viewerPhoto?.mimeType}
-        note={viewerPhoto?.note}
+        items={viewerPhoto?.items}
         onClose={() => setViewerPhoto(null)}
       />
 
       <ConfirmModal
         isOpen={confirmDeleteIndex !== null}
         title="Futa Picha ya Dhamana"
-        message="Una hakika unataka kufuta picha hii ya dhamana? Maelezo yake yataondolewa pia."
+        message="Una hakika unataka kufuta picha hii ya dhamana? Mali zilizounganishwa nayo zitaondolewa pia."
         type="danger"
         confirmText="Ndio, Futa"
         cancelText="Ghairi"
@@ -139,6 +268,14 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
         }}
         onCancel={() => setConfirmDeleteIndex(null)}
       />
+
+      {pickerTarget && (
+        <AssetPickerModal
+          options={chattelOptions}
+          onSelect={(opt) => applyAssetSelection(pickerTarget.photoIndex, pickerTarget.itemId, opt)}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
 
       <style>{`
         .cdir-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -160,9 +297,12 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
         .cdir-empty p { margin: 4px 0 0; font-weight: 700; color: #64748b; font-size: 0.85rem; }
         .cdir-empty span { font-size: 0.75rem; }
 
-        .cdir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+        .cdir-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        @media (max-width: 1100px) { .cdir-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 720px) { .cdir-grid { grid-template-columns: 1fr; } }
+
         .cdir-card { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
-        .cdir-thumb { position: relative; width: 100%; height: 130px; border-radius: 8px; overflow: hidden; cursor: pointer; background: #f1f5f9; }
+        .cdir-thumb { position: relative; width: 100%; height: 150px; border-radius: 8px; overflow: hidden; cursor: pointer; background: #f1f5f9; }
         .cdir-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .cdir-view-overlay {
           position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -170,19 +310,65 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false }:
           transition: opacity 0.15s;
         }
         .cdir-thumb:hover .cdir-view-overlay { opacity: 1; }
-        .cdir-note-input {
-          width: 100%; resize: vertical; min-height: 44px; border: 1px solid #e2e8f0; border-radius: 6px;
-          padding: 6px 8px; font-size: 0.76rem; font-family: inherit; color: #1e293b; box-sizing: border-box;
+
+        .cdir-assets { display: flex; flex-direction: column; gap: 6px; }
+        .cdir-asset-row {
+          display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 6px; align-items: stretch;
+          border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #f8fafc;
         }
-        .cdir-note-input:focus { outline: none; border-color: #1e5fae; box-shadow: 0 0 0 2px rgba(30, 95, 174, 0.12); }
-        .cdir-note-static { font-size: 0.76rem; color: #1e293b; margin: 0; line-height: 1.4; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 8px; }
-        .cdir-note-static span { font-weight: 800; color: #92400e; }
+        .cdir-asset-row-empty { border-color: #fca5a5; border-style: dashed; background: #fff5f5; }
+        .cdir-asset-name {
+          display: flex; flex-direction: column; gap: 2px; text-align: left; background: transparent; border: none;
+          cursor: pointer; padding: 2px 4px; border-radius: 4px;
+        }
+        .cdir-asset-name:hover:not(:disabled) { background: #e2e8f0; }
+        .cdir-asset-name:disabled { cursor: default; }
+        .cdir-asset-label { font-size: 0.62rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; }
+        .cdir-asset-value { font-size: 0.76rem; font-weight: 700; color: #102a43; }
+        .cdir-asset-placeholder { font-size: 0.76rem; font-weight: 700; color: #dc2626; }
+        .cdir-asset-value-col { display: flex; flex-direction: column; gap: 2px; padding: 2px 4px; }
+        .cdir-asset-money { font-size: 0.76rem; font-weight: 800; color: #94a3b8; }
+        .cdir-asset-money-green { color: #16a34a; }
+        .cdir-asset-remove {
+          display: flex; align-items: center; justify-content: center; background: #fee2e2; color: #dc2626;
+          border: 1px solid #fecaca; border-radius: 5px; cursor: pointer; padding: 0 6px;
+        }
+        .cdir-asset-remove:hover { background: #fecaca; }
+        .cdir-asset-none { font-size: 0.72rem; color: #94a3b8; margin: 0; font-style: italic; }
+
+        .cdir-add-asset-btn {
+          display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #e0f2fe;
+          color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px 0; font-size: 0.72rem;
+          font-weight: 800; cursor: pointer;
+        }
+        .cdir-add-asset-btn:hover { background: #bae6fd; }
+
         .cdir-delete-btn {
           display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #fee2e2;
           color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; padding: 5px 0; font-size: 0.72rem;
           font-weight: 700; cursor: pointer;
         }
         .cdir-delete-btn:hover { background: #fecaca; }
+
+        .cdir-picker-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 24px; }
+        .cdir-picker-card { background: #fff; border-radius: 16px; width: 520px; max-width: 96%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+        .cdir-picker-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 16px 18px; background: #102a43; color: #fff; flex-shrink: 0; }
+        .cdir-picker-title { font-size: 0.85rem; font-weight: 800; margin: 0 0 4px; letter-spacing: 0.3px; }
+        .cdir-picker-subtitle { font-size: 0.72rem; margin: 0; color: #cbd5e1; }
+        .cdir-picker-close { background: transparent; border: none; color: #fff; cursor: pointer; display: flex; align-items: center; padding: 4px; border-radius: 6px; flex-shrink: 0; }
+        .cdir-picker-close:hover { background: rgba(255,255,255,0.15); }
+        .cdir-picker-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .cdir-picker-option {
+          display: flex; flex-direction: column; gap: 4px; text-align: left; background: #f8fafc; border: 1px solid #e2e8f0;
+          border-radius: 8px; padding: 10px 12px; cursor: pointer;
+        }
+        .cdir-picker-option:hover { background: #e0f2fe; border-color: #7dd3fc; }
+        .cdir-picker-option-name { font-size: 0.82rem; font-weight: 800; color: #102a43; }
+        .cdir-picker-option-values { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.72rem; color: #475569; }
+        .cdir-picker-option-green { color: #16a34a; }
+        .cdir-picker-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 30px 16px; text-align: center; color: #94a3b8; }
+        .cdir-picker-empty p { margin: 0; font-weight: 700; color: #64748b; font-size: 0.82rem; }
+        .cdir-picker-empty span { font-size: 0.74rem; }
       `}</style>
     </div>
   );

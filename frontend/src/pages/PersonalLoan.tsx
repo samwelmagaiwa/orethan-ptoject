@@ -706,6 +706,11 @@ const PersonalLoan: React.FC = () => {
         thamaniDhamana: cleanNumber(item.thamaniDhamana)
       }));
 
+      const cleanedCollateralPhotos = form.collateralPhotos.map(photo => ({
+        ...photo,
+        items: photo.items.filter(item => item.jina)
+      }));
+
       const payload = {
         name: form.jinaKamiliLaMwombaji,
         phone: form.nambaYaSimu,
@@ -724,7 +729,8 @@ const PersonalLoan: React.FC = () => {
           wastaniKipatoKwaMwezi: cleanNumber(form.wastaniKipatoKwaMwezi),
           wastaniMatumiziKwaMwezi: cleanNumber(form.wastaniMatumiziKwaMwezi),
           dhamanaList: cleanedDhamanaList,
-          chattelItems: cleanedChattelItems
+          chattelItems: cleanedChattelItems,
+          collateralPhotos: cleanedCollateralPhotos
         },
       };
 
@@ -1737,6 +1743,9 @@ const PersonalLoan: React.FC = () => {
                   clientName={form.jinaKamiliLaMwombaji}
                   photos={form.collateralPhotos}
                   onChange={(photos) => setForm({ ...form, collateralPhotos: photos })}
+                  chattelOptions={form.chattelItems
+                    .filter((item) => item.jina)
+                    .map((item) => ({ jina: item.jina, thamaniSoko: item.thamaniSoko, thamaniDhamana: item.thamaniDhamana }))}
                 />
               </div>
             )}

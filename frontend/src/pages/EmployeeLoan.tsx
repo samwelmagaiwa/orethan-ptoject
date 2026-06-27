@@ -84,7 +84,10 @@ function EmployeeLoan() {
             employeeId: form.employeeId,
             umeajiriwa: "Ndio", // employee loans are by definition for employed applicants
             documentation_checklist: checklistState,
-            collateralPhotos: form.collateralPhotos,
+            collateralPhotos: form.collateralPhotos.map((photo) => ({
+              ...photo,
+              items: photo.items.filter((item) => item.jina),
+            })),
           },
         }
       );

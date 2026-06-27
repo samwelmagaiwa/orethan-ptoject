@@ -599,6 +599,11 @@ const GroupLoan: React.FC = () => {
         thamaniYaSasa: cleanNumber(d.thamaniYaSasa),
       }));
 
+      const cleanedCollateralPhotos = form.collateralPhotos.map(photo => ({
+        ...photo,
+        items: photo.items.filter(item => item.jina)
+      }));
+
       const payload = {
         name: form.jinaKamiliLaMwombaji,
         phone: form.simu,
@@ -614,6 +619,7 @@ const GroupLoan: React.FC = () => {
           guarantor1PhotoUrl: form.guarantor1PhotoUrl,
           guarantor2PhotoUrl: form.guarantor2PhotoUrl,
           dhamanaList: cleanedDhamanaList,
+          collateralPhotos: cleanedCollateralPhotos,
         },
       };
 
