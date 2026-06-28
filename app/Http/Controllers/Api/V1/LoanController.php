@@ -51,7 +51,7 @@ class LoanController extends Controller
     // OFFICER VIEW (Their own submitted loans)
     public function myLoans(Request $request)
     {
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -63,7 +63,7 @@ class LoanController extends Controller
     {
         // Show loans CURRENTLY at manager_review
         // OR previously at/above manager_review (to keep rejected/returned loans visible)
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->where('status', 'manager_review')
             ->orWhereHas('approvals', function ($query) {
                 // include 'rejected' so loans the manager sent back to the officer stay visible
@@ -80,7 +80,7 @@ class LoanController extends Controller
     {
         // Show loans CURRENTLY at gm_review or higher
         // OR previously processed by GM level or above
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereIn('status', ['gm_review', 'md_review', 'approved'])
             ->orWhereHas('approvals', function ($query) {
                 $query->whereIn('status', ['gm_review', 'md_review', 'approved']);
@@ -96,7 +96,7 @@ class LoanController extends Controller
     {
         // Show loans CURRENTLY at md_review or higher
         // OR previously processed by MD level
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereIn('status', ['md_review', 'approved'])
             ->orWhereHas('approvals', function ($query) {
                 $query->whereIn('status', ['md_review', 'approved']);
@@ -111,7 +111,7 @@ class LoanController extends Controller
     // FINANCE OFFICER / CASHIER VIEW (approved loans awaiting disbursement, plus already disbursed for reference)
     public function financeLoans()
     {
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereIn('status', ['approved', 'disbursed'])
             ->orderByRaw("FIELD(status, 'approved', 'disbursed')")
             ->orderBy('updated_at', 'desc')
@@ -164,13 +164,13 @@ class LoanController extends Controller
     // ALL LOANS (for debugging)
     public function allLoans()
     {
-        return Loan::with(['customer', 'approvals.user', 'user'])->orderBy('created_at', 'desc')->get();
+        return Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])->orderBy('created_at', 'desc')->get();
     }
 
     // GET SINGLE LOAN
     public function show($id)
     {
-        $loan = Loan::with(['customer', 'approvals.user', 'user'])->findOrFail($id);
+        $loan = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])->findOrFail($id);
         $this->appendBorrowerMetrics(collect([$loan]));
         return response()->json($loan);
     }
@@ -420,7 +420,7 @@ class LoanController extends Controller
     {
         // Only disbursed loans are being repaid — approved-but-undisbursed loans
         // are still awaiting the finance/cashier and must not show here.
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereNotNull('disbursed_at')
             ->where(function ($query) {
                 $query->where('payment_status', '!=', 'completed')
@@ -441,7 +441,7 @@ class LoanController extends Controller
     // GET COMPLETED LOANS
     public function completedLoans()
     {
-        $loans = Loan::with(['customer', 'approvals.user', 'user'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->where('status', 'completed')
             ->orWhere('remaining_balance', '<=', 0)
             ->orderBy('updated_at', 'desc')

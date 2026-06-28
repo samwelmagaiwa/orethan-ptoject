@@ -23,6 +23,9 @@ interface Loan {
   };
   approvals?: any[];
   created_at?: string;
+  loan_account_number?: string | null;
+  customer?: { customer_number?: string | null; email?: string | null; nida_number?: string | null } | null;
+  disbursement?: { transaction_reference?: string | null } | null;
 }
 
 const MyLoans = () => {
@@ -102,7 +105,15 @@ const MyLoans = () => {
       .finally(() => setLoading(false));
   };
 
-  const filteredLoans = loans.filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredLoans = loans.filter((l) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return [
+      l.name, l.phone, l.loan_account_number, l.id,
+      l.customer?.customer_number, l.customer?.email, l.customer?.nida_number,
+      l.disbursement?.transaction_reference,
+    ].some(f => f !== null && f !== undefined && String(f).toLowerCase().includes(q));
+  });
   const totalPages = Math.max(1, Math.ceil(filteredLoans.length / entriesPerPage));
   const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
 
@@ -183,7 +194,8 @@ const MyLoans = () => {
             <input
               type="text"
               className="search-input"
-              placeholder="Search by client name..."
+              placeholder="Search by name, phone, account no., or transaction ref..."
+              title="Search by client name, customer number, loan account number, transaction reference, phone, email, or NIDA number"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />

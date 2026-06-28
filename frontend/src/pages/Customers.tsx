@@ -19,6 +19,7 @@ const IconAlertTriangle = () => <svg width="22" height="22" viewBox="0 0 24 24" 
 
 interface Customer {
     id: number;
+    customer_number?: string | null;
     full_name: string;
     phone_number: string;
     email: string;
@@ -51,6 +52,8 @@ interface Loan {
     remaining_balance?: number | null;
     monthly_payment?: number | null;
     disbursed_at?: string | null;
+    customer?: { customer_number?: string | null; nida_number?: string | null; email?: string | null } | null;
+    disbursement?: { transaction_reference?: string | null } | null;
 }
 
 const Customers: React.FC = () => {
@@ -140,14 +143,24 @@ const Customers: React.FC = () => {
         });
     };
 
+    // Matches the search box against every field the user might reasonably type in:
+    // customer number, loan account number, transaction reference, name, phone, email, NIDA.
+    const matchesSearch = (...fields: (string | number | null | undefined)[]) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return fields.some(f => f !== null && f !== undefined && String(f).toLowerCase().includes(q));
+    };
+
     const filteredCustomers = (customers || []).filter(c =>
-        c.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.phone_number.includes(searchQuery)
+        matchesSearch(c.full_name, c.phone_number, c.email, c.nida_number, c.customer_number, c.id)
     );
 
     const filteredLoans = (loans || []).filter(l =>
-        l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.phone.includes(searchQuery)
+        matchesSearch(
+            l.name, l.phone, l.loan_account_number, l.id,
+            l.customer?.customer_number, l.customer?.email, l.customer?.nida_number,
+            l.disbursement?.transaction_reference
+        )
     );
 
     const currentListLength = user?.role === "admin" ? filteredCustomers.length : filteredLoans.length;
@@ -522,7 +535,8 @@ const Customers: React.FC = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder={user?.role === "admin" ? "Tafuta mteja..." : "Tafuta mwombaji..."}
+                            placeholder={user?.role === "admin" ? "Tafuta kwa jina, namba ya mteja, simu, barua pepe, NIDA..." : "Tafuta kwa jina, namba ya akaunti, namba ya muamala, simu..."}
+                            title="Search by customer name, customer number, loan account number, transaction reference, phone, email, or NIDA number"
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />

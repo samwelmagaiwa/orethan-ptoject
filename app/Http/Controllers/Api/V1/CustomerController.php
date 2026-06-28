@@ -14,7 +14,7 @@ class CustomerController extends Controller
     {
         $customers = Customer::with([
             'loans' => function ($q) {
-                $q->with(['approvals.user', 'user'])->orderBy('created_at', 'desc');
+                $q->with(['approvals.user', 'user', 'disbursement'])->orderBy('created_at', 'desc');
             }
         ])->get();
 
