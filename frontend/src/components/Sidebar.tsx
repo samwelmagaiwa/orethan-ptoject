@@ -102,6 +102,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessLogout = isAllowed("logout", true);
   const canAccessLoansForm = isAllowed("loans_form", userRole === "admin" || userRole === "loan_officer");
   const canAccessUsers = isAllowed("users", userRole === "admin");
+  const canAccessLoanSettings = isAllowed("loan_settings", userRole === "admin");
   const canAccessManagerReview = isAllowed("manager_review", userRole === "loan_manager" || userRole === "admin");
   const canAccessGmReview = isAllowed("gm_review", userRole === "general_manager" || userRole === "admin");
   const canAccessMdAuth = isAllowed("md_auth", userRole === "managing_director" || userRole === "admin");
@@ -164,7 +165,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         <nav className="sd-nav">
           {/* Internal — visibility now follows per-user sidebar overrides too */}
           <>
-              {(canAccessDashboard || canAccessFinanceCollections || canAccessRequests || canAccessUsers) && (
+              {(canAccessDashboard || canAccessFinanceCollections || canAccessRequests || canAccessUsers || canAccessLoanSettings) && (
                 <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
               )}
               {canAccessDashboard && (
@@ -221,6 +222,12 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <div className="sd-sub"><div className="sd-sub__link" onClick={() => navigate("/users")}>View Users</div></div>
                   )}
                 </>
+              )}
+              {canAccessLoanSettings && (
+                <div className={`sd-item ${isActive("/loan-settings") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-settings")} title="Loan Settings">
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">Loan Settings</span>}
+                </div>
               )}
             </>
 

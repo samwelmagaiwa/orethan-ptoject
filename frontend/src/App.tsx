@@ -31,6 +31,7 @@ import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
 import DisburseLoan from "./pages/DisburseLoan";
+import LoanSettings from "./pages/LoanSettings";
 
 import ChartOfAccounts from "./pages/ChartOfAccounts";
 import JournalEntries from "./pages/JournalEntries";
@@ -105,6 +106,25 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   const [totalPayment, setTotalPayment] = useState<number>(0);
   const [totalInterest, setTotalInterest] = useState<number>(0);
   const [totalFee, setTotalFee] = useState<number>(0);
+
+  useEffect(() => {
+    // Pre-fill the default interest/processing-fee rates from Loan Settings
+    // (admin-configurable) instead of a hardcoded guess. Runs once on mount,
+    // before the user has touched either field, so it never overwrites a
+    // value they've already typed.
+    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+    axios.get(`${API_BASE}/loan-settings`)
+      .then(res => {
+        const settings = res.data?.data;
+        if (settings?.default_interest_rate !== undefined && settings?.default_interest_rate !== null) {
+          setInterestRate(Number(settings.default_interest_rate));
+        }
+        if (settings?.default_processing_fee_rate !== undefined && settings?.default_processing_fee_rate !== null) {
+          setProcessingFee(Number(settings.default_processing_fee_rate));
+        }
+      })
+      .catch(() => { /* keep the built-in fallback defaults if this fails */ });
+  }, []);
 
   useEffect(() => {
     // Pre-populate from draft if exists
@@ -1016,6 +1036,17 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <Users />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/loan-settings"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <LoanSettings />
                 </MainLayout>
               </ProtectedRoute>
             }

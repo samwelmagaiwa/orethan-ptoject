@@ -69,6 +69,7 @@ class User extends Authenticatable
         'finance_collections',
         'requests',
         'users',
+        'loan_settings',
         'loans_form',
         'manager_review',
         'gm_review',
