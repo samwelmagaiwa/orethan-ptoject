@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\BankReconciliation;
 use App\Models\ChartOfAccount;
+use App\Services\AccountingService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\Log;
 class BankReconciliationController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(protected AccountingService $accounting)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -37,6 +42,39 @@ class BankReconciliationController extends Controller
 
         $reconciliation = BankReconciliation::with(['account', 'items', 'reconciler'])->findOrFail($id);
         return $this->success($reconciliation, 'Bank Reconciliation loaded');
+    }
+
+    /**
+     * Diff bank-statement lines against the account's ledger and return
+     * suggested matches + unmatched book items, without saving anything yet.
+     */
+    public function autoMatch(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->canAccessAccounting()) {
+            return $this->error('You do not have access to Bank Reconciliation', 403);
+        }
+
+        $data = $request->validate([
+            'chart_of_account_id' => 'required|exists:chart_of_accounts,id',
+            'statement_date' => 'required|date',
+            'statement_lines' => 'required|array|min:1',
+            'statement_lines.*.date' => 'required|date',
+            'statement_lines.*.amount' => 'required|numeric',
+            'statement_lines.*.description' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $result = $this->accounting->matchBankStatement(
+                $data['chart_of_account_id'],
+                $data['statement_date'],
+                $data['statement_lines']
+            );
+            return $this->success($result, 'Bank statement matched against the ledger');
+        } catch (\Exception $e) {
+            Log::error('BankReconciliation autoMatch error: ' . $e->getMessage());
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     public function store(Request $request)

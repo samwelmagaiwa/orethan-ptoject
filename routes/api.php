@@ -200,6 +200,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/accounting/bank-reconciliations', [BankReconciliationController::class, 'index']);
         Route::post('/accounting/bank-reconciliations', [BankReconciliationController::class, 'store']);
+        Route::post('/accounting/bank-reconciliations/auto-match', [BankReconciliationController::class, 'autoMatch']);
         Route::get('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'show']);
     });
 

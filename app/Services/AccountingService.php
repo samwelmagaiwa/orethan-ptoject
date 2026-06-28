@@ -283,6 +283,87 @@ class AccountingService
     }
 
     /**
+     * Bank Reconciliation auto-matching: diffs a list of bank-statement lines
+     * (typed/pasted in by the preparer, since there is no live bank feed)
+     * against the account's own ledger up to the statement date. Matching is
+     * by amount (within $tolerance) and the closest date within $dayWindow
+     * days. Book transactions left over with no statement match become the
+     * suggested reconciling items (deposit in transit / outstanding payment)
+     * — replacing what used to be entirely hand-typed guesswork.
+     *
+     * @param array<int, array{date: string, amount: float, description?: string}> $statementLines
+     */
+    public function matchBankStatement(int $accountId, string $statementDate, array $statementLines, int $dayWindow = 7, float $tolerance = 0.01): array
+    {
+        $account = ChartOfAccount::findOrFail($accountId);
+        $ledger = $this->generalLedger($accountId, null, $statementDate);
+
+        // Signed amount: for a debit-normal (cash/bank) account, a debit line is
+        // money coming in (deposit), a credit line is money going out (payment).
+        $bookEntries = [];
+        foreach ($ledger['lines'] as $line) {
+            $amount = $account->normal_balance === 'debit'
+                ? ((float) $line['debit'] - (float) $line['credit'])
+                : ((float) $line['credit'] - (float) $line['debit']);
+            $bookEntries[] = [
+                'date' => $line['date'],
+                'entry_number' => $line['entry_number'],
+                'description' => $line['description'],
+                'amount' => round($amount, 2),
+            ];
+        }
+
+        $matched = [];
+        $unmatchedStatement = [];
+        $claimedBookIndexes = [];
+
+        foreach ($statementLines as $statementLine) {
+            $statementAmount = round((float) ($statementLine['amount'] ?? 0), 2);
+            $statementDateValue = $statementLine['date'] ?? null;
+
+            $bestIndex = null;
+            $bestDayDiff = null;
+            foreach ($bookEntries as $index => $entry) {
+                if (in_array($index, $claimedBookIndexes, true)) continue;
+                if (abs($entry['amount'] - $statementAmount) > $tolerance) continue;
+                $dayDiff = $statementDateValue ? abs(Carbon::parse($entry['date'])->diffInDays(Carbon::parse($statementDateValue))) : 0;
+                if ($dayDiff > $dayWindow) continue;
+                if ($bestDayDiff === null || $dayDiff < $bestDayDiff) {
+                    $bestDayDiff = $dayDiff;
+                    $bestIndex = $index;
+                }
+            }
+
+            if ($bestIndex !== null) {
+                $claimedBookIndexes[] = $bestIndex;
+                $matched[] = [
+                    'statement' => $statementLine,
+                    'book' => $bookEntries[$bestIndex],
+                ];
+            } else {
+                $unmatchedStatement[] = $statementLine;
+            }
+        }
+
+        $unmatchedBookItems = [];
+        foreach ($bookEntries as $index => $entry) {
+            if (in_array($index, $claimedBookIndexes, true)) continue;
+            $unmatchedBookItems[] = [
+                'type' => $entry['amount'] >= 0 ? 'deposit_in_transit' : 'outstanding_payment',
+                'description' => trim($entry['description'] . ($entry['entry_number'] ? " ({$entry['entry_number']})" : '')),
+                'amount' => abs($entry['amount']),
+                'date' => $entry['date'],
+            ];
+        }
+
+        return [
+            'matched' => $matched,
+            'unmatched_book_items' => $unmatchedBookItems,
+            'unmatched_statement_lines' => $unmatchedStatement,
+        ];
+    }
+
+    /**
      * Trial Balance: every active account's balance as of a date, split into the
      * Debit/Credit columns. Total debits must equal total credits.
      */

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -23,6 +25,9 @@ const BankReconciliation = () => {
   const [statementBalance, setStatementBalance] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [statementLinesText, setStatementLinesText] = useState("");
+  const [matching, setMatching] = useState(false);
+  const [matchSummary, setMatchSummary] = useState<{ matchedCount: number; unmatchedStatementLines: { date: string; amount: number; description?: string }[] } | null>(null);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
 
   const authHeaders = () => {
@@ -54,11 +59,53 @@ const BankReconciliation = () => {
     setStatementBalance("");
     setNotes("");
     setItems([]);
+    setStatementLinesText("");
+    setMatchSummary(null);
   };
 
   const addItem = (type: Item["type"]) => setItems(prev => [...prev, { type, description: "", amount: "", date: statementDate }]);
   const updateItem = (i: number, field: keyof Item, value: string) => setItems(prev => prev.map((it, idx) => (idx === i ? { ...it, [field]: value } : it)));
   const removeItem = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i));
+
+  // Parses "YYYY-MM-DD, amount, description" lines (one per row) pasted/typed
+  // from the actual paper/PDF bank statement.
+  const parseStatementLines = () => statementLinesText
+    .split("\n")
+    .map(l => l.trim())
+    .filter(Boolean)
+    .map(line => {
+      const [date, amount, ...rest] = line.split(",").map(p => p.trim());
+      return { date, amount: Number(amount), description: rest.join(", ") };
+    })
+    .filter(l => l.date && !isNaN(l.amount) && l.amount !== 0);
+
+  const autoMatch = async () => {
+    if (!accountId) {
+      setModal({ isOpen: true, title: "Select Account", message: "Choose a Cash/Bank account first", type: "warning" });
+      return;
+    }
+    const statementLines = parseStatementLines();
+    if (statementLines.length === 0) {
+      setModal({ isOpen: true, title: "No Statement Lines", message: "Paste at least one statement line as: date, amount, description", type: "warning" });
+      return;
+    }
+    setMatching(true);
+    try {
+      const res = await axios.post(`${API_BASE}/accounting/bank-reconciliations/auto-match`, {
+        chart_of_account_id: accountId,
+        statement_date: statementDate,
+        statement_lines: statementLines,
+      }, { headers: authHeaders() });
+      const { matched, unmatched_book_items, unmatched_statement_lines } = res.data.data;
+      setItems(unmatched_book_items.map((it: any) => ({ type: it.type, description: it.description, amount: String(it.amount), date: it.date })));
+      setMatchSummary({ matchedCount: matched.length, unmatchedStatementLines: unmatched_statement_lines });
+      setModal({ isOpen: true, title: "Auto-Match Complete", message: `${matched.length} transaction(s) matched against the ledger. ${unmatched_book_items.length} unmatched book item(s) were added below for you to review.`, type: "success" });
+    } catch (err: any) {
+      setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Failed to auto-match statement", type: "error" });
+    } finally {
+      setMatching(false);
+    }
+  };
 
   const submit = async () => {
     if (!accountId || !statementBalance) {
@@ -82,6 +129,18 @@ const BankReconciliation = () => {
     }
   };
 
+  const exportRows = () => list.map(r => ({
+    Account: `${r.account.code} — ${r.account.name}`, "Statement Date": r.statement_date,
+    "Statement Balance": r.statement_balance, "Book Balance": r.book_balance,
+    "Adjusted Balance": r.adjusted_balance, Difference: r.difference, Status: r.status,
+  }));
+
+  const handlePrint = () => {
+    const rowsHtml = list.map(r => `<tr><td>${r.account.code} — ${r.account.name}</td><td>${r.statement_date}</td><td style="text-align:right">${fmt(r.statement_balance)}</td><td style="text-align:right">${fmt(r.book_balance)}</td><td style="text-align:right">${fmt(r.adjusted_balance)}</td><td style="text-align:right">${fmt(r.difference)}</td><td style="text-transform:capitalize">${r.status}</td></tr>`).join("");
+    const body = `<table><thead><tr><th>Account</th><th>Statement Date</th><th style="text-align:right">Statement Balance</th><th style="text-align:right">Book Balance</th><th style="text-align:right">Adjusted Balance</th><th style="text-align:right">Difference</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+    printDocument("Bank Reconciliations", body);
+  };
+
   return (
     <div className="br-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -93,7 +152,10 @@ const BankReconciliation = () => {
             <h1>Bank Reconciliation</h1>
             <p>Compare a bank statement balance against the GL-derived book balance</p>
           </div>
-          <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Reconciliation</button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
+            <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Reconciliation</button>
+          </div>
         </div>
 
         {loading ? (
@@ -143,7 +205,32 @@ const BankReconciliation = () => {
 
               <div className="br-items-section">
                 <div className="br-items-header">
-                  <strong>Outstanding Items (optional)</strong>
+                  <strong>Bank Statement Lines — auto-match against the ledger</strong>
+                </div>
+                <p className="br-match-hint">Paste each statement transaction as <code>date, amount, description</code> (one per line). Amount: positive for deposits, negative for withdrawals/cheques. We'll match these against the book and pre-fill the unmatched items below.</p>
+                <textarea
+                  className="br-statement-textarea"
+                  rows={4}
+                  placeholder={"2026-06-05, 500000, Customer deposit\n2026-06-10, -120000, Supplier payment"}
+                  value={statementLinesText}
+                  onChange={e => setStatementLinesText(e.target.value)}
+                />
+                <button type="button" className="br-match-btn" onClick={autoMatch} disabled={matching}>
+                  {matching ? "Matching..." : "Auto-Match Against Ledger"}
+                </button>
+                {matchSummary && (
+                  <div className="br-match-summary">
+                    <span>✓ {matchSummary.matchedCount} statement line(s) matched a book transaction.</span>
+                    {matchSummary.unmatchedStatementLines.length > 0 && (
+                      <span className="br-match-warning">⚠ {matchSummary.unmatchedStatementLines.length} statement line(s) had no matching book transaction — these may need a manual journal entry.</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="br-items-section">
+                <div className="br-items-header">
+                  <strong>Outstanding Items {items.length > 0 ? `(${items.length})` : "(optional)"}</strong>
                   <div>
                     <button type="button" onClick={() => addItem("deposit_in_transit")}>+ Deposit in Transit</button>
                     <button type="button" onClick={() => addItem("outstanding_payment")}>+ Outstanding Payment</button>
@@ -198,6 +285,15 @@ const BankReconciliation = () => {
         .br-field label { font-size: 12px; font-weight: 600; color: #334155; }
         .br-field input, .br-field select, .br-field textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
         .br-items-section { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+        .br-match-hint { font-size: 11.5px; color: #64748b; margin: 0 0 8px; line-height: 1.5; }
+        .br-match-hint code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+        .br-statement-textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-family: ui-monospace, monospace; box-sizing: border-box; resize: vertical; }
+        .br-match-btn { margin-top: 10px; background: #1e5fae; color: white; border: none; padding: 9px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+        .br-match-btn:hover:not(:disabled) { background: #164a8a; }
+        .br-match-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .br-match-summary { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+        .br-match-summary span:first-child { color: #059669; font-weight: 600; }
+        .br-match-warning { color: #b45309; font-weight: 600; }
         .br-items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .br-items-header strong { font-size: 13px; color: #334155; }
         .br-items-header button { background: #f1f5f9; border: 1px dashed #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; color: #334155; cursor: pointer; margin-left: 8px; }
