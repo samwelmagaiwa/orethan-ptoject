@@ -15,11 +15,11 @@ interface User {
 }
 
 // Mirrors User::SIDEBAR_KEYS on the backend — keep both lists in sync.
-const SIDEBAR_ITEMS: { key: string; label: string }[] = [
+const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "finance_collections", label: "Finance & Collections" },
   { key: "requests", label: "Requests / Maombi" },
-  { key: "loans_form", label: "Loans Form (Personal / Group / My Applications)" },
+  { key: "loans_form", label: "Loans Form", hint: "Personal Loan, Group Loan, My Applications" },
   { key: "users", label: "Users Management" },
   { key: "manager_review", label: "Manager Review" },
   { key: "gm_review", label: "GM Review" },
@@ -28,8 +28,31 @@ const SIDEBAR_ITEMS: { key: string; label: string }[] = [
   { key: "accounting", label: "Accounting & Reports" },
   { key: "disburse_payments", label: "Disburse & Payments" },
   { key: "profile", label: "My Signature" },
-  { key: "logout", label: "Log Out (sidebar link — a separate logout in the top user menu always stays available)" },
+  { key: "logout", label: "Log Out", hint: "Sidebar link only — the top user-menu logout always stays available" },
 ];
+
+// Mirrors the role-based defaults in Sidebar.tsx, so an unchecked-vs-checked
+// box here reflects what the user can actually see right now.
+const SIDEBAR_ROLE_DEFAULTS: Record<string, "all" | string[]> = {
+  dashboard: "all",
+  finance_collections: "all",
+  requests: "all",
+  profile: "all",
+  logout: "all",
+  loans_form: ["admin", "loan_officer"],
+  users: ["admin"],
+  manager_review: ["admin", "loan_manager"],
+  gm_review: ["admin", "general_manager"],
+  md_auth: ["admin", "managing_director"],
+  wateja: ["admin", "loan_manager", "general_manager", "managing_director"],
+  accounting: ["admin", "finance_officer", "managing_director"],
+  disburse_payments: ["admin", "finance_officer"],
+};
+
+const sidebarRoleDefault = (key: string, role: string) => {
+  const cfg = SIDEBAR_ROLE_DEFAULTS[key];
+  return cfg === "all" ? true : Array.isArray(cfg) && cfg.includes(role);
+};
 
 const emptyUserForm = () => ({
   name: "",
@@ -247,19 +270,13 @@ const Users = () => {
     setNewUser(emptyUserForm());
   };
 
-  /** "default" = inherit role visibility, "allow" = always show, "deny" = always hide. */
-  const getPermissionValue = (key: string): "default" | "allow" | "deny" => {
-    if (!(key in newUser.sidebar_permissions)) return "default";
-    return newUser.sidebar_permissions[key] ? "allow" : "deny";
-  };
+  /** Checked = visible to this user. Reflects the saved override if one exists,
+   *  otherwise falls back to what their role would show by default. */
+  const isPermissionChecked = (key: string): boolean =>
+    key in newUser.sidebar_permissions ? newUser.sidebar_permissions[key] : sidebarRoleDefault(key, newUser.role);
 
-  const setPermissionValue = (key: string, value: "default" | "allow" | "deny") => {
-    setNewUser(prev => {
-      const next = { ...prev.sidebar_permissions };
-      if (value === "default") delete next[key];
-      else next[key] = value === "allow";
-      return { ...prev, sidebar_permissions: next };
-    });
+  const togglePermission = (key: string, checked: boolean) => {
+    setNewUser(prev => ({ ...prev, sidebar_permissions: { ...prev.sidebar_permissions, [key]: checked } }));
   };
 
   const filteredUsers = users.filter(u =>
@@ -447,6 +464,9 @@ const Users = () => {
 
               {newUser.role !== "admin" && (
                 <div className="permissions-section">
+                  <div className="permissions-page-title">Sidebar Access Control</div>
+                  <p className="permissions-subtitle">Tick a box to let this user see that menu item, untick it to lock them out of it.</p>
+
                   <label className="permissions-toggle">
                     <input
                       type="checkbox"
@@ -460,24 +480,23 @@ const Users = () => {
                         setNewUser({ ...newUser, full_sidebar_access: checked, sidebar_permissions: checked ? {} : newUser.sidebar_permissions });
                       }}
                     />
-                    Grant Full Sidebar Access (sees every menu item — turning this on clears the settings below)
+                    Grant Full Sidebar Access (sees every menu item — turning this on clears the boxes below)
                   </label>
 
-                  <div className="permissions-title">Sidebar Permissions</div>
-                  <div className="permissions-list" style={{ opacity: newUser.full_sidebar_access ? 0.5 : 1 }}>
+                  <div className="permissions-grid" style={{ opacity: newUser.full_sidebar_access ? 0.5 : 1 }}>
                     {SIDEBAR_ITEMS.map((item) => (
-                      <div key={item.key} className="permission-row">
-                        <span className="permission-label">{item.label}</span>
-                        <select
-                          value={getPermissionValue(item.key)}
+                      <label key={item.key} className="permission-checkbox-row" title={item.hint}>
+                        <input
+                          type="checkbox"
                           disabled={newUser.full_sidebar_access}
-                          onChange={(e) => setPermissionValue(item.key, e.target.value as "default" | "allow" | "deny")}
-                        >
-                          <option value="default">Default (role-based)</option>
-                          <option value="allow">Allow</option>
-                          <option value="deny">Deny / Lock</option>
-                        </select>
-                      </div>
+                          checked={isPermissionChecked(item.key)}
+                          onChange={(e) => togglePermission(item.key, e.target.checked)}
+                        />
+                        <span>
+                          {item.label}
+                          {item.hint && <small>{item.hint}</small>}
+                        </span>
+                      </label>
                     ))}
                   </div>
                 </div>
@@ -776,8 +795,8 @@ const Users = () => {
           background: white;
           border-radius: 24px;
           padding: 28px;
-          width: 560px;
-          max-width: 90%;
+          width: 820px;
+          max-width: 94%;
           max-height: 90vh;
           overflow-y: auto;
         }
@@ -830,6 +849,18 @@ const Users = () => {
           gap: 12px;
         }
 
+        .permissions-page-title {
+          font-size: 16px;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .permissions-subtitle {
+          font-size: 12.5px;
+          color: #64748b;
+          margin: -6px 0 0;
+        }
+
         .permissions-toggle {
           display: flex;
           align-items: center;
@@ -850,42 +881,57 @@ const Users = () => {
           accent-color: #3b82f6;
         }
 
-        .permissions-title {
-          font-size: 12px;
-          font-weight: 700;
-          color: #94a3b8;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .permissions-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
+        .permissions-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
           transition: opacity 0.2s;
         }
 
-        .permission-row {
+        .permission-checkbox-row {
           display: flex;
-          flex-direction: column;
-          gap: 6px;
+          align-items: flex-start;
+          gap: 9px;
           padding: 10px 12px;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
           border-radius: 10px;
+          cursor: pointer;
         }
 
-        .permission-label {
+        .permission-checkbox-row:hover {
+          border-color: #93c5fd;
+          background: #f0f7ff;
+        }
+
+        .permission-checkbox-row input {
+          width: 16px;
+          height: 16px;
+          margin-top: 1px;
+          accent-color: #3b82f6;
+          flex-shrink: 0;
+        }
+
+        .permission-checkbox-row span {
           font-size: 12.5px;
           font-weight: 600;
           color: #334155;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
 
-        .permission-row select {
-          padding: 8px 10px;
-          border: 1px solid #cbd5e1;
-          border-radius: 8px;
-          font-size: 13px;
+        .permission-checkbox-row small {
+          font-size: 10.5px;
+          font-weight: 500;
+          color: #94a3b8;
+        }
+
+        @media (max-width: 700px) {
+          .permissions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+          .permissions-grid { grid-template-columns: 1fr; }
         }
 
         .modal-actions {
