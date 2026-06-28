@@ -169,8 +169,19 @@ const RepaymentTracker = () => {
     }
   };
 
-  const sendReminder = (customer: string) => {
-    alert(`Reminder queued for ${customer}.`);
+  const [sendingReminderFor, setSendingReminderFor] = useState<number | null>(null);
+
+  const sendReminder = async (loanId: number, customer: string) => {
+    setSendingReminderFor(loanId);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`${API_BASE}/overdue/loans/${loanId}/send-reminder-sms`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      alert(res.data?.message || `SMS reminder sent to ${customer}.`);
+    } catch (e: any) {
+      alert(e.response?.data?.message || `Failed to send SMS reminder to ${customer}.`);
+    } finally {
+      setSendingReminderFor(null);
+    }
   };
 
   const collectionRate = summary?.collection_rate || 0;
@@ -337,8 +348,8 @@ const RepaymentTracker = () => {
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
                         <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} title="Collect Payment"
                           style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>Collect</button>
-                        <button onClick={() => sendReminder(row.customer)} title="Send Reminder"
-                          style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}><Send size={13} /></button>
+                        <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} title="Send SMS Reminder"
+                          style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: sendingReminderFor === row.loan_id ? "wait" : "pointer", color: "#64748b", display: "flex", alignItems: "center", opacity: sendingReminderFor === row.loan_id ? 0.6 : 1 }}><Send size={13} /></button>
                         <button onClick={() => viewSchedule(row.loan_id)} title="View Loan"
                           style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}><Eye size={13} /></button>
                       </div>
@@ -380,8 +391,8 @@ const RepaymentTracker = () => {
                     <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#ef4444", fontSize: "0.82rem" }}>{fmt(row.penalty)}</td>
                     <td style={{ padding: "0.8rem 0.6rem" }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
-                        <button onClick={() => sendReminder(row.customer)} title="Contact"
-                          style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.35rem 0.7rem", borderRadius: 8, background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}><Phone size={12} /> Contact</button>
+                        <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} title="Send Overdue SMS"
+                          style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.35rem 0.7rem", borderRadius: 8, background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.62rem", cursor: sendingReminderFor === row.loan_id ? "wait" : "pointer", opacity: sendingReminderFor === row.loan_id ? 0.6 : 1 }}><Phone size={12} /> Contact</button>
                         <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} title="Collect with penalty"
                           style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>Collect</button>
                       </div>

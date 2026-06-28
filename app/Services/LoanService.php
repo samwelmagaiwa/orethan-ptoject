@@ -5,12 +5,13 @@ namespace App\Services;
 use App\Models\Loan;
 use App\Models\Customer;
 use App\Services\AccountingService;
+use App\Sms\SmsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class LoanService
 {
-    public function __construct(protected AccountingService $accounting)
+    public function __construct(protected AccountingService $accounting, protected SmsService $sms)
     {
     }
 
@@ -72,7 +73,7 @@ class LoanService
      */
     public function approveLoan($loan, array $data, $user)
     {
-        return DB::transaction(function () use ($loan, $data, $user) {
+        $loan = DB::transaction(function () use ($loan, $data, $user) {
             $oldStatus = $loan->status;
 
             if ($loan->status == 'manager_review') {
@@ -100,6 +101,16 @@ class LoanService
 
             return $loan;
         });
+
+        // SMS only on final approval (status === 'approved') — the loan is now
+        // fully cleared and just awaiting disbursement. Sent after the DB
+        // transaction commits so a gateway hiccup can never roll back the
+        // approval itself.
+        if ($loan->status === 'approved') {
+            $this->sms->sendLoanApproved($loan);
+        }
+
+        return $loan;
     }
 
     /**
@@ -144,7 +155,7 @@ class LoanService
      */
     public function disburseLoan(Loan $loan, array $data, $user)
     {
-        return DB::transaction(function () use ($loan, $data, $user) {
+        $disbursedLoan = DB::transaction(function () use ($loan, $data, $user) {
             // Only MD-approved loans can be disbursed
             if ($loan->status !== 'approved') {
                 throw new \Exception('Only approved loans can be disbursed');
@@ -238,6 +249,11 @@ class LoanService
 
             return $loan->fresh(['schedules', 'disbursement']);
         });
+
+        // Sent after commit so a gateway hiccup never rolls back the disbursement.
+        $this->sms->sendDisbursementNotice($disbursedLoan);
+
+        return $disbursedLoan;
     }
 
     /**
@@ -245,7 +261,7 @@ class LoanService
      */
     public function recordRepayment(Loan $loan, array $data, $user)
     {
-        return DB::transaction(function () use ($loan, $data, $user) {
+        $result = DB::transaction(function () use ($loan, $data, $user) {
             $amount = round($data['amount']);
             $currentPaid = round($loan->total_paid ?? 0);
             $remaining = round($loan->remaining_balance ?? ($loan->amount - $currentPaid));
@@ -308,8 +324,10 @@ class LoanService
                 'transaction_number' => $transactionNumber,
                 'payment_date' => \Carbon\Carbon::parse($data['payment_date'])->toDateString(),
                 'payment_time' => $repayment->created_at?->format('H:i:s'),
+                'customer_id' => $loan->customer_id,
                 'customer_name' => $loan->name,
                 'customer_number' => $loan->customer?->customer_number ?? ('CUST-' . str_pad((string) ($loan->customer_id ?? 0), 6, '0', STR_PAD_LEFT)),
+                'loan_id' => $loan->id,
                 'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
                 'phone' => $loan->phone ?? $loan->customer?->phone_number,
                 'original_amount' => round($loan->amount),
@@ -329,6 +347,11 @@ class LoanService
                 'receipt' => $receipt,
             ];
         });
+
+        // Sent after commit so a gateway hiccup never rolls back the repayment.
+        $this->sms->sendRepaymentReceipt($result['receipt']);
+
+        return $result;
     }
 
     /**

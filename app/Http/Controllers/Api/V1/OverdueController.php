@@ -7,6 +7,7 @@ use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\CollectionActivity;
 use App\Models\AuditLog;
+use App\Sms\SmsService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,10 @@ use Carbon\Carbon;
 class OverdueController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(protected SmsService $sms)
+    {
+    }
 
     // Sera za adhabu na uainishaji
     const PENALTY_RATE = 0.04;   // 4% ya kiasi kilichochelewa
@@ -270,6 +275,68 @@ class OverdueController extends Controller
         } catch (\Exception $e) {
             Log::error('storeActivity error: ' . $e->getMessage());
             return $this->error('Imeshindikana kuhifadhi hatua', 500);
+        }
+    }
+
+    /**
+     * Send an automated Swahili payment reminder/overdue SMS for a single
+     * loan's next unpaid installment, and log it as a collection activity
+     * so it shows up in that loan's contact history alongside manual notes.
+     */
+    public function sendReminderSms(Request $request, $loanId)
+    {
+        $user = $request->user();
+
+        try {
+            $loan = Loan::with('customer')->findOrFail($loanId);
+
+            $schedule = LoanSchedule::where('loan_id', $loan->id)
+                ->where('status', '!=', 'paid')
+                ->orderBy('due_date', 'asc')
+                ->first();
+
+            if (!$schedule) {
+                return $this->error('Mkopo huu hauna malipo yanayosubiri', 422);
+            }
+
+            $amountDue = (float) $schedule->total_amount - (float) ($schedule->amount_paid ?? 0);
+            $dueDate = $schedule->due_date instanceof \Carbon\Carbon ? $schedule->due_date->toDateString() : $schedule->due_date;
+            $daysOverdue = Carbon::parse($dueDate)->diffInDays(now(), false);
+            $isOverdue = $daysOverdue > 0;
+
+            $result = $isOverdue
+                ? $this->sms->sendPaymentOverdue($loan, $amountDue, (int) $daysOverdue)
+                : $this->sms->sendPaymentReminder($loan, $amountDue, $dueDate);
+
+            if (!$result->success) {
+                return $this->error('Imeshindikana kutuma SMS: ' . ($result->error ?? 'hitilafu isiyojulikana'), 422);
+            }
+
+            $activity = CollectionActivity::create([
+                'loan_id' => $loan->id,
+                'customer_id' => $loan->customer_id,
+                'stage' => $isOverdue ? 'follow_up' : 'reminder',
+                'contact_method' => 'sms',
+                'officer_name' => $user->name ?? null,
+                'notes' => $isOverdue
+                    ? "SMS ya malipo yaliyochelewa imetumwa (siku {$daysOverdue}, TZS " . number_format($amountDue) . ')'
+                    : 'SMS ya ukumbusho wa malipo imetumwa (TZS ' . number_format($amountDue) . ')',
+                'recovery_status' => $isOverdue ? 'follow_up' : 'reminder',
+                'created_by' => $user->id ?? null,
+            ]);
+
+            AuditLog::record(
+                'collection.sms_sent',
+                $user,
+                $loan,
+                'SMS ya ' . ($isOverdue ? 'malipo yaliyochelewa' : 'ukumbusho') . ' imetumwa kwa mkopo ' . ($loan->loan_account_number ?? $loan->id),
+                ['amount_due' => $amountDue, 'overdue' => $isOverdue]
+            );
+
+            return $this->success($activity, $isOverdue ? 'SMS ya malipo yaliyochelewa imetumwa' : 'SMS ya ukumbusho imetumwa');
+        } catch (\Exception $e) {
+            Log::error('sendReminderSms error: ' . $e->getMessage());
+            return $this->error('Imeshindikana kutuma SMS', 500);
         }
     }
 }

@@ -110,6 +110,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/overdue/loans', [OverdueController::class, 'loans']);
         Route::get('/overdue/loans/{loanId}/activities', [OverdueController::class, 'activities']);
         Route::post('/overdue/loans/{loanId}/activities', [OverdueController::class, 'storeActivity']);
+        Route::post('/overdue/loans/{loanId}/send-reminder-sms', [OverdueController::class, 'sendReminderSms']);
 
         // ========== PAYMENT REQUESTS (OMBI LA MALIPO + IDHINI) ==========
         Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
