@@ -6,6 +6,7 @@ import LoanDetailsModal from "../components/LoanDetailsModal";
 import HistoryModal from "../components/HistoryModal";
 import ConfirmModal from "../components/ConfirmModal";
 import AlertModal from "../components/AlertModal";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 
 interface Loan {
   id: number;
@@ -26,6 +27,8 @@ interface Loan {
   loan_account_number?: string | null;
   customer?: { customer_number?: string | null; email?: string | null; nida_number?: string | null } | null;
   disbursement?: { transaction_reference?: string | null } | null;
+  sms_status?: string | null;
+  sms_type?: string | null;
 }
 
 const MyLoans = () => {
@@ -227,6 +230,7 @@ const MyLoans = () => {
                   <th>Loan Amount</th>
                   <th>Loan Type</th>
                   <th>Status</th>
+                  <th>SMS Status</th>
                   <th style={{ textAlign: 'center', width: '80px' }}>Actions</th>
                 </tr>
               </thead>
@@ -276,6 +280,7 @@ const MyLoans = () => {
                         </div>
                       )}
                     </td>
+                    <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                     <td style={{ textAlign: 'center', position: 'relative' }}>
                       <button
                         className="action-menu-trigger"
@@ -366,6 +371,7 @@ const MyLoans = () => {
       />
 
       <style>{`
+        ${smsStatusBadgeStyles}
         .loan-manager-page {
           padding: 0 10px 20px 10px;
           margin-top: -24px; /* Perfectly negate the 24px layout padding */

@@ -6,6 +6,7 @@ import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 
 interface Loan {
   id: number;
@@ -20,6 +21,8 @@ interface Loan {
   active_loans_count?: number;
   total_remaining_balance?: number;
   total_arrears?: number;
+  sms_status?: string | null;
+  sms_type?: string | null;
 }
 
 const GeneralManager = () => {
@@ -290,12 +293,13 @@ const GeneralManager = () => {
               <th>Deni Lililobaki</th>
               <th>Arrears</th>
               <th>Status</th>
+              <th>SMS Status</th>
               <th style={{ textAlign: 'right' }}>Hatua</th>
             </tr>
           </thead>
           <tbody>
             {filteredLoans.length === 0 ? (
-              <tr><td colSpan={8} className="table-empty">Hakuna maombi yaliyopatikana.</td></tr>
+              <tr><td colSpan={9} className="table-empty">Hakuna maombi yaliyopatikana.</td></tr>
             ) : (
               pagedLoans.map((loan, index) => (
                 <tr
@@ -354,6 +358,7 @@ const GeneralManager = () => {
                       </div>
                     )}
                   </td>
+                  <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                   <td style={{ textAlign: 'right', position: 'relative' }}>
                     <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'gm_review' ? 4 : 2)}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
@@ -490,6 +495,7 @@ const GeneralManager = () => {
       />
 
       <style>{`
+        ${smsStatusBadgeStyles}
         .gm-page {
           padding: 0 10px 20px 10px;
           margin-top: -24px;

@@ -6,6 +6,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { printDocument } from "../utils/printDoc";
 
 // INLINE SVG ICONS FOR PREMIUM LOOK
@@ -54,6 +55,8 @@ interface Loan {
     disbursed_at?: string | null;
     customer?: { customer_number?: string | null; nida_number?: string | null; email?: string | null } | null;
     disbursement?: { transaction_reference?: string | null } | null;
+    sms_status?: string | null;
+    sms_type?: string | null;
 }
 
 const Customers: React.FC = () => {
@@ -563,6 +566,7 @@ const Customers: React.FC = () => {
                                     <th>Kiasi</th>
                                     <th>Aina</th>
                                     <th>Status</th>
+                                    <th>SMS Status</th>
                                     <th style={{ textAlign: 'right' }}>Hatua</th>
                                 </tr>
                             )}
@@ -644,7 +648,7 @@ const Customers: React.FC = () => {
                                 )
                             ) : (
                                 filteredLoans.length === 0 ? (
-                                    <tr><td colSpan={7} className="table-empty">Hakuna maombi yanayosubiri.</td></tr>
+                                    <tr><td colSpan={8} className="table-empty">Hakuna maombi yanayosubiri.</td></tr>
                                 ) : (
                                     pagedLoans.map((loan, index) => (
                                         <tr
@@ -677,6 +681,7 @@ const Customers: React.FC = () => {
                                                     </div>
                                                 )}
                                             </td>
+                                            <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                                             <td style={{ textAlign: 'right', position: 'relative' }}>
                                                 <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, getActionButtonCount(loan))}>
                                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>

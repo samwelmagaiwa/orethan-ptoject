@@ -6,6 +6,7 @@ import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 
 interface Loan {
   id: number;
@@ -20,6 +21,8 @@ interface Loan {
   active_loans_count?: number;
   total_remaining_balance?: number;
   total_arrears?: number;
+  sms_status?: string | null;
+  sms_type?: string | null;
 }
 
 const ManagingDirector = () => {
@@ -254,6 +257,7 @@ const ManagingDirector = () => {
                 <th>Deni Lililobaki</th>
                 <th>Arrears</th>
                 <th>Status</th>
+                <th>SMS Status</th>
                 <th style={{ textAlign: 'right' }}>Hatua</th>
               </tr>
             </thead>
@@ -273,12 +277,13 @@ const ManagingDirector = () => {
                     <td><div className="skeleton-bar" style={{ width: '90px' }}></div></td>
                     <td><div className="skeleton-bar" style={{ width: '80px' }}></div></td>
                     <td><div className="skeleton-bar" style={{ width: '100px' }}></div></td>
+                    <td><div className="skeleton-bar" style={{ width: '90px' }}></div></td>
                     <td style={{ textAlign: 'right' }}><div className="skeleton-bar" style={{ width: '40px', marginLeft: 'auto' }}></div></td>
                   </tr>
                 ))
               ) : filteredLoans.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <div className="empty-state">
                       <p>Hakuna maombi ya mkopo</p>
                       <span>Hakuna maombi yanayosubiri ukaguzi wako</span>
@@ -341,6 +346,7 @@ const ManagingDirector = () => {
                         </div>
                       )}
                     </td>
+                    <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                     <td style={{ textAlign: 'right', position: 'relative' }}>
                       <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'md_review' ? 3 : 2)}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
@@ -471,6 +477,7 @@ const ManagingDirector = () => {
       />
 
       <style>{`
+        ${smsStatusBadgeStyles}
         .md-page {
           padding: 0 10px 20px 10px;
           margin-top: -24px;

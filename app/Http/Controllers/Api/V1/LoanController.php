@@ -124,7 +124,19 @@ class LoanController extends Controller
      */
     private function appendBorrowerMetrics($loans)
     {
+        // Latest SMS attempt per loan (one query for the whole list, not one per row).
+        $latestSmsByLoan = \App\Models\SmsLog::whereIn('loan_id', collect($loans)->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('loan_id')
+            ->map(fn($logs) => $logs->first());
+
         foreach ($loans as $loan) {
+            $latestSms = $latestSmsByLoan->get($loan->id);
+            $loan->sms_status = $latestSms?->status;
+            $loan->sms_type = $latestSms?->type;
+            $loan->sms_sent_at = $latestSms?->created_at;
+
             $customer = $loan->customer;
             if ($customer) {
                 $loan->active_loans_count = $customer->loans()->whereIn('status', ['approved', 'disbursed'])->count();
