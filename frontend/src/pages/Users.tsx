@@ -43,6 +43,14 @@ const Users = () => {
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState(emptyUserForm());
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) setCurrentUserId(JSON.parse(stored).id ?? null);
+    } catch { /* ignore parsing errors */ }
+  }, []);
 
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
@@ -355,8 +363,17 @@ const Users = () => {
                           <div className="actions-dropdown" ref={menuRef} style={{ top: menuPos.top, left: menuPos.left }}>
                             <div className="actions-dropdown-title">Actions</div>
                             <button className="edit-btn" onClick={() => { startEdit(user); setOpenMenuFor(null); }}>Edit</button>
-                            <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => { toggleLock(user); setOpenMenuFor(null); }}>{user.is_locked ? "Unlock" : "Lock"}</button>
-                            <button className="delete-btn" onClick={() => { deleteUser(user.id); setOpenMenuFor(null); }}>Delete</button>
+                            {user.id === currentUserId ? (
+                              <>
+                                <button className="lock-btn" disabled title="You cannot lock your own account" style={{ background: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0", cursor: "not-allowed" }}>Lock</button>
+                                <button className="delete-btn" disabled title="You cannot delete your own account" style={{ background: "#f1f5f9", color: "#94a3b8", cursor: "not-allowed" }}>Delete</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => { toggleLock(user); setOpenMenuFor(null); }}>{user.is_locked ? "Unlock" : "Lock"}</button>
+                                <button className="delete-btn" onClick={() => { deleteUser(user.id); setOpenMenuFor(null); }}>Delete</button>
+                              </>
+                            )}
                           </div>,
                           document.body
                         )}
