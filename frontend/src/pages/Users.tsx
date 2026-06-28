@@ -446,9 +446,16 @@ const Users = () => {
                     <input
                       type="checkbox"
                       checked={newUser.full_sidebar_access}
-                      onChange={(e) => setNewUser({ ...newUser, full_sidebar_access: e.target.checked })}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        // Full access and per-item denies are mutually exclusive — clear the
+                        // per-item overrides so the saved data can never contradict itself
+                        // (this was the exact bug: full access ON + everything denied,
+                        // and full access silently won every time).
+                        setNewUser({ ...newUser, full_sidebar_access: checked, sidebar_permissions: checked ? {} : newUser.sidebar_permissions });
+                      }}
                     />
-                    Grant Full Sidebar Access (sees every menu item, ignores settings below)
+                    Grant Full Sidebar Access (sees every menu item — turning this on clears the settings below)
                   </label>
 
                   <div className="permissions-title">Sidebar Permissions</div>

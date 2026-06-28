@@ -38,17 +38,20 @@ class UserController extends Controller
             'full_sidebar_access' => 'nullable|boolean',
         ]);
 
+        $fullAccess = (bool) $request->input('full_sidebar_access', false);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'phone' => $request->phone,
-            'sidebar_permissions' => array_intersect_key(
+            // Full access and per-item overrides are mutually exclusive — see update().
+            'sidebar_permissions' => $fullAccess ? [] : array_intersect_key(
                 $request->input('sidebar_permissions', []),
                 array_flip(User::SIDEBAR_KEYS)
             ),
-            'full_sidebar_access' => (bool) $request->input('full_sidebar_access', false),
+            'full_sidebar_access' => $fullAccess,
         ]);
 
         return response()->json($this->shape($user), 201);
@@ -78,15 +81,24 @@ class UserController extends Controller
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
+        $fullAccess = $request->has('full_sidebar_access')
+            ? (bool) $request->input('full_sidebar_access')
+            : (bool) $user->full_sidebar_access;
+
+        if ($request->has('full_sidebar_access')) {
+            $user->full_sidebar_access = $fullAccess;
+        }
         if ($request->has('sidebar_permissions')) {
             // Only known sidebar keys are persisted — anything else is silently dropped.
-            $user->sidebar_permissions = array_intersect_key(
+            // Full access and per-item overrides are mutually exclusive, so once full
+            // access is on the per-item map is always cleared to avoid storing a
+            // contradictory state (full access ON + everything denied, for example).
+            $user->sidebar_permissions = $fullAccess ? [] : array_intersect_key(
                 $request->input('sidebar_permissions', []),
                 array_flip(User::SIDEBAR_KEYS)
             );
-        }
-        if ($request->has('full_sidebar_access')) {
-            $user->full_sidebar_access = (bool) $request->input('full_sidebar_access');
+        } elseif ($fullAccess) {
+            $user->sidebar_permissions = [];
         }
         $user->save();
 
