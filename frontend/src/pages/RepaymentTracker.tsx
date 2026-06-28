@@ -689,8 +689,10 @@ const RepaymentTracker = () => {
         .rt-table-row { border-bottom: 1px solid #f1f5f9; transition: all 0.15s; }
         .rt-table-row:hover { background: #fdfbf7; }
         .rt-table-row:hover .rt-avatar { background: white !important; color: #4f46e5 !important; border-color: #6366f1 !important; }
-        .rt-table-row .rt-actions { opacity: 0; transition: opacity 0.2s; }
-        .rt-table-row:hover .rt-actions { opacity: 1; }
+        /* Actions stay visible always — hover-only would make them
+           permanently unreachable on touch devices (tablet/phone), which
+           have no hover state at all. */
+        .rt-table-row .rt-actions { opacity: 1; transition: opacity 0.2s; }
         .rt-btn-pay:hover { background: #4f46e5 !important; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
