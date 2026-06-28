@@ -16,6 +16,9 @@ interface User {
 
 // Mirrors User::SIDEBAR_KEYS on the backend — keep both lists in sync.
 const SIDEBAR_ITEMS: { key: string; label: string }[] = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "finance_collections", label: "Finance & Collections" },
+  { key: "requests", label: "Requests / Maombi" },
   { key: "loans_form", label: "Loans Form (Personal / Group / My Applications)" },
   { key: "users", label: "Users Management" },
   { key: "manager_review", label: "Manager Review" },
@@ -24,6 +27,8 @@ const SIDEBAR_ITEMS: { key: string; label: string }[] = [
   { key: "wateja", label: "Wateja (Customers)" },
   { key: "accounting", label: "Accounting & Reports" },
   { key: "disburse_payments", label: "Disburse & Payments" },
+  { key: "profile", label: "My Signature" },
+  { key: "logout", label: "Log Out (sidebar link — a separate logout in the top user menu always stays available)" },
 ];
 
 const emptyUserForm = () => ({

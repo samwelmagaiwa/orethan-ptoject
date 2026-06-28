@@ -65,6 +65,9 @@ class User extends Authenticatable
 
     /** All keys configurable via the per-user sidebar permission overrides. */
     public const SIDEBAR_KEYS = [
+        'dashboard',
+        'finance_collections',
+        'requests',
         'users',
         'loans_form',
         'manager_review',
@@ -73,6 +76,8 @@ class User extends Authenticatable
         'wateja',
         'accounting',
         'disburse_payments',
+        'profile',
+        'logout',
     ];
 
     // Helper methods for role checking

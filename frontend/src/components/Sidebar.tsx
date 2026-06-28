@@ -88,6 +88,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     return roleDefault;
   };
 
+  const canAccessDashboard = isAllowed("dashboard", true);
+  const canAccessFinanceCollections = isAllowed("finance_collections", true);
+  const canAccessRequests = isAllowed("requests", true);
+  const canAccessProfile = isAllowed("profile", true);
+  const canAccessLogout = isAllowed("logout", true);
   const canAccessLoansForm = isAllowed("loans_form", userRole === "admin" || userRole === "loan_officer");
   const canAccessUsers = isAllowed("users", userRole === "admin");
   const canAccessManagerReview = isAllowed("manager_review", userRole === "loan_manager" || userRole === "admin");
@@ -137,40 +142,52 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         {/* ── Navigation ── */}
         <nav className="sd-nav">
-          {/* Internal — Dashboard & Overdue Management are visible to ALL roles */}
+          {/* Internal — visibility now follows per-user sidebar overrides too */}
           <>
-              <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
-              <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
-              </div>
-              {/* Finance & Collections dropdown */}
-              <div className={`sd-item ${(isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) ? "sd-item--active" : ""}`} onClick={() => setShowFinance(!showFinance)} title="Finance & Collections">
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Finance & Collections</span>}
-                {!isCollapsed && <span className={`sd-item__arrow ${showFinance ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
-              </div>
-              {(showFinance || isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) && !isCollapsed && (
-                <div className="sd-sub">
-                  <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>Usimamizi wa Madeni</div>
-                  {canAccessDisbursePayments && (
-                    <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>Disburse &amp; Payments</div>
-                  )}
+              {(canAccessDashboard || canAccessFinanceCollections || canAccessRequests || canAccessUsers) && (
+                <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
+              )}
+              {canAccessDashboard && (
+                <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
                 </div>
               )}
+              {canAccessFinanceCollections && (
+                <>
+                  {/* Finance & Collections dropdown */}
+                  <div className={`sd-item ${(isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) ? "sd-item--active" : ""}`} onClick={() => setShowFinance(!showFinance)} title="Finance & Collections">
+                    <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg></span>
+                    {!isCollapsed && <span className="sd-item__text">Finance & Collections</span>}
+                    {!isCollapsed && <span className={`sd-item__arrow ${showFinance ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
+                  </div>
+                  {(showFinance || isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) && !isCollapsed && (
+                    <div className="sd-sub">
+                      <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>Usimamizi wa Madeni</div>
+                      {canAccessDisbursePayments && (
+                        <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>Disburse &amp; Payments</div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
 
-              {/* Requests dropdown */}
-              <div className={`sd-item ${(isActive("/payment-requests") || isActive("/leave-requests")) ? "sd-item--active" : ""}`} onClick={() => setShowRequests(!showRequests)} title="Requests">
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Requests / Maombi</span>}
-                {!isCollapsed && <span className={`sd-item__arrow ${showRequests ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
-              </div>
-              {(showRequests || isActive("/payment-requests") || isActive("/leave-requests")) && !isCollapsed && (
-                <div className="sd-sub">
-                  <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>Payment Requests</div>
-                  <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>Leave Requests</div>
-                  <div className={`sd-sub__link ${isActive("/delegations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/delegations")}>Office Delegation</div>
-                </div>
+              {canAccessRequests && (
+                <>
+                  {/* Requests dropdown */}
+                  <div className={`sd-item ${(isActive("/payment-requests") || isActive("/leave-requests")) ? "sd-item--active" : ""}`} onClick={() => setShowRequests(!showRequests)} title="Requests">
+                    <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></span>
+                    {!isCollapsed && <span className="sd-item__text">Requests / Maombi</span>}
+                    {!isCollapsed && <span className={`sd-item__arrow ${showRequests ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
+                  </div>
+                  {(showRequests || isActive("/payment-requests") || isActive("/leave-requests")) && !isCollapsed && (
+                    <div className="sd-sub">
+                      <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>Payment Requests</div>
+                      <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>Leave Requests</div>
+                      <div className={`sd-sub__link ${isActive("/delegations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/delegations")}>Office Delegation</div>
+                    </div>
+                  )}
+                </>
               )}
               {canAccessUsers && (
                 <>
@@ -289,15 +306,21 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         {/* ── Footer ── */}
         <div className="sd-footer">
-          <div className="sd-sec">{!isCollapsed ? "PREFERENCES" : "─"}</div>
-          <div className={`sd-item ${isActive("/profile") ? "sd-item--active" : ""}`} onClick={() => navigate("/profile")} title="My Signature">
-            <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></svg></span>
-            {!isCollapsed && <span className="sd-item__text">My Signature</span>}
-          </div>
-          <div className="sd-item" onClick={handleLogout} title="Log Out">
-            <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg></span>
-            {!isCollapsed && <span className="sd-item__text">Log Out</span>}
-          </div>
+          {(canAccessProfile || canAccessLogout) && (
+            <div className="sd-sec">{!isCollapsed ? "PREFERENCES" : "─"}</div>
+          )}
+          {canAccessProfile && (
+            <div className={`sd-item ${isActive("/profile") ? "sd-item--active" : ""}`} onClick={() => navigate("/profile")} title="My Signature">
+              <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></svg></span>
+              {!isCollapsed && <span className="sd-item__text">My Signature</span>}
+            </div>
+          )}
+          {canAccessLogout && (
+            <div className="sd-item" onClick={handleLogout} title="Log Out">
+              <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg></span>
+              {!isCollapsed && <span className="sd-item__text">Log Out</span>}
+            </div>
+          )}
         </div>
       </div>
 
