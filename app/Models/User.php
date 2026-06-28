@@ -32,6 +32,8 @@ class User extends Authenticatable
         'otp_expires_at',
         'first_login',
         'must_change_password',
+        'sidebar_permissions',
+        'full_sidebar_access',
     ];
 
     /**
@@ -57,6 +59,20 @@ class User extends Authenticatable
         'otp_expires_at' => 'datetime',
         'first_login' => 'boolean',
         'must_change_password' => 'boolean',
+        'sidebar_permissions' => 'array',
+        'full_sidebar_access' => 'boolean',
+    ];
+
+    /** All keys configurable via the per-user sidebar permission overrides. */
+    public const SIDEBAR_KEYS = [
+        'users',
+        'loans_form',
+        'manager_review',
+        'gm_review',
+        'md_auth',
+        'wateja',
+        'accounting',
+        'disburse_payments',
     ];
 
     // Helper methods for role checking

@@ -20,7 +20,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         if ($r = $this->guardAdmin($request)) return $r;
-        return User::select('id', 'name', 'email', 'phone', 'role', 'is_locked', 'locked_at', 'locked_reason')->get();
+        return User::select('id', 'name', 'email', 'phone', 'role', 'is_locked', 'locked_at', 'locked_reason', 'sidebar_permissions', 'full_sidebar_access')->get();
     }
 
     public function store(Request $request)
@@ -33,6 +33,9 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
+            'sidebar_permissions' => 'nullable|array',
+            'sidebar_permissions.*' => 'boolean',
+            'full_sidebar_access' => 'nullable|boolean',
         ]);
 
         $user = User::create([
@@ -41,6 +44,11 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'phone' => $request->phone,
+            'sidebar_permissions' => array_intersect_key(
+                $request->input('sidebar_permissions', []),
+                array_flip(User::SIDEBAR_KEYS)
+            ),
+            'full_sidebar_access' => (bool) $request->input('full_sidebar_access', false),
         ]);
 
         return response()->json($this->shape($user), 201);
@@ -58,6 +66,9 @@ class UserController extends Controller
             'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
+            'sidebar_permissions' => 'nullable|array',
+            'sidebar_permissions.*' => 'boolean',
+            'full_sidebar_access' => 'nullable|boolean',
         ]);
 
         $user->name = $request->name;
@@ -66,6 +77,16 @@ class UserController extends Controller
         $user->phone = $request->phone;
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
+        }
+        if ($request->has('sidebar_permissions')) {
+            // Only known sidebar keys are persisted — anything else is silently dropped.
+            $user->sidebar_permissions = array_intersect_key(
+                $request->input('sidebar_permissions', []),
+                array_flip(User::SIDEBAR_KEYS)
+            );
+        }
+        if ($request->has('full_sidebar_access')) {
+            $user->full_sidebar_access = (bool) $request->input('full_sidebar_access');
         }
         $user->save();
 
@@ -126,6 +147,7 @@ class UserController extends Controller
         return [
             'id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone,
             'role' => $u->role, 'is_locked' => (bool) $u->is_locked, 'locked_at' => $u->locked_at, 'locked_reason' => $u->locked_reason,
+            'sidebar_permissions' => $u->sidebar_permissions ?? [], 'full_sidebar_access' => (bool) $u->full_sidebar_access,
         ];
     }
 }

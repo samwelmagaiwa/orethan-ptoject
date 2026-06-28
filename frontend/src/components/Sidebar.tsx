@@ -9,6 +9,8 @@ interface User {
   name: string;
   email: string;
   role: string;
+  sidebar_permissions?: Record<string, boolean> | null;
+  full_sidebar_access?: boolean;
 }
 
 interface SidebarProps {
@@ -75,11 +77,26 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   };
 
   const userRole = user?.role;
-  const canAccessLoansForm = userRole === "admin" || userRole === "loan_officer";
-  const canAccessUsers = userRole === "admin";
-  const canAccessApprovals = userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director";
-  const canAccessManagement = canAccessApprovals;
-  const canAccessAccounting = userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director";
+
+  // Per-user sidebar overrides set by an admin (see Users management page) take
+  // priority over the role defaults below. Admins always see everything, no
+  // matter what overrides exist on their own account.
+  const isAllowed = (key: string, roleDefault: boolean) => {
+    if (userRole === "admin" || user?.full_sidebar_access) return true;
+    const overrides = user?.sidebar_permissions;
+    if (overrides && Object.prototype.hasOwnProperty.call(overrides, key)) return !!overrides[key];
+    return roleDefault;
+  };
+
+  const canAccessLoansForm = isAllowed("loans_form", userRole === "admin" || userRole === "loan_officer");
+  const canAccessUsers = isAllowed("users", userRole === "admin");
+  const canAccessManagerReview = isAllowed("manager_review", userRole === "loan_manager" || userRole === "admin");
+  const canAccessGmReview = isAllowed("gm_review", userRole === "general_manager" || userRole === "admin");
+  const canAccessMdAuth = isAllowed("md_auth", userRole === "managing_director" || userRole === "admin");
+  const canAccessApprovals = canAccessManagerReview || canAccessGmReview || canAccessMdAuth;
+  const canAccessManagement = isAllowed("wateja", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
+  const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director");
+  const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
@@ -136,7 +153,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               {(showFinance || isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) && !isCollapsed && (
                 <div className="sd-sub">
                   <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>Usimamizi wa Madeni</div>
-                  {(userRole === "finance_officer" || userRole === "admin") && (
+                  {canAccessDisbursePayments && (
                     <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>Disburse &amp; Payments</div>
                   )}
                 </div>
@@ -193,19 +210,19 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {canAccessApprovals && (
             <>
               <div className="sd-sec">{!isCollapsed ? "APPROVALS" : "─"}</div>
-              {userRole === "loan_manager" || userRole === "admin" ? (
+              {canAccessManagerReview ? (
                 <div className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers")} title="Manager Review">
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
                   {!isCollapsed && <span className="sd-item__text">Manager Review</span>}
                 </div>
               ) : null}
-              {userRole === "general_manager" || userRole === "admin" ? (
+              {canAccessGmReview ? (
                 <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title="General Manager">
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
                   {!isCollapsed && <span className="sd-item__text">GM Review</span>}
                 </div>
               ) : null}
-              {userRole === "managing_director" || userRole === "admin" ? (
+              {canAccessMdAuth ? (
                 <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title="Managing Director">
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
                   {!isCollapsed && <span className="sd-item__text">MD Auth</span>}
@@ -214,8 +231,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Management — loan_manager and admin already reach Customers via APPROVALS > Manager Review */}
-          {canAccessManagement && userRole !== "loan_manager" && userRole !== "admin" && (
+          {/* Management — skip when Manager Review already points at the same Customers page */}
+          {canAccessManagement && !canAccessManagerReview && (
             <>
               <div className="sd-sec">{!isCollapsed ? "MANAGEMENT" : "─"}</div>
               <div className={`sd-item ${isActive("/customers") || location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => {

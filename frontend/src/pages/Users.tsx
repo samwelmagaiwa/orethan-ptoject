@@ -10,7 +10,31 @@ interface User {
   email: string;
   phone?: string;
   role: string;
+  sidebar_permissions?: Record<string, boolean> | null;
+  full_sidebar_access?: boolean;
 }
+
+// Mirrors User::SIDEBAR_KEYS on the backend — keep both lists in sync.
+const SIDEBAR_ITEMS: { key: string; label: string }[] = [
+  { key: "loans_form", label: "Loans Form (Personal / Group / My Applications)" },
+  { key: "users", label: "Users Management" },
+  { key: "manager_review", label: "Manager Review" },
+  { key: "gm_review", label: "GM Review" },
+  { key: "md_auth", label: "MD Auth" },
+  { key: "wateja", label: "Wateja (Customers)" },
+  { key: "accounting", label: "Accounting & Reports" },
+  { key: "disburse_payments", label: "Disburse & Payments" },
+];
+
+const emptyUserForm = () => ({
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  role: "loan_officer",
+  sidebar_permissions: {} as Record<string, boolean>,
+  full_sidebar_access: false,
+});
 
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -18,13 +42,7 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    role: "loan_officer",
-  });
+  const [newUser, setNewUser] = useState(emptyUserForm());
 
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
@@ -110,6 +128,8 @@ const Users = () => {
           email: newUser.email,
           role: newUser.role,
           phone: newUser.phone,
+          sidebar_permissions: newUser.sidebar_permissions,
+          full_sidebar_access: newUser.full_sidebar_access,
         };
         if (newUser.password) payload.password = newUser.password;
         const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -131,6 +151,8 @@ const Users = () => {
           phone: newUser.phone,
           password: newUser.password,
           role: newUser.role,
+          sidebar_permissions: newUser.sidebar_permissions,
+          full_sidebar_access: newUser.full_sidebar_access,
         }, {
           headers: getAuthHeaders()
         });
@@ -200,6 +222,8 @@ const Users = () => {
       phone: user.phone || "",
       password: "",
       role: user.role,
+      sidebar_permissions: { ...(user.sidebar_permissions || {}) },
+      full_sidebar_access: !!user.full_sidebar_access,
     });
     setShowModal(true);
   };
@@ -207,7 +231,22 @@ const Users = () => {
   const resetModal = () => {
     setShowModal(false);
     setEditUser(null);
-    setNewUser({ name: "", email: "", phone: "", password: "", role: "loan_officer" });
+    setNewUser(emptyUserForm());
+  };
+
+  /** "default" = inherit role visibility, "allow" = always show, "deny" = always hide. */
+  const getPermissionValue = (key: string): "default" | "allow" | "deny" => {
+    if (!(key in newUser.sidebar_permissions)) return "default";
+    return newUser.sidebar_permissions[key] ? "allow" : "deny";
+  };
+
+  const setPermissionValue = (key: string, value: "default" | "allow" | "deny") => {
+    setNewUser(prev => {
+      const next = { ...prev.sidebar_permissions };
+      if (value === "default") delete next[key];
+      else next[key] = value === "allow";
+      return { ...prev, sidebar_permissions: next };
+    });
   };
 
   const filteredUsers = users.filter(u =>
@@ -250,7 +289,7 @@ const Users = () => {
             <h1>Users Management</h1>
             <p>Manage system users and their roles</p>
           </div>
-          <button className="add-user-btn" onClick={() => { setEditUser(null); setNewUser({ name: "", email: "", phone: "", password: "", role: "loan_officer" }); setShowModal(true); }}>
+          <button className="add-user-btn" onClick={() => { setEditUser(null); setNewUser(emptyUserForm()); setShowModal(true); }}>
             Add User
           </button>
         </div>
@@ -383,6 +422,37 @@ const Users = () => {
                   <option value="admin">Administrator</option>
                 </select>
               </div>
+
+              {newUser.role !== "admin" && (
+                <div className="permissions-section">
+                  <label className="permissions-toggle">
+                    <input
+                      type="checkbox"
+                      checked={newUser.full_sidebar_access}
+                      onChange={(e) => setNewUser({ ...newUser, full_sidebar_access: e.target.checked })}
+                    />
+                    Grant Full Sidebar Access (sees every menu item, ignores settings below)
+                  </label>
+
+                  <div className="permissions-title">Sidebar Permissions</div>
+                  <div className="permissions-list" style={{ opacity: newUser.full_sidebar_access ? 0.5 : 1 }}>
+                    {SIDEBAR_ITEMS.map((item) => (
+                      <div key={item.key} className="permission-row">
+                        <span className="permission-label">{item.label}</span>
+                        <select
+                          value={getPermissionValue(item.key)}
+                          disabled={newUser.full_sidebar_access}
+                          onChange={(e) => setPermissionValue(item.key, e.target.value as "default" | "allow" | "deny")}
+                        >
+                          <option value="default">Default (role-based)</option>
+                          <option value="allow">Allow</option>
+                          <option value="deny">Deny / Lock</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-actions">
               <button className="btn-cancel" onClick={resetModal}>Cancel</button>
@@ -677,7 +747,7 @@ const Users = () => {
           background: white;
           border-radius: 24px;
           padding: 28px;
-          width: 480px;
+          width: 560px;
           max-width: 90%;
           max-height: 90vh;
           overflow-y: auto;
@@ -720,6 +790,73 @@ const Users = () => {
           outline: none;
           border-color: #3b82f6;
           box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+        }
+
+        .permissions-section {
+          border-top: 1px solid #f1f5f9;
+          padding-top: 16px;
+          margin-top: 4px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .permissions-toggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0f172a;
+          cursor: pointer;
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+
+        .permissions-toggle input {
+          width: 16px;
+          height: 16px;
+          accent-color: #3b82f6;
+        }
+
+        .permissions-title {
+          font-size: 12px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .permissions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: opacity 0.2s;
+        }
+
+        .permission-row {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 10px 12px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+        }
+
+        .permission-label {
+          font-size: 12.5px;
+          font-weight: 600;
+          color: #334155;
+        }
+
+        .permission-row select {
+          padding: 8px 10px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 13px;
         }
 
         .modal-actions {
