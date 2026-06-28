@@ -912,6 +912,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // =========================
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -919,7 +926,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       <div style={{
         flex: 1,
         minWidth: 0,
-        marginLeft: isCollapsed ? "80px" : "260px",
+        marginLeft: isMobile ? "0" : (isCollapsed ? "80px" : "260px"),
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
@@ -930,7 +937,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         <div style={{
           flex: 1,
           minWidth: 0,
-          padding: "10px 16px",
+          padding: isMobile ? "10px 10px" : "10px 16px",
           overflowX: "hidden",
           overflowY: "auto"
         }}>

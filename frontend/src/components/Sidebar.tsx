@@ -30,10 +30,17 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [showAccounting, setShowAccounting] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser();
   }, []);
+
+  // On phones/tablets the sidebar becomes an off-canvas drawer instead of
+  // pushing content — close it automatically whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const fetchCurrentUser = async () => {
     const token = localStorage.getItem("token");
@@ -100,14 +107,27 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessMdAuth = isAllowed("md_auth", userRole === "managing_director" || userRole === "admin");
   const canAccessApprovals = canAccessManagerReview || canAccessGmReview || canAccessMdAuth;
   const canAccessManagement = isAllowed("wateja", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
-  const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director");
+  const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
 
+  const isMobileViewport = () => window.innerWidth <= 768;
+
   return (
-    <div className={`sd ${isCollapsed ? "sd--c" : ""}`}>
+    <>
+      {/* ── Mobile-only hamburger trigger — hidden while the drawer is open
+          since the drawer's own logo-area button closes it instead. ── */}
+      {!mobileOpen && (
+        <button className="sd-mobile-toggle" onClick={() => setMobileOpen(true)} title="Open menu" aria-label="Open menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+        </button>
+      )}
+
+      {mobileOpen && <div className="sd-mobile-backdrop" onClick={() => setMobileOpen(false)} />}
+
+      <div className={`sd ${isCollapsed ? "sd--c" : ""} ${mobileOpen ? "sd--mobile-open" : ""}`}>
 
       {/* ── Logo + Hamburger ── */}
       <div className="sd-logo">
@@ -116,7 +136,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <img src={logo} alt="Orethan" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
-        <button className="sd-logo__menu" onClick={() => setIsCollapsed(!isCollapsed)} title={isCollapsed ? "Expand" : "Collapse"}>
+        <button className="sd-logo__menu" onClick={() => (isMobileViewport() ? setMobileOpen(false) : setIsCollapsed(!isCollapsed))} title={isCollapsed ? "Expand" : "Collapse"}>
           {isCollapsed ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           ) : (
@@ -475,8 +495,49 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         .sd-scroll::-webkit-scrollbar { width: 3px; }
         .sd-scroll::-webkit-scrollbar-track { background: transparent; }
         .sd-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255, 0.1); border-radius: 3px; }
+
+        /* ─── MOBILE / TABLET DRAWER ─── */
+        .sd-mobile-toggle {
+          display: none;
+          position: fixed;
+          top: 14px; left: 14px;
+          z-index: 250;
+          width: 42px; height: 42px;
+          border-radius: 12px;
+          background: #102a43;
+          color: #fff;
+          border: none;
+          align-items: center; justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .sd-mobile-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 99;
+        }
+        @media (max-width: 768px) {
+          .sd-mobile-toggle { display: flex; }
+          .sd-mobile-backdrop { display: block; }
+          .sd, .sd--c {
+            width: 260px;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            z-index: 200;
+          }
+          .sd--mobile-open, .sd--c.sd--mobile-open {
+            transform: translateX(0);
+          }
+          .sd--c .sd-logo__brand { display: flex; }
+          .sd--c .sd-sec { text-align: left; padding: 18px 20px 6px 20px; font-size: 10px; color: rgba(255,255,255,0.3); }
+          .sd--c .sd-item { justify-content: flex-start; padding: 10px 20px; margin: 1px 10px; }
+          .sd--c .sd-user { justify-content: flex-start; padding: 14px 16px; margin: 20px 14px 10px 14px; }
+        }
       `}</style>
     </div>
+    </>
   );
 };
 

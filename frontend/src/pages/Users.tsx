@@ -45,7 +45,7 @@ const SIDEBAR_ROLE_DEFAULTS: Record<string, "all" | string[]> = {
   gm_review: ["admin", "general_manager"],
   md_auth: ["admin", "managing_director"],
   wateja: ["admin", "loan_manager", "general_manager", "managing_director"],
-  accounting: ["admin", "finance_officer", "managing_director"],
+  accounting: ["admin", "finance_officer", "managing_director", "general_manager"],
   disburse_payments: ["admin", "finance_officer"],
 };
 

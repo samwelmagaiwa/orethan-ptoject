@@ -118,10 +118,10 @@ class User extends Authenticatable
 
     /**
      * Accounting module, Risk Reports, and Financial Reports are shared by
-     * Admin, Finance Officer/Cashier, and Managing Director.
+     * Admin, Finance Officer/Cashier, Managing Director, and General Manager.
      */
     public function canAccessAccounting()
     {
-        return $this->isAdmin() || $this->isFinanceOfficer() || $this->isManagingDirector();
+        return $this->isAdmin() || $this->isFinanceOfficer() || $this->isManagingDirector() || $this->isGeneralManager();
     }
 }
