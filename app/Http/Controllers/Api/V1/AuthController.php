@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Sms\GuarantorOverdueChecker;
+use App\Sms\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -191,6 +193,12 @@ class AuthController extends Controller
     // GET CURRENT USER
     public function me(Request $request)
     {
+        // Zero-infrastructure fallback for the daily guarantor-overdue SMS
+        // check — runs at most once per calendar day, triggered by ordinary
+        // page loads (every page calls /me on mount) rather than requiring a
+        // server cron entry. See GuarantorOverdueChecker for details.
+        GuarantorOverdueChecker::runIfDue(app(SmsService::class));
+
         return response()->json($request->user());
     }
 
