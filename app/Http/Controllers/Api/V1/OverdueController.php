@@ -312,6 +312,15 @@ class OverdueController extends Controller
                 return $this->error('Imeshindikana kutuma SMS: ' . ($result->error ?? 'hitilafu isiyojulikana'), 422);
             }
 
+            // Once genuinely overdue, also notify the loan's guarantor(s) —
+            // but only the first time for this installment, whether that's
+            // triggered here or by the scheduled daily check.
+            if ($isOverdue && !$schedule->guarantor_notified_at) {
+                $this->sms->sendGuarantorOverdueNotices($loan, self::PENALTY_RATE * 100);
+                $schedule->guarantor_notified_at = now();
+                $schedule->save();
+            }
+
             $activity = CollectionActivity::create([
                 'loan_id' => $loan->id,
                 'customer_id' => $loan->customer_id,

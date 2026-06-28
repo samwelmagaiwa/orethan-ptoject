@@ -16,6 +16,7 @@ class LoanSchedule extends Model
         'balance_remaining',
         'amount_paid',
         'status',
+        'guarantor_notified_at',
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class LoanSchedule extends Model
         'total_amount' => 'decimal:2',
         'balance_remaining' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'guarantor_notified_at' => 'datetime',
     ];
 
     public function loan()

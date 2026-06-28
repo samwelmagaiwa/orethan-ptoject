@@ -66,4 +66,14 @@ class SmsTemplates
         return "Mpendwa {$customerName}, mkopo wako (Akaunti: {$loanAccountNumber}) una malipo yaliyochelewa ya TZS "
             . self::money($amountOverdue) . " kwa siku {$daysOverdue}. Tafadhali lipa haraka iwezekanavyo kuepuka adhabu. Asante - Orethan Microfinance.";
     }
+
+    /** Sent to a loan's guarantor(s) once the client misses a repayment due date. */
+    public static function guarantorOverdueNotice(string $guarantorName, string $clientName, float $penaltyPercentage): string
+    {
+        $percentage = rtrim(rtrim(number_format($penaltyPercentage, 1), '0'), '.');
+
+        return "Mpendwa {$guarantorName}, {$clientName} ambaye ulimdhamini hajafanya marejesho ya mkopo wake, "
+            . "hivyo deni limeongezeka kwa asilimia {$percentage}% kama sera inavyosema. Tunakuomba umkumbushe "
+            . "kufanya marejesho ili kuepuka usumbufu. Asante - Orethan Microfinance.";
+    }
 }

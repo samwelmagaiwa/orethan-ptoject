@@ -109,6 +109,59 @@ class SmsService
         );
     }
 
+    /**
+     * Notifies every guarantor on file for this loan that the client has
+     * missed a repayment, once a missed installment is detected. Returns
+     * one SmsResult per guarantor actually found and sent to (empty array
+     * if the loan has no guarantor name+phone on record — e.g. Employee
+     * Loans, which collect no guarantor details at all).
+     *
+     * @return SmsResult[]
+     */
+    public function sendGuarantorOverdueNotices(Loan $loan, float $penaltyPercentage): array
+    {
+        $loan->loadMissing('customer');
+
+        $results = [];
+        foreach ($this->extractGuarantors($loan) as $guarantor) {
+            $results[] = $this->dispatch(
+                type: 'guarantor_overdue',
+                phone: $guarantor['phone'],
+                message: SmsTemplates::guarantorOverdueNotice($guarantor['name'], $loan->name, $penaltyPercentage),
+                customerId: $loan->customer_id,
+                loanId: $loan->id,
+            );
+        }
+
+        return $results;
+    }
+
+    /**
+     * Reads guarantor name+phone pairs out of the loan's free-form `details`
+     * JSON. Field prefix differs by loan type: PersonalLoan.tsx writes
+     * wdhamini1/2*, GroupLoan.tsx writes mdhamini1/2* — both follow the same
+     * {prefix}{n}JinaKamili / {prefix}{n}Simu naming. Employee Loans collect
+     * no guarantor details, so this returns an empty array for those.
+     *
+     * @return array<int, array{name: string, phone: string}>
+     */
+    protected function extractGuarantors(Loan $loan): array
+    {
+        $details = $loan->details ?? [];
+        $prefix = $loan->type === 'group' ? 'mdhamini' : 'wdhamini';
+
+        $guarantors = [];
+        foreach ([1, 2] as $n) {
+            $name = $details["{$prefix}{$n}JinaKamili"] ?? null;
+            $phone = $details["{$prefix}{$n}Simu"] ?? null;
+            if ($name && $phone) {
+                $guarantors[] = ['name' => $name, 'phone' => $phone];
+            }
+        }
+
+        return $guarantors;
+    }
+
     protected function resolvePhone(Loan $loan): ?string
     {
         return $loan->customer?->phone_number ?: $loan->phone;
