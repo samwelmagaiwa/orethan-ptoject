@@ -202,6 +202,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/accounting/bank-reconciliations', [BankReconciliationController::class, 'store']);
         Route::post('/accounting/bank-reconciliations/auto-match', [BankReconciliationController::class, 'autoMatch']);
         Route::get('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'show']);
+        Route::delete('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'destroy']);
     });
 
     // ========== RISK & FINANCIAL REPORTS (Admin / Finance Officer / Managing Director) ==========

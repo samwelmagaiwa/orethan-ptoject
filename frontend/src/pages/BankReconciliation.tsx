@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
 import { printDocument } from "../utils/printDoc";
 
@@ -29,6 +30,7 @@ const BankReconciliation = () => {
   const [matching, setMatching] = useState(false);
   const [matchSummary, setMatchSummary] = useState<{ matchedCount: number; unmatchedStatementLines: { date: string; amount: number; description?: string }[] } | null>(null);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const authHeaders = () => {
     const token = localStorage.getItem("token");
@@ -141,9 +143,32 @@ const BankReconciliation = () => {
     printDocument("Bank Reconciliations", body);
   };
 
+  const deleteReconciliation = async () => {
+    if (!confirmDeleteId) return;
+    try {
+      await axios.delete(`${API_BASE}/accounting/bank-reconciliations/${confirmDeleteId}`, { headers: authHeaders() });
+      setList(prev => prev.filter(r => r.id !== confirmDeleteId));
+      setModal({ isOpen: true, title: "Deleted", message: "Bank Reconciliation deleted", type: "success" });
+    } catch (err: any) {
+      setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Failed to delete reconciliation", type: "error" });
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  };
+
   return (
     <div className="br-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        title="Delete Bank Reconciliation"
+        message="Delete this reconciliation working paper? This does not affect the ledger or any posted journal entries — it only removes this comparison record."
+        type="danger"
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        onConfirm={deleteReconciliation}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
 
       <div className="br-card">
         <div className="br-accent-bar" />
@@ -162,10 +187,10 @@ const BankReconciliation = () => {
           <div className="br-empty">Loading...</div>
         ) : (
           <table>
-            <thead><tr><th>Account</th><th>Statement Date</th><th>Statement Balance</th><th>Book Balance</th><th>Adjusted Balance</th><th>Difference</th><th>Status</th></tr></thead>
+            <thead><tr><th>Account</th><th>Statement Date</th><th>Statement Balance</th><th>Book Balance</th><th>Adjusted Balance</th><th>Difference</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {list.length === 0 ? (
-                <tr><td colSpan={7} className="br-empty">No reconciliations yet</td></tr>
+                <tr><td colSpan={8} className="br-empty">No reconciliations yet</td></tr>
               ) : list.map(r => (
                 <tr key={r.id}>
                   <td>{r.account.code} — {r.account.name}</td>
@@ -175,6 +200,7 @@ const BankReconciliation = () => {
                   <td>{fmt(r.adjusted_balance)}</td>
                   <td>{fmt(r.difference)}</td>
                   <td><span className={`br-status ${r.status}`}>{r.status}</span></td>
+                  <td><button type="button" className="br-delete-btn" onClick={() => setConfirmDeleteId(r.id)}>Delete</button></td>
                 </tr>
               ))}
             </tbody>
@@ -272,6 +298,8 @@ const BankReconciliation = () => {
         .br-status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .br-status.reconciled { background: #ecfdf5; color: #059669; }
         .br-status.draft { background: #fffbeb; color: #d97706; }
+        .br-delete-btn { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .br-delete-btn:hover { background: #fecaca; }
         .br-empty { text-align: center; padding: 40px; color: #64748b; }
         .br-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .br-modal-content { background: white; border-radius: 20px; padding: 26px; width: 720px; max-width: 94%; max-height: 90vh; overflow-y: auto; }

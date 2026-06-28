@@ -139,4 +139,23 @@ class BankReconciliationController extends Controller
             return $this->error($e->getMessage(), 422);
         }
     }
+
+    /**
+     * Delete a reconciliation working paper. This only removes the
+     * reconciliation record and its items (cascade) — it never touches the
+     * underlying journal entries/ledger, since this is just a memo comparing
+     * the book balance to a bank statement, not part of the GL itself.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->canAccessAccounting()) {
+            return $this->error('You do not have access to Bank Reconciliation', 403);
+        }
+
+        $reconciliation = BankReconciliation::findOrFail($id);
+        $reconciliation->delete();
+
+        return $this->success(null, 'Bank Reconciliation deleted');
+    }
 }
