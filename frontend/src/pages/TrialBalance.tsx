@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -34,6 +36,24 @@ const TrialBalance = () => {
 
   useEffect(() => { load(asOf); }, []);
 
+  const exportRows = () => (data?.rows || []).map(r => ({
+    Code: r.code, Account: r.name, Type: r.type, Debit: r.debit, Credit: r.credit,
+  }));
+
+  const handlePrint = () => {
+    if (!data) return;
+    const rowsHtml = data.rows.map(r => `<tr><td>${r.code}</td><td>${r.name}</td><td style="text-transform:capitalize">${r.type}</td><td style="text-align:right">${r.debit > 0 ? fmt(r.debit) : "—"}</td><td style="text-align:right">${r.credit > 0 ? fmt(r.credit) : "—"}</td></tr>`).join("");
+    const body = `
+      <table>
+        <thead><tr><th>Code</th><th>Account</th><th>Type</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr><td colspan="3"><strong>TOTAL</strong></td><td style="text-align:right"><strong>${fmt(data.total_debit)}</strong></td><td style="text-align:right"><strong>${fmt(data.total_credit)}</strong></td></tr></tfoot>
+      </table>
+      <p style="margin-top:14px;font-weight:700;color:${data.is_balanced ? "#059669" : "#dc2626"}">${data.is_balanced ? "Books are balanced" : "Books are NOT balanced — investigate immediately"}</p>
+    `;
+    printDocument("Trial Balance", body, asOf);
+  };
+
   return (
     <div className="tb-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -48,6 +68,7 @@ const TrialBalance = () => {
           <div className="tb-filters">
             <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
             <button onClick={() => load(asOf)}>Refresh</button>
+            <ExportButtons getRows={exportRows} filename="trial-balance" sheetName="Trial Balance" onPrint={handlePrint} disabled={!data?.rows?.length} />
           </div>
         </div>
 
@@ -94,7 +115,7 @@ const TrialBalance = () => {
         .tb-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
         .tb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .tb-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .tb-filters { display: flex; gap: 10px; }
+        .tb-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .tb-filters input { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
         .tb-filters button { background: #102a43; color: white; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .tb-filters button:hover { background: #1e5fae; }

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -36,6 +38,32 @@ const CashBook = () => {
 
   useEffect(() => { load(); }, []);
 
+  const exportRows = () => {
+    if (!data) return [];
+    const rows: Record<string, unknown>[] = [];
+    data.accounts.forEach(acc => acc.lines.forEach(line => rows.push({
+      Account: `${acc.account.code} — ${acc.account.name}`,
+      Date: line.date, "Entry No.": line.entry_number, Description: line.description,
+      Debit: line.debit, Credit: line.credit, Balance: line.running_balance,
+    })));
+    return rows;
+  };
+
+  const handlePrint = () => {
+    if (!data) return;
+    const body = `
+      <p><strong>Combined Opening Balance:</strong> TZS ${fmt(data.combined_opening_balance)} &nbsp; | &nbsp; <strong>Combined Closing Balance:</strong> TZS ${fmt(data.combined_closing_balance)}</p>
+      ${data.accounts.map(acc => `
+        <h4 style="margin:18px 0 8px">${acc.account.code} — ${acc.account.name} (Closing: TZS ${fmt(acc.closing_balance)})</h4>
+        <table>
+          <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
+          <tbody>${acc.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
+        </table>
+      `).join("")}
+    `;
+    printDocument("Cash Book", body, `${from} to ${to}`);
+  };
+
   return (
     <div className="cb-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -52,6 +80,7 @@ const CashBook = () => {
             <span>to</span>
             <input type="date" value={to} onChange={e => setTo(e.target.value)} />
             <button onClick={load}>Refresh</button>
+            <ExportButtons getRows={exportRows} filename="cash-book" sheetName="Cash Book" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
@@ -104,7 +133,7 @@ const CashBook = () => {
         .cb-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
         .cb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .cb-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .cb-filters { display: flex; align-items: center; gap: 8px; }
+        .cb-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .cb-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .cb-filters span { font-size: 12px; color: #64748b; }
         .cb-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }

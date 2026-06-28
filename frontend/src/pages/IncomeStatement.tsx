@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -35,6 +37,36 @@ const IncomeStatement = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const exportRows = () => {
+    if (!data) return [];
+    const rows: Record<string, unknown>[] = [];
+    data.income.forEach(l => rows.push({ Section: "Income", Code: l.code, Account: l.name, Amount: l.amount }));
+    rows.push({ Section: "Income", Code: "", Account: "Total Income", Amount: data.total_income });
+    data.expense.forEach(l => rows.push({ Section: "Expense", Code: l.code, Account: l.name, Amount: l.amount }));
+    rows.push({ Section: "Expense", Code: "", Account: "Total Expenses", Amount: data.total_expense });
+    rows.push({ Section: "", Code: "", Account: "Net Income", Amount: data.net_income });
+    return rows;
+  };
+
+  const sectionHtml = (title: string, lines: Line[], total: number) => `
+    <h4 style="margin:18px 0 8px">${title}</h4>
+    <table>
+      <thead><tr><th>Code</th><th>Account</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>${lines.map(l => `<tr><td>${l.code}</td><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="2"><strong>Total ${title}</strong></td><td style="text-align:right"><strong>${fmt(total)}</strong></td></tr></tfoot>
+    </table>
+  `;
+
+  const handlePrint = () => {
+    if (!data) return;
+    const body = `
+      ${sectionHtml("Income", data.income, data.total_income)}
+      ${sectionHtml("Expenses", data.expense, data.total_expense)}
+      <div class="net-box"><span>Net Income</span>${fmt(data.net_income)}</div>
+    `;
+    printDocument("Income Statement (Profit & Loss)", body, `${from} to ${to}`);
+  };
 
   const section = (title: string, lines: Line[], total: number, emptyText: string) => (
     <div className="is-section">
@@ -75,6 +107,7 @@ const IncomeStatement = () => {
             <span>to</span>
             <input type="date" value={to} onChange={e => setTo(e.target.value)} />
             <button onClick={load}>Refresh</button>
+            <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
@@ -102,7 +135,7 @@ const IncomeStatement = () => {
         .is-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 24px; flex-wrap: wrap; gap: 14px; }
         .is-header h1 { font-size: 20px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .is-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .is-filters { display: flex; align-items: center; gap: 8px; }
+        .is-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .is-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .is-filters span { font-size: 12px; color: #64748b; }
         .is-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }

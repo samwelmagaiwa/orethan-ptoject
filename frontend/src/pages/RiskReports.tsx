@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -47,6 +49,31 @@ const RiskReports = () => {
     { key: "critical", label: "Critical (90+ DPD)", color: "#dc2626", bg: "#fef2f2" },
   ] as const;
 
+  const exportRows = () => (defaults?.cohorts || []).map(c => ({
+    Cohort: c.cohort, "Disbursed Count": c.disbursed_count, "Disbursed Amount": c.disbursed_amount,
+    "Defaulted Count": c.defaulted_count, "Defaulted Amount": c.defaulted_amount, "Default Rate (%)": c.default_rate_by_amount,
+  }));
+
+  const handlePrint = () => {
+    if (!defaults) return;
+    const body = `
+      <p><strong>Total Outstanding Portfolio:</strong> ${fmt(par?.total_outstanding_portfolio)}</p>
+      <p>${defaults.overall.defaulted_loans} defaulted loans | ${fmt(defaults.overall.defaulted_amount)} at risk | Default rate: ${defaults.overall.default_rate_by_count}% by count, ${defaults.overall.default_rate_by_amount}% by amount</p>
+      <table>
+        <thead><tr><th>Cohort</th><th style="text-align:right">Disbursed</th><th style="text-align:right">Disbursed Amount</th><th style="text-align:right">Defaulted</th><th style="text-align:right">Defaulted Amount</th><th style="text-align:right">Default Rate</th></tr></thead>
+        <tbody>${defaults.cohorts.map(c => `<tr><td>${c.cohort}</td><td style="text-align:right">${c.disbursed_count}</td><td style="text-align:right">${fmt(c.disbursed_amount)}</td><td style="text-align:right">${c.defaulted_count}</td><td style="text-align:right">${fmt(c.defaulted_amount)}</td><td style="text-align:right">${c.default_rate_by_amount}%</td></tr>`).join("")}</tbody>
+      </table>
+      ${defaults.defaulted_loans.length > 0 ? `
+        <h4 style="margin:18px 0 8px">Defaulted Loans</h4>
+        <table>
+          <thead><tr><th>Loan No.</th><th>Borrower</th><th>Disbursed</th><th style="text-align:right">Amount</th><th style="text-align:right">Outstanding</th></tr></thead>
+          <tbody>${defaults.defaulted_loans.map(l => `<tr><td>${l.loan_number}</td><td>${l.borrower}</td><td>${l.disbursed_at}</td><td style="text-align:right">${fmt(l.amount)}</td><td style="text-align:right">${fmt(l.remaining_balance)}</td></tr>`).join("")}</tbody>
+        </table>
+      ` : ""}
+    `;
+    printDocument("Risk Reports", body);
+  };
+
   return (
     <div className="rr-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -54,8 +81,11 @@ const RiskReports = () => {
       <div className="rr-card">
         <div className="rr-accent-bar" />
         <div className="rr-header">
-          <h1>Risk Reports</h1>
-          <p>Portfolio at Risk (PAR) and default analysis</p>
+          <div>
+            <h1>Risk Reports</h1>
+            <p>Portfolio at Risk (PAR) and default analysis</p>
+          </div>
+          <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
         </div>
 
         {loading ? (
@@ -138,7 +168,7 @@ const RiskReports = () => {
         .rr-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .rr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-        .rr-header { margin-top: 6px; }
+        .rr-header { margin-top: 6px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; }
         .rr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .rr-header p { font-size: 13px; color: #64748b; margin: 0 0 20px; }
         .rr-portfolio-line { font-size: 14px; color: #334155; margin-bottom: 18px; }

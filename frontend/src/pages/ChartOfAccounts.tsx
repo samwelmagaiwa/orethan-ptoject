@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -116,6 +118,17 @@ const ChartOfAccounts = () => {
     (a.code.toLowerCase().includes(search.toLowerCase()) || a.name.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const exportRows = () => filtered.map(a => ({
+    Code: a.code, Name: a.name, Type: TYPE_LABELS[a.type], "Normal Balance": a.normal_balance,
+    "Cash/Bank": a.is_cash_account ? "Yes" : "No", Status: a.is_active ? "Active" : "Inactive",
+  }));
+
+  const handlePrint = () => {
+    const rowsHtml = filtered.map(a => `<tr><td>${a.code}</td><td>${a.name}${a.is_system ? " (SYSTEM)" : ""}</td><td style="text-transform:capitalize">${a.type}</td><td style="text-transform:capitalize">${a.normal_balance}</td><td>${a.is_cash_account ? "Yes" : "—"}</td><td>${a.is_active ? "Active" : "Inactive"}</td></tr>`).join("");
+    const body = `<table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Normal Balance</th><th>Cash?</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+    printDocument("Chart of Accounts", body);
+  };
+
   return (
     <div className="coa-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -137,6 +150,7 @@ const ChartOfAccounts = () => {
             <option value="">All Types</option>
             {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
+          <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
         </div>
 
         {loading ? (

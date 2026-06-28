@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -60,6 +62,23 @@ const GeneralLedger = () => {
     }
   };
 
+  const exportRows = () => (ledger?.lines || []).map(l => ({
+    Date: l.date, "Entry No.": l.entry_number, Description: l.description,
+    Debit: l.debit, Credit: l.credit, Balance: l.running_balance,
+  }));
+
+  const handlePrint = () => {
+    if (!ledger) return;
+    const body = `
+      <p><strong>Account:</strong> ${ledger.account.code} — ${ledger.account.name} &nbsp; | &nbsp; <strong>Opening:</strong> ${fmt(ledger.opening_balance)} &nbsp; | &nbsp; <strong>Closing:</strong> ${fmt(ledger.closing_balance)}</p>
+      <table>
+        <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
+        <tbody>${ledger.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
+      </table>
+    `;
+    printDocument("General Ledger", body, `${from || "—"} to ${to || "—"}`);
+  };
+
   return (
     <div className="gl-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -79,6 +98,7 @@ const GeneralLedger = () => {
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
           <input type="date" value={to} onChange={e => setTo(e.target.value)} />
           <button className="gl-load-btn" onClick={() => load()}>Load</button>
+          <ExportButtons getRows={exportRows} filename="general-ledger" sheetName="General Ledger" onPrint={handlePrint} disabled={!ledger?.lines?.length} />
         </div>
 
         {loading && <div className="gl-empty">Loading...</div>}

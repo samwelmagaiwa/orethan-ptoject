@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -59,6 +61,85 @@ const FinancialReports = () => {
 
   useEffect(() => { load(); }, []);
 
+  // Export/print always reflects whichever section tab is currently active.
+  const exportRows = (): Record<string, unknown>[] => {
+    switch (section) {
+      case "executive":
+        return executive ? [{
+          "Total Portfolio": executive.total_portfolio, "Outstanding Balance": executive.total_outstanding,
+          "Disbursed This Period": executive.disbursed_this_period, "Collected This Period": executive.collected_this_period,
+          "Active Loans": executive.active_loans, "Completed Loans": executive.completed_loans,
+          "NPL Ratio (%)": executive.npl_ratio, "Net Income This Period": executive.net_income_this_period,
+        }] : [];
+      case "collections":
+        return (collections?.by_method || []).map(m => ({ Method: m.method, Count: m.count, Total: m.total }));
+      case "interest":
+        return (interest?.monthly_trend || []).map(t => ({ Month: t.month, "Interest Income": t.total }));
+      case "penalties":
+        return (penalties?.monthly_trend || []).map(t => ({ Month: t.month, "Penalties Collected": t.total }));
+      case "pnl":
+        if (!pnl) return [];
+        return [
+          ...pnl.income.map(l => ({ Section: "Income", Code: l.code, Account: l.name, Amount: l.amount })),
+          { Section: "Income", Code: "", Account: "Total Income", Amount: pnl.total_income },
+          ...pnl.expense.map(l => ({ Section: "Expense", Code: l.code, Account: l.name, Amount: l.amount })),
+          { Section: "Expense", Code: "", Account: "Total Expenses", Amount: pnl.total_expense },
+          { Section: "", Code: "", Account: "Net Income", Amount: pnl.net_income },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const handlePrint = () => {
+    let body = "";
+    if (section === "executive" && executive) {
+      body = `
+        <table><tbody>
+          <tr><td>Total Portfolio</td><td style="text-align:right">${fmt(executive.total_portfolio)}</td></tr>
+          <tr><td>Outstanding Balance</td><td style="text-align:right">${fmt(executive.total_outstanding)}</td></tr>
+          <tr><td>Disbursed This Period</td><td style="text-align:right">${fmt(executive.disbursed_this_period)}</td></tr>
+          <tr><td>Collected This Period</td><td style="text-align:right">${fmt(executive.collected_this_period)}</td></tr>
+          <tr><td>Active Loans</td><td style="text-align:right">${executive.active_loans}</td></tr>
+          <tr><td>Completed Loans</td><td style="text-align:right">${executive.completed_loans}</td></tr>
+          <tr><td>NPL Ratio (PAR90)</td><td style="text-align:right">${executive.npl_ratio}%</td></tr>
+          <tr><td><strong>Net Income This Period</strong></td><td style="text-align:right"><strong>${fmt(executive.net_income_this_period)}</strong></td></tr>
+        </tbody></table>
+      `;
+    } else if (section === "collections" && collections) {
+      body = `
+        <p><strong>Total Collected:</strong> ${fmt(collections.total_collected)}</p>
+        <h4>By Payment Method</h4>
+        <table><thead><tr><th>Method</th><th style="text-align:right">Count</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>${collections.by_method.map(m => `<tr><td style="text-transform:capitalize">${m.method.replace(/_/g, " ")}</td><td style="text-align:right">${m.count}</td><td style="text-align:right">${fmt(m.total)}</td></tr>`).join("")}</tbody></table>
+        <h4>Monthly Trend</h4>
+        <table><thead><tr><th>Month</th><th style="text-align:right">Count</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>${collections.monthly_trend.map(t => `<tr><td>${t.month}</td><td style="text-align:right">${t.count}</td><td style="text-align:right">${fmt(t.total)}</td></tr>`).join("")}</tbody></table>
+      `;
+    } else if (section === "interest" && interest) {
+      body = `
+        <p><strong>Total Interest Income:</strong> ${fmt(interest.total_interest_income)}</p>
+        <table><thead><tr><th>Month</th><th style="text-align:right">Interest Income</th></tr></thead>
+        <tbody>${interest.monthly_trend.map(t => `<tr><td>${t.month}</td><td style="text-align:right">${fmt(t.total)}</td></tr>`).join("")}</tbody></table>
+      `;
+    } else if (section === "penalties" && penalties) {
+      body = `
+        <p><strong>Total Penalties Collected:</strong> ${fmt(penalties.total_penalties_collected)}</p>
+        <table><thead><tr><th>Month</th><th style="text-align:right">Penalties Collected</th></tr></thead>
+        <tbody>${penalties.monthly_trend.map(t => `<tr><td>${t.month}</td><td style="text-align:right">${fmt(t.total)}</td></tr>`).join("")}</tbody></table>
+      `;
+    } else if (section === "pnl" && pnl) {
+      body = `
+        <h4>Income</h4>
+        <table><tbody>${pnl.income.map(l => `<tr><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}<tr><td><strong>Total Income</strong></td><td style="text-align:right"><strong>${fmt(pnl.total_income)}</strong></td></tr></tbody></table>
+        <h4>Expenses</h4>
+        <table><tbody>${pnl.expense.map(l => `<tr><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}<tr><td><strong>Total Expenses</strong></td><td style="text-align:right"><strong>${fmt(pnl.total_expense)}</strong></td></tr></tbody></table>
+        <p style="margin-top:14px;font-weight:700">Net Income: ${fmt(pnl.net_income)}</p>
+      `;
+    }
+    if (body) printDocument(`Financial Reports — ${SECTION_LABELS[section]}`, body, `${from} to ${to}`);
+  };
+
   return (
     <div className="fr-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -75,6 +156,7 @@ const FinancialReports = () => {
             <span>to</span>
             <input type="date" value={to} onChange={e => setTo(e.target.value)} />
             <button onClick={load}>Refresh</button>
+            <ExportButtons getRows={exportRows} filename={`financial-report-${section}`} sheetName={SECTION_LABELS[section]} onPrint={handlePrint} disabled={loading} />
           </div>
         </div>
 
@@ -182,7 +264,7 @@ const FinancialReports = () => {
         .fr-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 18px; flex-wrap: wrap; gap: 14px; }
         .fr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .fr-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .fr-filters { display: flex; align-items: center; gap: 8px; }
+        .fr-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .fr-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .fr-filters span { font-size: 12px; color: #64748b; }
         .fr-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }

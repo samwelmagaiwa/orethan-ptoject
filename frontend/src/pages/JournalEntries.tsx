@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -62,6 +64,25 @@ const JournalEntries = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const exportRows = () => {
+    const rows: Record<string, unknown>[] = [];
+    entries.forEach(e => e.lines.forEach(l => rows.push({
+      "Entry No.": e.entry_number, Date: e.entry_date, Status: e.status,
+      "Entry Description": e.description, Account: `${l.account.code} — ${l.account.name}`,
+      "Line Description": l.description || "", Debit: l.debit, Credit: l.credit,
+    })));
+    return rows;
+  };
+
+  const handlePrint = () => {
+    const rowsHtml = entries.map(e => `
+      <tr><td colspan="4" style="background:#f8fafc;font-weight:700">${e.entry_number} — ${e.entry_date} — ${e.description} (${e.status})</td></tr>
+      ${e.lines.map(l => `<tr><td></td><td>${l.account.code} — ${l.account.name}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td></tr>`).join("")}
+    `).join("");
+    const body = `<table><thead><tr><th></th><th>Account</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+    printDocument("Journal Entries", body);
+  };
 
   const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -134,7 +155,10 @@ const JournalEntries = () => {
             <h1>Journal Entries</h1>
             <p>General Ledger postings — auto-posted from disbursements/repayments, or entered manually</p>
           </div>
-          <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Entry</button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
+            <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Entry</button>
+          </div>
         </div>
 
         {loading ? (

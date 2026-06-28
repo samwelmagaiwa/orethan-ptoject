@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import ExportButtons from "../components/ExportButtons";
+import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -37,6 +39,38 @@ const BalanceSheet = () => {
   };
 
   useEffect(() => { load(asOf); }, []);
+
+  const exportRows = () => {
+    if (!data) return [];
+    const rows: Record<string, unknown>[] = [];
+    data.assets.forEach(l => rows.push({ Section: "Assets", Code: l.code ?? "", Account: l.name, Amount: l.amount }));
+    rows.push({ Section: "Assets", Code: "", Account: "Total Assets", Amount: data.total_assets });
+    data.liabilities.forEach(l => rows.push({ Section: "Liabilities", Code: l.code ?? "", Account: l.name, Amount: l.amount }));
+    rows.push({ Section: "Liabilities", Code: "", Account: "Total Liabilities", Amount: data.total_liabilities });
+    data.equity.forEach(l => rows.push({ Section: "Equity", Code: l.code ?? "", Account: l.name, Amount: l.amount }));
+    rows.push({ Section: "Equity", Code: "", Account: "Total Equity", Amount: data.total_equity });
+    return rows;
+  };
+
+  const sectionHtml = (title: string, lines: Line[], total: number) => `
+    <h4 style="margin:18px 0 8px">${title}</h4>
+    <table>
+      <thead><tr><th>Code</th><th>Account</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>${lines.map(l => `<tr><td>${l.code ?? "—"}</td><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="2"><strong>Total ${title}</strong></td><td style="text-align:right"><strong>${fmt(total)}</strong></td></tr></tfoot>
+    </table>
+  `;
+
+  const handlePrint = () => {
+    if (!data) return;
+    const body = `
+      ${sectionHtml("Assets", data.assets, data.total_assets)}
+      ${sectionHtml("Liabilities", data.liabilities, data.total_liabilities)}
+      ${sectionHtml("Equity", data.equity, data.total_equity)}
+      <p style="margin-top:14px;font-weight:700;color:${data.is_balanced ? "#059669" : "#dc2626"}">${data.is_balanced ? "Balanced" : "NOT balanced"} — Assets ${fmt(data.total_assets)} vs Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}</p>
+    `;
+    printDocument("Balance Sheet", body, asOf);
+  };
 
   const section = (title: string, lines: Line[], total: number) => (
     <div className="bs-section">
@@ -75,6 +109,7 @@ const BalanceSheet = () => {
           <div className="bs-filters">
             <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
             <button onClick={() => load(asOf)}>Refresh</button>
+            <ExportButtons getRows={exportRows} filename="balance-sheet" sheetName="Balance Sheet" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
@@ -107,7 +142,7 @@ const BalanceSheet = () => {
         .bs-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 24px; flex-wrap: wrap; gap: 14px; }
         .bs-header h1 { font-size: 20px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .bs-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .bs-filters { display: flex; gap: 8px; }
+        .bs-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .bs-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
         .bs-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
         .bs-filters button:hover { background: #1e5fae; }
