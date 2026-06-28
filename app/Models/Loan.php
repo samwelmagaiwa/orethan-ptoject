@@ -154,8 +154,14 @@ class Loan extends Model
      * Build (without persisting) the amortization rows for this loan.
      * Used both to persist the schedule and to preview it before disbursement.
      */
-    public function buildScheduleRows($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
+    public function buildScheduleRows($months = 12, $interestRate = null, $frequency = 'Monthly', $startDate = null)
     {
+        // Falls back to the admin-configured default rate (Loan Settings)
+        // rather than a hardcoded percentage — callers normally pass an
+        // explicit rate captured at calculator/disbursement time, this only
+        // matters if one is ever omitted.
+        $interestRate ??= LoanSetting::current()->defaultInterestRateFraction();
+
         $installmentsPerMonth = match ($frequency) {
             'Weekly' => 4.33,
             'Bi-Weekly' => 2.165,
@@ -199,7 +205,7 @@ class Loan extends Model
     }
 
     // Auto-generate (persist) repayment schedule
-    public function generateSchedule($months = 12, $interestRate = 0.03, $frequency = 'Monthly', $startDate = null)
+    public function generateSchedule($months = 12, $interestRate = null, $frequency = 'Monthly', $startDate = null)
     {
         $this->schedules()->delete();
 
@@ -211,7 +217,7 @@ class Loan extends Model
     /**
      * Repayment summary (counts, installment amount, first/last dates) for previews.
      */
-    public function scheduleSummary($interestRate = 0.03, $startDate = null)
+    public function scheduleSummary($interestRate = null, $startDate = null)
     {
         $rows = $this->buildScheduleRows($this->termMonths(), $interestRate, $this->repaymentFrequency(), $startDate);
         if (empty($rows)) {
@@ -275,14 +281,13 @@ class Loan extends Model
             });
     }
 
-    // Penalty logic: e.g., 10% of overdue amount if overdue by more than X days
+    // Penalty on overdue arrears, at the admin-configured rate (Loan Settings)
     public function calculatePenalty()
     {
         $arrears = $this->getArrearsAmount();
         if ($arrears <= 0)
             return 0;
 
-        // Simple example: 2% weekly penalty on arrears
-        return $arrears * 0.02;
+        return $arrears * LoanSetting::current()->penaltyRateFraction();
     }
 }

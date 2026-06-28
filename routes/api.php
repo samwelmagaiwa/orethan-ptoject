@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\AccountingReportController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
 use App\Http\Controllers\Api\V1\RiskReportController;
 use App\Http\Controllers\Api\V1\FinancialReportController;
+use App\Http\Controllers\Api\V1\LoanSettingController;
 
 Route::prefix('v1')->group(function () {
 
@@ -71,6 +72,10 @@ Route::prefix('v1')->group(function () {
 
     // ✅ ROUTE YA UPLOAD NYARAKA (DOCUMENTATION CHECKLIST ATTACHMENTS) - PDF au picha
     Route::post('/upload/document', [LoanController::class, 'uploadDocument']);
+
+    // Loan policy rates (penalty / default interest / default processing fee) —
+    // public read so the landing-page calculator can pre-fill before login.
+    Route::get('/loan-settings', [LoanSettingController::class, 'show']);
 
     // ========== REPAYMENT ROUTES (Protected) ==========
     Route::middleware('auth:sanctum')->group(function () {
@@ -174,6 +179,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
         Route::post('/users/{id}/lock', [UserController::class, 'lock']);
         Route::post('/users/{id}/unlock', [UserController::class, 'unlock']);
+
+        // Loan policy rates — admin-only write (read is public, see above)
+        Route::put('/loan-settings', [LoanSettingController::class, 'update']);
 
         // ========== DRAFT PERSISTENCE ROUTES ==========
         Route::get('/drafts/{type}', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'show']);

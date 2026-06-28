@@ -208,8 +208,10 @@ class LoanService
 
             $this->accounting->postLoanDisbursement($disbursement, $user);
 
-            // 2. Generate Repayment Schedule from the disbursement date (using captured interest rate)
-            $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? 3) / 100;
+            // 2. Generate Repayment Schedule from the disbursement date (using captured interest
+            //    rate, falling back to the admin-configured default — Loan Settings — if missing)
+            $defaultInterestRate = \App\Models\LoanSetting::current()->default_interest_rate;
+            $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? $defaultInterestRate) / 100;
             $loan->generateSchedule($loan->termMonths(), $interestRate, $loan->repaymentFrequency(), $disbursementDate);
 
             // 3. Activate the loan account

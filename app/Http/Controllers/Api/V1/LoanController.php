@@ -255,7 +255,8 @@ class LoanController extends Controller
         }
 
         $loan = Loan::with(['customer', 'user', 'disbursement'])->findOrFail($id);
-        $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? 3) / 100;
+        $defaultInterestRate = \App\Models\LoanSetting::current()->default_interest_rate;
+        $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? $defaultInterestRate) / 100;
         $summary = $loan->scheduleSummary($interestRate);
 
         return response()->json([
@@ -268,7 +269,7 @@ class LoanController extends Controller
             'repayment_summary' => [
                 'term_months' => $loan->termMonths(),
                 'frequency' => $loan->repaymentFrequency(),
-                'interest_rate' => (int) ($loan->details['kiwakocha_Riba'] ?? 3),
+                'interest_rate' => (int) ($loan->details['kiwakocha_Riba'] ?? $defaultInterestRate),
                 'total_installments' => $summary['total_installments'],
                 'installment_amount' => $summary['installment_amount'],
                 'first_payment_date' => $summary['first_payment_date'],
@@ -534,8 +535,6 @@ class LoanController extends Controller
         }
     }
 
-    // Penalty rate applied to an overdue installment amount (flat % once overdue).
-    const PENALTY_RATE = 0.04;
     // A loan is considered defaulted once an installment is this many days overdue.
     const DEFAULT_DAYS = 90;
 
@@ -664,7 +663,9 @@ class LoanController extends Controller
             ->orderBy('due_date')
             ->get();
 
-        return $schedules->map(function ($s) {
+        $penaltyRate = \App\Models\LoanSetting::current()->penaltyRateFraction();
+
+        return $schedules->map(function ($s) use ($penaltyRate) {
             $loan = $s->loan;
             $amount = round((float) $s->total_amount - (float) ($s->amount_paid ?? 0));
             $daysLate = \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
@@ -675,7 +676,7 @@ class LoanController extends Controller
                 'loan_number' => $loan?->loan_account_number ?? ('LN-' . $loan?->id),
                 'days_late' => $daysLate,
                 'amount' => $amount,
-                'penalty' => round($amount * self::PENALTY_RATE),
+                'penalty' => round($amount * $penaltyRate),
                 'due_date' => $s->due_date?->toDateString(),
             ];
         })->toArray();

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\LoanSchedule;
+use App\Models\LoanSetting;
 use App\Sms\SmsService;
 use Illuminate\Console\Command;
 
@@ -19,11 +20,6 @@ class NotifyGuarantorsOfOverdueLoans extends Command
 
     protected $description = 'Send a Swahili SMS to each loan\'s guarantor(s) the first day a repayment is missed';
 
-    // Kept in sync with OverdueController::PENALTY_RATE (4%) so the
-    // percentage quoted to guarantors always matches what staff see on the
-    // Overdue Management dashboard.
-    const PENALTY_RATE = 0.04;
-
     public function handle(SmsService $sms): int
     {
         $schedules = LoanSchedule::with('loan')
@@ -32,6 +28,11 @@ class NotifyGuarantorsOfOverdueLoans extends Command
             ->whereDate('due_date', '<', now()->toDateString())
             ->get();
 
+        // Admin-configurable via Loan Settings — same source the Overdue
+        // Management dashboard and the manual "Contact" button read from, so
+        // the percentage quoted to guarantors always matches what staff see.
+        $penaltyPercentage = LoanSetting::current()->penalty_rate;
+
         $notified = 0;
         foreach ($schedules as $schedule) {
             $loan = $schedule->loan;
@@ -39,7 +40,7 @@ class NotifyGuarantorsOfOverdueLoans extends Command
                 continue;
             }
 
-            $sms->sendGuarantorOverdueNotices($loan, self::PENALTY_RATE * 100);
+            $sms->sendGuarantorOverdueNotices($loan, (float) $penaltyPercentage);
 
             $schedule->guarantor_notified_at = now();
             $schedule->save();

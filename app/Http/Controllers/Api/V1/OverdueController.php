@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
+use App\Models\LoanSetting;
 use App\Models\CollectionActivity;
 use App\Models\AuditLog;
 use App\Sms\SmsService;
@@ -22,9 +23,13 @@ class OverdueController extends Controller
     {
     }
 
-    // Sera za adhabu na uainishaji
-    const PENALTY_RATE = 0.04;   // 4% ya kiasi kilichochelewa
     const DEFAULT_DAYS = 90;     // siku za kuhesabu mkopo kuwa "defaulted"
+
+    // Admin-configurable via Loan Settings — see App\Models\LoanSetting.
+    private function penaltyRate(): float
+    {
+        return LoanSetting::current()->penaltyRateFraction();
+    }
 
     /**
      * Muhtasari wa dashibodi ya madeni yaliyochelewa.
@@ -49,7 +54,7 @@ class OverdueController extends Controller
             foreach ($overdueSchedules as $s) {
                 $amt = (float) $s->total_amount - (float) ($s->amount_paid ?? 0);
                 $overdueAmount += $amt;
-                $penalties += $amt * self::PENALTY_RATE;
+                $penalties += $amt * $this->penaltyRate();
                 $overdueLoanIds[$s->loan_id] = true;
                 if ($s->loan?->customer_id) {
                     $delinquentCustomers[$s->loan->customer_id] = true;
@@ -165,7 +170,7 @@ class OverdueController extends Controller
                 $overdueAmount = $overdue->sum(fn($s) => (float) $s->total_amount - (float) ($s->amount_paid ?? 0));
                 $earliest = $overdue->sortBy('due_date')->first();
                 $dpd = $earliest ? Carbon::parse($earliest->due_date)->diffInDays(now()) : 0;
-                $penalty = round($overdueAmount * self::PENALTY_RATE);
+                $penalty = round($overdueAmount * $this->penaltyRate());
 
                 $latestActivity = $loan->collectionActivities->sortByDesc('created_at')->first();
                 $recoveryStatus = $latestActivity?->recovery_status;
@@ -316,7 +321,7 @@ class OverdueController extends Controller
             // but only the first time for this installment, whether that's
             // triggered here or by the scheduled daily check.
             if ($isOverdue && !$schedule->guarantor_notified_at) {
-                $this->sms->sendGuarantorOverdueNotices($loan, self::PENALTY_RATE * 100);
+                $this->sms->sendGuarantorOverdueNotices($loan, $this->penaltyRate() * 100);
                 $schedule->guarantor_notified_at = now();
                 $schedule->save();
             }
