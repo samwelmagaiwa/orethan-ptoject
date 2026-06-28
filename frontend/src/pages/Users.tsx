@@ -414,52 +414,54 @@ const Users = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>{editUser ? "Edit User" : "Add New User"}</h2>
             <div className="modal-form">
-              <div className="form-field">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter full name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>Email Address</label>
-                <input
-                  type="email"
-                  placeholder="Enter email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>Phone Number</label>
-                <input
-                  type="text"
-                  placeholder="Enter phone number"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>{editUser ? "New Password (optional)" : "Password"}</label>
-                <input
-                  type="password"
-                  placeholder={editUser ? "Leave blank to keep current" : "Enter password"}
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>User Role</label>
-                <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
-                  <option value="loan_officer">Loan Officer</option>
-                  <option value="loan_manager">Loan Manager</option>
-                  <option value="general_manager">General Manager</option>
-                  <option value="managing_director">Managing Director</option>
-                  <option value="finance_officer">Finance Officer / Cashier</option>
-                  <option value="admin">Administrator</option>
-                </select>
+              <div className="basic-fields-grid">
+                <div className="form-field">
+                  <label>Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter full name"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="Enter email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Phone Number</label>
+                  <input
+                    type="text"
+                    placeholder="Enter phone number"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>{editUser ? "New Password (optional)" : "Password"}</label>
+                  <input
+                    type="password"
+                    placeholder={editUser ? "Leave blank to keep current" : "Enter password"}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>User Role</label>
+                  <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
+                    <option value="loan_officer">Loan Officer</option>
+                    <option value="loan_manager">Loan Manager</option>
+                    <option value="general_manager">General Manager</option>
+                    <option value="managing_director">Managing Director</option>
+                    <option value="finance_officer">Finance Officer / Cashier</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </div>
               </div>
 
               {newUser.role !== "admin" && (
@@ -793,51 +795,82 @@ const Users = () => {
 
         .modal-content {
           background: white;
-          border-radius: 24px;
-          padding: 28px;
-          width: 820px;
-          max-width: 94%;
-          max-height: 90vh;
+          border-radius: 28px;
+          padding: 36px;
+          width: 980px;
+          max-width: 95%;
+          max-height: 92vh;
           overflow-y: auto;
+          box-shadow: 0 30px 80px -20px rgba(15, 23, 42, 0.35);
         }
 
         .modal-content h2 {
-          font-size: 20px;
-          font-weight: 700;
+          font-size: 24px;
+          font-weight: 800;
           color: #0f172a;
-          margin: 0 0 20px 0;
+          margin: 0 0 26px 0;
+          letter-spacing: -0.3px;
         }
 
         .modal-form {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 22px;
+        }
+
+        .basic-fields-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 18px 20px;
+        }
+
+        @media (max-width: 760px) {
+          .basic-fields-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+          .basic-fields-grid { grid-template-columns: 1fr; }
         }
 
         .form-field {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 7px;
         }
 
         .form-field label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #334155;
+          font-size: 11px;
+          font-weight: 800;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
         }
 
         .form-field input, .form-field select {
-          padding: 12px;
-          border: 1px solid #cbd5e1;
-          border-radius: 12px;
+          padding: 13px 14px;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 14px;
           font-size: 14px;
+          font-weight: 600;
+          color: #0f172a;
+          background: #f8fafc;
           transition: all 0.2s;
+        }
+
+        .form-field input::placeholder {
+          font-weight: 500;
+          color: #94a3b8;
+        }
+
+        .form-field input:hover, .form-field select:hover {
+          border-color: #cbd5e1;
+          background: #ffffff;
         }
 
         .form-field input:focus, .form-field select:focus {
           outline: none;
           border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+          background: #ffffff;
+          box-shadow: 0 0 0 4px rgba(59,130,246,0.14);
         }
 
         .permissions-section {
