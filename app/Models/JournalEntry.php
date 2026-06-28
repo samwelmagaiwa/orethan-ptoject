@@ -44,6 +44,12 @@ class JournalEntry extends Model
         return $this->belongsTo(JournalEntry::class, 'reversal_of_id');
     }
 
+    /** The entry that reversed this one, if any (inverse of reversalOf). */
+    public function reversalEntry()
+    {
+        return $this->hasOne(JournalEntry::class, 'reversal_of_id');
+    }
+
     public function totalDebit(): float
     {
         return round((float) $this->lines->sum('debit'), 2);

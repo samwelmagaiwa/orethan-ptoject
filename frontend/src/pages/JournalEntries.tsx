@@ -24,12 +24,14 @@ interface Entry {
   description: string;
   status: "posted" | "reversed";
   lines: { id: number; debit: number; credit: number; description?: string; account: { id: number; code: string; name: string } }[];
+  reversalEntry?: { id: number; entry_number: string; entry_date: string } | null;
 }
 
 const JournalEntries = () => {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [accounts, setAccounts] = useState<{ id: number; code: string; name: string }[]>([]);
+  const [highlightId, setHighlightId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -125,6 +127,17 @@ const JournalEntries = () => {
     }
   };
 
+  const viewReversal = (reversalEntryId: number) => {
+    const el = document.getElementById(`je-row-${reversalEntryId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(reversalEntryId);
+      setTimeout(() => setHighlightId(null), 2500);
+    } else {
+      setModal({ isOpen: true, title: "Not on This Page", message: "The reversal entry exists but isn't in the currently loaded list — search by its entry number to find it.", type: "info" });
+    }
+  };
+
   const reverseEntry = (entry: Entry) => {
     setConfirm({
       isOpen: true,
@@ -176,13 +189,20 @@ const JournalEntries = () => {
                 const credit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
                 return (
                   <Fragment key={entry.id}>
-                    <tr className="je-row" onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
+                    <tr id={`je-row-${entry.id}`} className={`je-row ${highlightId === entry.id ? "je-row--highlight" : ""}`} onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
                       <td className="je-number">{entry.entry_number}</td>
                       <td>{entry.entry_date}</td>
                       <td>{entry.description}</td>
                       <td>{fmt(debit)}</td>
                       <td>{fmt(credit)}</td>
-                      <td><span className={`je-status ${entry.status}`}>{entry.status}</span></td>
+                      <td>
+                        <span className={`je-status ${entry.status}`}>{entry.status}</span>
+                        {entry.status === "reversed" && entry.reversalEntry && (
+                          <button className="je-view-reversal-btn" onClick={(e) => { e.stopPropagation(); viewReversal(entry.reversalEntry!.id); }} title={`Jump to ${entry.reversalEntry.entry_number}`}>
+                            View Reversal →
+                          </button>
+                        )}
+                      </td>
                       <td>{entry.status === "posted" && <button className="je-reverse-btn" onClick={(e) => { e.stopPropagation(); reverseEntry(entry); }}>Reverse</button>}</td>
                     </tr>
                     {expanded === entry.id && (
@@ -275,13 +295,16 @@ const JournalEntries = () => {
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
-        .je-row { cursor: pointer; }
+        .je-row { cursor: pointer; transition: background 0.3s; }
         .je-row:hover { background: #f8fafc; }
+        .je-row--highlight { background: #fef9c3 !important; }
         .je-number { font-weight: 700; font-family: monospace; color: #102a43; }
         .je-status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .je-status.posted { background: #ecfdf5; color: #059669; }
         .je-status.reversed { background: #fef2f2; color: #dc2626; }
         .je-reverse-btn { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .je-view-reversal-btn { display: block; margin-top: 6px; background: none; border: none; color: #1e5fae; font-size: 10.5px; font-weight: 700; cursor: pointer; padding: 0; text-decoration: underline; }
+        .je-view-reversal-btn:hover { color: #102a43; }
         .je-detail-row td { background: #f8fafc; padding: 14px; }
         .je-lines-table { width: 100%; }
         .je-lines-table th { background: #eef2f7; font-size: 11px; }

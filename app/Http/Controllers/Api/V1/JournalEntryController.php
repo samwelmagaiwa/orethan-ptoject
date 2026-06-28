@@ -24,7 +24,7 @@ class JournalEntryController extends Controller
             return $this->error('You do not have access to Journal Entries', 403);
         }
 
-        $query = JournalEntry::with(['lines.account', 'creator'])->orderByDesc('entry_date')->orderByDesc('id');
+        $query = JournalEntry::with(['lines.account', 'creator', 'reversalEntry'])->orderByDesc('entry_date')->orderByDesc('id');
 
         if ($from = $request->query('from')) {
             $query->whereDate('entry_date', '>=', $from);
@@ -52,7 +52,7 @@ class JournalEntryController extends Controller
             return $this->error('You do not have access to Journal Entries', 403);
         }
 
-        $entry = JournalEntry::with(['lines.account', 'creator', 'reverser', 'reversalOf'])->findOrFail($id);
+        $entry = JournalEntry::with(['lines.account', 'creator', 'reverser', 'reversalOf', 'reversalEntry'])->findOrFail($id);
         return $this->success($entry, 'Journal Entry loaded');
     }
 
