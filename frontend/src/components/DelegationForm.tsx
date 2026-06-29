@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import { Send, Lock } from "lucide-react";
 import SignaturePad from "./SignaturePad";
 
@@ -17,13 +18,14 @@ interface Props {
  * inline on the Leave page and on the Delegations page.
  */
 const DelegationForm = ({ onSuccess }: Props) => {
+  const { t } = useTranslation("miscModals");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const TITLES: Record<string, [string, string]> = {
-    general_manager: ["General Manager", "Acting General Manager"],
-    loan_manager: ["Loan Manager", "Acting Loan Manager"],
-    managing_director: ["Managing Director", "Acting Managing Director"],
+    general_manager: [t("delegation.titles.generalManager"), t("delegation.titles.actingGeneralManager")],
+    loan_manager: [t("delegation.titles.loanManager"), t("delegation.titles.actingLoanManager")],
+    managing_director: [t("delegation.titles.managingDirector"), t("delegation.titles.actingManagingDirector")],
   };
-  const [delegatorTitle, defaultActing] = TITLES[user?.role] || ["Managing Director", "Acting Managing Director"];
+  const [delegatorTitle, defaultActing] = TITLES[user?.role] || [t("delegation.titles.managingDirector"), t("delegation.titles.actingManagingDirector")];
 
   const today = new Date().toISOString().slice(0, 10);
   const blank = { delegate_id: "", acting_title: defaultActing, reason: "", from_date: today, to_date: today, responsibilities: "", limitations: "", handover_notes: "", delegator_signature_img: user?.signature || "", delegator_date: today };
@@ -46,73 +48,73 @@ const DelegationForm = ({ onSuccess }: Props) => {
 
   const submit = async () => {
     setFormError("");
-    if (!form.delegate_id || !form.responsibilities || !form.from_date || !form.to_date) { setFormError("Please select the staff, period and responsibilities being delegated."); return; }
-    if (!pin.trim()) { setFormError("Enter your password/PIN to sign and authorize the delegation."); return; }
+    if (!form.delegate_id || !form.responsibilities || !form.from_date || !form.to_date) { setFormError(t("delegation.validation.requiredFields")); return; }
+    if (!pin.trim()) { setFormError(t("delegation.validation.requirePin")); return; }
     setSubmitting(true);
     try {
       const res = await axios.post(`${API_BASE}/delegations`, { ...form, password: pin }, { headers: headers() });
       setForm(blank); setPin("");
-      onSuccess?.(res.data?.message || "Your office delegation has been sent to the selected staff. They will be notified to acknowledge it.");
-    } catch (e: any) { setFormError(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
+      onSuccess?.(res.data?.message || t("delegation.submitSuccess"));
+    } catch (e: any) { setFormError(e?.response?.data?.message || t("delegation.submitFailed")); } finally { setSubmitting(false); }
   };
 
   return (
     <div style={{ background: "#fff", borderRadius: 14, boxShadow: "0 10px 28px rgba(15,23,42,0.08)", padding: "1.7rem 1.9rem" }}>
       <div style={{ background: "#102a43", color: "#fff", padding: "0.8rem 1.2rem", borderRadius: 8, fontWeight: 800, fontSize: "0.85rem", letterSpacing: "0.6px", marginBottom: "1rem", boxShadow: "0 4px 12px rgba(16,42,67,0.18)" }}>
-        FOMU YA KUKAIMISHA OFISI NA MADARAKA KWA MUDA
+        {t("delegation.formTitle")}
       </div>
       <p style={{ fontSize: "0.82rem", color: "#64748b", margin: "0 0 1.2rem", lineHeight: 1.5 }}>
-        Mimi <strong style={{ color: "#0f172a" }}>{user?.name}</strong> ({delegatorTitle}), kwa kuwa nitakuwa nje ya ofisi, nakaimisha ofisi na madaraka yangu kwa mtumishi niliyemchagua hapa chini kwa kipindi kilichoainishwa.
+        {t("delegation.intro.prefix")} <strong style={{ color: "#0f172a" }}>{user?.name}</strong> ({delegatorTitle}), {t("delegation.intro.suffix")}
       </p>
 
       <div className="dlg-grid3">
         <div>
-          <label style={lbl}>Your Role / Cheo Chako</label>
-          <input style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title="Your role (auto)" />
+          <label style={lbl}>{t("delegation.fields.yourRole")}</label>
+          <input style={{ ...inp, background: "#f1f5f9", color: "#64748b", textTransform: "capitalize", cursor: "not-allowed", fontWeight: 700 }} value={String(user?.role || "").replace(/_/g, " ")} readOnly title={t("delegation.fields.yourRoleTitle")} />
         </div>
         <div>
-          <label style={lbl}>Delegate To / Mkaimishwa <span style={{ color: "#ef4444" }}>*</span></label>
+          <label style={lbl}>{t("delegation.fields.delegateTo")} <span style={{ color: "#ef4444" }}>*</span></label>
           <select style={inp} value={form.delegate_id} onChange={(e) => set("delegate_id", e.target.value)}>
-            <option value="">— Select staff —</option>
+            <option value="">{t("delegation.fields.selectStaff")}</option>
             {staff.map((s) => <option key={s.id} value={s.id}>{s.name} ({String(s.role).replace(/_/g, " ")})</option>)}
           </select>
         </div>
         <div>
-          <label style={lbl}>Acting Title / Cheo cha Kukaimu</label>
+          <label style={lbl}>{t("delegation.fields.actingTitle")}</label>
           <input style={inp} value={form.acting_title} onChange={(e) => set("acting_title", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>From / Kuanzia <span style={{ color: "#ef4444" }}>*</span></label>
+          <label style={lbl}>{t("delegation.fields.fromDate")} <span style={{ color: "#ef4444" }}>*</span></label>
           <input type="date" style={inp} value={form.from_date} onChange={(e) => set("from_date", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>To / Mpaka <span style={{ color: "#ef4444" }}>*</span></label>
+          <label style={lbl}>{t("delegation.fields.toDate")} <span style={{ color: "#ef4444" }}>*</span></label>
           <input type="date" style={inp} value={form.to_date} onChange={(e) => set("to_date", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>Reason for absence / Sababu ya kutokuwepo</label>
-          <input style={inp} value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder="e.g. Official travel, leave..." />
+          <label style={lbl}>{t("delegation.fields.reason")}</label>
+          <input style={inp} value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder={t("delegation.fields.reasonPlaceholder")} />
         </div>
         <div>
-          <label style={lbl}>Responsibilities &amp; Authority / Madaraka <span style={{ color: "#ef4444" }}>*</span></label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} placeholder="Duties & decision-making authority being delegated..." />
+          <label style={lbl}>{t("delegation.fields.responsibilities")} <span style={{ color: "#ef4444" }}>*</span></label>
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} placeholder={t("delegation.fields.responsibilitiesPlaceholder")} />
         </div>
         <div>
-          <label style={lbl}>Limitations / Mipaka (optional)</label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.limitations} onChange={(e) => set("limitations", e.target.value)} placeholder="e.g. Approvals up to TZS 5,000,000; no new hires..." />
+          <label style={lbl}>{t("delegation.fields.limitations")}</label>
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.limitations} onChange={(e) => set("limitations", e.target.value)} placeholder={t("delegation.fields.limitationsPlaceholder")} />
         </div>
         <div>
-          <label style={lbl}>Handover Notes / Makabidhiano (optional)</label>
-          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.handover_notes} onChange={(e) => set("handover_notes", e.target.value)} placeholder="Pending matters, key contacts, ongoing items..." />
+          <label style={lbl}>{t("delegation.fields.handoverNotes")}</label>
+          <textarea style={{ ...inp, resize: "vertical" }} rows={4} value={form.handover_notes} onChange={(e) => set("handover_notes", e.target.value)} placeholder={t("delegation.fields.handoverNotesPlaceholder")} />
         </div>
         <div style={{ gridColumn: "span 2" }}>
-          <SignaturePad label={`${delegatorTitle} Signature / Sahihi`} value={form.delegator_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("delegator_signature_img", d || "")} height={120} />
+          <SignaturePad label={`${delegatorTitle} ${t("delegation.fields.signatureSuffix")}`} value={form.delegator_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("delegator_signature_img", d || "")} height={120} />
         </div>
         <div>
-          <label style={lbl}>Authorize with Password / PIN <span style={{ color: "#ef4444" }}>*</span></label>
+          <label style={lbl}>{t("delegation.fields.authorizePin")} <span style={{ color: "#ef4444" }}>*</span></label>
           <div style={{ position: "relative" }}>
             <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-            <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Password / PIN to sign" />
+            <input type="password" style={{ ...inp, paddingLeft: "2.2rem" }} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t("delegation.fields.pinPlaceholder")} />
           </div>
         </div>
       </div>
@@ -120,9 +122,9 @@ const DelegationForm = ({ onSuccess }: Props) => {
       {formError && <div style={{ marginTop: "1rem", fontSize: "0.8rem", fontWeight: 700, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "0.7rem 0.9rem" }}>{formError}</div>}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.7rem", marginTop: "1.3rem", paddingTop: "1.2rem", borderTop: "1px solid #e2e8f0" }}>
-        <button onClick={() => { setForm(blank); setPin(""); setFormError(""); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>Clear</button>
+        <button onClick={() => { setForm(blank); setPin(""); setFormError(""); }} style={{ padding: "0.8rem 1.6rem", borderRadius: 8, background: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "white" }}>{t("delegation.clear")}</button>
         <button onClick={submit} disabled={submitting} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 2rem", borderRadius: 8, background: "#102a43", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 16px rgba(16,42,67,0.3)" }}>
-          <Send size={16} /> {submitting ? "Submitting..." : "Delegate Authority"}
+          <Send size={16} /> {submitting ? t("delegation.submitting") : t("delegation.delegateAuthority")}
         </button>
       </div>
 

@@ -1,0 +1,194 @@
+{
+  "loanDetails": {
+    "actions": {
+      "close": "Funga",
+      "printPdf": "Chapisha PDF"
+    },
+    "header": {
+      "formTitle": "FOMU KAMILI YA MAOMBI YA MKOPO",
+      "submitted": "Iliyowasilishwa",
+      "defaultFormCode": "FO-LN-001"
+    },
+    "photo": {
+      "photoHere": "PICHA HAPA",
+      "passportAlt": "Picha ya Pasipoti",
+      "guarantorAlt": "Mdhamini {{number}}"
+    },
+    "section1": {
+      "title": "SEHEMU 1: TAARIFA BINAFSI ZA MWOMBAJI",
+      "fullName": "Jina Kamili la Mwombaji",
+      "gender": "Jinsia",
+      "dateOfBirth": "Tarehe ya Kuzaliwa",
+      "phoneNumber": "Namba ya Simu",
+      "email": "Barua Pepe",
+      "idType": "Aina ya Kitambulisho",
+      "idNumber": "Namba ya Kitambulisho",
+      "nationalityMaritalStatus": "Uraia / Hali ya Ndoa",
+      "defaultNationality": "Mtanzania",
+      "residenceOwnership": "Umiliki wa Makazi",
+      "applicantSignatureHardCopy": "Sahihi ya Mwombaji (Fomu Ngumu)",
+      "applicantThumbprintHardCopy": "Dole Gumba la Mwombaji (Fomu Ngumu)",
+      "yesAffixed": "NDIYO / IMEWEKWA",
+      "no": "HAPANA",
+      "groupChairman": "Mwenyekiti wa Kikundi",
+      "groupSecretary": "Katibu wa Kikundi",
+      "registrationNumberDate": "Usajili (#/Tarehe)",
+      "membersMaleFemale": "Wanachama (ME/KE)",
+      "groupAddress": "Anuani ya Kikundi",
+      "groupPhones": "Simu za Kikundi",
+      "spouseName": "Jina la Mume/Mke",
+      "spousePhone": "Namba ya Simu",
+      "spouseOccupationId": "Kazi / Kitambulisho",
+      "spouseEmployer": "Mwajiri wa Mume/Mke",
+      "spouseOfficePhone": "Simu ya Ofisi (Mume/Mke)",
+      "currentResidenceTitle": "MAHALI UNAPOISHI KWA SASA",
+      "regionDistrict": "Mkoa / Wilaya",
+      "wardStreet": "Kata / Mtaa",
+      "houseNumber": "Namba ya Nyumba",
+      "livedThereFor": "Umeishi Hapo",
+      "months": "Miezi"
+    },
+    "section2": {
+      "title": "SEHEMU 2: TAARIFA ZA KAZI / BIASHARA",
+      "employmentType": "Aina ya Kazi/Ajira",
+      "project": "MRADI: {{type}}",
+      "formalEmployment": "AJIRA RASMI",
+      "businessSelfEmployed": "BIASHARA / KUJIAJIRI",
+      "employerBusinessProject": "Mwajiri / Biashara / Mradi",
+      "positionBusinessType": "Wadhifa / Aina ya Kazi",
+      "salaryIncome": "Mshahara / Kipato (Tsh)",
+      "monthlyExpenses": "Matumizi / Mwezi (Tsh)",
+      "sinceWhenEmploymentType": "Tangu Lini / Aina ya Ajira",
+      "areaAddress": "Anuani ya Eneo",
+      "contractDetails": "Maelezo ya Mkataba",
+      "contractEndsLabel": "Mkataba Unaisha",
+      "retirementDateLabel": "Tarehe ya Kustaafu",
+      "businessAreaDetails": "Maelezo ya Eneo la Biashara",
+      "ownerLabel": "Mmiliki",
+      "ownerPhoneLabel": "Simu Mmiliki",
+      "contractDurationLabel": "Muda wa Mkataba",
+      "groupLoanDetails": "Maelezo ya Mikopo ya Kikundi",
+      "previouslyBorrowedLabel": "Kimewahi Kukopa",
+      "amountOwedLabel": "Kiasi Kinachodaiwa"
+    },
+    "section3": {
+      "title": "SEHEMU 3: TAARIFA ZA MKOPO NA MAREJESHO",
+      "amountRequested": "Kiasi Kinachoombwa",
+      "amountInWords": "Kiasi kwa Maneno",
+      "loanPurpose": "Lengo la Mkopo",
+      "loanDuration": "Muda wa Mkopo",
+      "frequencySource": "Mzunguko / Chanzo",
+      "monthly": "Kila Mwezi",
+      "expectedRepayment": "Rejesho Tarajiwa",
+      "creditHistoryTitle": "HISTORIA YA MIKOPO YA NYUMA",
+      "tableInstitution": "Taasisi ya Fedha",
+      "tableAmount": "Kiasi",
+      "tableDuration": "Muda",
+      "tableBalanceOwed": "Baki la Deni"
+    },
+    "section4": {
+      "title": "SEHEMU 4: DHAMANA NA WADHAMINI",
+      "tableCollateralType": "Aina ya Dhamana",
+      "tableNumber": "Namba (Hat/Kadi)",
+      "tableOwnership": "Umiliki",
+      "tableValue": "Thamani (Tsh)",
+      "tableConditionAppearance": "Hali / Muonekano",
+      "guarantorInfoTitle": "TAARIFA ZA MDHAMINI {{number}}",
+      "fullName": "Jina Kamili",
+      "phoneNumber": "Namba ya Simu",
+      "relationship": "Uhusiano",
+      "occupationBusiness": "Kazi / Biashara",
+      "areaAddress": "Anuani ya Eneo",
+      "houseResidence": "Nyumba / Makazi",
+      "employerOffice": "Mwajiri / Ofisi",
+      "guarantorSignature": "Sahihi Mdhamini",
+      "guarantorThumbprint": "Dole Gumba Mdhamini",
+      "yesAffixed": "NDIYO / IMEWEKWA",
+      "no": "HAPANA"
+    },
+    "chattel": {
+      "title": "REHANI MALI (CHATTEL MORTGAGE)",
+      "tableDescription": "Maelezo ya Mali",
+      "tableMarketValue": "Thamani Soko",
+      "tableCollateralValue": "Thamani Dhamana (70%)",
+      "ownerName": "Jina la Mmiliki",
+      "spouseName": "Jina la Mume/Mke",
+      "ownerSignature": "Sahihi Mmiliki",
+      "witness": "Shahidi",
+      "witnessRelationship": "Uhusiano Shahidi",
+      "witnessSignature": "Sahihi Shahidi",
+      "loanOfficer": "Afisa Mikopo",
+      "officerDate": "Tarehe ya Afisa",
+      "officerSignature": "Sahihi Afisa",
+      "chairman": "Mwenyekiti",
+      "chairmanDate": "Tarehe ya M/Kiti",
+      "stampSeal": "Gundi/Muhuri",
+      "affixed": "[ IMEWEKWA ]"
+    },
+    "declaration": {
+      "title": "TAMKO LA MWOMBAJI NA DHIBITISHO",
+      "text": "Mimi, {{name}}, nathibitisha kuwa taarifa zote nilizotoa hapa juu ni za kweli na ni sawa kwa uelewa wangu. Ninakubaliana na masharti yote ya ORETHAN MICROFINANCE kuhusiana na mkopo huu.",
+      "applicantSignature": "Sahihi ya Mwombaji",
+      "date": "Tarehe",
+      "thumbprintMark": "Alama ya Dole Gumba",
+      "affixed": "IMEWEKWA"
+    }
+  },
+  "approve": {
+    "table": {
+      "title": "Taarifa za Ombi la Mkopo",
+      "loanId": "ID Mkopo",
+      "applicant": "Mwombaji",
+      "customerPhone": "Mteja Simu",
+      "loanOfficer": "Afisa Mikopo",
+      "loanAmount": "Kiasi cha Mkopo",
+      "loanType": "Aina ya Mkopo",
+      "currentStatus": "Hali ya Sasa",
+      "loanDuration": "Muda wa Mkopo",
+      "expectedRepayment": "Rejesho Tarajiwa",
+      "months": "Miezi",
+      "defaultStatus": "INASUBIRI"
+    },
+    "header": {
+      "approvalStatusTitle": "Hali ya Idhini na Maoni",
+      "approveLoanTitle": "Idhinisha Mkopo",
+      "addCommentTitle": "Weka Maoni ya Idhini",
+      "confirmQuestion": "Je, una uhakika wa kuidhinisha ombi hili la mkopo?",
+      "commentPrompt": "Tafadhali weka maoni au dokezo la kuidhinisha ombi hili la mkopo."
+    },
+    "stepper": {
+      "officerLabel": "OFISA",
+      "officerRole": "Afisa Mikopo",
+      "lmLabel": "LM",
+      "lmRole": "Meneja Mikopo",
+      "gmLabel": "GM",
+      "gmRole": "Meneja Mkuu",
+      "mdLabel": "MD",
+      "mdRole": "Mkurugenzi Mtendaji",
+      "finalLabel": "MWISHO",
+      "finalRole": "Imekamilika",
+      "completed": "SAWA"
+    },
+    "history": {
+      "first": "KWANZA",
+      "now": "SASA",
+      "rejected": "IMEKATALIWA",
+      "recommended": "PENDEKEZO",
+      "noHistory": "Hakuna historia ya maoni kwa mkopo huu bado. Unaweza kuendelea kuidhinisha."
+    },
+    "confirmStep": {
+      "note": "Hatua inayofuata itakuhitaji kuweka maoni yako kabla ya kukamilisha."
+    },
+    "textarea": {
+      "placeholder": "Weka maoni yako hapa (mf. Nyaraka zote ziko sawa, mteja ana uwezo wa kulipa)..."
+    },
+    "actions": {
+      "cancel": "Ghairi",
+      "noCancel": "Hapana, Ghairi",
+      "continue": "Endelea",
+      "yesContinue": "Ndio, Endelea",
+      "submitting": "Inatuma...",
+      "completeApproval": "Kamilisha Idhini"
+    }
+  }
+}

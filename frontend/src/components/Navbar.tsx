@@ -1,34 +1,39 @@
 import type { FC } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import NotificationBell from "./NotificationBell";
 import UserMenu from "./UserMenu";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/personal-loan": "FOMU YA MAOMBI YA MKOPO BINAFSI",
-  "/group-loan": "FOMU YA MAOMBI YA MKOPO WA KIKUNDI",
-  "/employee-loan": "FOMU YA MAOMBI YA MKOPO WA MFANYAKAZI",
-  "/loan-manager": "Loan Manager",
-  "/general-manager": "General Manager",
-  "/managing-director": "Managing Director",
-  "/repayment-tracker": "Repayment Tracker",
-  "/users": "Users",
+const pageTitleKeys: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/personal-loan": "personalLoan",
+  "/group-loan": "groupLoan",
+  "/employee-loan": "employeeLoan",
+  "/loan-manager": "loanManager",
+  "/general-manager": "generalManager",
+  "/managing-director": "managingDirector",
+  "/repayment-tracker": "repaymentTracker",
+  "/users": "users",
 };
 
 const Navbar: FC = () => {
   const location = useLocation();
-  const subtitle = pageTitles[location.pathname] || "Dashboard";
+  const { t } = useTranslation();
+  const titleKey = pageTitleKeys[location.pathname] || "dashboard";
+  const subtitle = t(`navbar.pageTitles.${titleKey}`);
 
   return (
     <div className="nb">
       <div className="nb__left">
-        <div className="nb__title">Microfinance System</div>
+        <div className="nb__title">{t("navbar.appTitle")}</div>
         <div className="nb__subtitle">{subtitle}</div>
       </div>
 
       <div id="navbar-portal" className="nb__portal"></div>
 
       <div className="nb__right">
+        <LanguageSwitcher />
         <NotificationBell />
         <UserMenu />
       </div>

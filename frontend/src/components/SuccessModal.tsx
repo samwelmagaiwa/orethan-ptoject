@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -9,7 +10,9 @@ interface Props {
   accent?: string;
 }
 
-const SuccessModal = ({ open, title = "Success", message = "", onClose, accent = "#059669" }: Props) => (
+const SuccessModal = ({ open, title, message = "", onClose, accent = "#059669" }: Props) => {
+  const { t } = useTranslation();
+  return (
   <AnimatePresence>
     {open && (
       <div style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(2,6,23,0.6)" }}>
@@ -32,16 +35,17 @@ const SuccessModal = ({ open, title = "Success", message = "", onClose, accent =
                 <CheckCircle2 size={32} color="white" strokeWidth={2.5} />
               </div>
             </motion.div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#0f172a", margin: "0 0 0.5rem" }}>{title}</h2>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#0f172a", margin: "0 0 0.5rem" }}>{title ?? t("modal.success")}</h2>
             <p style={{ fontSize: "0.88rem", color: "#64748b", margin: 0, lineHeight: 1.5, fontWeight: 500 }}>{message}</p>
             <button onClick={onClose} style={{ marginTop: "1.4rem", width: "100%", padding: "0.8rem", borderRadius: 12, background: accent, border: "none", color: "white", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer", boxShadow: `0 6px 16px ${accent}40` }}>
-              Done
+              {t("modal.done")}
             </button>
           </div>
         </motion.div>
       </div>
     )}
   </AnimatePresence>
-);
+  );
+};
 
 export default SuccessModal;

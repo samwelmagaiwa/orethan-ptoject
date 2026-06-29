@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -26,6 +27,7 @@ interface Loan {
 }
 
 const ManagingDirector = () => {
+  const { t } = useTranslation("managingDirector");
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
@@ -128,13 +130,13 @@ const ManagingDirector = () => {
         { comments: comments },
         { headers: getAuthHeaders() }
       );
-      setModal({ isOpen: true, title: "Imefanikiwa", message: "Mkopo umeidhinishwa kikamilifu", type: 'success' });
+      setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.approveSuccess"), type: 'success' });
       setShowApproveModal(false);
       fetchLoans();
       setActiveDropdown(null);
     } catch (err) {
       console.log(err);
-      setModal({ isOpen: true, title: "Hitilafu", message: "Imeshindwa kuidhinisha mkopo", type: 'error' });
+      setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.approveError"), type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +151,7 @@ const ManagingDirector = () => {
 
   const submitRejection = async () => {
     if (!rejectReason.trim()) {
-      setModal({ isOpen: true, title: "Taarifa", message: "Tafadhali weka sababu ya kukataa.", type: 'warning' });
+      setModal({ isOpen: true, title: t("alerts.infoTitle"), message: t("alerts.reasonRequired"), type: 'warning' });
       return;
     }
 
@@ -161,12 +163,12 @@ const ManagingDirector = () => {
         { reason: rejectReason },
         { headers: getAuthHeaders() }
       );
-      setModal({ isOpen: true, title: "Imefanikiwa", message: "Ombi limekataliwa na kurudishwa kwa General Manager", type: 'warning' });
+      setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.rejectSuccess"), type: 'warning' });
       setShowRejectModal(false);
       fetchLoans();
     } catch (err) {
       console.log(err);
-      setModal({ isOpen: true, title: "Hitilafu", message: "Imeshindwa kukataa ombi", type: 'error' });
+      setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.rejectError"), type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -202,15 +204,15 @@ const ManagingDirector = () => {
       />
       <div className="stats-row">
         <div className="stat-box">
-          <div className="stat-label">Total Handled</div>
+          <div className="stat-label">{t("stats.totalHandled")}</div>
           <div className="stat-number">{loans.length}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#6b5a2e' }}>
-          <div className="stat-label">Current Role</div>
-          <div className="stat-number" style={{ fontSize: '24px' }}>Managing Director</div>
+          <div className="stat-label">{t("stats.currentRole")}</div>
+          <div className="stat-number" style={{ fontSize: '24px' }}>{t("stats.managingDirector")}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#f59e0b' }}>
-          <div className="stat-label">Action Required</div>
+          <div className="stat-label">{t("stats.actionRequired")}</div>
           <div className="stat-number">{loans.filter(l => l.status === 'md_review').length}</div>
         </div>
       </div>
@@ -218,14 +220,14 @@ const ManagingDirector = () => {
       <div className="table-container full-width">
         <div className="table-header-premium">
           <label className="entries-filter">
-            Show
+            {t("filters.show")}
             <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            entries
+            {t("filters.entries")}
           </label>
           <div className="header-right-group">
             <div className="search-wrapper">
@@ -234,14 +236,14 @@ const ManagingDirector = () => {
               </div>
               <input
                 type="text"
-                placeholder="Tafuta mwombaji..."
+                placeholder={t("filters.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               />
             </div>
             <button className="refresh-btn-header" onClick={fetchLoans}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-              Refresh
+              {t("filters.refresh")}
             </button>
           </div>
         </div>
@@ -251,14 +253,14 @@ const ManagingDirector = () => {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Mteja</th>
-                <th>Namba ya Simu</th>
-                <th>Mikopo (Active)</th>
-                <th>Deni Lililobaki</th>
-                <th>Arrears</th>
-                <th>Status</th>
-                <th>SMS Status</th>
-                <th style={{ textAlign: 'right' }}>Hatua</th>
+                <th>{t("table.client")}</th>
+                <th>{t("table.phoneNumber")}</th>
+                <th>{t("table.activeLoans")}</th>
+                <th>{t("table.remainingBalance")}</th>
+                <th>{t("table.arrears")}</th>
+                <th>{t("table.status")}</th>
+                <th>{t("table.smsStatus")}</th>
+                <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -285,8 +287,8 @@ const ManagingDirector = () => {
                 <tr>
                   <td colSpan={9}>
                     <div className="empty-state">
-                      <p>Hakuna maombi ya mkopo</p>
-                      <span>Hakuna maombi yanayosubiri ukaguzi wako</span>
+                      <p>{t("empty.noApplications")}</p>
+                      <span>{t("empty.noApplicationsSubtitle")}</span>
                     </div>
                   </td>
                 </tr>
@@ -304,16 +306,16 @@ const ManagingDirector = () => {
                         <span className="client-name">{loan.name}</span>
                       </div>
                     </td>
-                    <td>{loan.phone || "N/A"}</td>
+                    <td>{loan.phone || t("table.notAvailable")}</td>
                     <td>
                       <div className="status-container">
-                        <span className="active-count">{loan.active_loans_count || 0} Amilifu</span>
+                        <span className="active-count">{t("table.activeCount", { count: loan.active_loans_count || 0 })}</span>
                       </div>
                     </td>
                     <td className="col-amount">TZS {Number(loan.total_remaining_balance || 0).toLocaleString()}</td>
                     <td>
                       <span className={`arrears-badge ${Number(loan.total_arrears || 0) > 0 ? 'has-arrears' : 'no-arrears'}`}>
-                        {Number(loan.total_arrears || 0) > 0 ? `TZS ${Number(loan.total_arrears).toLocaleString()}` : 'Hakuna'}
+                        {Number(loan.total_arrears || 0) > 0 ? `TZS ${Number(loan.total_arrears).toLocaleString()}` : t("table.none")}
                       </span>
                     </td>
                     <td>
@@ -323,26 +325,26 @@ const ManagingDirector = () => {
                         border: (loan.status === 'approved' || loan.status === 'disbursed') ? '1px solid #16a34a' : 'none',
                         padding: (loan.status === 'approved' || loan.status === 'disbursed') ? '3px 10px' : '4px 12px'
                       }}>
-                        {loan.status === 'md_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span> :
-                          loan.status === 'approved' ? 'APPROVED' :
-                            loan.status === 'disbursed' ? 'DISBURSED' :
+                        {loan.status === 'md_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span> :
+                          loan.status === 'approved' ? t("status.approved") :
+                            loan.status === 'disbursed' ? t("status.disbursed") :
                               (loan.status === 'gm_review' && (loan as any).rejection_metadata?.rejector_role === 'managing_director') ? (
-                                <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
+                                <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
                               ) :
-                                loan.status === 'loan_officer' ? 'RETURNED FOR CORRECTION' :
-                                  loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span> :
+                                loan.status === 'loan_officer' ? t("status.returnedForCorrection") :
+                                  loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span> :
                                     loan.status === 'gm_review' ? (
                                       <span>
-                                        <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                                        <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
                                         <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                                       </span>
                                     ) :
                                       loan.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
                       {(loan.status !== 'approved' && loan.status !== 'disbursed') && (loan as any).rejection_metadata && (
                         <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
-                          Sababu: {(loan as any).rejection_metadata.reason}
+                          {t("table.reasonLabel")} {(loan as any).rejection_metadata.reason}
                         </div>
                       )}
                     </td>
@@ -362,11 +364,11 @@ const ManagingDirector = () => {
                                 disabled={submitting}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                Authorize
+                                {t("actions.authorize")}
                               </button>
                               <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                View Details
+                                {t("actions.viewDetails")}
                               </button>
                               <button
                                 onClick={() => openRejectModal(loan)}
@@ -374,18 +376,18 @@ const ManagingDirector = () => {
                                 disabled={submitting}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                Reject
+                                {t("actions.reject")}
                               </button>
                             </>
                           ) : (
                             <>
                               <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                View Details
+                                {t("actions.viewDetails")}
                               </button>
                               <button onClick={() => viewHistory(loan)} disabled={submitting}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                                Angalia Mapendekezo
+                                {t("actions.viewHistory")}
                               </button>
                             </>
                           )}
@@ -403,12 +405,16 @@ const ManagingDirector = () => {
         {!loading && filteredLoans.length > 0 && (
           <div className="pagination-row">
             <span className="pagination-info">
-              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, filteredLoans.length)} of {filteredLoans.length}
+              {t("pagination.showing", {
+                from: (currentPage - 1) * entriesPerPage + 1,
+                to: Math.min(currentPage * entriesPerPage, filteredLoans.length),
+                total: filteredLoans.length,
+              })}
             </span>
             <div className="pagination-buttons">
-              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>{t("pagination.previous")}</button>
               <span className="pagination-page">{currentPage} / {totalPages}</span>
-              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>{t("pagination.next")}</button>
             </div>
           </div>
         )}
@@ -429,23 +435,23 @@ const ManagingDirector = () => {
               <div className="reject-icon-box">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 15h2M12 9v4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
               </div>
-              <h2>Reject Loan Application</h2>
-              <p>Please provide a reason for returning this application for corrections. It will be returned to the General Manager.</p>
+              <h2>{t("modal.rejectTitle")}</h2>
+              <p>{t("modal.rejectDescription")}</p>
             </div>
 
             <div className="reject-client-info">
               <div className="info-item">
-                <span>Client</span>
+                <span>{t("modal.client")}</span>
                 <strong>{selectedLoan?.name}</strong>
               </div>
               <div className="info-item">
-                <span>Amount</span>
+                <span>{t("modal.amount")}</span>
                 <strong>TZS {Number(selectedLoan?.amount).toLocaleString()}</strong>
               </div>
             </div>
 
             <textarea
-              placeholder="Provide clear reasons for rejection..."
+              placeholder={t("modal.rejectReasonPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               rows={4}
@@ -454,10 +460,10 @@ const ManagingDirector = () => {
 
             <div className="reject-footer-premium">
               <button className="reject-btn-cancel" onClick={() => setShowRejectModal(false)} disabled={submitting}>
-                Cancel
+                {t("modal.cancel")}
               </button>
               <button className="reject-btn-confirm" onClick={submitRejection} disabled={submitting}>
-                {submitting ? 'Processing...' : 'Return for Corrections'}
+                {submitting ? t("modal.processing") : t("modal.returnForCorrections")}
               </button>
             </div>
           </div>

@@ -1,0 +1,71 @@
+{
+  "stats": {
+    "totalHandled": "Total Handled",
+    "currentRole": "Current Role",
+    "loanManager": "Loan Manager",
+    "actionRequired": "Action Required"
+  },
+  "filters": {
+    "searchPlaceholder": "Search applicant...",
+    "refresh": "Refresh Applications"
+  },
+  "table": {
+    "number": "#",
+    "client": "Client",
+    "phoneNumber": "Phone Number",
+    "activeLoans": "Loans (Active)",
+    "remainingBalance": "Remaining Balance",
+    "arrears": "Arrears",
+    "status": "Status",
+    "smsStatus": "SMS Status",
+    "actions": "Actions",
+    "activeCount": "{{count}} Active",
+    "none": "None",
+    "reason": "Reason"
+  },
+  "empty": {
+    "title": "No loan requests",
+    "subtitle": "No pending applications to review"
+  },
+  "status": {
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
+    "rejected": "REJECTED",
+    "approved": "APPROVED",
+    "disbursed": "DISBURSED"
+  },
+  "actions": {
+    "approve": "Approve",
+    "viewDetails": "View Details",
+    "reject": "Reject",
+    "deleteLoan": "Delete Loan",
+    "viewHistory": "View Recommendations"
+  },
+  "modal": {
+    "rejectTitle": "Reject Loan Application",
+    "rejectDescription": "Please provide a reason for returning this application for corrections. It will be returned to the Loan Officer.",
+    "client": "Client",
+    "amount": "Amount",
+    "rejectReasonPlaceholder": "Provide clear instructions for correction...",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "returnForCorrections": "Return for Corrections"
+  },
+  "alerts": {
+    "successTitle": "Success",
+    "errorTitle": "Error",
+    "infoTitle": "Notice",
+    "approveSuccess": "Loan approved successfully",
+    "approveError": "Failed to approve loan",
+    "reasonRequired": "Please provide a reason for rejection.",
+    "rejectSuccess": "Application rejected and returned to the Loan Officer",
+    "rejectError": "Failed to reject application",
+    "deleteLoanTitle": "Delete Loan",
+    "deleteLoanConfirm": "Are you sure you want to permanently delete this loan application?",
+    "deleteSuccess": "Loan deleted successfully",
+    "deleteError": "Failed to delete loan"
+  }
+}

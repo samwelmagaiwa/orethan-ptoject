@@ -1,0 +1,73 @@
+{
+  "stats": {
+    "totalHandled": "Total Handled",
+    "currentRole": "Current Role",
+    "managingDirector": "Managing Director",
+    "actionRequired": "Action Required"
+  },
+  "filters": {
+    "show": "Show",
+    "entries": "entries",
+    "searchPlaceholder": "Search applicant...",
+    "refresh": "Refresh"
+  },
+  "table": {
+    "client": "Client",
+    "phoneNumber": "Phone Number",
+    "activeLoans": "Loans (Active)",
+    "remainingBalance": "Remaining Balance",
+    "arrears": "Arrears",
+    "status": "Status",
+    "smsStatus": "SMS Status",
+    "actions": "Actions",
+    "notAvailable": "N/A",
+    "activeCount": "{{count}} Active",
+    "none": "None",
+    "reasonLabel": "Reason:"
+  },
+  "status": {
+    "pendingMd": "PENDING MD",
+    "approved": "APPROVED",
+    "disbursed": "DISBURSED",
+    "rejected": "REJECTED",
+    "returnedForCorrection": "RETURNED FOR CORRECTION",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM"
+  },
+  "empty": {
+    "noApplications": "No loan applications",
+    "noApplicationsSubtitle": "There are no applications awaiting your review"
+  },
+  "actions": {
+    "authorize": "Authorize",
+    "viewDetails": "View Details",
+    "reject": "Reject",
+    "viewHistory": "View Recommendations"
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "modal": {
+    "rejectTitle": "Reject Loan Application",
+    "rejectDescription": "Please provide a reason for returning this application for corrections. It will be returned to the General Manager.",
+    "client": "Client",
+    "amount": "Amount",
+    "rejectReasonPlaceholder": "Provide clear reasons for rejection...",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "returnForCorrections": "Return for Corrections"
+  },
+  "alerts": {
+    "successTitle": "Success",
+    "errorTitle": "Error",
+    "infoTitle": "Notice",
+    "approveSuccess": "Loan approved successfully",
+    "approveError": "Failed to approve loan",
+    "reasonRequired": "Please enter a reason for rejection.",
+    "rejectSuccess": "Application rejected and returned to the General Manager",
+    "rejectError": "Failed to reject application"
+  }
+}

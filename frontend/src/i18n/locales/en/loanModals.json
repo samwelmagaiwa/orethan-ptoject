@@ -1,0 +1,194 @@
+{
+  "loanDetails": {
+    "actions": {
+      "close": "Close",
+      "printPdf": "Print PDF"
+    },
+    "header": {
+      "formTitle": "COMPLETE LOAN APPLICATION FORM",
+      "submitted": "Submitted",
+      "defaultFormCode": "FO-LN-001"
+    },
+    "photo": {
+      "photoHere": "PHOTO HERE",
+      "passportAlt": "Passport",
+      "guarantorAlt": "Guarantor {{number}}"
+    },
+    "section1": {
+      "title": "SECTION 1: APPLICANT'S PERSONAL INFORMATION",
+      "fullName": "Applicant's Full Name",
+      "gender": "Gender",
+      "dateOfBirth": "Date of Birth",
+      "phoneNumber": "Phone Number",
+      "email": "Email Address",
+      "idType": "ID Type",
+      "idNumber": "ID Number",
+      "nationalityMaritalStatus": "Nationality / Marital Status",
+      "defaultNationality": "Tanzanian",
+      "residenceOwnership": "Housing Ownership",
+      "applicantSignatureHardCopy": "Applicant's Signature (Hard Copy)",
+      "applicantThumbprintHardCopy": "Applicant's Thumbprint (Hard Copy)",
+      "yesAffixed": "YES / AFFIXED",
+      "no": "NO",
+      "groupChairman": "Group Chairman",
+      "groupSecretary": "Group Secretary",
+      "registrationNumberDate": "Registration (#/Date)",
+      "membersMaleFemale": "Members (M/F)",
+      "groupAddress": "Group Address",
+      "groupPhones": "Group Phone Numbers",
+      "spouseName": "Spouse's Name",
+      "spousePhone": "Phone Number",
+      "spouseOccupationId": "Occupation / ID",
+      "spouseEmployer": "Spouse's Employer",
+      "spouseOfficePhone": "Office Phone (Spouse)",
+      "currentResidenceTitle": "CURRENT PLACE OF RESIDENCE",
+      "regionDistrict": "Region / District",
+      "wardStreet": "Ward / Street",
+      "houseNumber": "House Number",
+      "livedThereFor": "Time Lived There",
+      "months": "Months"
+    },
+    "section2": {
+      "title": "SECTION 2: EMPLOYMENT / BUSINESS INFORMATION",
+      "employmentType": "Employment / Occupation Type",
+      "project": "PROJECT: {{type}}",
+      "formalEmployment": "FORMAL EMPLOYMENT",
+      "businessSelfEmployed": "BUSINESS / SELF-EMPLOYED",
+      "employerBusinessProject": "Employer / Business / Project",
+      "positionBusinessType": "Position / Business Type",
+      "salaryIncome": "Salary / Income (Tsh)",
+      "monthlyExpenses": "Monthly Expenses (Tsh)",
+      "sinceWhenEmploymentType": "Since When / Employment Type",
+      "areaAddress": "Area Address",
+      "contractDetails": "Contract Details",
+      "contractEndsLabel": "Contract Ends",
+      "retirementDateLabel": "Retirement Date",
+      "businessAreaDetails": "Business Area Details",
+      "ownerLabel": "Owner",
+      "ownerPhoneLabel": "Owner's Phone",
+      "contractDurationLabel": "Contract Duration",
+      "groupLoanDetails": "Group Loan Details",
+      "previouslyBorrowedLabel": "Previously Borrowed",
+      "amountOwedLabel": "Amount Owed"
+    },
+    "section3": {
+      "title": "SECTION 3: LOAN AND REPAYMENT INFORMATION",
+      "amountRequested": "Amount Requested",
+      "amountInWords": "Amount in Words",
+      "loanPurpose": "Loan Purpose",
+      "loanDuration": "Loan Duration",
+      "frequencySource": "Frequency / Income Source",
+      "monthly": "Monthly",
+      "expectedRepayment": "Expected Repayment",
+      "creditHistoryTitle": "PREVIOUS CREDIT HISTORY",
+      "tableInstitution": "Financial Institution",
+      "tableAmount": "Amount",
+      "tableDuration": "Duration",
+      "tableBalanceOwed": "Balance Owed"
+    },
+    "section4": {
+      "title": "SECTION 4: COLLATERAL AND GUARANTORS",
+      "tableCollateralType": "Collateral Type",
+      "tableNumber": "Number (Title/Card)",
+      "tableOwnership": "Ownership",
+      "tableValue": "Value (Tsh)",
+      "tableConditionAppearance": "Condition / Appearance",
+      "guarantorInfoTitle": "GUARANTOR {{number}} INFORMATION",
+      "fullName": "Full Name",
+      "phoneNumber": "Phone Number",
+      "relationship": "Relationship",
+      "occupationBusiness": "Occupation / Business",
+      "areaAddress": "Area Address",
+      "houseResidence": "House / Residence",
+      "employerOffice": "Employer / Office",
+      "guarantorSignature": "Guarantor's Signature",
+      "guarantorThumbprint": "Guarantor's Thumbprint",
+      "yesAffixed": "YES / AFFIXED",
+      "no": "NO"
+    },
+    "chattel": {
+      "title": "CHATTEL MORTGAGE",
+      "tableDescription": "Asset Description",
+      "tableMarketValue": "Market Value",
+      "tableCollateralValue": "Collateral Value (70%)",
+      "ownerName": "Owner's Name",
+      "spouseName": "Spouse's Name",
+      "ownerSignature": "Owner's Signature",
+      "witness": "Witness",
+      "witnessRelationship": "Witness's Relationship",
+      "witnessSignature": "Witness's Signature",
+      "loanOfficer": "Loan Officer",
+      "officerDate": "Officer's Date",
+      "officerSignature": "Officer's Signature",
+      "chairman": "Chairman",
+      "chairmanDate": "Chairman's Date",
+      "stampSeal": "Stamp/Seal",
+      "affixed": "[ AFFIXED ]"
+    },
+    "declaration": {
+      "title": "APPLICANT'S DECLARATION AND CERTIFICATION",
+      "text": "I, {{name}}, confirm that all the information provided above is true and correct to the best of my knowledge. I agree to all the terms and conditions of ORETHAN MICROFINANCE regarding this loan.",
+      "applicantSignature": "Applicant's Signature",
+      "date": "Date",
+      "thumbprintMark": "Thumbprint Mark",
+      "affixed": "AFFIXED"
+    }
+  },
+  "approve": {
+    "table": {
+      "title": "Loan Application Information",
+      "loanId": "Loan ID",
+      "applicant": "Applicant",
+      "customerPhone": "Customer Phone",
+      "loanOfficer": "Loan Officer",
+      "loanAmount": "Loan Amount",
+      "loanType": "Loan Type",
+      "currentStatus": "Current Status",
+      "loanDuration": "Loan Duration",
+      "expectedRepayment": "Expected Repayment",
+      "months": "Months",
+      "defaultStatus": "PENDING"
+    },
+    "header": {
+      "approvalStatusTitle": "Approval Status and Comments",
+      "approveLoanTitle": "Approve Loan",
+      "addCommentTitle": "Add Approval Comment",
+      "confirmQuestion": "Are you sure you want to approve this loan application?",
+      "commentPrompt": "Please add a comment or note to approve this loan application."
+    },
+    "stepper": {
+      "officerLabel": "OFFICER",
+      "officerRole": "Loan Officer",
+      "lmLabel": "LM",
+      "lmRole": "Loan Manager",
+      "gmLabel": "GM",
+      "gmRole": "General Manager",
+      "mdLabel": "MD",
+      "mdRole": "Managing Director",
+      "finalLabel": "FINAL",
+      "finalRole": "Completed",
+      "completed": "OK"
+    },
+    "history": {
+      "first": "FIRST",
+      "now": "NOW",
+      "rejected": "REJECTED",
+      "recommended": "RECOMMENDED",
+      "noHistory": "There is no comment history for this loan yet. You can proceed to approve it."
+    },
+    "confirmStep": {
+      "note": "The next step will require you to add your comments before completing the process."
+    },
+    "textarea": {
+      "placeholder": "Enter your comments here (e.g. all documents are in order, the client has the ability to repay)..."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "noCancel": "No, Cancel",
+      "continue": "Continue",
+      "yesContinue": "Yes, Continue",
+      "submitting": "Submitting...",
+      "completeApproval": "Complete Approval"
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "stats": {
+    "totalHandled": "Jumla Iliyoshughulikiwa",
+    "currentRole": "Wadhifa wa Sasa",
+    "generalManager": "Meneja Mkuu",
+    "actionRequired": "Inahitaji Hatua"
+  },
+  "filters": {
+    "show": "Onyesha",
+    "entries": "kumbukumbu",
+    "searchPlaceholder": "Tafuta mwombaji...",
+    "refresh": "Onyesha Upya"
+  },
+  "table": {
+    "client": "Mteja",
+    "phoneNumber": "Namba ya Simu",
+    "activeLoans": "Mikopo (Amilifu)",
+    "remainingBalance": "Deni Lililobaki",
+    "arrears": "Madeni Yaliyochelewa",
+    "status": "Hali",
+    "smsStatus": "Hali ya SMS",
+    "actions": "Hatua",
+    "noApplicationsFound": "Hakuna maombi yaliyopatikana.",
+    "notAvailable": "Haipo",
+    "activeCount": "{{count}} Amilifu",
+    "none": "Hakuna",
+    "reason": "Sababu"
+  },
+  "status": {
+    "pendingGm": "INASUBIRI MM",
+    "gmApproved": "MM AMEIDHINISHA",
+    "pendingMd": "INASUBIRI MKURUGENZI MTENDAJI",
+    "rejected": "IMEKATALIWA",
+    "approved": "IMEIDHINISHWA",
+    "disbursed": "IMETOLEWA",
+    "returnedForCorrection": "IMERUDISHWA KWA MAREKEBISHO",
+    "pendingLm": "INASUBIRI MENEJA WA MIKOPO"
+  },
+  "actions": {
+    "approve": "Idhinisha",
+    "viewDetails": "Angalia Maelezo",
+    "reject": "Kataa",
+    "deleteLoan": "Futa Mkopo",
+    "viewHistory": "Angalia Mapendekezo"
+  },
+  "pagination": {
+    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "previous": "Iliyotangulia",
+    "next": "Inayofuata"
+  },
+  "modal": {
+    "rejectTitle": "Kataa Ombi la Mkopo",
+    "rejectDescription": "Tafadhali toa sababu ya kurudisha ombi hili kwa marekebisho. Litarudishwa kwa Meneja wa Mikopo.",
+    "client": "Mteja",
+    "amount": "Kiasi",
+    "rejectReasonPlaceholder": "Toa sababu za wazi za kukataa...",
+    "cancel": "Ghairi",
+    "processing": "Inashughulikia...",
+    "returnForCorrections": "Rudisha kwa Marekebisho"
+  },
+  "alerts": {
+    "successTitle": "Imefanikiwa",
+    "errorTitle": "Hitilafu",
+    "infoTitle": "Taarifa",
+    "approveSuccess": "Mkopo umeidhinishwa na kutumwa kwa Mkurugenzi Mtendaji",
+    "approveError": "Imeshindwa kuidhinisha mkopo",
+    "reasonRequired": "Tafadhali weka sababu ya kukataa.",
+    "rejectSuccess": "Ombi limekataliwa na kurudishwa kwa Meneja wa Mikopo",
+    "rejectError": "Imeshindwa kukataa ombi",
+    "deleteLoanTitle": "Futa Mkopo",
+    "deleteLoanConfirm": "Je, una uhakika unataka kufuta kabisa ombi hili la mkopo?",
+    "deleteSuccess": "Mkopo umefutwa kikamilifu",
+    "deleteError": "Imefeli kufuta mkopo"
+  }
+}

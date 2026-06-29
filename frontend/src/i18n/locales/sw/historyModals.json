@@ -1,0 +1,159 @@
+{
+  "history": {
+    "table": {
+      "loanId": "ID Mkopo",
+      "applicant": "Mwombaji",
+      "customerPhone": "Mteja Simu",
+      "loanOfficer": "Afisa Mikopo",
+      "loanAmount": "Kiasi cha Mkopo",
+      "loanType": "Aina ya Mkopo",
+      "currentStatus": "Hali ya Sasa",
+      "loanDuration": "Muda wa Mkopo",
+      "expectedRepayment": "Rejesho Tarajiwa"
+    },
+    "status": {
+      "pending": "INASUBIRI"
+    },
+    "units": {
+      "months": "Miezi"
+    },
+    "heading": {
+      "approvalStatus": "Hali ya Idhini na Maoni"
+    },
+    "steps": {
+      "officer": "OFISA",
+      "lm": "LM",
+      "gm": "GM",
+      "md": "MD",
+      "final": "MWISHO",
+      "completedMark": "SAWA"
+    },
+    "roles": {
+      "loanOfficer": "Afisa Mikopo",
+      "loanManager": "Meneja Mikopo",
+      "generalManager": "Meneja Mkuu",
+      "managingDirector": "Mkurugenzi Mtendaji",
+      "completed": "Imekamilika"
+    },
+    "timeline": {
+      "first": "KWANZA",
+      "now": "SASA",
+      "rejected": "IMEKATALIWA",
+      "recommended": "PENDEKEZO"
+    },
+    "empty": {
+      "noHistory": "Hakuna historia ya maoni kwa mkopo huu bado."
+    },
+    "actions": {
+      "close": "Funga"
+    }
+  },
+  "checklist": {
+    "sections": {
+      "identification": {
+        "title": "1. UTAMBULISHO BINAFSI"
+      },
+      "tax": {
+        "title": "2. UTII WA KODI NA SHERIA"
+      },
+      "financial": {
+        "title": "3. NYARAKA ZA FEDHA"
+      },
+      "collateral": {
+        "title": "5. NYARAKA ZA DHAMANA"
+      },
+      "guarantor": {
+        "title": "6. NYARAKA ZA MDHAMINI"
+      },
+      "loanForms": {
+        "title": "7. FOMU ZA MAOMBI YA MKOPO"
+      }
+    },
+    "items": {
+      "idDoc": "Kitambulisho cha Taifa / Hati ya Kusafiria / Kitambulisho cha Mpiga Kura",
+      "passportPhoto": "Picha ya Pasipoti",
+      "proofResidence": "Uthibitisho wa Makazi (Barua ya Kata / Utambulisho wa Serikali ya Mtaa)",
+      "tin": "Cheti cha TIN",
+      "taxClearance": "Cheti cha Kutokuwa na Deni la Kodi",
+      "businessLicense": "Leseni ya Biashara",
+      "incorporation": "Cheti cha Usajili wa Kampuni (kwa makampuni)",
+      "bankStatements": "Taarifa za Benki (miezi 6–12 iliyopita)",
+      "salarySlips": "Risiti za Mshahara (miezi 3–6 iliyopita)",
+      "employmentContract": "Mkataba wa Kazi / Barua ya Ajira",
+      "otherIncome": "Uthibitisho wa Vyanzo Vingine vya Kipato (ikiwepo)",
+      "titleDeed": "Hati ya Umiliki wa Ardhi / Nyaraka za Umiliki",
+      "valuation": "Ripoti ya Uthamini",
+      "chattel": "Fomu ya Dhamana ya Mali Inayohamishika (Chattel Mortgage)",
+      "altMortgage": "Nyaraka Mbadala za Dhamana (kama zinahitajika)",
+      "insurance": "Bima ya Dhamana",
+      "guarantorId": "Nakala ya Kitambulisho cha Mdhamini",
+      "guarantorResidence": "Uthibitisho wa Makazi ya Mdhamini",
+      "guarantorPhotos": "Picha za Pasipoti za Mdhamini",
+      "applicationForm": "Fomu ya Maombi ya Mkopo Iliyokamilika",
+      "twoGuarantorsSigned": "Fomu Iliyosainiwa na Wadhamini Wawili",
+      "loanAgreement": "Mkataba wa Mkopo Uliosainiwa",
+      "creditConsent": "Idhini ya Taarifa za Mikopo / Ripoti ya Mikopo",
+      "termsAck": "Ukiri wa Masharti na Vigezo"
+    },
+    "banner": {
+      "unresolved": "Nyaraka {{count}} bado hazijathibitishwa. Pakia nyaraka unazo, au tumia “Proceed without” kuruka vipengele vilivyokosekana.",
+      "allResolved": "Nyaraka zote zimethibitishwa au kurukwa — unaweza kuwasilisha ombi."
+    },
+    "alerts": {
+      "uploadFailed": "Imeshindwa kupakia nyaraka. Tafadhali jaribu tena."
+    },
+    "titles": {
+      "skippedFirst": "Imerukwa — futa 'Proceed without' kwanza",
+      "replaceDocument": "Badilisha Nyaraka",
+      "uploadDocument": "Pakia Nyaraka (PDF/Picha)",
+      "viewDocument": "Tazama Nyaraka",
+      "deleteDocument": "Futa Nyaraka"
+    },
+    "tags": {
+      "autoVerified": "Imethibitishwa Kiotomatiki",
+      "uploaded": "Imepakiwa"
+    },
+    "actions": {
+      "bypassedUndo": "Imerukwa — tendua",
+      "proceedWithout": "Endelea bila"
+    },
+    "confirmDelete": {
+      "title": "Futa Nyaraka",
+      "message": "Una hakika unataka kufuta nyaraka hii? Utahitaji kuipakia tena au kutumia 'Proceed without'.",
+      "confirm": "Ndio, Futa",
+      "cancel": "Ghairi"
+    }
+  },
+  "checklistView": {
+    "heading": "ORODHA YA UHAKIKI WA NYARAKA",
+    "summary": {
+      "confirmed": "{{count}} Zimethibitishwa",
+      "bypassed": "{{count}} Zimerukwa",
+      "missing": "{{count}} Hazijajazwa"
+    },
+    "gallery": {
+      "title": "NYARAKA ZILIZOPAKIWA — {{count}}"
+    },
+    "actions": {
+      "view": "Tazama",
+      "viewDocument": "Tazama Nyaraka"
+    },
+    "status": {
+      "confirmed": "✓ IMETHIBITISHWA",
+      "bypassed": "↷ IMERUKWA (Proceed without)",
+      "missing": "✕ HAIJAJAZWA"
+    }
+  },
+  "documentViewer": {
+    "defaultName": "Nyaraka",
+    "actions": {
+      "download": "Pakua"
+    },
+    "linkedAssets": {
+      "title": "Mali Zilizounganishwa na Picha Hii",
+      "name": "JINA LA MALI",
+      "marketValue": "THAMANI SOKO KWA SASA (TZS)",
+      "collateralValue": "THAMANI DHAMANA (70%)"
+    }
+  }
+}

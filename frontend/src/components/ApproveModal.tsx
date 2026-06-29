@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheck, X, Check } from 'lucide-react';
 
 interface ApproveModalProps {
@@ -23,6 +24,7 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
     onCancel,
     submitting
 }) => {
+    const { t } = useTranslation('loanModals');
     const [step, setStep] = useState<'history' | 'confirm' | 'comment'>('history');
     const [comments, setComments] = useState("");
 
@@ -41,20 +43,20 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                         <span className="approve-details-badge">
                             <ShieldCheck size={15} strokeWidth={2.5} />
                         </span>
-                        <span>Taarifa za Ombi la Mkopo</span>
+                        <span>{t('approve.table.title')}</span>
                     </div>
                     <table className="approve-details-table">
                         <thead>
                             <tr>
-                                <th>ID Mkopo</th>
-                                <th>Mwombaji</th>
-                                <th>Mteja Simu</th>
-                                <th>Afisa Mikopo</th>
-                                <th>Kiasi cha Mkopo</th>
-                                <th>Aina ya Mkopo</th>
-                                <th>Hali ya Sasa</th>
-                                <th>Muda wa Mkopo</th>
-                                <th>Rejesho Tarajiwa</th>
+                                <th>{t('approve.table.loanId')}</th>
+                                <th>{t('approve.table.applicant')}</th>
+                                <th>{t('approve.table.customerPhone')}</th>
+                                <th>{t('approve.table.loanOfficer')}</th>
+                                <th>{t('approve.table.loanAmount')}</th>
+                                <th>{t('approve.table.loanType')}</th>
+                                <th>{t('approve.table.currentStatus')}</th>
+                                <th>{t('approve.table.loanDuration')}</th>
+                                <th>{t('approve.table.expectedRepayment')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,10 +69,10 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                                 <td style={{ textTransform: 'capitalize' }}>{renderVal(loan?.type)}</td>
                                 <td>
                                     <span className={`status-pill status-${loan?.status?.replace('_', '-')}`}>
-                                        {loan?.status?.replace(/_/g, ' ').toUpperCase() || "PENDING"}
+                                        {loan?.status?.replace(/_/g, ' ').toUpperCase() || t('approve.table.defaultStatus')}
                                     </span>
                                 </td>
-                                <td>{renderVal(loan?.details?.kwaTarakimu)} {loan?.details?.kwaTarakimu ? "Miezi" : ""}</td>
+                                <td>{renderVal(loan?.details?.kwaTarakimu)} {loan?.details?.kwaTarakimu ? t('approve.table.months') : ""}</td>
                                 <td className="extra-highlight">
                                     {loan?.details?.kiasiRejeshoBilaMatatizo || loan?.details?.kiasiGaniChaRejesho
                                         ? `TZS ${Number(loan.details.kiasiRejeshoBilaMatatizo || loan.details.kiasiGaniChaRejesho).toLocaleString()}`
@@ -84,14 +86,14 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                 <div className="approve-header-premium" style={{ marginBottom: '20px' }}>
                     {step === 'history' ? (
                         <div className="history-header-row">
-                            <h2>Hali ya Idhini na Maoni</h2>
+                            <h2>{t('approve.header.approvalStatusTitle')}</h2>
                             <div className="inline-stepper-row">
                                 {[
-                                    { label: 'OFFICER', role: 'Loan Officer', status: 'loan_officer' },
-                                    { label: 'LM', role: 'Loan Manager', status: 'manager_review' },
-                                    { label: 'GM', role: 'General Manager', status: 'gm_review' },
-                                    { label: 'MD', role: 'Managing Director', status: 'md_review' },
-                                    { label: 'FINAL', role: 'Completed', status: 'approved' }
+                                    { label: t('approve.stepper.officerLabel'), role: t('approve.stepper.officerRole'), status: 'loan_officer' },
+                                    { label: t('approve.stepper.lmLabel'), role: t('approve.stepper.lmRole'), status: 'manager_review' },
+                                    { label: t('approve.stepper.gmLabel'), role: t('approve.stepper.gmRole'), status: 'gm_review' },
+                                    { label: t('approve.stepper.mdLabel'), role: t('approve.stepper.mdRole'), status: 'md_review' },
+                                    { label: t('approve.stepper.finalLabel'), role: t('approve.stepper.finalRole'), status: 'approved' }
                                 ].map((s, i) => {
                                     const stepOrder = ['loan_officer', 'manager_review', 'gm_review', 'md_review', 'approved'];
                                     const currentIdx = stepOrder.indexOf(loan?.status);
@@ -101,7 +103,7 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                                     return (
                                         <div key={i} className="inline-step-group">
                                             <div className={`inline-step-pill ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`} title={s.role}>
-                                                <span className="inline-step-circle">{isCompleted ? 'OK' : i + 1}</span>
+                                                <span className="inline-step-circle">{isCompleted ? t('approve.stepper.completed') : i + 1}</span>
                                                 <span className="inline-step-label">{s.label}</span>
                                             </div>
                                             {i < 4 && <span className="inline-step-connector" />}
@@ -111,12 +113,12 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <h2>{step === 'confirm' ? 'Idhinisha Mkopo' : 'Weka Maoni ya Idhini'}</h2>
+                        <h2>{step === 'confirm' ? t('approve.header.approveLoanTitle') : t('approve.header.addCommentTitle')}</h2>
                     )}
                     {step !== 'history' && (
                         <p>
-                            {step === 'confirm' ? 'Je, una uhakika wa kuidhinisha ombi hili la mkopo?' :
-                                'Tafadhali weka maoni au dokezo la kuidhinisha ombi hili la mkopo.'}
+                            {step === 'confirm' ? t('approve.header.confirmQuestion') :
+                                t('approve.header.commentPrompt')}
                         </p>
                     )}
                 </div>
@@ -140,13 +142,13 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                                             return (
                                                 <div key={approval.id} className={`timeline-item-premium ${isFirst ? 'first-step' : ''} ${isLast ? 'last-step' : ''}`}>
                                                     <div className="timeline-marker-premium">
-                                                        {isFirst ? 'KWANZA' : isLast ? 'SASA' : index + 1}
+                                                        {isFirst ? t('approve.history.first') : isLast ? t('approve.history.now') : index + 1}
                                                     </div>
                                                     <div className={`history-item-premium ${approval.status === 'rejected' ? 'rejected' : 'approved'}`}>
                                                         <span className="h-role-badge">{approval.user.role.replace(/_/g, ' ').toUpperCase()}</span>
                                                         <span className="h-user">{approval.user.name}</span>
                                                         <span className={`h-action-pill ${approval.status}`}>
-                                                            {approval.status === 'rejected' ? 'IMEKATALIWA' : 'PENDEKEZO'}
+                                                            {approval.status === 'rejected' ? t('approve.history.rejected') : t('approve.history.recommended')}
                                                         </span>
                                                         <span className="h-comment-text">"{approval.comments}"</span>
                                                         <span className="h-date">{new Date(approval.created_at).toLocaleString()}</span>
@@ -159,7 +161,7 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                             }
                             return (
                                 <div className="no-history-msg">
-                                    Hakuna historia ya maoni kwa mkopo huu bado. Unaweza kuendelea kuidhinisha.
+                                    {t('approve.history.noHistory')}
                                 </div>
                             );
                         })()}
@@ -170,12 +172,12 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                             <ShieldCheck size={32} strokeWidth={2} />
                         </div>
                         <p className="confirm-step-note">
-                            Hatua inayofuata itakuhitaji kuweka maoni yako kabla ya kukamilisha.
+                            {t('approve.confirmStep.note')}
                         </p>
                     </div>
                 ) : (
                     <textarea
-                        placeholder="Weka maoni yako hapa (mf. Nyaraka zote ziko sawa, mteja ana uwezo wa kulipa)..."
+                        placeholder={t('approve.textarea.placeholder')}
                         value={comments}
                         onChange={(e) => setComments(e.target.value)}
                         rows={4}
@@ -187,14 +189,14 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                 <div className="approve-footer-premium">
                     <button className="approve-btn-cancel" onClick={onCancel} disabled={submitting}>
                         <X size={16} strokeWidth={2.5} />
-                        {step === 'confirm' ? 'Hapana, Ghairi' : 'Ghairi'}
+                        {step === 'confirm' ? t('approve.actions.noCancel') : t('approve.actions.cancel')}
                     </button>
                     {step === 'history' ? (
                         <button
                             className="approve-btn-confirm"
                             onClick={() => setStep('confirm')}
                         >
-                            Endelea
+                            {t('approve.actions.continue')}
                         </button>
                     ) : step === 'confirm' ? (
                         <button
@@ -202,7 +204,7 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                             onClick={() => setStep('comment')}
                         >
                             <Check size={16} strokeWidth={2.5} />
-                            Ndio, Endelea
+                            {t('approve.actions.yesContinue')}
                         </button>
                     ) : (
                         <button
@@ -211,7 +213,7 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                             disabled={submitting || comments.trim().length < 3}
                             style={{ opacity: (submitting || comments.trim().length < 3) ? 0.6 : 1 }}
                         >
-                            {submitting ? 'Inatuma...' : 'Kamilisha Idhini'}
+                            {submitting ? t('approve.actions.submitting') : t('approve.actions.completeApproval')}
                         </button>
                     )}
                 </div>

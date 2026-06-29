@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import HistoryModal from "../components/HistoryModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -32,6 +33,7 @@ interface Loan {
 }
 
 const MyLoans = () => {
+  const { t } = useTranslation("myLoans");
   const navigate = useNavigate();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,7 @@ const MyLoans = () => {
         setLoanToDelete(null);
       })
       .catch(err => {
-        setAlertMsg("Error deleting loan: " + err.message);
+        setAlertMsg(t("alerts.deleteError", { message: err.message }));
         setAlertType('error');
         setShowAlert(true);
       });
@@ -168,15 +170,15 @@ const MyLoans = () => {
 
       <div className="stats-row">
         <div className="stat-box">
-          <div className="stat-label">Total Applications</div>
+          <div className="stat-label">{t("stats.totalApplications")}</div>
           <div className="stat-number">{loans.length}</div>
         </div>
         <div className="stat-box">
-          <div className="stat-label">Approved</div>
+          <div className="stat-label">{t("stats.approved")}</div>
           <div className="stat-number">{loans.filter(l => l.status === 'approved' || l.status === 'disbursed').length}</div>
         </div>
         <div className="stat-box">
-          <div className="stat-label">Pending Approval</div>
+          <div className="stat-label">{t("stats.pendingApproval")}</div>
           <div className="stat-number">{loans.filter(l => l.status !== 'approved' && l.status !== 'disbursed' && l.status !== 'completed' && l.status !== 'rejected').length}</div>
         </div>
       </div>
@@ -184,54 +186,54 @@ const MyLoans = () => {
       <div className="table-container full-width">
         <div className="entries-filter-row">
           <label className="entries-filter">
-            Show
+            {t("filters.show")}
             <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            entries
+            {t("filters.entries")}
           </label>
           <div className="filter-right-group">
             <input
               type="text"
               className="search-input"
-              placeholder="Search by name, phone, account no., or transaction ref..."
-              title="Search by client name, customer number, loan account number, transaction reference, phone, email, or NIDA number"
+              placeholder={t("filters.searchPlaceholder")}
+              title={t("filters.searchTitle")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
             <button className="refresh-button" onClick={fetchLoans}>
-              Reload
+              {t("filters.reload")}
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="empty-state">Loading applications...</div>
+          <div className="empty-state">{t("empty.loading")}</div>
         ) : loans.length === 0 ? (
           <div className="empty-state">
-            <p>No applications found</p>
-            <span>You haven't submitted any applications yet</span>
+            <p>{t("empty.noApplicationsTitle")}</p>
+            <span>{t("empty.noApplicationsSubtitle")}</span>
           </div>
         ) : filteredLoans.length === 0 ? (
           <div className="empty-state">
-            <p>No matching applications</p>
-            <span>No client name matches "{search}"</span>
+            <p>{t("empty.noMatchTitle")}</p>
+            <span>{t("empty.noMatchSubtitle", { search })}</span>
           </div>
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Client Name</th>
-                  <th>Loan Amount</th>
-                  <th>Loan Type</th>
-                  <th>Status</th>
-                  <th>SMS Status</th>
-                  <th style={{ textAlign: 'center', width: '80px' }}>Actions</th>
+                  <th>{t("table.number")}</th>
+                  <th>{t("table.clientName")}</th>
+                  <th>{t("table.loanAmount")}</th>
+                  <th>{t("table.loanType")}</th>
+                  <th>{t("table.status")}</th>
+                  <th>{t("table.smsStatus")}</th>
+                  <th style={{ textAlign: 'center', width: '80px' }}>{t("table.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,31 +254,31 @@ const MyLoans = () => {
                         border: (loan.status === 'approved' || loan.status === 'disbursed') ? '1px solid #16a34a' : 'none',
                         padding: (loan.status === 'approved' || loan.status === 'disbursed') ? '3px 10px' : '4px 12px'
                       }}>
-                        {loan.status === 'loan_officer' ? 'RETURNED FOR CORRECTION' :
-                          loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span> :
+                        {loan.status === 'loan_officer' ? t("status.returnedForCorrection") :
+                          loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span> :
 
                             loan.status === 'gm_review' ? (
                               <span>
-                                <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                                <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
                                 <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                                <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                               </span>
                             ) :
                               loan.status === 'md_review' ? (
                                 <span>
-                                  <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
+                                  <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
                                   <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                  <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
+                                  <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
                                 </span>
                               ) :
-                                loan.status === 'approved' ? 'APPROVED' :
-                                  loan.status === 'disbursed' ? 'DISBURSED' :
+                                loan.status === 'approved' ? t("status.approved") :
+                                  loan.status === 'disbursed' ? t("status.disbursed") :
                                     loan.status.replace(/_/g, ' ').toUpperCase()}
 
                       </span>
                       {loan.rejection_metadata && (
                         <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
-                          Sababu: {loan.rejection_metadata.reason}
+                          {t("status.reasonLabel")}: {loan.rejection_metadata.reason}
                         </div>
                       )}
                     </td>
@@ -296,24 +298,24 @@ const MyLoans = () => {
                       {activeMenu === loan.id && menuPos && createPortal(
                         <div className="action-dropdown" style={{ top: menuPos.top, left: menuPos.left }}>
                           <button onClick={() => viewDetails(loan)}>
-                            View
+                            {t("actions.view")}
                           </button>
                           <button onClick={() => openHistory(loan)} style={{ color: '#2563eb', fontWeight: '600' }}>
-                            Fungua Mapendekezo
+                            {t("actions.openRecommendations")}
                           </button>
                           <button
                             disabled={loan.status !== 'loan_officer'}
                             className={loan.status !== 'loan_officer' ? 'muted' : ''}
                             onClick={() => handleEdit(loan)}
                           >
-                            Edit
+                            {t("actions.edit")}
                           </button>
                           <button
                             disabled={loan.status !== 'loan_officer'}
                             className={`text-danger ${loan.status !== 'loan_officer' ? 'muted' : ''}`}
                             onClick={() => handleDelete(loan)}
                           >
-                            Delete
+                            {t("actions.delete")}
                           </button>
                         </div>,
                         document.body
@@ -329,12 +331,16 @@ const MyLoans = () => {
         {!loading && filteredLoans.length > 0 && (
           <div className="pagination-row">
             <span className="pagination-info">
-              Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, filteredLoans.length)} of {filteredLoans.length}
+              {t("pagination.showing", {
+                from: (currentPage - 1) * entriesPerPage + 1,
+                to: Math.min(currentPage * entriesPerPage, filteredLoans.length),
+                total: filteredLoans.length,
+              })}
             </span>
             <div className="pagination-buttons">
-              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>{t("pagination.previous")}</button>
               <span className="pagination-page">{currentPage} / {totalPages}</span>
-              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+              <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>{t("pagination.next")}</button>
             </div>
           </div>
         )}
@@ -356,8 +362,8 @@ const MyLoans = () => {
 
       <ConfirmModal
         isOpen={showDeleteModal}
-        title="Futa Ombi la Mkopo"
-        message={`Je, una uhakika unataka kufuta ombi la mkopo la ${loanToDelete?.name}? Kitendo hiki hakiwezi kurudishwa.`}
+        title={t("modal.deleteTitle")}
+        message={t("modal.deleteMessage", { name: loanToDelete?.name })}
         type="danger"
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteModal(false)}

@@ -1,0 +1,126 @@
+{
+  "stats": {
+    "totalExpected": "TOTAL EXPECTED",
+    "totalCollected": "TOTAL COLLECTED",
+    "outstandingBalance": "OUTSTANDING BALANCE",
+    "overdueAmount": "OVERDUE AMOUNT",
+    "collectionRate": "COLLECTION RATE",
+    "activeLoans": "ACTIVE LOANS",
+    "defaultedLoans": "DEFAULTED LOANS"
+  },
+  "charts": {
+    "overview": "Overview",
+    "last6Months": "Last 6 months",
+    "disbursed": "Disbursed",
+    "repaid": "Repaid",
+    "outstanding": "Outstanding",
+    "portfolioHealth": "Portfolio Health",
+    "healthy": "Healthy",
+    "current": "Current",
+    "atRisk": "At Risk",
+    "critical": "Critical"
+  },
+  "todayCollection": {
+    "title": "Today's Collection",
+    "dueBadge": "{{count}} due"
+  },
+  "overdueManagement": {
+    "title": "Overdue Management",
+    "lateBadge": "{{count}} late",
+    "daysLateValue": "{{count}}d"
+  },
+  "table": {
+    "number": "#",
+    "customer": "Customer",
+    "loanNo": "Loan No",
+    "dueAmount": "Due Amount",
+    "dueDate": "Due Date",
+    "action": "Action",
+    "daysLate": "Days Late",
+    "amount": "Amount",
+    "penalty": "Penalty",
+    "clientIdentity": "Client Identity",
+    "principal": "Principal",
+    "amortized": "Amortized",
+    "balance": "Balance",
+    "efficiency": "Efficiency",
+    "status": "Status",
+    "management": "Management",
+    "loanNumberFormat": "LN-{{id}}"
+  },
+  "tabs": {
+    "activeLoans": "Active Loans",
+    "completed": "Completed"
+  },
+  "filters": {
+    "searchClient": "Search client...",
+    "filter": "Filter"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "export": "Export",
+    "collect": "Collect",
+    "collectPayment": "Collect Payment",
+    "sendSmsReminder": "Send SMS Reminder",
+    "viewLoan": "View Loan",
+    "sendOverdueSms": "Send Overdue SMS",
+    "contact": "Contact",
+    "collectWithPenalty": "Collect with penalty",
+    "addPayment": "Add Payment",
+    "viewSchedule": "View schedule",
+    "discard": "Discard",
+    "confirmPayment": "Confirm Payment",
+    "done": "Done"
+  },
+  "status": {
+    "current": "current",
+    "completed": "completed",
+    "overdue": "overdue",
+    "pending": "Pending",
+    "paid": "Paid"
+  },
+  "empty": {
+    "noPortfolioData": "No active portfolio data yet",
+    "noPaymentsDueToday": "No payments due today",
+    "noOverduePayments": "No overdue payments 🎉",
+    "noLoansInCategory": "No loans found in this category",
+    "noScheduleGenerated": "No schedule generated for this loan"
+  },
+  "modal": {
+    "postRepayment": "Post Repayment",
+    "borrower": "Borrower",
+    "balance": "Balance",
+    "amount": "Amount",
+    "date": "Date",
+    "paymentMethod": "Payment Method",
+    "methodCash": "Cash",
+    "methodBank": "Bank",
+    "methodMobileMoney": "Mobile Money",
+    "transactionReference": "Transaction Reference",
+    "receivedBy": "Received By",
+    "notesOptional": "Notes (optional)"
+  },
+  "scheduleModal": {
+    "loanRepaymentPlan": "Loan Repayment Plan",
+    "loadingSchedule": "Loading schedule...",
+    "installment": "Installment",
+    "interest": "Interest",
+    "total": "Total"
+  },
+  "receiptModal": {
+    "paymentRecorded": "Payment Recorded",
+    "printOrDownload": "Print or download the receipt",
+    "a4Receipt": "A4 Receipt",
+    "downloadPdf": "Download PDF",
+    "thermal80": "Thermal 80mm",
+    "thermal58": "Thermal 58mm"
+  },
+  "alerts": {
+    "smsSent": "SMS reminder sent to {{customer}}.",
+    "smsFailed": "Failed to send SMS reminder to {{customer}}."
+  },
+  "validation": {
+    "amountRequired": "Please enter a valid repayment amount greater than 0.",
+    "amountExceeds": "Payment amount {{amount}} exceeds remaining balance {{balance}}."
+  }
+}

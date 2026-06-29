@@ -1,0 +1,52 @@
+{
+  "header": {
+    "title": "Dashibodi",
+    "subtitle": "Karibu kwenye Mfumo wa Usimamizi wa Microfinance",
+    "loading": "Inapakia...",
+    "refresh": "Onyesha Upya"
+  },
+  "errors": {
+    "loadFailed": "Imeshindwa kupakia data ya dashibodi",
+    "retry": "Jaribu Tena"
+  },
+  "stats": {
+    "totalUsers": {
+      "label": "Jumla ya Watumiaji",
+      "hint": "Wanachama waliosajiliwa"
+    },
+    "totalLoans": {
+      "label": "Jumla ya Mikopo",
+      "hint": "Maombi yote ya mikopo"
+    },
+    "approvedLoans": {
+      "label": "Mikopo Iliyoidhinishwa",
+      "hint": "Iliyoidhinishwa kwa mafanikio"
+    },
+    "pendingRequests": {
+      "label": "Maombi Yanayosubiri",
+      "hint": "Yanayosubiri idhini"
+    }
+  },
+  "charts": {
+    "distributionByStatus": "Mgawanyo wa Mikopo kwa Hali",
+    "statusDistribution": "Mgawanyo wa Hali ya Mikopo",
+    "numberOfLoans": "Idadi ya Mikopo",
+    "roles": {
+      "loanManager": "Meneja wa Mikopo",
+      "generalManager": "Meneja Mkuu",
+      "managingDirector": "Mkurugenzi Mtendaji",
+      "approved": "Imeidhinishwa"
+    },
+    "stages": {
+      "managerReview": "Ukaguzi wa Meneja",
+      "gmReview": "Ukaguzi wa Meneja Mkuu",
+      "mdReview": "Ukaguzi wa Mkurugenzi Mtendaji"
+    }
+  },
+  "quickStats": {
+    "approvalRate": "Kiwango cha Idhini",
+    "managerReview": "Ukaguzi wa Meneja",
+    "gmReview": "Ukaguzi wa Meneja Mkuu",
+    "mdReview": "Ukaguzi wa Mkurugenzi Mtendaji"
+  }
+}

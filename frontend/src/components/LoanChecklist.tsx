@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
 
@@ -16,61 +17,64 @@ interface Props {
   onChange: (r: { state: ChecklistState; allResolved: boolean }) => void;
 }
 
+// NOTE: `title`/`label` below are i18next keys (namespace "historyModals"), not display
+// text. Render with t(section.title) / t(item.label) — see LoanChecklist and
+// LoanChecklistView, which both consume this shared map.
 export const SECTIONS: Record<string, { title: string; items: { key: string; label: string; noUpload?: boolean }[] }> = {
   identification: {
-    title: "1. PERSONAL IDENTIFICATION",
+    title: "checklist.sections.identification.title",
     items: [
-      { key: "id_doc", label: "National ID / Passport / Voter ID" },
-      { key: "passport_photo", label: "Passport-size Photo" },
-      { key: "proof_residence", label: "Proof of Residence (Ward Letter / Local Govt Introduction)" },
+      { key: "id_doc", label: "checklist.items.idDoc" },
+      { key: "passport_photo", label: "checklist.items.passportPhoto" },
+      { key: "proof_residence", label: "checklist.items.proofResidence" },
     ],
   },
   tax: {
-    title: "2. TAX & LEGAL COMPLIANCE",
+    title: "checklist.sections.tax.title",
     items: [
-      { key: "tin", label: "TIN Certificate" },
-      { key: "tax_clearance", label: "Tax Clearance Certificate" },
-      { key: "business_license", label: "Business License" },
-      { key: "incorporation", label: "Certificate of Incorporation (for companies)" },
+      { key: "tin", label: "checklist.items.tin" },
+      { key: "tax_clearance", label: "checklist.items.taxClearance" },
+      { key: "business_license", label: "checklist.items.businessLicense" },
+      { key: "incorporation", label: "checklist.items.incorporation" },
     ],
   },
   financial: {
-    title: "3. FINANCIAL DOCUMENTS",
+    title: "checklist.sections.financial.title",
     items: [
-      { key: "bank_statements", label: "Bank Statements (last 6–12 months)" },
-      { key: "salary_slips", label: "Salary Slips (last 3–6 months)" },
-      { key: "employment_contract", label: "Employment Contract / Offer Letter" },
-      { key: "other_income", label: "Proof of Other Income (if any)" },
+      { key: "bank_statements", label: "checklist.items.bankStatements" },
+      { key: "salary_slips", label: "checklist.items.salarySlips" },
+      { key: "employment_contract", label: "checklist.items.employmentContract" },
+      { key: "other_income", label: "checklist.items.otherIncome" },
     ],
   },
   collateral: {
-    title: "5. COLLATERAL DOCUMENTS",
+    title: "checklist.sections.collateral.title",
     items: [
-      { key: "title_deed", label: "Title Deed / Ownership Documents" },
-      { key: "valuation", label: "Valuation Report" },
-      { key: "chattel", label: "Chattel Mortgage Form (movable assets)" },
-      { key: "alt_mortgage", label: "Alternative Mortgage Documents (if applicable)" },
-      { key: "insurance", label: "Insurance Cover for Collateral" },
+      { key: "title_deed", label: "checklist.items.titleDeed" },
+      { key: "valuation", label: "checklist.items.valuation" },
+      { key: "chattel", label: "checklist.items.chattel" },
+      { key: "alt_mortgage", label: "checklist.items.altMortgage" },
+      { key: "insurance", label: "checklist.items.insurance" },
     ],
   },
   guarantor: {
-    title: "6. GUARANTOR DOCUMENTS",
+    title: "checklist.sections.guarantor.title",
     items: [
-      { key: "guarantor_id", label: "Guarantor ID Copy" },
-      { key: "guarantor_residence", label: "Guarantor Proof of Residence" },
-      { key: "guarantor_photos", label: "Guarantor Passport Photos" },
+      { key: "guarantor_id", label: "checklist.items.guarantorId" },
+      { key: "guarantor_residence", label: "checklist.items.guarantorResidence" },
+      { key: "guarantor_photos", label: "checklist.items.guarantorPhotos" },
     ],
   },
   loan_forms: {
-    title: "7. LOAN APPLICATION FORMS",
+    title: "checklist.sections.loanForms.title",
     items: [
       // These are in-form declarations/checkboxes, not scannable documents —
       // verification-only, no upload affordance (matches original behaviour).
-      { key: "application_form", label: "Completed Loan Application Form", noUpload: true },
-      { key: "two_guarantors_signed", label: "Form Signed by Two Guarantors", noUpload: true },
-      { key: "loan_agreement", label: "Signed Loan Agreement", noUpload: true },
-      { key: "credit_consent", label: "Credit Reference / Credit Report Consent", noUpload: true },
-      { key: "terms_ack", label: "Terms & Conditions Acknowledgment", noUpload: true },
+      { key: "application_form", label: "checklist.items.applicationForm", noUpload: true },
+      { key: "two_guarantors_signed", label: "checklist.items.twoGuarantorsSigned", noUpload: true },
+      { key: "loan_agreement", label: "checklist.items.loanAgreement", noUpload: true },
+      { key: "credit_consent", label: "checklist.items.creditConsent", noUpload: true },
+      { key: "terms_ack", label: "checklist.items.termsAck", noUpload: true },
     ],
   },
 };
@@ -82,6 +86,7 @@ export const SECTIONS_BY_CATEGORY: Record<LoanCategory, string[]> = {
 };
 
 const LoanChecklist = ({ category, verified, onChange }: Props) => {
+  const { t } = useTranslation("historyModals");
   const sectionKeys = SECTIONS_BY_CATEGORY[category];
   const allKeys = sectionKeys.flatMap((s) => SECTIONS[s].items.map((i) => i.key));
 
@@ -138,7 +143,7 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
       }));
     } catch (err) {
       console.error("Document upload failed", err);
-      alert("Imeshindwa kupakia nyaraka. Tafadhali jaribu tena.");
+      alert(t("checklist.alerts.uploadFailed"));
     } finally {
       setUploadingKey(null);
     }
@@ -157,15 +162,15 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: totalUnresolved ? "#fffbeb" : "#ecfdf5", border: `1px solid ${totalUnresolved ? "#fde68a" : "#a7f3d0"}`, borderRadius: 10, padding: "0.7rem 1rem", marginBottom: "1rem", fontSize: "0.82rem", fontWeight: 600, color: totalUnresolved ? "#92400e" : "#047857" }}>
         {totalUnresolved
-          ? <><AlertTriangle size={16} /> {totalUnresolved} document(s) not yet confirmed. Pakia (upload) the nyaraka you have, or use “Proceed without” to bypass missing items.</>
-          : <><ShieldCheck size={16} /> All documents confirmed or bypassed — you can submit the request.</>}
+          ? <><AlertTriangle size={16} /> {t("checklist.banner.unresolved", { count: totalUnresolved })}</>
+          : <><ShieldCheck size={16} /> {t("checklist.banner.allResolved")}</>}
       </div>
 
       {sectionKeys.map((sk) => {
         const sec = SECTIONS[sk];
         return (
           <div key={sk} style={{ marginBottom: "1.2rem" }}>
-            <div className="ckl-banner">{sec.title}</div>
+            <div className="ckl-banner">{t(sec.title)}</div>
             <div className="ckl-grid">
               {sec.items.map((item) => {
                 const isVerified = !!verified[item.key];
@@ -179,14 +184,14 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                     <label className="ckl-check" style={{ cursor: "default" }}>
                       <input type="checkbox" checked={isVerified || st.checked} disabled readOnly />
                       <span className={`ckl-box ${(isVerified || st.checked) ? "on" : ""}`}>{(isVerified || st.checked) && <Check size={12} />}</span>
-                      <span className="ckl-label">{item.label}</span>
+                      <span className="ckl-label">{t(item.label)}</span>
                     </label>
                     <div className="ckl-foot">
                       <div className="ckl-doc-actions">
                         {!item.noUpload && (
                           <label
                             className={`ckl-doc-btn ${st.skip ? "ckl-doc-btn--muted" : ""}`}
-                            title={st.skip ? "Imerukwa — futa 'Proceed without' kwanza" : st.attachmentUrl ? "Badilisha Nyaraka" : "Pakia Nyaraka (PDF/Picha)"}
+                            title={st.skip ? t("checklist.titles.skippedFirst") : st.attachmentUrl ? t("checklist.titles.replaceDocument") : t("checklist.titles.uploadDocument")}
                           >
                             {uploadingKey === item.key ? <Loader2 size={12} className="ckl-spin" /> : <Paperclip size={12} />}
                             <input
@@ -207,15 +212,15 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                               <button
                                 type="button"
                                 className="ckl-doc-btn ckl-doc-btn--view"
-                                title="Tazama Nyaraka"
-                                onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
+                                title={t("checklist.titles.viewDocument")}
+                                onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || t(item.label), mimeType: st.attachmentType || "" })}
                               >
                                 <Eye size={12} />
                               </button>
                               <button
                                 type="button"
                                 className="ckl-doc-btn ckl-doc-btn--delete"
-                                title="Futa Nyaraka"
+                                title={t("checklist.titles.deleteDocument")}
                                 onClick={() => setConfirmDeleteKey(item.key)}
                               >
                                 <Trash2 size={12} />
@@ -224,13 +229,13 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
                           )}
                       </div>
                       {isVerified ? (
-                        <span className="ckl-tag ckl-tag--ok"><ShieldCheck size={11} /> Auto-verified</span>
+                        <span className="ckl-tag ckl-tag--ok"><ShieldCheck size={11} /> {t("checklist.tags.autoVerified")}</span>
                       ) : st.checked && st.attachmentUrl ? (
-                        <span className="ckl-tag ckl-tag--ok"><Check size={11} /> Imepakiwa</span>
+                        <span className="ckl-tag ckl-tag--ok"><Check size={11} /> {t("checklist.tags.uploaded")}</span>
                       ) : st.skip ? (
-                        <button type="button" className="ckl-skipbtn ckl-skipbtn--on" onClick={() => toggleSkip(item.key)}><RotateCcw size={11} /> Bypassed — undo</button>
+                        <button type="button" className="ckl-skipbtn ckl-skipbtn--on" onClick={() => toggleSkip(item.key)}><RotateCcw size={11} /> {t("checklist.actions.bypassedUndo")}</button>
                       ) : (
-                        <button type="button" className="ckl-skipbtn" onClick={() => toggleSkip(item.key)}>Proceed without</button>
+                        <button type="button" className="ckl-skipbtn" onClick={() => toggleSkip(item.key)}>{t("checklist.actions.proceedWithout")}</button>
                       )}
                     </div>
                   </div>
@@ -280,11 +285,11 @@ const LoanChecklist = ({ category, verified, onChange }: Props) => {
 
       <ConfirmModal
         isOpen={!!confirmDeleteKey}
-        title="Futa Nyaraka"
-        message="Una hakika unataka kufuta nyaraka hii? Utahitaji kuipakia tena au kutumia 'Proceed without'."
+        title={t("checklist.confirmDelete.title")}
+        message={t("checklist.confirmDelete.message")}
         type="danger"
-        confirmText="Ndio, Futa"
-        cancelText="Ghairi"
+        confirmText={t("checklist.confirmDelete.confirm")}
+        cancelText={t("checklist.confirmDelete.cancel")}
         onConfirm={() => {
           if (confirmDeleteKey) removeAttachment(confirmDeleteKey);
           setConfirmDeleteKey(null);

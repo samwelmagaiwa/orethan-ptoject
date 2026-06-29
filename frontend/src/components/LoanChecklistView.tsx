@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { SECTIONS, SECTIONS_BY_CATEGORY, type LoanCategory } from "./LoanChecklist";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
@@ -27,6 +28,7 @@ const deriveCategory = (type?: string, details?: Record<string, any> | null): Lo
  * Bypassed ("Proceed without"), so approvers can review before approving.
  */
 const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
+  const { t } = useTranslation("historyModals");
   const [viewerDoc, setViewerDoc] = useState<{ url: string; name: string; mimeType: string } | null>(null);
   const data: Record<string, ItemState> | undefined = details?.documentation_checklist;
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) return null;
@@ -46,24 +48,24 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
       key: item.key,
       label: item.label,
       url: data[item.key].attachmentUrl as string,
-      name: data[item.key].attachmentName || item.label,
+      name: data[item.key].attachmentName || t(item.label),
       mimeType: data[item.key].attachmentType || "",
     }));
   const isImage = (mimeType: string, url: string) => mimeType.includes("image") || /\.(jpe?g|png|gif|webp)$/i.test(url);
 
   return (
     <div className="pdf-section ckv-section">
-      <div className="pdf-section-title">ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
+      <div className="pdf-section-title">{t("checklistView.heading")}</div>
 
       <div className="ckv-summary no-print">
-        <span className="ckv-pill ckv-pill--ok">{confirmed} Zimethibitishwa / Confirmed</span>
-        {bypassed > 0 && <span className="ckv-pill ckv-pill--skip">{bypassed} Zimerukwa / Proceed-without</span>}
-        {missing > 0 && <span className="ckv-pill ckv-pill--miss">{missing} Hazijajazwa / Missing</span>}
+        <span className="ckv-pill ckv-pill--ok">{t("checklistView.summary.confirmed", { count: confirmed })}</span>
+        {bypassed > 0 && <span className="ckv-pill ckv-pill--skip">{t("checklistView.summary.bypassed", { count: bypassed })}</span>}
+        {missing > 0 && <span className="ckv-pill ckv-pill--miss">{t("checklistView.summary.missing", { count: missing })}</span>}
       </div>
 
       {attachments.length > 0 && (
         <div className="ckv-gallery no-print">
-          <div className="ckv-gallery-title">NYARAKA ZILIZOPAKIWA / UPLOADED ATTACHMENTS — {attachments.length}</div>
+          <div className="ckv-gallery-title">{t("checklistView.gallery.title", { count: attachments.length })}</div>
           <div className="ckv-gallery-grid">
             {attachments.map((att) => (
               <button
@@ -74,13 +76,13 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
               >
                 <div className="ckv-gallery-thumb">
                   {isImage(att.mimeType, att.url) ? (
-                    <img src={resolveFileUrl(att.url)} alt={att.label} />
+                    <img src={resolveFileUrl(att.url)} alt={t(att.label)} />
                   ) : (
                     <FileText size={28} />
                   )}
                 </div>
-                <span className="ckv-gallery-label">{att.label}</span>
-                <span className="ckv-gallery-view"><Eye size={11} /> Tazama</span>
+                <span className="ckv-gallery-label">{t(att.label)}</span>
+                <span className="ckv-gallery-view"><Eye size={11} /> {t("checklistView.actions.view")}</span>
               </button>
             ))}
           </div>
@@ -92,26 +94,26 @@ const LoanChecklistView: React.FC<Props> = ({ type, details }) => {
           const sec = SECTIONS[sk];
           return (
             <div key={sk} className="ckv-group">
-              <div className="ckv-group-title">{sec.title}</div>
+              <div className="ckv-group-title">{t(sec.title)}</div>
               {sec.items.map((item) => {
                 const st = data[item.key] || {};
                 const status = st.skip ? "skip" : st.checked ? "ok" : "miss";
                 return (
                   <div key={item.key} className={`ckv-row ckv-row--${status}`}>
-                    <span className="ckv-label">{item.label}</span>
+                    <span className="ckv-label">{t(item.label)}</span>
                     <span className="ckv-row-right">
                       {st.attachmentUrl && (
                         <button
                           type="button"
                           className="ckv-view-btn no-print"
-                          title="Tazama Nyaraka"
-                          onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || item.label, mimeType: st.attachmentType || "" })}
+                          title={t("checklistView.actions.viewDocument")}
+                          onClick={() => setViewerDoc({ url: st.attachmentUrl!, name: st.attachmentName || t(item.label), mimeType: st.attachmentType || "" })}
                         >
-                          <Eye size={11} /> Tazama
+                          <Eye size={11} /> {t("checklistView.actions.view")}
                         </button>
                       )}
                       <span className={`ckv-tag ckv-tag--${status}`}>
-                        {status === "ok" ? "✓ IMETHIBITISHWA" : status === "skip" ? "↷ IMERUKWA (Proceed without)" : "✕ HAIJAJAZWA"}
+                        {status === "ok" ? t("checklistView.status.confirmed") : status === "skip" ? t("checklistView.status.bypassed") : t("checklistView.status.missing")}
                       </span>
                     </span>
                   </div>

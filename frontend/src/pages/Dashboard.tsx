@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -39,6 +40,7 @@ interface DashboardData {
 }
 
 const Dashboard: FC = () => {
+  const { t } = useTranslation("dashboard");
   const [data, setData] = useState<DashboardData>({
     usersCount: 0,
     loanStats: {
@@ -76,7 +78,7 @@ const Dashboard: FC = () => {
       setData((prev) => ({
         ...prev,
         isLoading: false,
-        error: "Failed to load dashboard data",
+        error: t("errors.loadFailed"),
       }));
     }
   };
@@ -84,36 +86,36 @@ const Dashboard: FC = () => {
   const stats = [
     {
       key: "users",
-      label: "Total Users",
+      label: t("stats.totalUsers.label"),
       value: data.usersCount,
-      hint: "Registered members",
+      hint: t("stats.totalUsers.hint"),
       color: "#3b82f6",
       progress: data.usersCount > 0 ? Math.min(100, Math.round((data.usersCount / 200) * 100)) : 0,
     },
     {
       key: "loans",
-      label: "Total Loans",
+      label: t("stats.totalLoans.label"),
       value: data.loanStats.total,
-      hint: "All loan applications",
+      hint: t("stats.totalLoans.hint"),
       color: "#8b5cf6",
       progress: data.loanStats.total > 0 ? Math.min(100, Math.round((data.loanStats.total / 100) * 100)) : 0,
     },
     {
       key: "approved",
-      label: "Approved Loans",
+      label: t("stats.approvedLoans.label"),
       value: data.loanStats.approved,
-      hint: "Successfully approved",
+      hint: t("stats.approvedLoans.hint"),
       color: "#10b981",
       progress: data.loanStats.total > 0 ? Math.round((data.loanStats.approved / data.loanStats.total) * 100) : 0,
     },
     {
       key: "pending",
-      label: "Pending Requests",
+      label: t("stats.pendingRequests.label"),
       value: data.loanStats.manager_review + data.loanStats.gm_review + data.loanStats.md_review,
-      hint: "Awaiting approval",
+      hint: t("stats.pendingRequests.hint"),
       color: "#f59e0b",
-      progress: data.loanStats.total > 0 
-        ? Math.round(((data.loanStats.manager_review + data.loanStats.gm_review + data.loanStats.md_review) / data.loanStats.total) * 100) 
+      progress: data.loanStats.total > 0
+        ? Math.round(((data.loanStats.manager_review + data.loanStats.gm_review + data.loanStats.md_review) / data.loanStats.total) * 100)
         : 0,
     },
   ];
@@ -123,10 +125,15 @@ const Dashboard: FC = () => {
     : 0;
 
   const barChartData = {
-    labels: ["Loan Manager", "General Manager", "Managing Director", "Approved"],
+    labels: [
+      t("charts.roles.loanManager"),
+      t("charts.roles.generalManager"),
+      t("charts.roles.managingDirector"),
+      t("charts.roles.approved"),
+    ],
     datasets: [
       {
-        label: "Number of Loans",
+        label: t("charts.numberOfLoans"),
         data: [
           data.loanStats.manager_review,
           data.loanStats.gm_review,
@@ -140,7 +147,12 @@ const Dashboard: FC = () => {
   };
 
   const pieChartData = {
-    labels: ["Manager Review", "GM Review", "MD Review", "Approved"],
+    labels: [
+      t("charts.stages.managerReview"),
+      t("charts.stages.gmReview"),
+      t("charts.stages.mdReview"),
+      t("charts.roles.approved"),
+    ],
     datasets: [
       {
         data: [
@@ -178,18 +190,18 @@ const Dashboard: FC = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>Dashboard</h1>
-          <p>Welcome to Microfinance Management System</p>
+          <h1>{t("header.title")}</h1>
+          <p>{t("header.subtitle")}</p>
         </div>
         <button className="refresh-button" onClick={fetchDashboardData} disabled={data.isLoading}>
-          {data.isLoading ? "Loading..." : "Refresh"}
+          {data.isLoading ? t("header.loading") : t("header.refresh")}
         </button>
       </div>
 
       {data.error && (
         <div className="error-message">
           {data.error}
-          <button onClick={fetchDashboardData}>Retry</button>
+          <button onClick={fetchDashboardData}>{t("errors.retry")}</button>
         </div>
       )}
 
@@ -210,13 +222,13 @@ const Dashboard: FC = () => {
 
       <div className="charts-row">
         <div className="chart-container">
-          <h3>Loan Distribution by Status</h3>
+          <h3>{t("charts.distributionByStatus")}</h3>
           <div className="chart-wrapper">
             <Bar data={barChartData} options={barOptions} />
           </div>
         </div>
         <div className="chart-container">
-          <h3>Loan Status Distribution</h3>
+          <h3>{t("charts.statusDistribution")}</h3>
           <div className="chart-wrapper">
             <Pie data={pieChartData} options={pieOptions} />
           </div>
@@ -226,19 +238,19 @@ const Dashboard: FC = () => {
       <div className="quick-stats">
         <div className="quick-stat">
           <div className="quick-stat-value">{data.isLoading ? "..." : `${approvalRate}%`}</div>
-          <div className="quick-stat-label">Approval Rate</div>
+          <div className="quick-stat-label">{t("quickStats.approvalRate")}</div>
         </div>
         <div className="quick-stat">
           <div className="quick-stat-value">{data.isLoading ? "..." : data.loanStats.manager_review}</div>
-          <div className="quick-stat-label">Manager Review</div>
+          <div className="quick-stat-label">{t("quickStats.managerReview")}</div>
         </div>
         <div className="quick-stat">
           <div className="quick-stat-value">{data.isLoading ? "..." : data.loanStats.gm_review}</div>
-          <div className="quick-stat-label">GM Review</div>
+          <div className="quick-stat-label">{t("quickStats.gmReview")}</div>
         </div>
         <div className="quick-stat">
           <div className="quick-stat-value">{data.isLoading ? "..." : data.loanStats.md_review}</div>
-          <div className="quick-stat-label">MD Review</div>
+          <div className="quick-stat-label">{t("quickStats.mdReview")}</div>
         </div>
       </div>
 

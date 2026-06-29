@@ -1,0 +1,110 @@
+{
+  "language": {
+    "label": "Lugha",
+    "english": "Kiingereza",
+    "swahili": "Kiswahili"
+  },
+  "roles": {
+    "admin": "Msimamizi",
+    "loan_officer": "Afisa Mikopo",
+    "loan_manager": "Meneja Mikopo",
+    "general_manager": "Meneja Mkuu",
+    "managing_director": "Mkurugenzi Mtendaji",
+    "finance_officer": "Afisa Fedha",
+    "customer": "Mteja"
+  },
+  "navbar": {
+    "appTitle": "Mfumo wa Mikopo Midogo",
+    "pageTitles": {
+      "dashboard": "Dashibodi",
+      "personalLoan": "FOMU YA MAOMBI YA MKOPO BINAFSI",
+      "groupLoan": "FOMU YA MAOMBI YA MKOPO WA KIKUNDI",
+      "employeeLoan": "FOMU YA MAOMBI YA MKOPO WA MFANYAKAZI",
+      "loanManager": "Meneja wa Mikopo",
+      "generalManager": "Meneja Mkuu",
+      "managingDirector": "Mkurugenzi Mtendaji",
+      "repaymentTracker": "Ufuatiliaji wa Marejesho",
+      "users": "Watumiaji"
+    }
+  },
+  "userMenu": {
+    "user": "Mtumiaji",
+    "changePhotoTitle": "Badilisha picha",
+    "uploadingPhoto": "Inapakia picha…",
+    "uploadFailed": "Kupakia kumeshindwa",
+    "changePhoto": "Badilisha Picha",
+    "myProfile": "Wasifu Wangu",
+    "mySignature": "Sahihi Yangu",
+    "logout": "Toka"
+  },
+  "notifications": {
+    "title": "Arifa",
+    "markAllRead": "Weka zote kama zimesomwa",
+    "empty": "Hakuna arifa",
+    "justNow": "sasa hivi",
+    "minutesAgo": "dakika {{count}} zilizopita",
+    "hoursAgo": "saa {{count}} zilizopita",
+    "daysAgo": "siku {{count}} zilizopita"
+  },
+  "sidebar": {
+    "openMenu": "Fungua menyu",
+    "expand": "Panua",
+    "collapse": "Kunja",
+    "administrator": "Msimamizi",
+    "sections": {
+      "internal": "NDANI",
+      "loanOperations": "SHUGHULI ZA MIKOPO",
+      "approvals": "IDHINI",
+      "management": "USIMAMIZI",
+      "accounting": "UHASIBU",
+      "reports": "TAARIFA",
+      "preferences": "MAPENDELEO"
+    },
+    "dashboard": "Dashibodi",
+    "financeCollections": "Fedha na Ukusanyaji",
+    "overdueManagement": "Usimamizi wa Madeni",
+    "disbursePayments": "Toa Mikopo na Malipo",
+    "requests": "Maombi",
+    "paymentRequests": "Maombi ya Malipo",
+    "leaveRequests": "Maombi ya Likizo",
+    "officeDelegation": "Uwakilishi wa Ofisi",
+    "users": "Watumiaji",
+    "viewUsers": "Tazama Watumiaji",
+    "loanSettings": "Mipangilio ya Mikopo",
+    "loansForm": "Fomu za Mikopo",
+    "personalLoan": "Mkopo Binafsi",
+    "groupLoan": "Mkopo wa Kikundi",
+    "myApplications": "Maombi Yangu",
+    "managerReview": "Mapitio ya Meneja",
+    "gmReview": "Mapitio ya Meneja Mkuu",
+    "mdAuth": "Idhini ya Mkurugenzi Mtendaji",
+    "customers": "Wateja",
+    "accounting": "Uhasibu",
+    "chartOfAccounts": "Chati ya Akaunti",
+    "journalEntries": "Kumbukumbu za Jarida",
+    "generalLedger": "Daftari Kuu",
+    "trialBalance": "Mizani ya Majaribio",
+    "incomeStatement": "Taarifa ya Mapato",
+    "balanceSheet": "Mizani ya Hesabu",
+    "cashBook": "Kitabu cha Fedha Taslimu",
+    "bankReconciliation": "Upatanisho wa Benki",
+    "reports": "Taarifa",
+    "riskReports": "Taarifa za Hatari",
+    "financialReports": "Taarifa za Fedha",
+    "mySignature": "Sahihi Yangu",
+    "logOut": "Toka"
+  },
+  "footer": {
+    "copyright": "© {{year}} Mfumo wa Mikopo Midogo. Haki zote zimehifadhiwa."
+  },
+  "modal": {
+    "confirmYes": "Ndio, Endelea",
+    "confirmNo": "Hapana, Ghairi",
+    "notice": "Taarifa",
+    "ok": "SAWA, IMELEWEKA",
+    "success": "Imefanikiwa",
+    "done": "Imekamilika",
+    "error": "Hitilafu",
+    "validationError": "Hitilafu ya Uthibitishaji"
+  }
+}

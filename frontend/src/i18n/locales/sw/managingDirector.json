@@ -1,0 +1,73 @@
+{
+  "stats": {
+    "totalHandled": "Jumla Zilizoshughulikiwa",
+    "currentRole": "Wadhifa wa Sasa",
+    "managingDirector": "Mkurugenzi Mtendaji",
+    "actionRequired": "Inahitaji Hatua"
+  },
+  "filters": {
+    "show": "Onyesha",
+    "entries": "kumbukumbu",
+    "searchPlaceholder": "Tafuta mwombaji...",
+    "refresh": "Onyesha Upya"
+  },
+  "table": {
+    "client": "Mteja",
+    "phoneNumber": "Namba ya Simu",
+    "activeLoans": "Mikopo (Amilifu)",
+    "remainingBalance": "Deni Lililobaki",
+    "arrears": "Madeni Yaliyochelewa",
+    "status": "Hali",
+    "smsStatus": "Hali ya SMS",
+    "actions": "Hatua",
+    "notAvailable": "Haipo",
+    "activeCount": "{{count}} Amilifu",
+    "none": "Hakuna",
+    "reasonLabel": "Sababu:"
+  },
+  "status": {
+    "pendingMd": "INASUBIRI MD",
+    "approved": "IMEIDHINISHWA",
+    "disbursed": "IMETOLEWA",
+    "rejected": "IMEKATALIWA",
+    "returnedForCorrection": "IMERUDISHWA KWA MAREKEBISHO",
+    "pendingLm": "INASUBIRI LM",
+    "lmApproved": "LM AMEIDHINISHA",
+    "pendingGm": "INASUBIRI GM"
+  },
+  "empty": {
+    "noApplications": "Hakuna maombi ya mkopo",
+    "noApplicationsSubtitle": "Hakuna maombi yanayosubiri ukaguzi wako"
+  },
+  "actions": {
+    "authorize": "Idhinisha",
+    "viewDetails": "Angalia Maelezo",
+    "reject": "Kataa",
+    "viewHistory": "Angalia Mapendekezo"
+  },
+  "pagination": {
+    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "previous": "Iliyotangulia",
+    "next": "Inayofuata"
+  },
+  "modal": {
+    "rejectTitle": "Kataa Ombi la Mkopo",
+    "rejectDescription": "Tafadhali toa sababu ya kurudisha ombi hili kwa marekebisho. Litarudishwa kwa General Manager.",
+    "client": "Mteja",
+    "amount": "Kiasi",
+    "rejectReasonPlaceholder": "Toa sababu wazi za kukataa...",
+    "cancel": "Ghairi",
+    "processing": "Inachakata...",
+    "returnForCorrections": "Rudisha kwa Marekebisho"
+  },
+  "alerts": {
+    "successTitle": "Imefanikiwa",
+    "errorTitle": "Hitilafu",
+    "infoTitle": "Taarifa",
+    "approveSuccess": "Mkopo umeidhinishwa kikamilifu",
+    "approveError": "Imeshindwa kuidhinisha mkopo",
+    "reasonRequired": "Tafadhali weka sababu ya kukataa.",
+    "rejectSuccess": "Ombi limekataliwa na kurudishwa kwa General Manager",
+    "rejectError": "Imeshindwa kukataa ombi"
+  }
+}

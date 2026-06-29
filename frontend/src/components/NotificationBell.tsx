@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, Check } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 const NotificationBell = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
@@ -52,10 +54,10 @@ const NotificationBell = () => {
 
   const ago = (d: string) => {
     const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-    if (s < 60) return "just now";
-    if (s < 3600) return Math.floor(s / 60) + "m ago";
-    if (s < 86400) return Math.floor(s / 3600) + "h ago";
-    return Math.floor(s / 86400) + "d ago";
+    if (s < 60) return t("notifications.justNow");
+    if (s < 3600) return t("notifications.minutesAgo", { count: Math.floor(s / 60) });
+    if (s < 86400) return t("notifications.hoursAgo", { count: Math.floor(s / 3600) });
+    return t("notifications.daysAgo", { count: Math.floor(s / 86400) });
   };
 
   return (
@@ -70,12 +72,12 @@ const NotificationBell = () => {
       {open && (
         <div style={{ position: "absolute", top: 48, right: 0, width: 340, maxHeight: 420, background: "white", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 20px 45px rgba(15,23,42,0.18)", zIndex: 200, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem", borderBottom: "1px solid #f1f5f9" }}>
-            <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a" }}>Notifications</span>
-            {unread > 0 && <button onClick={markAll} style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "none", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}><Check size={13} /> Mark all read</button>}
+            <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a" }}>{t("notifications.title")}</span>
+            {unread > 0 && <button onClick={markAll} style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "none", border: "none", color: "#4f46e5", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}><Check size={13} /> {t("notifications.markAllRead")}</button>}
           </div>
           <div style={{ overflowY: "auto" }}>
             {items.length === 0 ? (
-              <div style={{ padding: "2.2rem 1rem", textAlign: "center", color: "#94a3b8", fontSize: "0.82rem", fontWeight: 600 }}>No notifications</div>
+              <div style={{ padding: "2.2rem 1rem", textAlign: "center", color: "#94a3b8", fontSize: "0.82rem", fontWeight: 600 }}>{t("notifications.empty")}</div>
             ) : items.map((n) => (
               <div key={n.id} onClick={() => openItem(n)} style={{ padding: "0.8rem 1rem", borderBottom: "1px solid #f5f7fa", cursor: "pointer", background: n.read_at ? "white" : "#eff6ff" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>

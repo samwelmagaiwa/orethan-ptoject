@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Camera, PenLine, LogOut, ChevronDown, User as UserIcon } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -30,6 +31,7 @@ const fileToAvatar = (file: File): Promise<string> =>
 
 const UserMenu = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [user, setUser] = useState<any>(JSON.parse(localStorage.getItem("user") || "{}"));
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,7 +61,7 @@ const UserMenu = () => {
       await axios.post(`${API_BASE}/me/avatar`, { avatar }, { headers: headers() });
       const updated = { ...user, avatar };
       setUser(updated); localStorage.setItem("user", JSON.stringify(updated));
-    } catch { alert("Upload failed"); } finally { setUploading(false); }
+    } catch { alert(t("userMenu.uploadFailed")); } finally { setUploading(false); }
   };
 
   const logout = async () => {
@@ -69,14 +71,15 @@ const UserMenu = () => {
   };
 
   const initial = (user?.name || "U").charAt(0).toUpperCase();
-  const roleLabel = String(user?.role || "").replace(/_/g, " ");
+  const roleKey = String(user?.role || "");
+  const roleLabel = i18n.exists(`roles.${roleKey}`) ? t(`roles.${roleKey}`) : roleKey.replace(/_/g, " ");
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "5px 10px 5px 5px", cursor: "pointer" }}>
         <Avatar avatar={user?.avatar} initial={initial} size={34} />
         <div style={{ textAlign: "left", lineHeight: 1.1 }}>
-          <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name || "User"}</div>
+          <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name || t("userMenu.user")}</div>
           <div style={{ fontSize: "0.62rem", color: "#94a3b8", fontWeight: 700, textTransform: "capitalize" }}>{roleLabel || "—"}</div>
         </div>
         <ChevronDown size={15} style={{ color: "#94a3b8" }} />
@@ -88,24 +91,24 @@ const UserMenu = () => {
           <div style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)", padding: "1.1rem 1.1rem 1rem", color: "white", textAlign: "center", position: "relative" }}>
             <div style={{ position: "relative", width: 72, height: 72, margin: "0 auto 0.6rem" }}>
               <Avatar avatar={user?.avatar} initial={initial} size={72} ring />
-              <button onClick={() => fileRef.current?.click()} title="Change photo" style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: "50%", background: "#4f46e5", border: "2px solid white", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => fileRef.current?.click()} title={t("userMenu.changePhotoTitle")} style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: "50%", background: "#4f46e5", border: "2px solid white", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Camera size={13} />
               </button>
               <input ref={fileRef} type="file" hidden accept="image/*" onChange={onPick} />
             </div>
-            <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>{user?.name || "User"}</div>
+            <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>{user?.name || t("userMenu.user")}</div>
             <div style={{ fontSize: "0.72rem", opacity: 0.85, textTransform: "capitalize" }}>{roleLabel}</div>
             <div style={{ fontSize: "0.68rem", opacity: 0.7, marginTop: 2 }}>{user?.email}</div>
-            {uploading && <div style={{ fontSize: "0.66rem", marginTop: 6, opacity: 0.9 }}>Uploading photo…</div>}
+            {uploading && <div style={{ fontSize: "0.66rem", marginTop: 6, opacity: 0.9 }}>{t("userMenu.uploadingPhoto")}</div>}
           </div>
 
           {/* Actions */}
           <div style={{ padding: "0.5rem" }}>
-            <MenuItem icon={<Camera size={16} />} label="Change Photo" onClick={() => fileRef.current?.click()} />
-            <MenuItem icon={<UserIcon size={16} />} label="My Profile" onClick={() => { setOpen(false); navigate("/profile"); }} />
-            <MenuItem icon={<PenLine size={16} />} label="My Signature" onClick={() => { setOpen(false); navigate("/profile"); }} />
+            <MenuItem icon={<Camera size={16} />} label={t("userMenu.changePhoto")} onClick={() => fileRef.current?.click()} />
+            <MenuItem icon={<UserIcon size={16} />} label={t("userMenu.myProfile")} onClick={() => { setOpen(false); navigate("/profile"); }} />
+            <MenuItem icon={<PenLine size={16} />} label={t("userMenu.mySignature")} onClick={() => { setOpen(false); navigate("/profile"); }} />
             <div style={{ height: 1, background: "#f1f5f9", margin: "0.4rem 0" }} />
-            <MenuItem icon={<LogOut size={16} />} label="Logout" danger onClick={logout} />
+            <MenuItem icon={<LogOut size={16} />} label={t("userMenu.logout")} danger onClick={logout} />
           </div>
         </div>
       )}

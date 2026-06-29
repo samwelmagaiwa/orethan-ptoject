@@ -1,0 +1,90 @@
+{
+  "collateral": {
+    "directoryTitle": "CLIENT COLLATERAL DIRECTORY",
+    "directoryHint": "Upload photos of all assets photographed at the client's farm/area as loan collateral, then link each photo to its asset from the Chattel Form.",
+    "addPhoto": "ADD PHOTO",
+    "uploadFailed": "Failed to upload photo. Please try again.",
+    "emptyTitle": "No collateral photos uploaded yet.",
+    "emptyHintReadOnly": "No collateral photos were uploaded by the applicant.",
+    "emptyHintEditable": "Click “ADD PHOTO” to upload photos of the client's assets.",
+    "view": "View",
+    "assetName": "ASSET NAME",
+    "selectAsset": "Select asset...",
+    "marketValue": "MARKET VALUE (TZS)",
+    "collateralValue": "COLLATERAL VALUE (70%)",
+    "noAssetLinked": "No asset linked to this photo.",
+    "deletePhoto": "Delete Photo",
+    "confirmDeleteTitle": "Delete Collateral Photo",
+    "confirmDeleteMessage": "Are you sure you want to delete this collateral photo? Assets linked to it will also be removed.",
+    "confirmDeleteYes": "Yes, Delete",
+    "confirmDeleteCancel": "Cancel",
+    "picker": {
+      "title": "SELECT ASSET",
+      "subtitle": "From the CHATTEL FORM — please list the assets you are pledging as collateral below",
+      "emptyTitle": "No assets listed in the Chattel Form yet.",
+      "emptyHint": "Please fill in the CHATTEL FORM first before selecting here.",
+      "marketValue": "Market Value",
+      "collateralValue": "Collateral Value (70%)"
+    }
+  },
+  "delegation": {
+    "titles": {
+      "generalManager": "General Manager",
+      "actingGeneralManager": "Acting General Manager",
+      "loanManager": "Loan Manager",
+      "actingLoanManager": "Acting Loan Manager",
+      "managingDirector": "Managing Director",
+      "actingManagingDirector": "Acting Managing Director"
+    },
+    "formTitle": "FORM FOR DELEGATING OFFICE AND AUTHORITY TEMPORARILY",
+    "intro": {
+      "prefix": "I,",
+      "suffix": "as I will be out of the office, I hereby delegate my office and authority to the staff member selected below for the specified period."
+    },
+    "fields": {
+      "yourRole": "Your Role",
+      "yourRoleTitle": "Your role (auto)",
+      "delegateTo": "Delegate To",
+      "selectStaff": "— Select staff —",
+      "actingTitle": "Acting Title",
+      "fromDate": "From",
+      "toDate": "To",
+      "reason": "Reason for absence",
+      "reasonPlaceholder": "e.g. Official travel, leave...",
+      "responsibilities": "Responsibilities & Authority",
+      "responsibilitiesPlaceholder": "Duties & decision-making authority being delegated...",
+      "limitations": "Limitations (optional)",
+      "limitationsPlaceholder": "e.g. Approvals up to TZS 5,000,000; no new hires...",
+      "handoverNotes": "Handover Notes (optional)",
+      "handoverNotesPlaceholder": "Pending matters, key contacts, ongoing items...",
+      "signatureSuffix": "Signature",
+      "authorizePin": "Authorize with Password / PIN",
+      "pinPlaceholder": "Password / PIN to sign"
+    },
+    "validation": {
+      "requiredFields": "Please select the staff, period and responsibilities being delegated.",
+      "requirePin": "Enter your password/PIN to sign and authorize the delegation."
+    },
+    "submitSuccess": "Your office delegation has been sent to the selected staff. They will be notified to acknowledge it.",
+    "submitFailed": "Submit failed",
+    "clear": "Clear",
+    "submitting": "Submitting...",
+    "delegateAuthority": "Delegate Authority"
+  },
+  "signaturePad": {
+    "signHere": "Sign here",
+    "clear": "Clear",
+    "useSaved": "Use saved",
+    "captured": "Captured",
+    "preview": "Preview",
+    "previewAlt": "signature preview",
+    "noSignatureYet": "No signature yet"
+  },
+  "signatureReuse": {
+    "noSignatureYet": "No saved signature yet — it won't appear on the signed document.",
+    "setYourSignature": "Set your signature",
+    "signatureToBeApplied": "Signature to be applied",
+    "reuseHint": "Your saved signature is reused — enter your password to sign.",
+    "savedSignatureAlt": "saved signature"
+  }
+}

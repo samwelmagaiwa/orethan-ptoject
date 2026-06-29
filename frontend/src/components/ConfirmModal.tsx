@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -17,10 +18,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     message,
     onConfirm,
     onCancel,
-    confirmText = 'Ndio, Endelea',
-    cancelText = 'Hapana, Ghairi',
+    confirmText,
+    cancelText,
     type = 'info'
 }) => {
+    const { t } = useTranslation();
     if (!isOpen) return null;
 
     const getTypeStyles = () => {
@@ -49,10 +51,10 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
                 <div className="confirm-footer-premium">
                     <button className="confirm-btn-secondary" onClick={onCancel}>
-                        {cancelText}
+                        {cancelText ?? t("modal.confirmNo")}
                     </button>
                     <button className={`confirm-btn-primary ${btnClass}`} onClick={onConfirm}>
-                        {confirmText}
+                        {confirmText ?? t("modal.confirmYes")}
                     </button>
                 </div>
             </div>

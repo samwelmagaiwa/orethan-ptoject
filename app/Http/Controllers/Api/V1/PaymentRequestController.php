@@ -36,7 +36,8 @@ class PaymentRequestController extends Controller
      */
     private function canDecide($user, string $status): bool
     {
-        if ($user->isAdmin()) return true;
+        if ($user->isAdmin())
+            return true;
         return match ($status) {
             'manager_review' => $user->isLoanManager(),
             'gm_review' => $user->isGeneralManager(),
@@ -80,7 +81,11 @@ class PaymentRequestController extends Controller
         }
 
         try {
-            $data['status'] = 'manager_review';
+            // MD and Admin are the highest authority — their own payment requests
+            // need no further review, so they go straight to the cashier/finance
+            // stage for disbursement.
+            $isHighAuthority = $user->isManagingDirector() || $user->isAdmin();
+            $data['status'] = $isHighAuthority ? 'awaiting_disbursement' : 'manager_review';
             $data['final_amount'] = $data['amount'];
             $data['applicant_role'] = $user->role;
             $data['created_by'] = $user->id ?? null;
@@ -92,13 +97,44 @@ class PaymentRequestController extends Controller
                 $data['applicant_signature_img'] = $user->signature ?? null;
             }
 
+            // Pre-fill the MD's own authorisation fields so the audit trail is complete
+            if ($isHighAuthority) {
+                $data['md_name'] = $user->name;
+                $data['md_comments'] = 'Auto-authorised — submitted by ' . ucwords(str_replace('_', ' ', $user->role));
+                $data['md_date'] = now();
+                $data['md_signature_img'] = $data['applicant_signature_img'] ?? $user->signature ?? null;
+            }
+
             $pr = PaymentRequest::create($data);
 
-            AuditLog::record('payment_request.created', $user, $pr,
-                'Ombi la malipo limewasilishwa: ' . $pr->payable_to, ['amount' => $pr->amount]);
+            AuditLog::record(
+                'payment_request.created',
+                $user,
+                $pr,
+                'Ombi la malipo limewasilishwa: ' . $pr->payable_to,
+                ['amount' => $pr->amount]
+            );
 
-            Notifier::toRoles('loan_manager', 'payment_request', 'New payment request',
-                $user->name . ' submitted a payment request payable to ' . $pr->payable_to . '.', '/payment-requests', ['id' => $pr->id]);
+            // Notify the appropriate next stage
+            if ($isHighAuthority) {
+                Notifier::toRoles(
+                    'finance_officer',
+                    'payment_request',
+                    'New payment request awaiting disbursement',
+                    $user->name . ' submitted a payment request payable to ' . $pr->payable_to . ' — ready for disbursement.',
+                    '/payment-requests',
+                    ['id' => $pr->id]
+                );
+            } else {
+                Notifier::toRoles(
+                    'loan_manager',
+                    'payment_request',
+                    'New payment request',
+                    $user->name . ' submitted a payment request payable to ' . $pr->payable_to . '.',
+                    '/payment-requests',
+                    ['id' => $pr->id]
+                );
+            }
 
             return $this->success($pr, 'Ombi la malipo limewasilishwa');
         } catch (\Exception $e) {
@@ -121,11 +157,16 @@ class PaymentRequestController extends Controller
             $query->where('created_by', $user->id);
         } elseif ($scope === 'queue' && !$user->isAdmin()) {
             // Onyesha tu zilizo kwenye hatua ya jukumu husika
-            if ($user->isLoanManager()) $query->where('status', 'manager_review');
-            elseif ($user->isGeneralManager()) $query->where('status', 'gm_review');
-            elseif ($user->isManagingDirector()) $query->where('status', 'md_review');
-            elseif ($user->isFinanceOfficer()) $query->where('status', 'awaiting_disbursement');
-            else $query->where('created_by', $user->id);
+            if ($user->isLoanManager())
+                $query->where('status', 'manager_review');
+            elseif ($user->isGeneralManager())
+                $query->where('status', 'gm_review');
+            elseif ($user->isManagingDirector())
+                $query->where('status', 'md_review');
+            elseif ($user->isFinanceOfficer())
+                $query->where('status', 'awaiting_disbursement');
+            else
+                $query->where('created_by', $user->id);
         }
 
         return response()->json(['requests' => $query->get()]);
@@ -223,11 +264,23 @@ class PaymentRequestController extends Controller
 
             // Arifa hatua inayofuata / mwombaji
             if ($pr->status === 'disbursed') {
-                Notifier::toUsers([$pr->created_by], 'payment_request', 'Payment disbursed',
-                    'Your payment request payable to ' . $pr->payable_to . ' has been disbursed.', '/payment-requests', ['id' => $pr->id]);
+                Notifier::toUsers(
+                    [$pr->created_by],
+                    'payment_request',
+                    'Payment disbursed',
+                    'Your payment request payable to ' . $pr->payable_to . ' has been disbursed.',
+                    '/payment-requests',
+                    ['id' => $pr->id]
+                );
             } elseif ($nextRole = Notifier::roleForStatus($pr->status)) {
-                Notifier::toRoles($nextRole, 'payment_request', 'Payment request awaiting your action',
-                    'A payment request payable to ' . $pr->payable_to . ' needs your review.', '/payment-requests', ['id' => $pr->id]);
+                Notifier::toRoles(
+                    $nextRole,
+                    'payment_request',
+                    'Payment request awaiting your action',
+                    'A payment request payable to ' . $pr->payable_to . ' needs your review.',
+                    '/payment-requests',
+                    ['id' => $pr->id]
+                );
             }
 
             $msg = match ($pr->status) {
@@ -284,17 +337,43 @@ class PaymentRequestController extends Controller
         try {
             $pr->fill($data);
             $pr->final_amount = $data['amount'];
-            // Anza upya mtiririko wa idhini
-            $pr->status = 'manager_review';
             $pr->rejection_reason = null;
+
+            // MD / Admin: restart directly at the cashier stage
+            $isHighAuthority = $user->isManagingDirector() || $user->isAdmin();
+            $pr->status = $isHighAuthority ? 'awaiting_disbursement' : 'manager_review';
+
+            // Clear all approval fields
             foreach ([
-                'manager_name', 'manager_decision', 'manager_adjusted_amount', 'manager_comments', 'manager_date',
-                'gm_name', 'gm_decision', 'gm_adjusted_amount', 'gm_comments', 'gm_date',
-                'md_name', 'md_comments', 'md_date',
-                'cashier_name', 'cashier_comments', 'cashier_reference', 'cashier_date',
+                'manager_name',
+                'manager_decision',
+                'manager_adjusted_amount',
+                'manager_comments',
+                'manager_date',
+                'gm_name',
+                'gm_decision',
+                'gm_adjusted_amount',
+                'gm_comments',
+                'gm_date',
+                'md_name',
+                'md_comments',
+                'md_date',
+                'cashier_name',
+                'cashier_comments',
+                'cashier_reference',
+                'cashier_date',
             ] as $f) {
                 $pr->{$f} = null;
             }
+
+            // Re-fill MD's authorisation if they are the submitter
+            if ($isHighAuthority) {
+                $pr->md_name = $user->name;
+                $pr->md_comments = 'Auto-authorised — submitted by ' . ucwords(str_replace('_', ' ', $user->role));
+                $pr->md_date = now();
+                $pr->md_signature_img = $pr->applicant_signature_img ?? $user->signature ?? null;
+            }
+
             $pr->save();
 
             AuditLog::record('payment_request.resubmitted', $user, $pr, 'Ombi la malipo limehaririwa na kuwasilishwa tena');
@@ -329,9 +408,21 @@ class PaymentRequestController extends Controller
 
         try {
             $stage = $pr->status;
-            if ($stage === 'manager_review') { $pr->manager_name = $user->name; $pr->manager_decision = 'not_approved'; $pr->manager_comments = $data['reason']; $pr->manager_date = now(); }
-            elseif ($stage === 'gm_review') { $pr->gm_name = $user->name; $pr->gm_decision = 'not_approved'; $pr->gm_comments = $data['reason']; $pr->gm_date = now(); }
-            elseif ($stage === 'md_review') { $pr->md_name = $user->name; $pr->md_comments = $data['reason']; $pr->md_date = now(); }
+            if ($stage === 'manager_review') {
+                $pr->manager_name = $user->name;
+                $pr->manager_decision = 'not_approved';
+                $pr->manager_comments = $data['reason'];
+                $pr->manager_date = now();
+            } elseif ($stage === 'gm_review') {
+                $pr->gm_name = $user->name;
+                $pr->gm_decision = 'not_approved';
+                $pr->gm_comments = $data['reason'];
+                $pr->gm_date = now();
+            } elseif ($stage === 'md_review') {
+                $pr->md_name = $user->name;
+                $pr->md_comments = $data['reason'];
+                $pr->md_date = now();
+            }
 
             $pr->status = 'rejected';
             $pr->rejection_reason = $data['reason'];
@@ -339,8 +430,14 @@ class PaymentRequestController extends Controller
 
             AuditLog::record('payment_request.rejected', $user, $pr, 'Ombi la malipo limekataliwa', ['reason' => $data['reason']]);
 
-            Notifier::toUsers([$pr->created_by], 'payment_request', 'Payment request rejected',
-                'Your payment request payable to ' . $pr->payable_to . ' was not approved. You can edit and resubmit it.', '/payment-requests', ['id' => $pr->id]);
+            Notifier::toUsers(
+                [$pr->created_by],
+                'payment_request',
+                'Payment request rejected',
+                'Your payment request payable to ' . $pr->payable_to . ' was not approved. You can edit and resubmit it.',
+                '/payment-requests',
+                ['id' => $pr->id]
+            );
 
             return $this->success($pr, 'Ombi limekataliwa');
         } catch (\Exception $e) {

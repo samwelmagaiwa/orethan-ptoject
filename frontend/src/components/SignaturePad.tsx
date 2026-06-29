@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Eraser, Check, Upload } from "lucide-react";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
  * Emits a transparent PNG data URL via onChange.
  */
 const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: Props) => {
+  const { t } = useTranslation("miscModals");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
@@ -117,26 +119,26 @@ const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: 
             />
             {!hasInk && (
               <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "#cbd5e1", fontSize: "0.85rem", fontWeight: 600, pointerEvents: "none" }}>
-                ✍ Sign here
+                ✍ {t("signaturePad.signHere")}
               </span>
             )}
           </div>
           <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-            <button type="button" onClick={clear} style={btn("#fef2f2", "#dc2626", "#fecaca")}><Eraser size={13} /> Clear</button>
+            <button type="button" onClick={clear} style={btn("#fef2f2", "#dc2626", "#fecaca")}><Eraser size={13} /> {t("signaturePad.clear")}</button>
             {savedSignature && (
-              <button type="button" onClick={() => loadImage(savedSignature)} style={btn("#eef2ff", "#4f46e5", "#e0e7ff")}><Upload size={13} /> Use saved</button>
+              <button type="button" onClick={() => loadImage(savedSignature)} style={btn("#eef2ff", "#4f46e5", "#e0e7ff")}><Upload size={13} /> {t("signaturePad.useSaved")}</button>
             )}
-            {hasInk && <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: "#059669", marginLeft: "auto" }}><Check size={13} /> Captured</span>}
+            {hasInk && <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: "#059669", marginLeft: "auto" }}><Check size={13} /> {t("signaturePad.captured")}</span>}
           </div>
         </div>
 
         {/* RIGHT: preview pane */}
         <div className="sp-preview">
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem" }}>Preview</div>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem" }}>{t("signaturePad.preview")}</div>
           <div style={{ height, borderRadius: 10, border: "1px solid #eef1f6", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.6rem", boxSizing: "border-box" }}>
             {previewUrl
-              ? <img src={previewUrl} alt="signature preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-              : <span style={{ color: "#cbd5e1", fontSize: "0.78rem", fontWeight: 600 }}>No signature yet</span>}
+              ? <img src={previewUrl} alt={t("signaturePad.previewAlt")} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              : <span style={{ color: "#cbd5e1", fontSize: "0.78rem", fontWeight: 600 }}>{t("signaturePad.noSignatureYet")}</span>}
           </div>
         </div>
       </div>

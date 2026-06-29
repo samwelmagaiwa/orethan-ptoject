@@ -1,0 +1,59 @@
+{
+  "stats": {
+    "totalApplications": "Maombi Yote",
+    "approved": "Yaliyokubaliwa",
+    "pendingApproval": "Yanayosubiri Kibali"
+  },
+  "filters": {
+    "show": "Onyesha",
+    "entries": "kumbukumbu",
+    "searchPlaceholder": "Tafuta kwa jina, simu, namba ya akaunti, au kumbukumbu ya muamala...",
+    "searchTitle": "Tafuta kwa jina la mteja, namba ya mteja, namba ya akaunti ya mkopo, kumbukumbu ya muamala, simu, barua pepe, au namba ya NIDA",
+    "reload": "Pakia Upya"
+  },
+  "empty": {
+    "loading": "Inapakia maombi...",
+    "noApplicationsTitle": "Hakuna maombi yaliyopatikana",
+    "noApplicationsSubtitle": "Hujawasilisha ombi lolote bado",
+    "noMatchTitle": "Hakuna maombi yanayolingana",
+    "noMatchSubtitle": "Hakuna jina la mteja linalolingana na \"{{search}}\""
+  },
+  "table": {
+    "number": "#",
+    "clientName": "Jina la Mteja",
+    "loanAmount": "Kiasi cha Mkopo",
+    "loanType": "Aina ya Mkopo",
+    "status": "Hali",
+    "smsStatus": "Hali ya SMS",
+    "actions": "Vitendo"
+  },
+  "status": {
+    "returnedForCorrection": "IMERUDISHWA KWA MAREKEBISHO",
+    "pendingLm": "INASUBIRI LM",
+    "lmApproved": "LM AMEKUBALI",
+    "pendingGm": "INASUBIRI GM",
+    "gmApproved": "GM AMEKUBALI",
+    "pendingMd": "INASUBIRI MD",
+    "approved": "IMEKUBALIWA",
+    "disbursed": "IMETOLEWA",
+    "reasonLabel": "Sababu"
+  },
+  "actions": {
+    "view": "Tazama",
+    "openRecommendations": "Fungua Mapendekezo",
+    "edit": "Hariri",
+    "delete": "Futa"
+  },
+  "pagination": {
+    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "previous": "Iliyotangulia",
+    "next": "Inayofuata"
+  },
+  "modal": {
+    "deleteTitle": "Futa Ombi la Mkopo",
+    "deleteMessage": "Je, una uhakika unataka kufuta ombi la mkopo la {{name}}? Kitendo hiki hakiwezi kurudishwa."
+  },
+  "alerts": {
+    "deleteError": "Hitilafu katika kufuta mkopo: {{message}}"
+  }
+}

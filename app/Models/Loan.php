@@ -140,6 +140,13 @@ class Loan extends Model
         return $this->hasMany(LoanSchedule::class);
     }
 
+    public function nextInstallment()
+    {
+        return $this->hasOne(LoanSchedule::class)
+            ->where('status', '!=', 'paid')
+            ->oldestOfMany('due_date');
+    }
+
     public function collectionActivities()
     {
         return $this->hasMany(CollectionActivity::class);

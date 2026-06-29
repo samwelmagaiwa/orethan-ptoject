@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import { Camera, Trash2, Eye, Loader2, Image as ImageIcon, X } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
@@ -61,15 +62,16 @@ const AssetPickerModal = ({
   onSelect: (option: ChattelOption) => void;
   onClose: () => void;
 }) => {
+  const { t } = useTranslation("miscModals");
   const valid = options.filter((o) => o.jina.trim());
   return (
     <div className="cdir-picker-overlay" onClick={onClose}>
       <div className="cdir-picker-card" onClick={(e) => e.stopPropagation()}>
         <div className="cdir-picker-header">
           <div>
-            <p className="cdir-picker-title">CHAGUA MALI</p>
+            <p className="cdir-picker-title">{t("collateral.picker.title")}</p>
             <p className="cdir-picker-subtitle">
-              Kutoka FOMU YA KUWEKA REHANI MALI (CHATTEL FORM) — Tafadhali orodhesha mali unazoweka kama dhamana hapa chini
+              {t("collateral.picker.subtitle")}
             </p>
           </div>
           <button type="button" className="cdir-picker-close" onClick={onClose}>
@@ -79,16 +81,16 @@ const AssetPickerModal = ({
         <div className="cdir-picker-body">
           {valid.length === 0 ? (
             <div className="cdir-picker-empty">
-              <p>Hakuna mali zilizoorodheshwa kwenye Fomu ya Rehani Mali bado.</p>
-              <span>Tafadhali jaza FOMU YA KUWEKA REHANI MALI kwanza kabla ya kuchagua hapa.</span>
+              <p>{t("collateral.picker.emptyTitle")}</p>
+              <span>{t("collateral.picker.emptyHint")}</span>
             </div>
           ) : (
             valid.map((opt, i) => (
               <button type="button" key={i} className="cdir-picker-option" onClick={() => onSelect(opt)}>
                 <span className="cdir-picker-option-name">{opt.jina}</span>
                 <span className="cdir-picker-option-values">
-                  <span>Thamani Soko: <strong>{opt.thamaniSoko ? `TZS ${formatMoney(opt.thamaniSoko)}` : "-"}</strong></span>
-                  <span className="cdir-picker-option-green">Thamani Dhamana (70%): <strong>{opt.thamaniDhamana ? `TZS ${formatMoney(opt.thamaniDhamana)}` : "-"}</strong></span>
+                  <span>{t("collateral.picker.marketValue")}: <strong>{opt.thamaniSoko ? `TZS ${formatMoney(opt.thamaniSoko)}` : "-"}</strong></span>
+                  <span className="cdir-picker-option-green">{t("collateral.picker.collateralValue")}: <strong>{opt.thamaniDhamana ? `TZS ${formatMoney(opt.thamaniDhamana)}` : "-"}</strong></span>
                 </span>
               </button>
             ))
@@ -100,6 +102,7 @@ const AssetPickerModal = ({
 };
 
 const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, chattelOptions = [] }: Props) => {
+  const { t } = useTranslation("miscModals");
   const [uploading, setUploading] = useState(false);
   const [viewerPhoto, setViewerPhoto] = useState<CollateralPhoto | null>(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
@@ -119,7 +122,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
       onChange?.([...photos, { url: document_url, name, mimeType: mime_type, items: [newAssetLink()] }]);
     } catch (err) {
       console.error("Collateral photo upload failed", err);
-      alert("Imeshindwa kupakia picha. Tafadhali jaribu tena.");
+      alert(t("collateral.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -151,13 +154,13 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
     <div className="cdir">
       <div className="cdir-header">
         <div>
-          <p className="cdir-title">DIRECTORI YA DHAMANA YA MTEJA{clientName ? ` — ${clientName.toUpperCase()}` : ""}</p>
-          <p className="cdir-hint">Pakia picha za mali zote zilizopigwa picha shambani/eneo la mteja kama dhamana ya mkopo, kisha unganisha kila picha na mali yake kutoka Fomu ya Rehani Mali.</p>
+          <p className="cdir-title">{t("collateral.directoryTitle")}{clientName ? ` — ${clientName.toUpperCase()}` : ""}</p>
+          <p className="cdir-hint">{t("collateral.directoryHint")}</p>
         </div>
         {!readOnly && (
           <label className="cdir-add-btn">
             {uploading ? <Loader2 size={16} className="cdir-spin" /> : <Camera size={16} />}
-            ONGEZA PICHA
+            {t("collateral.addPhoto")}
             <input
               type="file"
               accept="image/*"
@@ -176,8 +179,8 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
       {photos.length === 0 ? (
         <div className="cdir-empty">
           <ImageIcon size={32} />
-          <p>Hakuna picha za dhamana zilizopakiwa bado.</p>
-          <span>{readOnly ? "Hakuna picha za dhamana zilizopakiwa na mhusika." : "Bonyeza “ONGEZA PICHA” kupakia picha za mali za mteja."}</span>
+          <p>{t("collateral.emptyTitle")}</p>
+          <span>{readOnly ? t("collateral.emptyHintReadOnly") : t("collateral.emptyHintEditable")}</span>
         </div>
       ) : (
         <div className="cdir-grid">
@@ -185,7 +188,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
             <div key={index} className="cdir-card">
               <div className="cdir-thumb" onClick={() => setViewerPhoto(photo)}>
                 <img src={resolveFileUrl(photo.url)} alt={photo.name} />
-                <span className="cdir-view-overlay"><Eye size={16} /> Tazama</span>
+                <span className="cdir-view-overlay"><Eye size={16} /> {t("collateral.view")}</span>
               </div>
 
               <div className="cdir-assets">
@@ -197,29 +200,29 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
                       disabled={readOnly}
                       onClick={() => !readOnly && setPickerTarget({ photoIndex: index, itemId: item.id })}
                     >
-                      <span className="cdir-asset-label">JINA LA MALI</span>
+                      <span className="cdir-asset-label">{t("collateral.assetName")}</span>
                       <span className={item.jina ? "cdir-asset-value" : "cdir-asset-placeholder"}>
-                        {item.jina || (readOnly ? "-" : "Chagua mali...")}
+                        {item.jina || (readOnly ? "-" : t("collateral.selectAsset"))}
                       </span>
                     </button>
                     <div className="cdir-asset-value-col">
-                      <span className="cdir-asset-label">THAMANI SOKO (TZS)</span>
+                      <span className="cdir-asset-label">{t("collateral.marketValue")}</span>
                       <span className={item.thamaniSoko ? "cdir-asset-money cdir-asset-money-green" : "cdir-asset-money"}>{item.thamaniSoko ? formatMoney(item.thamaniSoko) : "-"}</span>
                     </div>
                     <div className="cdir-asset-value-col">
-                      <span className="cdir-asset-label">THAMANI DHAMANA (70%)</span>
+                      <span className="cdir-asset-label">{t("collateral.collateralValue")}</span>
                       <span className={item.thamaniDhamana ? "cdir-asset-money cdir-asset-money-green" : "cdir-asset-money"}>{item.thamaniDhamana ? formatMoney(item.thamaniDhamana) : "-"}</span>
                     </div>
                   </div>
                 ))}
                 {(photo.items || []).length === 0 && (
-                  <p className="cdir-asset-none">Hakuna mali iliyounganishwa na picha hii.</p>
+                  <p className="cdir-asset-none">{t("collateral.noAssetLinked")}</p>
                 )}
               </div>
 
               {!readOnly && (
                 <button type="button" className="cdir-delete-btn" onClick={() => setConfirmDeleteIndex(index)}>
-                  <Trash2 size={13} /> Futa Picha
+                  <Trash2 size={13} /> {t("collateral.deletePhoto")}
                 </button>
               )}
             </div>
@@ -238,11 +241,11 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
 
       <ConfirmModal
         isOpen={confirmDeleteIndex !== null}
-        title="Futa Picha ya Dhamana"
-        message="Una hakika unataka kufuta picha hii ya dhamana? Mali zilizounganishwa nayo zitaondolewa pia."
+        title={t("collateral.confirmDeleteTitle")}
+        message={t("collateral.confirmDeleteMessage")}
         type="danger"
-        confirmText="Ndio, Futa"
-        cancelText="Ghairi"
+        confirmText={t("collateral.confirmDeleteYes")}
+        cancelText={t("collateral.confirmDeleteCancel")}
         onConfirm={() => {
           if (confirmDeleteIndex !== null) removePhoto(confirmDeleteIndex);
           setConfirmDeleteIndex(null);

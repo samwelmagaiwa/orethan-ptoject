@@ -1,0 +1,59 @@
+{
+  "stats": {
+    "totalApplications": "Total Applications",
+    "approved": "Approved",
+    "pendingApproval": "Pending Approval"
+  },
+  "filters": {
+    "show": "Show",
+    "entries": "entries",
+    "searchPlaceholder": "Search by name, phone, account no., or transaction ref...",
+    "searchTitle": "Search by client name, customer number, loan account number, transaction reference, phone, email, or NIDA number",
+    "reload": "Reload"
+  },
+  "empty": {
+    "loading": "Loading applications...",
+    "noApplicationsTitle": "No applications found",
+    "noApplicationsSubtitle": "You haven't submitted any applications yet",
+    "noMatchTitle": "No matching applications",
+    "noMatchSubtitle": "No client name matches \"{{search}}\""
+  },
+  "table": {
+    "number": "#",
+    "clientName": "Client Name",
+    "loanAmount": "Loan Amount",
+    "loanType": "Loan Type",
+    "status": "Status",
+    "smsStatus": "SMS Status",
+    "actions": "Actions"
+  },
+  "status": {
+    "returnedForCorrection": "RETURNED FOR CORRECTION",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
+    "approved": "APPROVED",
+    "disbursed": "DISBURSED",
+    "reasonLabel": "Reason"
+  },
+  "actions": {
+    "view": "View",
+    "openRecommendations": "Open Recommendations",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "modal": {
+    "deleteTitle": "Delete Loan Application",
+    "deleteMessage": "Are you sure you want to delete the loan application for {{name}}? This action cannot be undone."
+  },
+  "alerts": {
+    "deleteError": "Error deleting loan: {{message}}"
+  }
+}

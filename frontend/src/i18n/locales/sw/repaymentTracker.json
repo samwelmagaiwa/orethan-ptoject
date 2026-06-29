@@ -1,0 +1,126 @@
+{
+  "stats": {
+    "totalExpected": "JUMLA INAYOTARAJIWA",
+    "totalCollected": "JUMLA ILIYOKUSANYWA",
+    "outstandingBalance": "SALIO LILILOBAKI",
+    "overdueAmount": "KIASI KILICHOCHELEWA",
+    "collectionRate": "KIWANGO CHA UKUSANYAJI",
+    "activeLoans": "MIKOPO INAYOENDELEA",
+    "defaultedLoans": "MIKOPO ISIYOLIPWA"
+  },
+  "charts": {
+    "overview": "Muhtasari",
+    "last6Months": "Miezi 6 iliyopita",
+    "disbursed": "Iliyotolewa",
+    "repaid": "Iliyolipwa",
+    "outstanding": "Inayobaki",
+    "portfolioHealth": "Hali ya Mikopo",
+    "healthy": "Salama",
+    "current": "Sasa",
+    "atRisk": "Hatarini",
+    "critical": "Hatari Kubwa"
+  },
+  "todayCollection": {
+    "title": "Ukusanyaji wa Leo",
+    "dueBadge": "{{count}} zinazodaiwa"
+  },
+  "overdueManagement": {
+    "title": "Usimamizi wa Malimbikizo",
+    "lateBadge": "{{count}} zimechelewa",
+    "daysLateValue": "Siku {{count}}"
+  },
+  "table": {
+    "number": "#",
+    "customer": "Mteja",
+    "loanNo": "Namba ya Mkopo",
+    "dueAmount": "Kiasi Kinachodaiwa",
+    "dueDate": "Tarehe ya Malipo",
+    "action": "Kitendo",
+    "daysLate": "Siku za Kuchelewa",
+    "amount": "Kiasi",
+    "penalty": "Faini",
+    "clientIdentity": "Utambulisho wa Mteja",
+    "principal": "Mtaji",
+    "amortized": "Kilicholipwa",
+    "balance": "Salio",
+    "efficiency": "Ufanisi",
+    "status": "Hali",
+    "management": "Usimamizi",
+    "loanNumberFormat": "LN-{{id}}"
+  },
+  "tabs": {
+    "activeLoans": "Mikopo Inayoendelea",
+    "completed": "Iliyokamilika"
+  },
+  "filters": {
+    "searchClient": "Tafuta mteja...",
+    "filter": "Chuja"
+  },
+  "actions": {
+    "refresh": "Onyesha Upya",
+    "export": "Hamisha",
+    "collect": "Kusanya",
+    "collectPayment": "Kusanya Malipo",
+    "sendSmsReminder": "Tuma Kikumbusho cha SMS",
+    "viewLoan": "Tazama Mkopo",
+    "sendOverdueSms": "Tuma SMS ya Malimbikizo",
+    "contact": "Wasiliana",
+    "collectWithPenalty": "Kusanya pamoja na faini",
+    "addPayment": "Ongeza Malipo",
+    "viewSchedule": "Tazama Ratiba",
+    "discard": "Ghairi",
+    "confirmPayment": "Thibitisha Malipo",
+    "done": "Imekamilika"
+  },
+  "status": {
+    "current": "inaendelea",
+    "completed": "imekamilika",
+    "overdue": "imechelewa",
+    "pending": "Inasubiri",
+    "paid": "Imelipwa"
+  },
+  "empty": {
+    "noPortfolioData": "Hakuna data ya mikopo inayoendelea bado",
+    "noPaymentsDueToday": "Hakuna malipo yanayodaiwa leo",
+    "noOverduePayments": "Hakuna malipo yaliyochelewa 🎉",
+    "noLoansInCategory": "Hakuna mikopo katika kundi hili",
+    "noScheduleGenerated": "Hakuna ratiba iliyotengenezwa kwa mkopo huu"
+  },
+  "modal": {
+    "postRepayment": "Weka Malipo",
+    "borrower": "Mkopaji",
+    "balance": "Salio",
+    "amount": "Kiasi",
+    "date": "Tarehe",
+    "paymentMethod": "Njia ya Malipo",
+    "methodCash": "Fedha Taslimu",
+    "methodBank": "Benki",
+    "methodMobileMoney": "Pesa za Simu",
+    "transactionReference": "Kumbukumbu ya Muamala",
+    "receivedBy": "Aliyepokea",
+    "notesOptional": "Maelezo (hiari)"
+  },
+  "scheduleModal": {
+    "loanRepaymentPlan": "Mpango wa Malipo ya Mkopo",
+    "loadingSchedule": "Inapakia ratiba...",
+    "installment": "Awamu",
+    "interest": "Riba",
+    "total": "Jumla"
+  },
+  "receiptModal": {
+    "paymentRecorded": "Malipo Yamehifadhiwa",
+    "printOrDownload": "Chapisha au pakua risiti",
+    "a4Receipt": "Risiti A4",
+    "downloadPdf": "Pakua PDF",
+    "thermal80": "Thermal 80mm",
+    "thermal58": "Thermal 58mm"
+  },
+  "alerts": {
+    "smsSent": "Kikumbusho cha SMS kimetumwa kwa {{customer}}.",
+    "smsFailed": "Imeshindwa kutuma kikumbusho cha SMS kwa {{customer}}."
+  },
+  "validation": {
+    "amountRequired": "Tafadhali weka kiasi halali cha malipo zaidi ya 0.",
+    "amountExceeds": "Kiasi cha malipo {{amount}} kinazidi salio lililobaki {{balance}}."
+  }
+}

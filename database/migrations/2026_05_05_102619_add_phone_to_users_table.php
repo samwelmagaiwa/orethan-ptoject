@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -17,16 +16,17 @@ return new class extends Migration
                 $table->string('phone')->nullable()->after('email');
             });
         }
-        
+
         // Add role column if not exists
         if (!Schema::hasColumn('users', 'role')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->enum('role', [
-                    'admin', 
-                    'loan_officer', 
-                    'loan_manager', 
-                    'general_manager', 
-                    'managing_director'
+                    'admin',
+                    'loan_officer',
+                    'loan_manager',
+                    'general_manager',
+                    'managing_director',
+                    'finance_officer'
                 ])->default('loan_officer')->after('email');
             });
         }

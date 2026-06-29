@@ -1,0 +1,102 @@
+{
+  "stats": {
+    "totalLoaned": "Total Loaned",
+    "arrears": "Arrears",
+    "activeCustomers": "Active Customers",
+    "pendingApplications": "Pending Applications",
+    "applicationsValue": "Applications Value",
+    "activeCustomersShort": "Active"
+  },
+  "filters": {
+    "show": "Show",
+    "entries": "entries",
+    "searchPlaceholderAdmin": "Search by customer name, phone, or NIDA number...",
+    "searchPlaceholderManager": "Search by applicant name or phone...",
+    "searchTitle": "Search by name, phone, or NIDA number"
+  },
+  "table": {
+    "customer": "Customer",
+    "phoneNumber": "Phone Number",
+    "activeLoans": "Loans (Active)",
+    "remainingBalance": "Remaining Balance",
+    "arrears": "Arrears",
+    "actions": "Actions",
+    "applicant": "Applicant",
+    "phone": "Phone",
+    "amount": "Amount",
+    "type": "Type",
+    "status": "Status",
+    "smsStatus": "SMS Status",
+    "activeCount": "{{count}} Active",
+    "none": "None",
+    "reason": "Reason"
+  },
+  "status": {
+    "rejected": "REJECTED",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
+    "approved": "APPROVED",
+    "active": "Active"
+  },
+  "empty": {
+    "noCustomers": "No customers found.",
+    "noApplications": "No loan applications found."
+  },
+  "actions": {
+    "profile": "Profile",
+    "repay": "Repay",
+    "disburse": "Disburse",
+    "printVoucher": "Print Voucher",
+    "viewDetails": "View Details",
+    "approve": "Approve",
+    "reject": "Reject",
+    "deleteLoan": "Delete Loan",
+    "viewHistory": "View Recommendations"
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "rejectModal": {
+    "title": "Reject Loan Application",
+    "client": "Client",
+    "requested": "Requested",
+    "reasonPlaceholder": "Provide clear reasons for rejection...",
+    "cancel": "Cancel",
+    "returning": "Processing...",
+    "returnForCorrections": "Return for Corrections"
+  },
+  "confirm": {
+    "deleteLoanTitle": "Delete Loan",
+    "deleteLoanMessage": "Are you sure you want to permanently delete this loan application?"
+  },
+  "voucher": {
+    "title": "Disbursement Voucher",
+    "accountNumber": "Account Number",
+    "loanId": "Loan ID",
+    "applicant": "Applicant",
+    "phone": "Phone",
+    "loanType": "Loan Type",
+    "amountDisbursed": "Amount Disbursed",
+    "remainingBalance": "Remaining Balance",
+    "firstPaymentDate": "First Payment Date",
+    "loanStatus": "Loan Status"
+  },
+  "alerts": {
+    "fetchFailed": "Failed to load data",
+    "approveSuccess": "Loan approved successfully",
+    "approveFailed": "Failed to approve loan",
+    "rejectReasonRequired": "Please provide a reason for rejection.",
+    "rejectSuccess": "Application rejected successfully",
+    "rejectFailed": "Failed to reject application",
+    "disburseFieldsRequired": "Please fill in the amount and disbursement date.",
+    "disburseSuccess": "Loan disbursed successfully. Account: {{account}}, Balance: TZS {{balance}}, First payment due: {{firstDue}}",
+    "disburseFailed": "Failed to disburse loan",
+    "deleteSuccess": "Loan deleted successfully",
+    "deleteFailed": "Failed to delete loan"
+  }
+}

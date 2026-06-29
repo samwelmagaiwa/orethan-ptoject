@@ -35,8 +35,14 @@ class LoanController extends Controller
             $data['user_id'] = $request->user()->id ?? null;
             $loan = $this->loanService->createLoan($data);
 
-            \App\Services\Notifier::toRoles('loan_manager', 'loan_request', 'New loan application',
-                'A new loan application for ' . ($loan->name ?? 'a customer') . ' awaits your review.', '/loan-manager', ['id' => $loan->id]);
+            \App\Services\Notifier::toRoles(
+                'loan_manager',
+                'loan_request',
+                'New loan application',
+                'A new loan application for ' . ($loan->name ?? 'a customer') . ' awaits your review.',
+                '/loan-manager',
+                ['id' => $loan->id]
+            );
 
             return $this->success($loan, 'Loan created successfully', 201);
         } catch (\Exception $e) {
@@ -214,13 +220,31 @@ class LoanController extends Controller
             // Arifa hatua inayofuata kwenye mtiririko wa mkopo
             $loanLinks = ['gm_review' => '/general-manager', 'md_review' => '/managing-director'];
             if ($updatedLoan->status === 'approved') {
-                \App\Services\Notifier::toRoles('finance_officer', 'loan_request', 'Loan approved — ready to disburse',
-                    'Loan for ' . ($updatedLoan->name ?? 'a customer') . ' is approved and ready for disbursement.', '/finance/customers', ['id' => $updatedLoan->id]);
-                \App\Services\Notifier::toUsers([$updatedLoan->user_id], 'loan_request', 'Loan approved',
-                    'The loan you submitted for ' . ($updatedLoan->name ?? 'a customer') . ' has been fully approved.', '/my-applications', ['id' => $updatedLoan->id]);
+                \App\Services\Notifier::toRoles(
+                    'finance_officer',
+                    'loan_request',
+                    'Loan approved — ready to disburse',
+                    'Loan for ' . ($updatedLoan->name ?? 'a customer') . ' is approved and ready for disbursement.',
+                    '/finance/customers',
+                    ['id' => $updatedLoan->id]
+                );
+                \App\Services\Notifier::toUsers(
+                    [$updatedLoan->user_id],
+                    'loan_request',
+                    'Loan approved',
+                    'The loan you submitted for ' . ($updatedLoan->name ?? 'a customer') . ' has been fully approved.',
+                    '/my-applications',
+                    ['id' => $updatedLoan->id]
+                );
             } elseif ($nextRole = \App\Services\Notifier::roleForStatus($updatedLoan->status)) {
-                \App\Services\Notifier::toRoles($nextRole, 'loan_request', 'Loan awaiting your approval',
-                    'A loan for ' . ($updatedLoan->name ?? 'a customer') . ' needs your approval.', $loanLinks[$updatedLoan->status] ?? '/loan-manager', ['id' => $updatedLoan->id]);
+                \App\Services\Notifier::toRoles(
+                    $nextRole,
+                    'loan_request',
+                    'Loan awaiting your approval',
+                    'A loan for ' . ($updatedLoan->name ?? 'a customer') . ' needs your approval.',
+                    $loanLinks[$updatedLoan->status] ?? '/loan-manager',
+                    ['id' => $updatedLoan->id]
+                );
             }
 
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan approved successfully');
@@ -433,7 +457,7 @@ class LoanController extends Controller
     {
         // Only disbursed loans are being repaid — approved-but-undisbursed loans
         // are still awaiting the finance/cashier and must not show here.
-        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement', 'nextInstallment'])
             ->whereNotNull('disbursed_at')
             ->where(function ($query) {
                 $query->where('payment_status', '!=', 'completed')
@@ -441,11 +465,24 @@ class LoanController extends Controller
             })
             ->get();
 
+        $today = now()->toDateString();
+
         // Round numbers to remove decimals
         foreach ($loans as $loan) {
             $loan->amount = round($loan->amount);
             $loan->total_paid = round($loan->total_paid ?? 0);
             $loan->remaining_balance = round($loan->remaining_balance ?? $loan->amount);
+
+            $next = $loan->nextInstallment;
+            $loan->next_installment = $next ? [
+                'installment_number' => $next->installment_number,
+                'due_date' => $next->due_date?->toDateString(),
+                'principal_amount' => round((float) $next->principal_amount),
+                'interest_amount' => round((float) $next->interest_amount),
+                'total_amount' => round((float) $next->total_amount),
+                'status' => $next->due_date && $next->due_date->toDateString() < $today ? 'overdue' : 'pending',
+            ] : null;
+            unset($loan->nextInstallment);
         }
 
         return response()->json($loans);
@@ -501,8 +538,8 @@ class LoanController extends Controller
     public function recordRepayment(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
-            return $this->error('Only Finance Officer/Cashier can record payments', 403);
+        if (!$user->isFinanceOfficer() && !$user->isAdmin() && !$user->isLoanOfficer()) {
+            return $this->error('Only Finance Officer/Cashier and Loan Officers can record payments', 403);
         }
 
         $data = $request->validate([

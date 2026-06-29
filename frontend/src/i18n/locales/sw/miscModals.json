@@ -1,0 +1,90 @@
+{
+  "collateral": {
+    "directoryTitle": "DIRECTORI YA DHAMANA YA MTEJA",
+    "directoryHint": "Pakia picha za mali zote zilizopigwa picha shambani/eneo la mteja kama dhamana ya mkopo, kisha unganisha kila picha na mali yake kutoka Fomu ya Rehani Mali.",
+    "addPhoto": "ONGEZA PICHA",
+    "uploadFailed": "Imeshindwa kupakia picha. Tafadhali jaribu tena.",
+    "emptyTitle": "Hakuna picha za dhamana zilizopakiwa bado.",
+    "emptyHintReadOnly": "Hakuna picha za dhamana zilizopakiwa na mhusika.",
+    "emptyHintEditable": "Bonyeza “ONGEZA PICHA” kupakia picha za mali za mteja.",
+    "view": "Tazama",
+    "assetName": "JINA LA MALI",
+    "selectAsset": "Chagua mali...",
+    "marketValue": "THAMANI SOKO (TZS)",
+    "collateralValue": "THAMANI DHAMANA (70%)",
+    "noAssetLinked": "Hakuna mali iliyounganishwa na picha hii.",
+    "deletePhoto": "Futa Picha",
+    "confirmDeleteTitle": "Futa Picha ya Dhamana",
+    "confirmDeleteMessage": "Una hakika unataka kufuta picha hii ya dhamana? Mali zilizounganishwa nayo zitaondolewa pia.",
+    "confirmDeleteYes": "Ndio, Futa",
+    "confirmDeleteCancel": "Ghairi",
+    "picker": {
+      "title": "CHAGUA MALI",
+      "subtitle": "Kutoka FOMU YA KUWEKA REHANI MALI (CHATTEL FORM) — Tafadhali orodhesha mali unazoweka kama dhamana hapa chini",
+      "emptyTitle": "Hakuna mali zilizoorodheshwa kwenye Fomu ya Rehani Mali bado.",
+      "emptyHint": "Tafadhali jaza FOMU YA KUWEKA REHANI MALI kwanza kabla ya kuchagua hapa.",
+      "marketValue": "Thamani Soko",
+      "collateralValue": "Thamani Dhamana (70%)"
+    }
+  },
+  "delegation": {
+    "titles": {
+      "generalManager": "Meneja Mkuu",
+      "actingGeneralManager": "Kaimu Meneja Mkuu",
+      "loanManager": "Meneja Mikopo",
+      "actingLoanManager": "Kaimu Meneja Mikopo",
+      "managingDirector": "Mkurugenzi Mtendaji",
+      "actingManagingDirector": "Kaimu Mkurugenzi Mtendaji"
+    },
+    "formTitle": "FOMU YA KUKAIMISHA OFISI NA MADARAKA KWA MUDA",
+    "intro": {
+      "prefix": "Mimi",
+      "suffix": "kwa kuwa nitakuwa nje ya ofisi, nakaimisha ofisi na madaraka yangu kwa mtumishi niliyemchagua hapa chini kwa kipindi kilichoainishwa."
+    },
+    "fields": {
+      "yourRole": "Cheo Chako",
+      "yourRoleTitle": "Cheo chako (otomatiki)",
+      "delegateTo": "Mkaimishwa",
+      "selectStaff": "— Chagua mtumishi —",
+      "actingTitle": "Cheo cha Kukaimu",
+      "fromDate": "Kuanzia",
+      "toDate": "Mpaka",
+      "reason": "Sababu ya kutokuwepo",
+      "reasonPlaceholder": "mfano: Safari ya kikazi, likizo...",
+      "responsibilities": "Madaraka na Mamlaka",
+      "responsibilitiesPlaceholder": "Majukumu na mamlaka ya kufanya maamuzi yanayokaimishwa...",
+      "limitations": "Mipaka (si lazima)",
+      "limitationsPlaceholder": "mfano: Vibali hadi TZS 5,000,000; hakuna ajira mpya...",
+      "handoverNotes": "Makabidhiano (si lazima)",
+      "handoverNotesPlaceholder": "Mambo yanayosubiri, mawasiliano muhimu, shughuli zinazoendelea...",
+      "signatureSuffix": "Sahihi",
+      "authorizePin": "Thibitisha kwa Nenosiri / PIN",
+      "pinPlaceholder": "Nenosiri / PIN ya kusaini"
+    },
+    "validation": {
+      "requiredFields": "Tafadhali chagua mtumishi, kipindi na madaraka yanayokaimishwa.",
+      "requirePin": "Weka nenosiri/PIN yako kusaini na kuthibitisha ukaimishaji."
+    },
+    "submitSuccess": "Ukaimishaji wako wa ofisi umetumwa kwa mtumishi aliyechaguliwa. Atajulishwa kuukubali.",
+    "submitFailed": "Imeshindwa kutuma",
+    "clear": "Futa",
+    "submitting": "Inatuma...",
+    "delegateAuthority": "Kaimisha Madaraka"
+  },
+  "signaturePad": {
+    "signHere": "Sainia hapa",
+    "clear": "Futa",
+    "useSaved": "Tumia iliyohifadhiwa",
+    "captured": "Imenaswa",
+    "preview": "Onyesho",
+    "previewAlt": "onyesho la sahihi",
+    "noSignatureYet": "Hakuna sahihi bado"
+  },
+  "signatureReuse": {
+    "noSignatureYet": "Hakuna sahihi iliyohifadhiwa bado — haitaonekana kwenye hati iliyosainiwa.",
+    "setYourSignature": "Weka sahihi yako",
+    "signatureToBeApplied": "Sahihi itakayotumika",
+    "reuseHint": "Sahihi yako iliyohifadhiwa inatumika tena — weka nenosiri lako kusaini.",
+    "savedSignatureAlt": "sahihi iliyohifadhiwa"
+  }
+}

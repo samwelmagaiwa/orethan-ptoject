@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
@@ -25,6 +27,7 @@ interface Loan {
 }
 
 const LoanManager = () => {
+  const { t } = useTranslation("loanManager");
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
@@ -34,7 +37,7 @@ const LoanManager = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<'down' | 'up'>('down');
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
@@ -53,8 +56,15 @@ const LoanManager = () => {
         setActiveDropdown(null);
       }
     };
+    const handleReposition = () => setActiveDropdown(null);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+    };
   }, []);
 
   const fetchLoans = () => {
@@ -85,14 +95,19 @@ const LoanManager = () => {
     }
   };
 
-  const toggleDropdown = (id: number, event: React.MouseEvent) => {
+  const toggleDropdown = (id: number, event: React.MouseEvent, buttonCount: number) => {
     if (activeDropdown === id) {
       setActiveDropdown(null);
     } else {
-      const buttonRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const spaceBelow = windowHeight - buttonRect.bottom;
-      setDropdownPosition(spaceBelow < 200 ? 'up' : 'down');
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      const menuWidth = 170;
+      const estimatedMenuHeight = 16 + buttonCount * 42 + 20;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow >= estimatedMenuHeight + 8
+        ? rect.bottom + 8
+        : Math.max(8, rect.top - estimatedMenuHeight - 8);
+      const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+      setMenuPos({ top, left });
       setActiveDropdown(id);
     }
     event.stopPropagation(); // Avoid selecting row when clicking dropdown
@@ -113,14 +128,14 @@ const LoanManager = () => {
     axios
       .post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, { comments }, { headers })
       .then(() => {
-        setModal({ isOpen: true, title: "Imefanikiwa", message: "Mkopo umeidhinishwa kikamilifu", type: 'success' });
+        setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.approveSuccess"), type: 'success' });
         setShowApproveModal(false);
         fetchLoans();
         setActiveDropdown(null);
       })
       .catch((err) => {
         console.log(err);
-        setModal({ isOpen: true, title: "Hitilafu", message: "Imeshindwa kuidhinisha mkopo", type: 'error' });
+        setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.approveError"), type: 'error' });
       })
       .finally(() => setSubmitting(false));
   };
@@ -134,7 +149,7 @@ const LoanManager = () => {
 
   const submitRejection = () => {
     if (!rejectReason.trim()) {
-      setModal({ isOpen: true, title: "Taarifa", message: "Tafadhali weka sababu ya kukataa.", type: 'warning' });
+      setModal({ isOpen: true, title: t("alerts.infoTitle"), message: t("alerts.reasonRequired"), type: 'warning' });
       return;
     }
 
@@ -148,13 +163,13 @@ const LoanManager = () => {
         reason: rejectReason,
       }, { headers })
       .then(() => {
-        setModal({ isOpen: true, title: "Imefanikiwa", message: "Ombi limekataliwa na kurudishwa kwa Loan Officer", type: 'warning' });
+        setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.rejectSuccess"), type: 'warning' });
         setShowRejectModal(false);
         fetchLoans();
       })
       .catch((err) => {
         console.log(err);
-        setModal({ isOpen: true, title: "Hitilafu", message: "Imeshindwa kukataa ombi", type: 'error' });
+        setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.rejectError"), type: 'error' });
       })
       .finally(() => setSubmitting(false));
   };
@@ -162,8 +177,8 @@ const LoanManager = () => {
   const deleteLoan = (id: number) => {
     setConfirm({
       isOpen: true,
-      title: "Futa Mkopo",
-      message: "Je, una uhakika unataka kufuta kabisa ombi hili la mkopo?",
+      title: t("alerts.deleteLoanTitle"),
+      message: t("alerts.deleteLoanConfirm"),
       type: 'danger',
       onConfirm: () => {
         setConfirm(prev => ({ ...prev, isOpen: false }));
@@ -175,13 +190,13 @@ const LoanManager = () => {
         axios
           .delete(`${API_BASE}/loans/${id}`, { headers })
           .then(() => {
-            setModal({ isOpen: true, title: "Imefanikiwa", message: "Mkopo umefutwa kikamilifu", type: 'success' });
+            setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.deleteSuccess"), type: 'success' });
             fetchLoans();
             setActiveDropdown(null);
           })
           .catch((err) => {
             console.log(err);
-            setModal({ isOpen: true, title: "Hitilafu", message: "Imefeli kufuta mkopo", type: 'error' });
+            setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.deleteError"), type: 'error' });
           })
           .finally(() => setSubmitting(false));
       }
@@ -219,15 +234,15 @@ const LoanManager = () => {
       />
       <div className="stats-row">
         <div className="stat-box">
-          <div className="stat-label">Total Handled</div>
+          <div className="stat-label">{t("stats.totalHandled")}</div>
           <div className="stat-number">{loans.length}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#3b82f6' }}>
-          <div className="stat-label">Current Role</div>
-          <div className="stat-number" style={{ fontSize: '24px' }}>Loan Manager</div>
+          <div className="stat-label">{t("stats.currentRole")}</div>
+          <div className="stat-number" style={{ fontSize: '24px' }}>{t("stats.loanManager")}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#f59e0b' }}>
-          <div className="stat-label">Action Required</div>
+          <div className="stat-label">{t("stats.actionRequired")}</div>
           <div className="stat-number">{loans.filter(l => l.status === 'manager_review').length}</div>
         </div>
       </div>
@@ -240,7 +255,7 @@ const LoanManager = () => {
             </div>
             <input
               type="text"
-              placeholder="Tafuta mwombaji..."
+              placeholder={t("filters.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -248,7 +263,7 @@ const LoanManager = () => {
         </div>
         <button className="refresh-btn-header" onClick={fetchLoans}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-          Refresh Applications
+          {t("filters.refresh")}
         </button>
       </div>
 
@@ -256,15 +271,15 @@ const LoanManager = () => {
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Mteja</th>
-              <th>Namba ya Simu</th>
-              <th>Mikopo (Active)</th>
-              <th>Deni Lililobaki</th>
-              <th>Arrears</th>
-              <th>Status</th>
-              <th>SMS Status</th>
-              <th style={{ textAlign: 'right' }}>Hatua</th>
+              <th>{t("table.number")}</th>
+              <th>{t("table.client")}</th>
+              <th>{t("table.phoneNumber")}</th>
+              <th>{t("table.activeLoans")}</th>
+              <th>{t("table.remainingBalance")}</th>
+              <th>{t("table.arrears")}</th>
+              <th>{t("table.status")}</th>
+              <th>{t("table.smsStatus")}</th>
+              <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -291,8 +306,8 @@ const LoanManager = () => {
               <tr>
                 <td colSpan={9}>
                   <div className="empty-state">
-                    <p>No loan requests</p>
-                    <span>No pending applications to review</span>
+                    <p>{t("empty.title")}</p>
+                    <span>{t("empty.subtitle")}</span>
                   </div>
                 </td>
               </tr>
@@ -313,13 +328,13 @@ const LoanManager = () => {
                   <td>{loan.phone}</td>
                   <td>
                     <div className="status-container">
-                      <span className="active-count">{loan.active_loans_count || 0} Amilifu</span>
+                      <span className="active-count">{t("table.activeCount", { count: loan.active_loans_count || 0 })}</span>
                     </div>
                   </td>
                   <td className="col-amount">TZS {Number(loan.total_remaining_balance || 0).toLocaleString()}</td>
                   <td>
                     <span className={`arrears-badge ${Number(loan.total_arrears || 0) > 0 ? 'has-arrears' : 'no-arrears'}`}>
-                      {Number(loan.total_arrears || 0) > 0 ? `TZS ${Number(loan.total_arrears).toLocaleString()}` : 'Hakuna'}
+                      {Number(loan.total_arrears || 0) > 0 ? `TZS ${Number(loan.total_arrears).toLocaleString()}` : t("table.none")}
                     </span>
                   </td>
                   <td>
@@ -329,31 +344,31 @@ const LoanManager = () => {
                       border: (loan.status === 'approved' || loan.status === 'disbursed') ? '1px solid #16a34a' : 'none',
                       padding: (loan.status === 'approved' || loan.status === 'disbursed') ? '3px 10px' : '4px 12px'
                     }}>
-                      {loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span> :
+                      {loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span> :
                         loan.status === 'gm_review' ? (
                           <span>
-                            <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                            <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
                             <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                            <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                            <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                           </span>
                         ) :
                           loan.status === 'md_review' ? (
                             <span>
-                              <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
+                              <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
                               <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                              <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
+                              <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
                             </span>
                           ) :
                             (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') ? (
-                              <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
+                              <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
                             ) :
-                              loan.status === 'approved' ? 'APPROVED' :
-                                loan.status === 'disbursed' ? 'DISBURSED' :
+                              loan.status === 'approved' ? t("status.approved") :
+                                loan.status === 'disbursed' ? t("status.disbursed") :
                                   loan.status.replace(/_/g, ' ').toUpperCase()}
                     </span>
                     {(loan.status === 'loan_officer') && (loan as any).rejection_metadata && (
                       <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
-                        Sababu: {(loan as any).rejection_metadata.reason}
+                        {t("table.reason")}: {(loan as any).rejection_metadata.reason}
                       </div>
                     )}
                   </td>
@@ -373,11 +388,11 @@ const LoanManager = () => {
                               disabled={submitting}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                              Approve
+                              {t("actions.approve")}
                             </button>
                             <button onClick={() => viewDetails(loan)} disabled={submitting}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                              View Details
+                              {t("actions.viewDetails")}
                             </button>
                             <button
                               onClick={() => openRejectModal(loan)}
@@ -385,7 +400,7 @@ const LoanManager = () => {
                               disabled={submitting}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                              Reject
+                              {t("actions.reject")}
                             </button>
                             <button
                               onClick={() => deleteLoan(loan.id)}
@@ -394,18 +409,18 @@ const LoanManager = () => {
                               style={{ color: '#ef4444' }}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                              Delete Loan
+                              {t("actions.deleteLoan")}
                             </button>
                           </>
                         ) : (
                           <>
                             <button onClick={() => viewDetails(loan)} disabled={submitting}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                              View Details
+                              {t("actions.viewDetails")}
                             </button>
                             <button onClick={() => viewHistory(loan)} disabled={submitting}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                              Angalia Mapendekezo
+                              {t("actions.viewHistory")}
                             </button>
                           </>
                         )}
@@ -437,23 +452,23 @@ const LoanManager = () => {
                 <div className="reject-icon-box">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 15h2M12 9v4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                 </div>
-                <h2>Reject Loan Application</h2>
-                <p>Please provide a reason for returning this application for corrections. It will be returned to the Loan Officer.</p>
+                <h2>{t("modal.rejectTitle")}</h2>
+                <p>{t("modal.rejectDescription")}</p>
               </div>
 
               <div className="reject-client-info">
                 <div className="info-item">
-                  <span>Client</span>
+                  <span>{t("modal.client")}</span>
                   <strong>{selectedLoan?.name}</strong>
                 </div>
                 <div className="info-item">
-                  <span>Amount</span>
+                  <span>{t("modal.amount")}</span>
                   <strong>TZS {Number(selectedLoan?.amount).toLocaleString()}</strong>
                 </div>
               </div>
 
               <textarea
-                placeholder="Provide clear instructions for correction..."
+                placeholder={t("modal.rejectReasonPlaceholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={4}
@@ -462,10 +477,10 @@ const LoanManager = () => {
 
               <div className="reject-footer-premium">
                 <button className="reject-btn-cancel" onClick={() => setShowRejectModal(false)} disabled={submitting}>
-                  Cancel
+                  {t("modal.cancel")}
                 </button>
                 <button className="reject-btn-confirm" onClick={submitRejection} disabled={submitting}>
-                  {submitting ? 'Processing...' : 'Return for Corrections'}
+                  {submitting ? t("modal.processing") : t("modal.returnForCorrections")}
                 </button>
               </div>
 

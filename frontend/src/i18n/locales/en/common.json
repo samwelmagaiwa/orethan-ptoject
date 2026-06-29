@@ -1,0 +1,110 @@
+{
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "swahili": "Swahili"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "loan_officer": "Loan Officer",
+    "loan_manager": "Loan Manager",
+    "general_manager": "General Manager",
+    "managing_director": "Managing Director",
+    "finance_officer": "Finance Officer",
+    "customer": "Customer"
+  },
+  "navbar": {
+    "appTitle": "Microfinance System",
+    "pageTitles": {
+      "dashboard": "Dashboard",
+      "personalLoan": "PERSONAL LOAN APPLICATION FORM",
+      "groupLoan": "GROUP LOAN APPLICATION FORM",
+      "employeeLoan": "EMPLOYEE LOAN APPLICATION FORM",
+      "loanManager": "Loan Manager",
+      "generalManager": "General Manager",
+      "managingDirector": "Managing Director",
+      "repaymentTracker": "Repayment Tracker",
+      "users": "Users"
+    }
+  },
+  "userMenu": {
+    "user": "User",
+    "changePhotoTitle": "Change photo",
+    "uploadingPhoto": "Uploading photo…",
+    "uploadFailed": "Upload failed",
+    "changePhoto": "Change Photo",
+    "myProfile": "My Profile",
+    "mySignature": "My Signature",
+    "logout": "Logout"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications",
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "sidebar": {
+    "openMenu": "Open menu",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "administrator": "Administrator",
+    "sections": {
+      "internal": "INTERNAL",
+      "loanOperations": "LOAN OPERATIONS",
+      "approvals": "APPROVALS",
+      "management": "MANAGEMENT",
+      "accounting": "ACCOUNTING",
+      "reports": "REPORTS",
+      "preferences": "PREFERENCES"
+    },
+    "dashboard": "Dashboard",
+    "financeCollections": "Finance & Collections",
+    "overdueManagement": "Overdue Management",
+    "disbursePayments": "Disburse & Payments",
+    "requests": "Requests",
+    "paymentRequests": "Payment Requests",
+    "leaveRequests": "Leave Requests",
+    "officeDelegation": "Office Delegation",
+    "users": "Users",
+    "viewUsers": "View Users",
+    "loanSettings": "Loan Settings",
+    "loansForm": "Loans Form",
+    "personalLoan": "Personal Loan",
+    "groupLoan": "Group Loan",
+    "myApplications": "My Applications",
+    "managerReview": "Manager Review",
+    "gmReview": "GM Review",
+    "mdAuth": "MD Auth",
+    "customers": "Customers",
+    "accounting": "Accounting",
+    "chartOfAccounts": "Chart of Accounts",
+    "journalEntries": "Journal Entries",
+    "generalLedger": "General Ledger",
+    "trialBalance": "Trial Balance",
+    "incomeStatement": "Income Statement",
+    "balanceSheet": "Balance Sheet",
+    "cashBook": "Cash Book",
+    "bankReconciliation": "Bank Reconciliation",
+    "reports": "Reports",
+    "riskReports": "Risk Reports",
+    "financialReports": "Financial Reports",
+    "mySignature": "My Signature",
+    "logOut": "Log Out"
+  },
+  "footer": {
+    "copyright": "© {{year}} Microfinance System. All rights reserved."
+  },
+  "modal": {
+    "confirmYes": "Yes, Continue",
+    "confirmNo": "No, Cancel",
+    "notice": "Notice",
+    "ok": "OK, UNDERSTOOD",
+    "success": "Success",
+    "done": "Done",
+    "error": "Error",
+    "validationError": "Validation Error"
+  }
+}

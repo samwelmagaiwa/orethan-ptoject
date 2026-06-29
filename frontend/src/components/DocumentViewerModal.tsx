@@ -1,4 +1,5 @@
 import { X, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
 
 interface AssetLink {
@@ -27,38 +28,40 @@ const formatMoney = (v: string) => {
 };
 
 const DocumentViewerModal = ({ isOpen, url, name, mimeType, items, onClose }: Props) => {
+  const { t } = useTranslation("historyModals");
   if (!isOpen || !url) return null;
   const resolved = resolveFileUrl(url);
   const pdf = isPdf(resolved, mimeType);
+  const displayName = name || t("documentViewer.defaultName");
 
   return (
     <div className="dvm-overlay" onClick={onClose}>
       <div className="dvm-content" onClick={(e) => e.stopPropagation()}>
         <div className="dvm-header">
-          <span className="dvm-title">{name || "Nyaraka"}</span>
+          <span className="dvm-title">{displayName}</span>
           <div className="dvm-actions">
             <a className="dvm-download" href={resolved} target="_blank" rel="noopener noreferrer" download>
-              <Download size={15} /> Pakua
+              <Download size={15} /> {t("documentViewer.actions.download")}
             </a>
             <button type="button" className="dvm-close" onClick={onClose}><X size={18} /></button>
           </div>
         </div>
         <div className="dvm-body">
           {pdf ? (
-            <iframe src={resolved} title={name || "Nyaraka"} className="dvm-frame" />
+            <iframe src={resolved} title={displayName} className="dvm-frame" />
           ) : (
-            <img src={resolved} alt={name || "Nyaraka"} className="dvm-image" />
+            <img src={resolved} alt={displayName} className="dvm-image" />
           )}
         </div>
         {items && items.length > 0 && (
           <div className="dvm-note">
-            <span className="dvm-note-label">Mali Zilizounganishwa na Picha Hii</span>
+            <span className="dvm-note-label">{t("documentViewer.linkedAssets.title")}</span>
             <div className="dvm-asset-list">
               {items.filter((it) => it.jina).map((it) => (
                 <div key={it.id} className="dvm-asset-row">
-                  <span><strong>JINA LA MALI:</strong> {it.jina}</span>
-                  <span><strong>THAMANI SOKO KWA SASA (TZS):</strong> {formatMoney(it.thamaniSoko)}</span>
-                  <span className="dvm-asset-green"><strong>THAMANI DHAMANA (70%):</strong> {formatMoney(it.thamaniDhamana)}</span>
+                  <span><strong>{t("documentViewer.linkedAssets.name")}:</strong> {it.jina}</span>
+                  <span><strong>{t("documentViewer.linkedAssets.marketValue")}:</strong> {formatMoney(it.thamaniSoko)}</span>
+                  <span className="dvm-asset-green"><strong>{t("documentViewer.linkedAssets.collateralValue")}:</strong> {formatMoney(it.thamaniDhamana)}</span>
                 </div>
               ))}
             </div>

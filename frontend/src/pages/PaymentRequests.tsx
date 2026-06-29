@@ -134,12 +134,17 @@ const PaymentRequests = () => {
       setForm(blank); setEditingId(null);
       setTab("list"); setScope("mine");
       await load(); await checkPending();
+      const isHighAuthority = role === "managing_director" || role === "admin";
       setSuccess({
         open: true,
         title: wasEditing ? "Request Resubmitted" : "Request Submitted",
         message: wasEditing
-          ? "Your payment request has been updated and resubmitted to the Loan Manager for review."
-          : "Your payment request has been submitted and routed to the Loan Manager for approval.",
+          ? (isHighAuthority
+            ? "Your payment request has been updated and routed directly to the Cashier for payout."
+            : "Your payment request has been updated and resubmitted to the Loan Manager for review.")
+          : (isHighAuthority
+            ? "Your payment request has been submitted and routed directly to the Cashier for payout."
+            : "Your payment request has been submitted and routed to the Loan Manager for approval."),
       });
     } catch (e: any) { console.error(e); setFormError(e?.response?.data?.message || "Submit failed"); } finally { setSubmitting(false); }
   };
@@ -439,9 +444,16 @@ const PaymentRequests = () => {
 
                 {/* Approval trail */}
                 <div style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <ApprovalRow title="Loan Manager / Head of Loan Dept" name={selected.manager_name} decision={selected.manager_decision} date={selected.manager_date} comments={selected.manager_comments} signature={selected.manager_signature_img} />
-                  <ApprovalRow title="General Manager / Head of HR & Admin" name={selected.gm_name} decision={selected.gm_decision} date={selected.gm_date} comments={selected.gm_comments} signature={selected.gm_signature_img} />
-                  <ApprovalRow title="Managing Director (Authorisation)" name={selected.md_name} decision={selected.md_date ? "approved" : null} date={selected.md_date} comments={selected.md_comments} signature={selected.md_signature_img} />
+                  {(() => {
+                    const isMdBypass = selected.applicant_role === "managing_director" || selected.applicant_role === "admin";
+                    return (
+                      <>
+                        <ApprovalRow title="Loan Manager / Head of Loan Dept" name={selected.manager_name} decision={isMdBypass ? "bypassed" : selected.manager_decision} date={selected.manager_date} comments={selected.manager_comments} signature={selected.manager_signature_img} />
+                        <ApprovalRow title="General Manager / Head of HR & Admin" name={selected.gm_name} decision={isMdBypass ? "bypassed" : selected.gm_decision} date={selected.gm_date} comments={selected.gm_comments} signature={selected.gm_signature_img} />
+                        <ApprovalRow title="Managing Director (Authorisation)" name={isMdBypass ? null : selected.md_name} decision={isMdBypass ? "bypassed" : (selected.md_date ? "approved" : null)} date={isMdBypass ? null : selected.md_date} comments={isMdBypass ? null : selected.md_comments} signature={isMdBypass ? null : selected.md_signature_img} />
+                      </>
+                    );
+                  })()}
                   <ApprovalRow title="Cashier / Finance (Disbursement)" name={selected.cashier_name} decision={selected.status === "disbursed" ? "disbursed" : null} date={selected.cashier_date} comments={selected.cashier_comments || (selected.cashier_reference ? `Ref: ${selected.cashier_reference}` : null)} signature={selected.cashier_signature_img} />
                 </div>
                 {selected.status === "rejected" && (
@@ -555,6 +567,7 @@ const ApprovalRow = ({ title, name, decision, date, comments, signature }: any) 
     authorized: { label: "Authorized", bg: "#ecfdf5", color: "#059669" },
     disbursed: { label: "Disbursed", bg: "#ecfeff", color: "#0891b2" },
     not_approved: { label: "Not Approved", bg: "#fef2f2", color: "#dc2626" },
+    bypassed: { label: "Bypassed", bg: "#f1f5f9", color: "#64748b" },
   };
   const m = decision ? map[decision] : null;
   return (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface HistoryModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
     loan,
     onClose
 }) => {
+    const { t } = useTranslation("historyModals");
     if (!isOpen) return null;
 
     return (
@@ -27,15 +29,15 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                     <table className="history-details-table">
                         <thead>
                             <tr>
-                                <th>ID Mkopo</th>
-                                <th>Mwombaji</th>
-                                <th>Mteja Simu</th>
-                                <th>Afisa Mikopo</th>
-                                <th>Kiasi cha Mkopo</th>
-                                <th>Aina ya Mkopo</th>
-                                <th>Hali ya Sasa</th>
-                                <th>Muda wa Mkopo</th>
-                                <th>Rejesho Tarajiwa</th>
+                                <th>{t("history.table.loanId")}</th>
+                                <th>{t("history.table.applicant")}</th>
+                                <th>{t("history.table.customerPhone")}</th>
+                                <th>{t("history.table.loanOfficer")}</th>
+                                <th>{t("history.table.loanAmount")}</th>
+                                <th>{t("history.table.loanType")}</th>
+                                <th>{t("history.table.currentStatus")}</th>
+                                <th>{t("history.table.loanDuration")}</th>
+                                <th>{t("history.table.expectedRepayment")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -48,10 +50,10 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                                 <td style={{ textTransform: 'capitalize' }}>{renderVal(loan?.type)}</td>
                                 <td>
                                     <span className={`status-pill status-${loan?.status?.replace('_', '-')}`}>
-                                        {loan?.status?.replace(/_/g, ' ').toUpperCase() || "PENDING"}
+                                        {loan?.status?.replace(/_/g, ' ').toUpperCase() || t("history.status.pending")}
                                     </span>
                                 </td>
-                                <td>{renderVal(loan?.details?.kwaTarakimu)} {loan?.details?.kwaTarakimu ? "Miezi" : ""}</td>
+                                <td>{renderVal(loan?.details?.kwaTarakimu)} {loan?.details?.kwaTarakimu ? t("history.units.months") : ""}</td>
                                 <td className="extra-highlight">
                                     {loan?.details?.kiasiRejeshoBilaMatatizo || loan?.details?.kiasiGaniChaRejesho
                                         ? `TZS ${Number(loan.details.kiasiRejeshoBilaMatatizo || loan.details.kiasiGaniChaRejesho).toLocaleString()}`
@@ -64,14 +66,14 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
 
                 <div className="history-header-premium" style={{ marginBottom: '20px' }}>
                     <div className="history-header-row">
-                        <h2>Hali ya Idhini na Maoni</h2>
+                        <h2>{t("history.heading.approvalStatus")}</h2>
                         <div className="inline-stepper-row">
                             {[
-                                { label: 'OFFICER', role: 'Loan Officer', status: 'loan_officer' },
-                                { label: 'LM', role: 'Loan Manager', status: 'manager_review' },
-                                { label: 'GM', role: 'General Manager', status: 'gm_review' },
-                                { label: 'MD', role: 'Managing Director', status: 'md_review' },
-                                { label: 'FINAL', role: 'Completed', status: 'approved' }
+                                { label: t("history.steps.officer"), role: t("history.roles.loanOfficer"), status: 'loan_officer' },
+                                { label: t("history.steps.lm"), role: t("history.roles.loanManager"), status: 'manager_review' },
+                                { label: t("history.steps.gm"), role: t("history.roles.generalManager"), status: 'gm_review' },
+                                { label: t("history.steps.md"), role: t("history.roles.managingDirector"), status: 'md_review' },
+                                { label: t("history.steps.final"), role: t("history.roles.completed"), status: 'approved' }
                             ].map((s, i) => {
                                 const stepOrder = ['loan_officer', 'manager_review', 'gm_review', 'md_review', 'approved'];
                                 const currentIdx = stepOrder.indexOf(loan?.status);
@@ -81,7 +83,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                                 return (
                                     <div key={i} className="inline-step-group">
                                         <div className={`inline-step-pill ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isActive && isReturned ? 'returned' : ''}`} title={s.role}>
-                                            <span className="inline-step-circle">{isCompleted ? 'OK' : i + 1}</span>
+                                            <span className="inline-step-circle">{isCompleted ? t("history.steps.completedMark") : i + 1}</span>
                                             <span className="inline-step-label">{s.label}</span>
                                         </div>
                                         {i < 4 && <span className="inline-step-connector" />}
@@ -110,13 +112,13 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                                         return (
                                             <div key={approval.id} className={`timeline-item-premium ${isFirst ? 'first-step' : ''} ${isLast ? 'last-step' : ''}`}>
                                                 <div className="timeline-marker-premium">
-                                                    {isFirst ? 'KWANZA' : isLast ? 'SASA' : index + 1}
+                                                    {isFirst ? t("history.timeline.first") : isLast ? t("history.timeline.now") : index + 1}
                                                 </div>
                                                 <div className={`history-item-premium ${approval.status === 'rejected' ? 'rejected' : 'approved'}`}>
                                                     <span className="h-role-badge">{approval.user.role.replace(/_/g, ' ').toUpperCase()}</span>
                                                     <span className="h-user">{approval.user.name}</span>
                                                     <span className={`h-action-pill ${approval.status}`}>
-                                                        {approval.status === 'rejected' ? 'IMEKATALIWA' : 'PENDEKEZO'}
+                                                        {approval.status === 'rejected' ? t("history.timeline.rejected") : t("history.timeline.recommended")}
                                                     </span>
                                                     <span className="h-comment-text">"{approval.comments}"</span>
                                                     <span className="h-date">{new Date(approval.created_at).toLocaleString()}</span>
@@ -127,13 +129,13 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                                 </div>
                             );
                         }
-                        return <div className="no-history-msg-premium">Hakuna historia ya maoni kwa mkopo huu bado.</div>;
+                        return <div className="no-history-msg-premium">{t("history.empty.noHistory")}</div>;
                     })()}
                 </div>
 
                 <div className="history-footer-premium">
                     <button className="history-btn-close" onClick={onClose}>
-                        Funga
+                        {t("history.actions.close")}
                     </button>
                 </div>
             </div>

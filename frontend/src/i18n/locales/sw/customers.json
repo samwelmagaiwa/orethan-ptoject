@@ -1,0 +1,102 @@
+{
+  "stats": {
+    "totalLoaned": "Jumla ya Mikopo",
+    "arrears": "Madeni Yaliyochelewa",
+    "activeCustomers": "Wateja Amilifu",
+    "pendingApplications": "Maombi Yanayosubiri",
+    "applicationsValue": "Thamani ya Maombi",
+    "activeCustomersShort": "Amilifu"
+  },
+  "filters": {
+    "show": "Onyesha",
+    "entries": "kumbukumbu",
+    "searchPlaceholderAdmin": "Tafuta kwa jina la mteja, simu, au namba ya NIDA...",
+    "searchPlaceholderManager": "Tafuta kwa jina la mwombaji au simu...",
+    "searchTitle": "Tafuta kwa jina, simu, au namba ya NIDA"
+  },
+  "table": {
+    "customer": "Mteja",
+    "phoneNumber": "Namba ya Simu",
+    "activeLoans": "Mikopo (Amilifu)",
+    "remainingBalance": "Deni Lililobaki",
+    "arrears": "Madeni Yaliyochelewa",
+    "actions": "Hatua",
+    "applicant": "Mwombaji",
+    "phone": "Simu",
+    "amount": "Kiasi",
+    "type": "Aina",
+    "status": "Hali",
+    "smsStatus": "Hali ya SMS",
+    "activeCount": "{{count}} Amilifu",
+    "none": "Hakuna",
+    "reason": "Sababu"
+  },
+  "status": {
+    "rejected": "IMEKATALIWA",
+    "pendingLm": "INASUBIRI LM",
+    "lmApproved": "LM AMEIDHINISHA",
+    "pendingGm": "INASUBIRI GM",
+    "gmApproved": "GM AMEIDHINISHA",
+    "pendingMd": "INASUBIRI MD",
+    "approved": "IMEIDHINISHWA",
+    "active": "Hai"
+  },
+  "empty": {
+    "noCustomers": "Hakuna wateja waliopatikana.",
+    "noApplications": "Hakuna maombi ya mkopo yaliyopatikana."
+  },
+  "actions": {
+    "profile": "Wasifu",
+    "repay": "Lipa",
+    "disburse": "Toa Mkopo",
+    "printVoucher": "Chapisha Stakabadhi",
+    "viewDetails": "Angalia Maelezo",
+    "approve": "Idhinisha",
+    "reject": "Kataa",
+    "deleteLoan": "Futa Mkopo",
+    "viewHistory": "Angalia Mapendekezo"
+  },
+  "pagination": {
+    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "previous": "Iliyotangulia",
+    "next": "Inayofuata"
+  },
+  "rejectModal": {
+    "title": "Kataa Ombi la Mkopo",
+    "client": "Mteja",
+    "requested": "Kiasi Kilichoombwa",
+    "reasonPlaceholder": "Toa sababu za wazi za kukataa...",
+    "cancel": "Ghairi",
+    "returning": "Inashughulikia...",
+    "returnForCorrections": "Rudisha kwa Marekebisho"
+  },
+  "confirm": {
+    "deleteLoanTitle": "Futa Mkopo",
+    "deleteLoanMessage": "Je, una uhakika unataka kufuta kabisa ombi hili la mkopo?"
+  },
+  "voucher": {
+    "title": "Stakabadhi ya Utoaji wa Mkopo",
+    "accountNumber": "Namba ya Akaunti",
+    "loanId": "Namba ya Mkopo",
+    "applicant": "Mwombaji",
+    "phone": "Simu",
+    "loanType": "Aina ya Mkopo",
+    "amountDisbursed": "Kiasi Kilichotolewa",
+    "remainingBalance": "Deni Lililobaki",
+    "firstPaymentDate": "Tarehe ya Malipo ya Kwanza",
+    "loanStatus": "Hali ya Mkopo"
+  },
+  "alerts": {
+    "fetchFailed": "Imeshindwa kupakia data",
+    "approveSuccess": "Mkopo umeidhinishwa kikamilifu",
+    "approveFailed": "Imeshindwa kuidhinisha mkopo",
+    "rejectReasonRequired": "Tafadhali weka sababu ya kukataa.",
+    "rejectSuccess": "Ombi limekataliwa kikamilifu",
+    "rejectFailed": "Imeshindwa kukataa ombi",
+    "disburseFieldsRequired": "Tafadhali jaza kiasi na tarehe ya kutoa mkopo.",
+    "disburseSuccess": "Mkopo umetolewa kikamilifu. Akaunti: {{account}}, Salio: TZS {{balance}}, Malipo ya kwanza: {{firstDue}}",
+    "disburseFailed": "Imeshindwa kutoa mkopo",
+    "deleteSuccess": "Mkopo umefutwa kikamilifu",
+    "deleteFailed": "Imeshindwa kufuta mkopo"
+  }
+}

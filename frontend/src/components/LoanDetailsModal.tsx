@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import logo from '../assets/logo.png';
 import LoanChecklistView from './LoanChecklistView';
 import CollateralDirectory from './CollateralDirectory';
@@ -48,6 +49,7 @@ interface LoanDetailsModalProps {
 }
 
 const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose }) => {
+  const { t } = useTranslation('loanModals');
   if (!show || !loan) return null;
 
   // Helper to format currency
@@ -68,7 +70,7 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-large animate-slide-up print-container" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close-icon no-print fixed-close" onClick={onClose} title="Funga">
+        <button className="modal-close-icon no-print fixed-close" onClick={onClose} title={t('loanDetails.actions.close')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div className="pdf-form-body">
@@ -80,145 +82,145 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                   <img src={logo} alt="ORETHAN MICROFINANCE" className="logo-image-main" />
                 </div>
                 <div className="header-center">
-                  <div className="form-title">FOMU KAMILI YA MAOMBI YA MKOPO</div>
+                  <div className="form-title">{t('loanDetails.header.formTitle')}</div>
                   <div className="pdf-meta no-print">
                     <div className={`status-pill status-${loan.status.replace('_', '-')}`}>
                       {loan.status.replace(/_/g, ' ')}
                     </div>
                     <span className="meta-id">ID: #{loan.id}</span>
-                    <span className="meta-date">Iliyowasilishwa: {loan.created_at ? new Date(loan.created_at).toLocaleDateString() : <RedDash />}</span>
+                    <span className="meta-date">{t('loanDetails.header.submitted')}: {loan.created_at ? new Date(loan.created_at).toLocaleDateString() : <RedDash />}</span>
                   </div>
                 </div>
                 <div className="header-right">
                   <div className="header-action-row no-print">
                     <button className="btn-print-mini" onClick={handlePrint}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
-                      Chapisha PDF
+                      {t('loanDetails.actions.printPdf')}
                     </button>
                   </div>
-                  <div className="form-code">{loan.details?.fomuNo || "FO-LN-001"}</div>
+                  <div className="form-code">{loan.details?.fomuNo || t('loanDetails.header.defaultFormCode')}</div>
                 </div>
               </div>
             </div>
 
             {/* SEHEMU 1: TAARIFA BINAFSI */}
             <div className="pdf-section">
-              <div className="pdf-section-title">SEHEMU 1: TAARIFA BINAFSI ZA MWOMBAJI</div>
+              <div className="pdf-section-title">{t('loanDetails.section1.title')}</div>
 
               <div className="pdf-grid-12">
                 <div className="pdf-cell col-2 photo-cell">
                   {(() => {
                     const photoUrl = loan.passport_photo || loan.details?.passportPhotoUrl;
-                    if (!photoUrl) return <div className="photo-placeholder">PHOTO HERE</div>;
+                    if (!photoUrl) return <div className="photo-placeholder">{t('loanDetails.photo.photoHere')}</div>;
 
                     const finalUrl = photoUrl.startsWith('http') ? photoUrl : `http://127.0.0.1:8000${photoUrl}`;
-                    return <img src={finalUrl} alt="Passport" className="pdf-passport-img" />;
+                    return <img src={finalUrl} alt={t('loanDetails.photo.passportAlt')} className="pdf-passport-img" />;
                   })()}
                 </div>
                 <div className="pdf-cell col-10">
                   <div className="pdf-inner-grid">
                     <div className="pdf-item col-8">
-                      <span>Jina Kamili la Mwombaji</span>
+                      <span>{t('loanDetails.section1.fullName')}</span>
                       <strong>
                         {renderVal(loan.name || loan.details?.jinaKamiliLaMwombaji)}
                         {loan.details?.jinaMaarufu && <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px', fontWeight: 'bold' }}>(@{loan.details.jinaMaarufu})</span>}
                       </strong>
                     </div>
-                    <div className="pdf-item col-4"><span>Jinsia</span><strong>{renderVal(loan.details?.jinsia)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.gender')}</span><strong>{renderVal(loan.details?.jinsia)}</strong></div>
 
-                    <div className="pdf-item col-4"><span>Tarehe ya Kuzaliwa</span><strong>{renderVal(loan.details?.tareheYaKuzaliwa)}</strong></div>
-                    <div className="pdf-item col-4"><span>Namba ya Simu</span><strong>{renderVal(loan.phone || loan.details?.nambaYaSimu)}</strong></div>
-                    <div className="pdf-item col-4"><span>Barua Pepe</span><strong>{renderVal(loan.details?.baruaPepe)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.dateOfBirth')}</span><strong>{renderVal(loan.details?.tareheYaKuzaliwa)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.phoneNumber')}</span><strong>{renderVal(loan.phone || loan.details?.nambaYaSimu)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.email')}</span><strong>{renderVal(loan.details?.baruaPepe)}</strong></div>
 
-                    <div className="pdf-item col-4"><span>Aina ya Kitambulisho</span><strong>{renderVal(loan.details?.ainaYaKitambulisho)}</strong></div>
-                    <div className="pdf-item col-4"><span>Namba ya Kitambulisho</span><strong>{renderVal(loan.details?.nambaYaKitambulisho)}</strong></div>
-                    <div className="pdf-item col-4"><span>Uraia / Hali ya Ndoa</span><strong>{renderVal(loan.details?.uraia || "Mtanzania")} / {renderVal(loan.details?.haliYaNdoa)}</strong></div>
-                    <div className="pdf-item col-4"><span>Umiliki wa Makazi</span><strong>{renderVal(loan.details?.umilikiWaMakazi)} {loan.details?.umilikiWaMakazi === "Mengine (Eleza)" ? `(${renderVal(loan.details?.umilikiWaMakaziMengine)})` : ""}</strong></div>
-                    <div className="pdf-item col-4"><span>Sahihi ya Mwombaji (Fomu Ngumu)</span><strong className={loan.details?.mwombajiAmesainiFomuNgumu ? "text-success" : ""}>{loan.details?.mwombajiAmesainiFomuNgumu ? "NDIYO / IMEWEKWA" : "HAPANA"}</strong></div>
-                    <div className="pdf-item col-8"><span>Dole Gumba la Mwombaji (Fomu Ngumu)</span><strong className={(loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2) ? "text-success" : ""}>{loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2 ? "NDIYO / IMEWEKWA" : "HAPANA"}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.idType')}</span><strong>{renderVal(loan.details?.ainaYaKitambulisho)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.idNumber')}</span><strong>{renderVal(loan.details?.nambaYaKitambulisho)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.nationalityMaritalStatus')}</span><strong>{renderVal(loan.details?.uraia || t('loanDetails.section1.defaultNationality'))} / {renderVal(loan.details?.haliYaNdoa)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.residenceOwnership')}</span><strong>{renderVal(loan.details?.umilikiWaMakazi)} {loan.details?.umilikiWaMakazi === "Mengine (Eleza)" ? `(${renderVal(loan.details?.umilikiWaMakaziMengine)})` : ""}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.applicantSignatureHardCopy')}</span><strong className={loan.details?.mwombajiAmesainiFomuNgumu ? "text-success" : ""}>{loan.details?.mwombajiAmesainiFomuNgumu ? t('loanDetails.section1.yesAffixed') : t('loanDetails.section1.no')}</strong></div>
+                    <div className="pdf-item col-8"><span>{t('loanDetails.section1.applicantThumbprintHardCopy')}</span><strong className={(loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2) ? "text-success" : ""}>{loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2 ? t('loanDetails.section1.yesAffixed') : t('loanDetails.section1.no')}</strong></div>
                   </div>
                 </div>
               </div>
 
               {loan.type === 'group' && (
                 <div className="pdf-inner-grid border-top bg-light-gray no-border-bottom">
-                  <div className="pdf-item col-3"><span>Mwenyekiti wa Kikundi</span><strong>{renderVal(loan.details?.jinaLaMwenyekiti)}</strong></div>
-                  <div className="pdf-item col-3"><span>Katibu wa Kikundi</span><strong>{renderVal(loan.details?.jinaLaKatibu)}</strong></div>
-                  <div className="pdf-item col-3"><span>Usajili (#/Tarehe)</span><strong>{renderVal(loan.details?.nambaYaUsajiliWaKikundi)} / {renderVal(loan.details?.tareheYaUsajiri || loan.details?.tareheYaUsajili)}</strong></div>
-                  <div className="pdf-item col-3"><span>Wanachama (ME/KE)</span><strong>{loan.details?.idadiYaWanachamaMe || 0} / {loan.details?.idadiYaWanachamaKe || 0}</strong></div>
-                  <div className="pdf-item col-6"><span>Anuani ya Kikundi</span><strong>{renderVal(loan.details?.anuaniYaMakaziYaKikundi)} ({renderVal(loan.details?.mudaKikundiKimekaaKatikaAnuaniHii)})</strong></div>
-                  <div className="pdf-item col-6"><span>Simu za Kikundi</span><strong>{renderVal(loan.details?.simu1)} / {renderVal(loan.details?.simu2)}</strong></div>
+                  <div className="pdf-item col-3"><span>{t('loanDetails.section1.groupChairman')}</span><strong>{renderVal(loan.details?.jinaLaMwenyekiti)}</strong></div>
+                  <div className="pdf-item col-3"><span>{t('loanDetails.section1.groupSecretary')}</span><strong>{renderVal(loan.details?.jinaLaKatibu)}</strong></div>
+                  <div className="pdf-item col-3"><span>{t('loanDetails.section1.registrationNumberDate')}</span><strong>{renderVal(loan.details?.nambaYaUsajiliWaKikundi)} / {renderVal(loan.details?.tareheYaUsajiri || loan.details?.tareheYaUsajili)}</strong></div>
+                  <div className="pdf-item col-3"><span>{t('loanDetails.section1.membersMaleFemale')}</span><strong>{loan.details?.idadiYaWanachamaMe || 0} / {loan.details?.idadiYaWanachamaKe || 0}</strong></div>
+                  <div className="pdf-item col-6"><span>{t('loanDetails.section1.groupAddress')}</span><strong>{renderVal(loan.details?.anuaniYaMakaziYaKikundi)} ({renderVal(loan.details?.mudaKikundiKimekaaKatikaAnuaniHii)})</strong></div>
+                  <div className="pdf-item col-6"><span>{t('loanDetails.section1.groupPhones')}</span><strong>{renderVal(loan.details?.simu1)} / {renderVal(loan.details?.simu2)}</strong></div>
                 </div>
               )}
 
               <div className="pdf-inner-grid border-top">
                 <div className="pdf-item col-4">
-                  <span>Jina la Mume/Mke</span>
+                  <span>{t('loanDetails.section1.spouseName')}</span>
                   <strong>
                     {renderVal(loan.details?.jinaKamiliLaMumeMke)}
                     {(loan.details?.jinaMaarufuMtaani || loan.details?.maarufuMtaani) && <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '5px' }}>(@{loan.details?.jinaMaarufuMtaani || loan.details?.maarufuMtaani})</span>}
                   </strong>
                 </div>
-                <div className="pdf-item col-4"><span>Namba ya Simu</span><strong>{renderVal(loan.details?.simuYaMumeMke)}</strong></div>
-                <div className="pdf-item col-4"><span>Kazi / Kitambulisho</span><strong>{renderVal(loan.details?.kaziYaMumeMke)} {loan.details?.nambaYaKitambulishoMumeMke ? `(${loan.details.ainaYaKitambulishoMumeMke}: ${loan.details.nambaYaKitambulishoMumeMke})` : ""}</strong></div>
-                <div className="pdf-item col-4"><span>Mwajiri wa Mume/Mke</span><strong>{renderVal(loan.details?.jinaLaMwajiriWaMumeMke)}</strong></div>
-                <div className="pdf-item col-8"><span>Simu ya Ofisi (Mume/Mke)</span><strong>{renderVal(loan.details?.simuYaOfisiYaMumeMke)}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section1.spousePhone')}</span><strong>{renderVal(loan.details?.simuYaMumeMke)}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section1.spouseOccupationId')}</span><strong>{renderVal(loan.details?.kaziYaMumeMke)} {loan.details?.nambaYaKitambulishoMumeMke ? `(${loan.details.ainaYaKitambulishoMumeMke}: ${loan.details.nambaYaKitambulishoMumeMke})` : ""}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section1.spouseEmployer')}</span><strong>{renderVal(loan.details?.jinaLaMwajiriWaMumeMke)}</strong></div>
+                <div className="pdf-item col-8"><span>{t('loanDetails.section1.spouseOfficePhone')}</span><strong>{renderVal(loan.details?.simuYaOfisiYaMumeMke)}</strong></div>
               </div>
 
-              <div className="pdf-sub-title">MAHALI UNAPOISHI KWA SASA</div>
+              <div className="pdf-sub-title">{t('loanDetails.section1.currentResidenceTitle')}</div>
               <div className="pdf-inner-grid">
-                <div className="pdf-item col-3"><span>Mkoa / Wilaya</span><strong>{renderVal(loan.details?.mahaliUnapoishiMkoa || loan.details?.mkoa)} / {renderVal(loan.details?.mahaliUnapoishiWilaya || loan.details?.wilaya)}</strong></div>
-                <div className="pdf-item col-3"><span>Kata / Mtaa</span><strong>{renderVal(loan.details?.mahaliUnapoishiKata || loan.details?.kata)} / {renderVal(loan.details?.mahaliUnapoishiMtaa || loan.details?.kijijiMtaa || loan.details?.eneoUnaioishi)}</strong></div>
-                <div className="pdf-item col-3"><span>Namba ya Nyumba</span><strong>{renderVal(loan.details?.nambaYaNyumba)}</strong></div>
-                <div className="pdf-item col-3"><span>Umeishi Hapo</span><strong>{renderVal(loan.details?.umeishiHapoTanguMiezi)} Miezi</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section1.regionDistrict')}</span><strong>{renderVal(loan.details?.mahaliUnapoishiMkoa || loan.details?.mkoa)} / {renderVal(loan.details?.mahaliUnapoishiWilaya || loan.details?.wilaya)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section1.wardStreet')}</span><strong>{renderVal(loan.details?.mahaliUnapoishiKata || loan.details?.kata)} / {renderVal(loan.details?.mahaliUnapoishiMtaa || loan.details?.kijijiMtaa || loan.details?.eneoUnaioishi)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section1.houseNumber')}</span><strong>{renderVal(loan.details?.nambaYaNyumba)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section1.livedThereFor')}</span><strong>{renderVal(loan.details?.umeishiHapoTanguMiezi)} {t('loanDetails.section1.months')}</strong></div>
               </div>
             </div>
 
             {/* SEHEMU 2: KAZI NA BIASHARA */}
             <div className="pdf-section">
-              <div className="pdf-section-title">SEHEMU 2: TAARIFA ZA KAZI / BIASHARA</div>
+              <div className="pdf-section-title">{t('loanDetails.section2.title')}</div>
               <div className="pdf-inner-grid">
-                <div className="pdf-item col-4"><span>Aina ya Kazi/Ajira</span><strong>{loan.details?.jinaLaMradi ? `MRADI: ${loan.details.ainaYaMradi}` : (loan.details?.umeajiriwa === "Ndio" ? "AJIRA RASMI" : "BIASHARA / KUJIAJIRI")}</strong></div>
-                <div className="pdf-item col-4"><span>Mwajiri / Biashara / Mradi</span><strong>{renderVal(loan.details?.jinaLaKampuniYaMwajiri || loan.details?.jinaLaBiashara || loan.details?.jinaLaMradi)}</strong></div>
-                <div className="pdf-item col-4"><span>Wadhifa / Aina ya Kazi</span><strong>{renderVal(loan.details?.wadhifa || loan.details?.ainaYaBiashara || loan.details?.ainaYaMradi)}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section2.employmentType')}</span><strong>{loan.details?.jinaLaMradi ? t('loanDetails.section2.project', { type: loan.details.ainaYaMradi }) : (loan.details?.umeajiriwa === "Ndio" ? t('loanDetails.section2.formalEmployment') : t('loanDetails.section2.businessSelfEmployed'))}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section2.employerBusinessProject')}</span><strong>{renderVal(loan.details?.jinaLaKampuniYaMwajiri || loan.details?.jinaLaBiashara || loan.details?.jinaLaMradi)}</strong></div>
+                <div className="pdf-item col-4"><span>{t('loanDetails.section2.positionBusinessType')}</span><strong>{renderVal(loan.details?.wadhifa || loan.details?.ainaYaBiashara || loan.details?.ainaYaMradi)}</strong></div>
 
-                <div className="pdf-item col-3"><span>Mshahara / Kipato (Tsh)</span><strong>{formatMoney(loan.details?.mshaharaKwaMwezi || loan.details?.wastaniKipatoKwaMwezi || loan.details?.wastaniWaKipatoKwaMwezi)}</strong></div>
-                <div className="pdf-item col-3"><span>Matumizi / Mwezi (Tsh)</span><strong>{formatMoney(loan.details?.wastaniMatumiziKwaMwezi || loan.details?.wastaniWaMatumiziKwaMwezi)}</strong></div>
-                <div className="pdf-item col-3"><span>Tangu Lini / Aina ya Ajira</span><strong>{renderVal(loan.details?.tareheYaKuanzaKazi || loan.details?.umfanyaBiasharaTanguLini || loan.details?.mradiUmeanzaLini)} {loan.details?.ainaYaAjira ? `(${loan.details.ainaYaAjira})` : ""}</strong></div>
-                <div className="pdf-item col-3"><span>Anuani ya Eneo</span><strong>{renderVal(loan.details?.anuaniYaOfisiYaMwajiri || loan.details?.mahaliBiasharaIlipo || loan.details?.mahaliMradiUpoMkoa)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section2.salaryIncome')}</span><strong>{formatMoney(loan.details?.mshaharaKwaMwezi || loan.details?.wastaniKipatoKwaMwezi || loan.details?.wastaniWaKipatoKwaMwezi)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section2.monthlyExpenses')}</span><strong>{formatMoney(loan.details?.wastaniMatumiziKwaMwezi || loan.details?.wastaniWaMatumiziKwaMwezi)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section2.sinceWhenEmploymentType')}</span><strong>{renderVal(loan.details?.tareheYaKuanzaKazi || loan.details?.umfanyaBiasharaTanguLini || loan.details?.mradiUmeanzaLini)} {loan.details?.ainaYaAjira ? `(${loan.details.ainaYaAjira})` : ""}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section2.areaAddress')}</span><strong>{renderVal(loan.details?.anuaniYaOfisiYaMwajiri || loan.details?.mahaliBiasharaIlipo || loan.details?.mahaliMradiUpoMkoa)}</strong></div>
 
                 {loan.details?.umeajiriwa === "Ndio" && (
-                  <div className="pdf-item col-12"><span>Maelezo ya Mkataba</span><strong>Mkataba Unaisha: {renderVal(loan.details?.tareheYaKumalizaMkataba)} | Tarehe ya Kustaafu: {renderVal(loan.details?.tareheYaKustaafu)}</strong></div>
+                  <div className="pdf-item col-12"><span>{t('loanDetails.section2.contractDetails')}</span><strong>{t('loanDetails.section2.contractEndsLabel')}: {renderVal(loan.details?.tareheYaKumalizaMkataba)} | {t('loanDetails.section2.retirementDateLabel')}: {renderVal(loan.details?.tareheYaKustaafu)}</strong></div>
                 )}
 
                 {loan.details?.umeajiriwa === "Hapana" && loan.details?.jinaMmilikiEneoBiashara && (
-                  <div className="pdf-item col-12"><span>Maelezo ya Eneo la Biashara</span><strong>Mmiliki: {loan.details?.jinaMmilikiEneoBiashara} | Simu Mmiliki: {renderVal(loan.details?.nambaSimuMmilikiEneo)} | Muda wa Mkataba: {renderVal(loan.details?.mudaMkatabaEneoBiashara)}</strong></div>
+                  <div className="pdf-item col-12"><span>{t('loanDetails.section2.businessAreaDetails')}</span><strong>{t('loanDetails.section2.ownerLabel')}: {loan.details?.jinaMmilikiEneoBiashara} | {t('loanDetails.section2.ownerPhoneLabel')}: {renderVal(loan.details?.nambaSimuMmilikiEneo)} | {t('loanDetails.section2.contractDurationLabel')}: {renderVal(loan.details?.mudaMkatabaEneoBiashara)}</strong></div>
                 )}
 
                 {loan.type === 'group' && (
-                  <div className="pdf-item col-12"><span>Maelezo ya Mikopo ya Kikundi</span><strong>Kimewahi Kukopa: {renderVal(loan.details?.kikundiKimewahiKukopa)} | Kiasi Kinachodaiwa: {formatMoney(loan.details?.kiasiKikundiKinadaiwa)}</strong></div>
+                  <div className="pdf-item col-12"><span>{t('loanDetails.section2.groupLoanDetails')}</span><strong>{t('loanDetails.section2.previouslyBorrowedLabel')}: {renderVal(loan.details?.kikundiKimewahiKukopa)} | {t('loanDetails.section2.amountOwedLabel')}: {formatMoney(loan.details?.kiasiKikundiKinadaiwa)}</strong></div>
                 )}
               </div>
             </div>
 
             {/* SEHEMU 3: TAARIFA ZA MKOPO */}
             <div className="pdf-section">
-              <div className="pdf-section-title">SEHEMU 3: TAARIFA ZA MKOPO NA MAREJESHO</div>
+              <div className="pdf-section-title">{t('loanDetails.section3.title')}</div>
               <div className="pdf-inner-grid">
-                <div className="pdf-item col-4 bg-highlight"><span>Kiasi Kinachoombwa</span><strong>{formatMoney(loan.amount || loan.details?.kiasiMkopo || loan.details?.kiasiChaMkopo)}</strong></div>
-                <div className="pdf-item col-8 bg-highlight"><span>Kiasi kwa Maneno</span><strong>{renderVal(loan.details?.kwaManeno)}</strong></div>
+                <div className="pdf-item col-4 bg-highlight"><span>{t('loanDetails.section3.amountRequested')}</span><strong>{formatMoney(loan.amount || loan.details?.kiasiMkopo || loan.details?.kiasiChaMkopo)}</strong></div>
+                <div className="pdf-item col-8 bg-highlight"><span>{t('loanDetails.section3.amountInWords')}</span><strong>{renderVal(loan.details?.kwaManeno)}</strong></div>
 
-                <div className="pdf-item col-3"><span>Lengo la Mkopo</span><strong>{renderVal(loan.details?.malengoMkopo || loan.details?.malengoYaMkopo)}</strong></div>
-                <div className="pdf-item col-3"><span>Muda wa Mkopo</span><strong>{renderVal(loan.details?.mudaKulipaMkopo || loan.details?.mudaWaLipaMkopo)}</strong></div>
-                <div className="pdf-item col-3"><span>Mzunguko / Chanzo</span><strong>{loan.details?.repaymentFrequency || "Monthly"} / {renderVal(loan.details?.chanzoMapato || loan.details?.chanzoChaMapato)}</strong></div>
-                <div className="pdf-item col-3"><span>Rejesho Tarajiwa</span><strong>{formatMoney(loan.details?.kiasiRejeshoBilaMatatizo || loan.details?.kiasiGaniChaRejesho)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.loanPurpose')}</span><strong>{renderVal(loan.details?.malengoMkopo || loan.details?.malengoYaMkopo)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.loanDuration')}</span><strong>{renderVal(loan.details?.mudaKulipaMkopo || loan.details?.mudaWaLipaMkopo)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.frequencySource')}</span><strong>{loan.details?.repaymentFrequency || t('loanDetails.section3.monthly')} / {renderVal(loan.details?.chanzoMapato || loan.details?.chanzoChaMapato)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.expectedRepayment')}</span><strong>{formatMoney(loan.details?.kiasiRejeshoBilaMatatizo || loan.details?.kiasiGaniChaRejesho)}</strong></div>
               </div>
 
               {loan.details?.historia1JinaTaasisi && (
                 <div className="pdf-table-container">
-                  <p className="table-caption">HISTORIA YA MIKOPO YA NYUMA</p>
+                  <p className="table-caption">{t('loanDetails.section3.creditHistoryTitle')}</p>
                   <table className="pdf-table">
-                    <thead><tr><th>Taasisi ya Fedha</th><th>Kiasi</th><th>Muda</th><th>Baki la Deni</th></tr></thead>
+                    <thead><tr><th>{t('loanDetails.section3.tableInstitution')}</th><th>{t('loanDetails.section3.tableAmount')}</th><th>{t('loanDetails.section3.tableDuration')}</th><th>{t('loanDetails.section3.tableBalanceOwed')}</th></tr></thead>
                     <tbody>
                       {[1, 2, 3].map(i => {
                         const p = `historia${i}`;
@@ -240,10 +242,10 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
 
             {/* SEHEMU 4: DHAMANA NA WADHAMINI */}
             <div className="pdf-section">
-              <div className="pdf-section-title">SEHEMU 4: DHAMANA NA WADHAMINI</div>
+              <div className="pdf-section-title">{t('loanDetails.section4.title')}</div>
 
               <table className="pdf-table">
-                <thead><tr><th>Aina ya Dhamana</th><th>Namba (Hat/Kadi)</th><th>Umiliki</th><th>Thamani (Tsh)</th><th>Hali / Muonekano</th></tr></thead>
+                <thead><tr><th>{t('loanDetails.section4.tableCollateralType')}</th><th>{t('loanDetails.section4.tableNumber')}</th><th>{t('loanDetails.section4.tableOwnership')}</th><th>{t('loanDetails.section4.tableValue')}</th><th>{t('loanDetails.section4.tableConditionAppearance')}</th></tr></thead>
                 <tbody>
                   {loan.details?.dhamanaList?.map((d: any, idx: number) => (
                     <tr key={idx}><td>{d.aina}</td><td>{d.namba}</td><td>{d.umiliki}</td><td>{formatMoney(d.thamani)}</td><td>{renderVal(d.muonekano || d.muonekanoWaDhamana)}</td></tr>
@@ -256,9 +258,9 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                   const p = `wdhamini${i}`;
                   return (
                     <div key={i} className="pdf-guarantor-box">
-                      <div className="pdf-sub-title">TAARIFA ZA MDHAMINI {i}</div>
+                      <div className="pdf-sub-title">{t('loanDetails.section4.guarantorInfoTitle', { number: i })}</div>
                       <div className="pdf-inner-grid">
-                        <div className="pdf-item col-6"><span>Jina Kamili</span><strong>{renderVal(loan.details?.[`${p}JinaKamili`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.fullName')}</span><strong>{renderVal(loan.details?.[`${p}JinaKamili`])}</strong></div>
                         <div className="pdf-item col-6" style={{ borderLeft: '1px solid #1a1a1a', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {(() => {
                             const photoUrl = loan?.[`guarantor_${i}_photo`] || loan.details?.[`guarantor${i}PhotoUrl`];
@@ -274,21 +276,21 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                                 fontSize: '12px',
                                 fontWeight: '800'
                               }}>
-                                PHOTO HERE
+                                {t('loanDetails.photo.photoHere')}
                               </div>
                             );
                             const finalUrl = photoUrl.startsWith('http') ? photoUrl : `http://127.0.0.1:8000${photoUrl}`;
-                            return <img src={finalUrl} alt={`Guarantor ${i}`} style={{ width: '100%', aspectRatio: '1.2', objectFit: 'cover', border: '1px solid #ddd' }} />;
+                            return <img src={finalUrl} alt={t('loanDetails.photo.guarantorAlt', { number: i })} style={{ width: '100%', aspectRatio: '1.2', objectFit: 'cover', border: '1px solid #ddd' }} />;
                           })()}
                         </div>
-                        <div className="pdf-item col-6"><span>Namba ya Simu</span><strong>{renderVal(loan.details?.[`${p}Simu`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Uhusiano</span><strong>{renderVal(loan.details?.[`${p}UhusianoWenu`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Kazi / Biashara</span><strong>{renderVal(loan.details?.[`${p}KaziAnayofanya`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Anuani ya Eneo</span><strong>{renderVal(loan.details?.[`${p}MahaliAnapoishi`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Nyumba / Makazi</span><strong># {renderVal(loan.details?.[`${p}NambaNyumba`])} ({renderVal(loan.details?.[`${p}AmepangaKwake`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Mwajiri / Ofisi</span><strong>{renderVal(loan.details?.[`${p}JinaKampuniBiashara`])} ({renderVal(loan.details?.[`${p}MahaliOfisiYake`])}</strong></div>
-                        <div className="pdf-item col-6"><span>Sahihi Mdhamini</span><strong className={loan.details?.[`mdhamini${i}AmesainiFomuNgumu`] ? "text-success" : ""}>{loan.details?.[`mdhamini${i}AmesainiFomuNgumu`] ? "NDIYO / IMEWEKWA" : "HAPANA"}</strong></div>
-                        <div className="pdf-item col-6"><span>Dole Gumba Mdhamini</span><strong className={loan.details?.[`mdhamini${i}AmewekaDoleGumba`] ? "text-success" : ""}>{loan.details?.[`mdhamini${i}AmewekaDoleGumba`] ? "NDIYO / IMEWEKWA" : "HAPANA"}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.phoneNumber')}</span><strong>{renderVal(loan.details?.[`${p}Simu`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.relationship')}</span><strong>{renderVal(loan.details?.[`${p}UhusianoWenu`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.occupationBusiness')}</span><strong>{renderVal(loan.details?.[`${p}KaziAnayofanya`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.areaAddress')}</span><strong>{renderVal(loan.details?.[`${p}MahaliAnapoishi`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.houseResidence')}</span><strong># {renderVal(loan.details?.[`${p}NambaNyumba`])} ({renderVal(loan.details?.[`${p}AmepangaKwake`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.employerOffice')}</span><strong>{renderVal(loan.details?.[`${p}JinaKampuniBiashara`])} ({renderVal(loan.details?.[`${p}MahaliOfisiYake`])}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.guarantorSignature')}</span><strong className={loan.details?.[`mdhamini${i}AmesainiFomuNgumu`] ? "text-success" : ""}>{loan.details?.[`mdhamini${i}AmesainiFomuNgumu`] ? t('loanDetails.section4.yesAffixed') : t('loanDetails.section4.no')}</strong></div>
+                        <div className="pdf-item col-6"><span>{t('loanDetails.section4.guarantorThumbprint')}</span><strong className={loan.details?.[`mdhamini${i}AmewekaDoleGumba`] ? "text-success" : ""}>{loan.details?.[`mdhamini${i}AmewekaDoleGumba`] ? t('loanDetails.section4.yesAffixed') : t('loanDetails.section4.no')}</strong></div>
                       </div>
                     </div>
                   );
@@ -300,9 +302,9 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
             {/* CHATTEL FORM */}
             {loan.details?.chattelItems && (
               <div className="pdf-section chattel-break">
-                <div className="pdf-section-title">REHANI MALI (CHATTEL MORTGAGE)</div>
+                <div className="pdf-section-title">{t('loanDetails.chattel.title')}</div>
                 <table className="pdf-table">
-                  <thead><tr><th>Maelezo ya Mali</th><th>Thamani Soko</th><th>Thamani Dhamana (70%)</th></tr></thead>
+                  <thead><tr><th>{t('loanDetails.chattel.tableDescription')}</th><th>{t('loanDetails.chattel.tableMarketValue')}</th><th>{t('loanDetails.chattel.tableCollateralValue')}</th></tr></thead>
                   <tbody>
                     {loan.details.chattelItems.map((item: any, idx: number) => (
                       <tr key={idx}><td>{item.jina} - {item.maelezo}</td><td>{formatMoney(item.thamaniSoko)}</td><td>{formatMoney(item.thamaniDhamana)}</td></tr>
@@ -310,44 +312,43 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                   </tbody>
                 </table>
                 <div className="pdf-inner-grid">
-                  <div className="pdf-item col-4"><span>Jina la Mmiliki</span><strong>{loan.details.chattelOwnerName}</strong></div>
-                  <div className="pdf-item col-4"><span>Jina la Mume/Mke</span><strong>{renderVal(loan.details.chattelSpouseName)}</strong></div>
-                  <div className="pdf-item col-4"><span>Sahihi Mmiliki</span><strong className={loan.details.chattelOwnerSigned ? "text-success" : ""}>{loan.details.chattelOwnerSigned ? "[ IMEWEKWA ]" : <RedDash />}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.ownerName')}</span><strong>{loan.details.chattelOwnerName}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.spouseName')}</span><strong>{renderVal(loan.details.chattelSpouseName)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.ownerSignature')}</span><strong className={loan.details.chattelOwnerSigned ? "text-success" : ""}>{loan.details.chattelOwnerSigned ? t('loanDetails.chattel.affixed') : <RedDash />}</strong></div>
 
-                  <div className="pdf-item col-4"><span>Shahidi</span><strong>{renderVal(loan.details.chattelWitnessName)}</strong></div>
-                  <div className="pdf-item col-4"><span>Uhusiano Shahidi</span><strong>{renderVal(loan.details.chattelWitnessRelationship)}</strong></div>
-                  <div className="pdf-item col-4"><span>Sahihi Shahidi</span><strong className={loan.details.chattelWitnessSigned ? "text-success" : ""}>{loan.details.chattelWitnessSigned ? "[ IMEWEKWA ]" : <RedDash />}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.witness')}</span><strong>{renderVal(loan.details.chattelWitnessName)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.witnessRelationship')}</span><strong>{renderVal(loan.details.chattelWitnessRelationship)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.witnessSignature')}</span><strong className={loan.details.chattelWitnessSigned ? "text-success" : ""}>{loan.details.chattelWitnessSigned ? t('loanDetails.chattel.affixed') : <RedDash />}</strong></div>
 
-                  <div className="pdf-item col-4"><span>Afisa Mikopo</span><strong>{renderVal(loan.details.chattelOfficerName)}</strong></div>
-                  <div className="pdf-item col-4"><span>Tarehe ya Afisa</span><strong>{renderVal(loan.details.chattelOfficerDate)}</strong></div>
-                  <div className="pdf-item col-4"><span>Sahihi Afisa</span><strong className={loan.details.chattelOfficerSigned ? "text-success" : ""}>{loan.details.chattelOfficerSigned ? "[ IMEWEKWA ]" : <RedDash />}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.loanOfficer')}</span><strong>{renderVal(loan.details.chattelOfficerName)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.officerDate')}</span><strong>{renderVal(loan.details.chattelOfficerDate)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.officerSignature')}</span><strong className={loan.details.chattelOfficerSigned ? "text-success" : ""}>{loan.details.chattelOfficerSigned ? t('loanDetails.chattel.affixed') : <RedDash />}</strong></div>
 
-                  <div className="pdf-item col-4"><span>Mwenyekiti</span><strong>{renderVal(loan.details.chattelChairmanName)}</strong></div>
-                  <div className="pdf-item col-4"><span>Tarehe ya M/Kiti</span><strong>{renderVal(loan.details.chattelChairmanDate)}</strong></div>
-                  <div className="pdf-item col-4"><span>Gundi/Muhuri</span><strong className={loan.details.chattelChairmanStamp ? "text-success" : ""}>{loan.details.chattelChairmanStamp ? "[ IMEWEKWA ]" : <RedDash />}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.chairman')}</span><strong>{renderVal(loan.details.chattelChairmanName)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.chairmanDate')}</span><strong>{renderVal(loan.details.chattelChairmanDate)}</strong></div>
+                  <div className="pdf-item col-4"><span>{t('loanDetails.chattel.stampSeal')}</span><strong className={loan.details.chattelChairmanStamp ? "text-success" : ""}>{loan.details.chattelChairmanStamp ? t('loanDetails.chattel.affixed') : <RedDash />}</strong></div>
                 </div>
               </div>
             )}
 
             {/* DECLARATION */}
             <div className="pdf-section declaration-page">
-              <div className="pdf-section-title">TAMKO LA MWOMBAJI NA DHIBITISHO</div>
+              <div className="pdf-section-title">{t('loanDetails.declaration.title')}</div>
               <p className="declaration-text">
-                Mimi, <strong>{loan.name}</strong>, nathibitisha kuwa taarifa zote nilizotoa hapa juu ni za kweli na ni sawa kwa uelewa wangu.
-                Ninakubaliana na masharti yote ya ORETHAN MICROFINANCE kuhusiana na mkopo huu.
+                {t('loanDetails.declaration.text', { name: loan.name })}
               </p>
               <div className="pdf-inner-grid signature-grid">
                 <div className="pdf-item col-4 no-border-right">
-                  <span>Sahihi ya Mwombaji</span>
+                  <span>{t('loanDetails.declaration.applicantSignature')}</span>
                   <div className="signature-line">
-                    <strong className="text-success">{loan.details?.mwombajiAmesainiFomuNgumu ? "[ IMEWEKWA ]" : ""}</strong>
+                    <strong className="text-success">{loan.details?.mwombajiAmesainiFomuNgumu ? t('loanDetails.chattel.affixed') : ""}</strong>
                   </div>
                 </div>
-                <div className="pdf-item col-4 no-border-right"><span>Tarehe</span> <div className="signature-line"><strong>{loan.created_at ? new Date(loan.created_at).toLocaleDateString() : <RedDash />}</strong></div></div>
+                <div className="pdf-item col-4 no-border-right"><span>{t('loanDetails.declaration.date')}</span> <div className="signature-line"><strong>{loan.created_at ? new Date(loan.created_at).toLocaleDateString() : <RedDash />}</strong></div></div>
                 <div className="pdf-item col-4 no-border-right border-bottom">
-                  <span>Alama ya Dole Gumba</span>
+                  <span>{t('loanDetails.declaration.thumbprintMark')}</span>
                   <div className="thumbprint-box">
-                    {loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2 ? <div className="thumbprint-indicator">IMEWEKWA</div> : null}
+                    {loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2 ? <div className="thumbprint-indicator">{t('loanDetails.declaration.affixed')}</div> : null}
                   </div>
                 </div>
               </div>

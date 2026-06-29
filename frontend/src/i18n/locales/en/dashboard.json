@@ -1,0 +1,52 @@
+{
+  "header": {
+    "title": "Dashboard",
+    "subtitle": "Welcome to Microfinance Management System",
+    "loading": "Loading...",
+    "refresh": "Refresh"
+  },
+  "errors": {
+    "loadFailed": "Failed to load dashboard data",
+    "retry": "Retry"
+  },
+  "stats": {
+    "totalUsers": {
+      "label": "Total Users",
+      "hint": "Registered members"
+    },
+    "totalLoans": {
+      "label": "Total Loans",
+      "hint": "All loan applications"
+    },
+    "approvedLoans": {
+      "label": "Approved Loans",
+      "hint": "Successfully approved"
+    },
+    "pendingRequests": {
+      "label": "Pending Requests",
+      "hint": "Awaiting approval"
+    }
+  },
+  "charts": {
+    "distributionByStatus": "Loan Distribution by Status",
+    "statusDistribution": "Loan Status Distribution",
+    "numberOfLoans": "Number of Loans",
+    "roles": {
+      "loanManager": "Loan Manager",
+      "generalManager": "General Manager",
+      "managingDirector": "Managing Director",
+      "approved": "Approved"
+    },
+    "stages": {
+      "managerReview": "Manager Review",
+      "gmReview": "GM Review",
+      "mdReview": "MD Review"
+    }
+  },
+  "quickStats": {
+    "approvalRate": "Approval Rate",
+    "managerReview": "Manager Review",
+    "gmReview": "GM Review",
+    "mdReview": "MD Review"
+  }
+}

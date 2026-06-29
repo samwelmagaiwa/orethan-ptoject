@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { FC } from "react";
 import logo from "../assets/logo.png";
 
@@ -21,6 +22,7 @@ interface SidebarProps {
 const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
   const [user, setUser] = useState<User | null>(null);
   const [showLoans, setShowLoans] = useState(false);
@@ -112,7 +114,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
-  const userDisplayRole = user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || "Administrator";
+  const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
+    ? t(`roles.${user.role}`)
+    : user?.role?.replace(/_/g, " ")?.replace(/\b\w/g, c => c.toUpperCase()) || t("sidebar.administrator");
 
   const isMobileViewport = () => window.innerWidth <= 768;
 
@@ -121,7 +125,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
       {/* ── Mobile-only hamburger trigger — hidden while the drawer is open
           since the drawer's own logo-area button closes it instead. ── */}
       {!mobileOpen && (
-        <button className="sd-mobile-toggle" onClick={() => setMobileOpen(true)} title="Open menu" aria-label="Open menu">
+        <button className="sd-mobile-toggle" onClick={() => setMobileOpen(true)} title={t("sidebar.openMenu")} aria-label={t("sidebar.openMenu")}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
         </button>
       )}
@@ -137,7 +141,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <img src={logo} alt="Orethan" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
-        <button className="sd-logo__menu" onClick={() => (isMobileViewport() ? setMobileOpen(false) : setIsCollapsed(!isCollapsed))} title={isCollapsed ? "Expand" : "Collapse"}>
+        <button className="sd-logo__menu" onClick={() => (isMobileViewport() ? setMobileOpen(false) : setIsCollapsed(!isCollapsed))} title={isCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}>
           {isCollapsed ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           ) : (
@@ -166,27 +170,27 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {/* Internal — visibility now follows per-user sidebar overrides too */}
           <>
               {(canAccessDashboard || canAccessFinanceCollections || canAccessRequests || canAccessUsers || canAccessLoanSettings) && (
-                <div className="sd-sec">{!isCollapsed ? "INTERNAL" : "─"}</div>
+                <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.internal") : "─"}</div>
               )}
               {canAccessDashboard && (
-                <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title="Dashboard">
+                <div className={`sd-item ${isActive("/repayment-tracker") ? "sd-item--active" : ""}`} onClick={() => navigate("/repayment-tracker")} title={t("sidebar.dashboard")}>
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Dashboard</span>}
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.dashboard")}</span>}
                 </div>
               )}
               {canAccessFinanceCollections && (
                 <>
                   {/* Finance & Collections dropdown */}
-                  <div className={`sd-item ${(isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) ? "sd-item--active" : ""}`} onClick={() => setShowFinance(!showFinance)} title="Finance & Collections">
+                  <div className={`sd-item ${(isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) ? "sd-item--active" : ""}`} onClick={() => setShowFinance(!showFinance)} title={t("sidebar.financeCollections")}>
                     <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg></span>
-                    {!isCollapsed && <span className="sd-item__text">Finance & Collections</span>}
+                    {!isCollapsed && <span className="sd-item__text">{t("sidebar.financeCollections")}</span>}
                     {!isCollapsed && <span className={`sd-item__arrow ${showFinance ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
                   </div>
                   {(showFinance || isActive("/overdue-management") || isActive("/finance/customers") || isActive("/customers")) && !isCollapsed && (
                     <div className="sd-sub">
-                      <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>Usimamizi wa Madeni</div>
+                      <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>{t("sidebar.overdueManagement")}</div>
                       {canAccessDisbursePayments && (
-                        <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>Disburse &amp; Payments</div>
+                        <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>{t("sidebar.disbursePayments")}</div>
                       )}
                     </div>
                   )}
@@ -196,37 +200,37 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               {canAccessRequests && (
                 <>
                   {/* Requests dropdown */}
-                  <div className={`sd-item ${(isActive("/payment-requests") || isActive("/leave-requests")) ? "sd-item--active" : ""}`} onClick={() => setShowRequests(!showRequests)} title="Requests">
+                  <div className={`sd-item ${(isActive("/payment-requests") || isActive("/leave-requests")) ? "sd-item--active" : ""}`} onClick={() => setShowRequests(!showRequests)} title={t("sidebar.requests")}>
                     <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></span>
-                    {!isCollapsed && <span className="sd-item__text">Requests / Maombi</span>}
+                    {!isCollapsed && <span className="sd-item__text">{t("sidebar.requests")}</span>}
                     {!isCollapsed && <span className={`sd-item__arrow ${showRequests ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
                   </div>
                   {(showRequests || isActive("/payment-requests") || isActive("/leave-requests")) && !isCollapsed && (
                     <div className="sd-sub">
-                      <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>Payment Requests</div>
-                      <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>Leave Requests</div>
-                      <div className={`sd-sub__link ${isActive("/delegations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/delegations")}>Office Delegation</div>
+                      <div className={`sd-sub__link ${isActive("/payment-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/payment-requests")}>{t("sidebar.paymentRequests")}</div>
+                      <div className={`sd-sub__link ${isActive("/leave-requests") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/leave-requests")}>{t("sidebar.leaveRequests")}</div>
+                      <div className={`sd-sub__link ${isActive("/delegations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/delegations")}>{t("sidebar.officeDelegation")}</div>
                     </div>
                   )}
                 </>
               )}
               {canAccessUsers && (
                 <>
-                  <div className="sd-item" onClick={handleUsersClick} title="Users">
+                  <div className="sd-item" onClick={handleUsersClick} title={t("sidebar.users")}>
                     <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                    {!isCollapsed && <span className="sd-item__text">Users</span>}
+                    {!isCollapsed && <span className="sd-item__text">{t("sidebar.users")}</span>}
                     {!isCollapsed && userCount !== null && <span className="sd-badge">{userCount}</span>}
                     {!isCollapsed && <span className={`sd-item__arrow ${showUsers ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
                   </div>
                   {showUsers && !isCollapsed && (
-                    <div className="sd-sub"><div className="sd-sub__link" onClick={() => navigate("/users")}>View Users</div></div>
+                    <div className="sd-sub"><div className="sd-sub__link" onClick={() => navigate("/users")}>{t("sidebar.viewUsers")}</div></div>
                   )}
                 </>
               )}
               {canAccessLoanSettings && (
-                <div className={`sd-item ${isActive("/loan-settings") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-settings")} title="Loan Settings">
+                <div className={`sd-item ${isActive("/loan-settings") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-settings")} title={t("sidebar.loanSettings")}>
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Loan Settings</span>}
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.loanSettings")}</span>}
                 </div>
               )}
             </>
@@ -234,17 +238,17 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {/* Loan Operations */}
           {canAccessLoansForm && (
             <>
-              <div className="sd-sec">{!isCollapsed ? "LOAN OPERATIONS" : "─"}</div>
-              <div className="sd-item" onClick={() => setShowLoans(!showLoans)} title="Loans Form">
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.loanOperations") : "─"}</div>
+              <div className="sd-item" onClick={() => setShowLoans(!showLoans)} title={t("sidebar.loansForm")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Loans Form</span>}
+                {!isCollapsed && <span className="sd-item__text">{t("sidebar.loansForm")}</span>}
                 {!isCollapsed && <span className={`sd-item__arrow ${showLoans ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
               {showLoans && !isCollapsed && (
                 <div className="sd-sub">
-                  <div className="sd-sub__link" onClick={() => navigate("/personal-loan")}>Personal Loan</div>
-                  <div className="sd-sub__link" onClick={() => navigate("/group-loan")}>Group Loan</div>
-                  <div className="sd-sub__link" style={{ color: '#60a5fa', fontWeight: '500' }} onClick={() => navigate("/my-applications")}>My Applications</div>
+                  <div className="sd-sub__link" onClick={() => navigate("/personal-loan")}>{t("sidebar.personalLoan")}</div>
+                  <div className="sd-sub__link" onClick={() => navigate("/group-loan")}>{t("sidebar.groupLoan")}</div>
+                  <div className="sd-sub__link" style={{ color: '#60a5fa', fontWeight: '500' }} onClick={() => navigate("/my-applications")}>{t("sidebar.myApplications")}</div>
                 </div>
               )}
             </>
@@ -253,23 +257,23 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {/* Management & Approvals */}
           {canAccessApprovals && (
             <>
-              <div className="sd-sec">{!isCollapsed ? "APPROVALS" : "─"}</div>
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.approvals") : "─"}</div>
               {canAccessManagerReview ? (
-                <div className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers")} title="Manager Review">
+                <div className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers")} title={t("sidebar.managerReview")}>
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">Manager Review</span>}
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.managerReview")}</span>}
                 </div>
               ) : null}
               {canAccessGmReview ? (
-                <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title="General Manager">
+                <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title={t("sidebar.gmReview")}>
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">GM Review</span>}
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.gmReview")}</span>}
                 </div>
               ) : null}
               {canAccessMdAuth ? (
-                <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title="Managing Director">
+                <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title={t("sidebar.mdAuth")}>
                   <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">MD Auth</span>}
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.mdAuth")}</span>}
                 </div>
               ) : null}
             </>
@@ -278,7 +282,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {/* Management — skip when Manager Review already points at the same Customers page */}
           {canAccessManagement && !canAccessManagerReview && (
             <>
-              <div className="sd-sec">{!isCollapsed ? "MANAGEMENT" : "─"}</div>
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.management") : "─"}</div>
               <div className={`sd-item ${isActive("/customers") || location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => {
                 const prefix = userRole === 'loan_manager' ? 'lm' :
                   userRole === 'general_manager' ? 'gm' :
@@ -286,9 +290,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       userRole === 'loan_officer' ? 'officer' :
                         userRole === 'finance_officer' ? 'finance' : '';
                 navigate(prefix ? `/${prefix}/customers` : "/customers");
-              }} title="Wateja">
+              }} title={t("sidebar.customers")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Wateja (Customers)</span>}
+                {!isCollapsed && <span className="sd-item__text">{t("sidebar.customers")}</span>}
               </div>
             </>
           )}
@@ -296,35 +300,35 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {/* Accounting Module — Admin / Finance Officer / Managing Director */}
           {canAccessAccounting && (
             <>
-              <div className="sd-sec">{!isCollapsed ? "ACCOUNTING" : "─"}</div>
-              <div className={`sd-item ${isActive("/accounting") ? "sd-item--active" : ""}`} onClick={() => setShowAccounting(!showAccounting)} title="Accounting">
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.accounting") : "─"}</div>
+              <div className={`sd-item ${isActive("/accounting") ? "sd-item--active" : ""}`} onClick={() => setShowAccounting(!showAccounting)} title={t("sidebar.accounting")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Accounting</span>}
+                {!isCollapsed && <span className="sd-item__text">{t("sidebar.accounting")}</span>}
                 {!isCollapsed && <span className={`sd-item__arrow ${showAccounting ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
               {(showAccounting || isActive("/accounting")) && !isCollapsed && (
                 <div className="sd-sub">
-                  <div className={`sd-sub__link ${isActive("/accounting/chart-of-accounts") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/chart-of-accounts")}>Chart of Accounts</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/journal-entries") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/journal-entries")}>Journal Entries</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/general-ledger") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/general-ledger")}>General Ledger</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/trial-balance") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/trial-balance")}>Trial Balance</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/income-statement") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/income-statement")}>Income Statement</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/balance-sheet") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/balance-sheet")}>Balance Sheet</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/cash-book") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/cash-book")}>Cash Book</div>
-                  <div className={`sd-sub__link ${isActive("/accounting/bank-reconciliation") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/bank-reconciliation")}>Bank Reconciliation</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/chart-of-accounts") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/chart-of-accounts")}>{t("sidebar.chartOfAccounts")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/journal-entries") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/journal-entries")}>{t("sidebar.journalEntries")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/general-ledger") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/general-ledger")}>{t("sidebar.generalLedger")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/trial-balance") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/trial-balance")}>{t("sidebar.trialBalance")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/income-statement") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/income-statement")}>{t("sidebar.incomeStatement")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/balance-sheet") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/balance-sheet")}>{t("sidebar.balanceSheet")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/cash-book") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/cash-book")}>{t("sidebar.cashBook")}</div>
+                  <div className={`sd-sub__link ${isActive("/accounting/bank-reconciliation") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/bank-reconciliation")}>{t("sidebar.bankReconciliation")}</div>
                 </div>
               )}
 
-              <div className="sd-sec">{!isCollapsed ? "REPORTS" : "─"}</div>
-              <div className={`sd-item ${isActive("/reports") ? "sd-item--active" : ""}`} onClick={() => setShowReports(!showReports)} title="Reports">
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.reports") : "─"}</div>
+              <div className={`sd-item ${isActive("/reports") ? "sd-item--active" : ""}`} onClick={() => setShowReports(!showReports)} title={t("sidebar.reports")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">Reports</span>}
+                {!isCollapsed && <span className="sd-item__text">{t("sidebar.reports")}</span>}
                 {!isCollapsed && <span className={`sd-item__arrow ${showReports ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
               {(showReports || isActive("/reports")) && !isCollapsed && (
                 <div className="sd-sub">
-                  <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>Risk Reports</div>
-                  <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>Financial Reports</div>
+                  <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>{t("sidebar.riskReports")}</div>
+                  <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>{t("sidebar.financialReports")}</div>
                 </div>
               )}
             </>
@@ -334,18 +338,18 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         {/* ── Footer ── */}
         <div className="sd-footer">
           {(canAccessProfile || canAccessLogout) && (
-            <div className="sd-sec">{!isCollapsed ? "PREFERENCES" : "─"}</div>
+            <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.preferences") : "─"}</div>
           )}
           {canAccessProfile && (
-            <div className={`sd-item ${isActive("/profile") ? "sd-item--active" : ""}`} onClick={() => navigate("/profile")} title="My Signature">
+            <div className={`sd-item ${isActive("/profile") ? "sd-item--active" : ""}`} onClick={() => navigate("/profile")} title={t("sidebar.mySignature")}>
               <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></svg></span>
-              {!isCollapsed && <span className="sd-item__text">My Signature</span>}
+              {!isCollapsed && <span className="sd-item__text">{t("sidebar.mySignature")}</span>}
             </div>
           )}
           {canAccessLogout && (
-            <div className="sd-item" onClick={handleLogout} title="Log Out">
+            <div className="sd-item" onClick={handleLogout} title={t("sidebar.logOut")}>
               <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg></span>
-              {!isCollapsed && <span className="sd-item__text">Log Out</span>}
+              {!isCollapsed && <span className="sd-item__text">{t("sidebar.logOut")}</span>}
             </div>
           )}
         </div>

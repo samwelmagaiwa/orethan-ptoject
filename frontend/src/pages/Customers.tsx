@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import LoanDetailsModal from "../components/LoanDetailsModal";
@@ -60,6 +61,7 @@ interface Loan {
 }
 
 const Customers: React.FC = () => {
+    const { t } = useTranslation("customers");
     const [user, setUser] = useState<User | null>(null);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loans, setLoans] = useState<Loan[]>([]);
@@ -107,7 +109,7 @@ const Customers: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            setModalMessage("Imeshindwa kupata taarifa");
+            setModalMessage(t("alerts.fetchFailed"));
             setModalType("error");
             setShowModal(true);
         } finally {
@@ -179,34 +181,34 @@ const Customers: React.FC = () => {
     const renderLoanStatusLabel = (loan: Loan) => {
         if (loan.status === 'manager_review') {
             return (loan as any).rejection_metadata?.rejector_role === 'general_manager'
-                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
-                : <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING LM</span>;
+                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
+                : <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span>;
         }
         if (loan.status === 'gm_review') {
             return (loan as any).rejection_metadata?.rejector_role === 'managing_director'
-                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>
+                ? <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
                 : (
                     <span>
-                        <span style={{ color: '#16a34a', fontWeight: '700' }}>LM APPROVED</span>
+                        <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
                         <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING GM</span>
+                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                     </span>
                 );
         }
         if (loan.status === 'md_review') {
             return (
                 <span>
-                    <span style={{ color: '#16a34a', fontWeight: '700' }}>GM APPROVED</span>
+                    <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
                     <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>PENDING MD</span>
+                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
                 </span>
             );
         }
         if (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') {
-            return <span style={{ color: '#ef4444', fontWeight: '800' }}>REJECTED</span>;
+            return <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>;
         }
-        if (loan.status === 'approved') return 'APPROVED';
-        if (loan.status === 'disbursed') return 'ACTIVE';
+        if (loan.status === 'approved') return t("status.approved");
+        if (loan.status === 'disbursed') return t("status.active");
         return loan.status.replace(/_/g, ' ').toUpperCase();
     };
 
@@ -288,7 +290,7 @@ const Customers: React.FC = () => {
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setModalMessage("Mkopo umeidhinishwa kikamilifu!");
+            setModalMessage(t("alerts.approveSuccess"));
             setModalType("success");
             setShowModal(true);
             setShowApproveModal(false);
@@ -296,7 +298,7 @@ const Customers: React.FC = () => {
             setActiveDropdown(null);
         } catch (err) {
             console.error(err);
-            setModalMessage("Imeshindwa kuidhinisha mkopo");
+            setModalMessage(t("alerts.approveFailed"));
             setModalType("error");
             setShowModal(true);
         } finally {
@@ -313,7 +315,7 @@ const Customers: React.FC = () => {
 
     const submitRejection = async () => {
         if (!rejectReason.trim()) {
-            setModalMessage("Tafadhali weka sababu ya kukataa.");
+            setModalMessage(t("alerts.rejectReasonRequired"));
             setModalType("warning");
             setShowModal(true);
             return;
@@ -327,14 +329,14 @@ const Customers: React.FC = () => {
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setModalMessage("Ombi limekataliwa.");
+            setModalMessage(t("alerts.rejectSuccess"));
             setModalType("warning");
             setShowModal(true);
             setShowRejectModal(false);
             fetchManagerLoans(user!.role);
         } catch (err) {
             console.error(err);
-            setModalMessage("Imeshindwa kukataa ombi");
+            setModalMessage(t("alerts.rejectFailed"));
             setModalType("error");
             setShowModal(true);
         } finally {
@@ -356,7 +358,7 @@ const Customers: React.FC = () => {
 
     const submitDisbursement = async () => {
         if (!disburseForm.amount || !disburseForm.disbursement_date) {
-            setModalMessage("Tafadhali jaza kiasi na tarehe ya malipo.");
+            setModalMessage(t("alerts.disburseFieldsRequired"));
             setModalType("warning");
             setShowModal(true);
             return;
@@ -379,10 +381,11 @@ const Customers: React.FC = () => {
                 ? new Date(activated.next_payment_date).toLocaleDateString()
                 : "—";
             setModalMessage(
-                `Mkopo umewashwa (ACTIVE) kikamilifu!\n\n` +
-                `Namba ya Akaunti: ${acct || "—"}\n` +
-                `Deni Lililobaki: TZS ${Number(activated?.remaining_balance ?? selectedLoan?.amount ?? 0).toLocaleString()}\n` +
-                `Tarehe ya Kwanza ya Kulipa: ${firstDue}`
+                t("alerts.disburseSuccess", {
+                    account: acct || "—",
+                    balance: Number(activated?.remaining_balance ?? selectedLoan?.amount ?? 0).toLocaleString(),
+                    firstDue,
+                })
             );
             setModalType("success");
             setShowModal(true);
@@ -390,7 +393,7 @@ const Customers: React.FC = () => {
             fetchManagerLoans(user!.role);
         } catch (err: any) {
             console.error(err);
-            setModalMessage(err?.response?.data?.message || "Imeshindwa kutoa mkopo");
+            setModalMessage(err?.response?.data?.message || t("alerts.disburseFailed"));
             setModalType("error");
             setShowModal(true);
         } finally {
@@ -402,25 +405,25 @@ const Customers: React.FC = () => {
         setActiveDropdown(null);
         const bodyHtml = `
             <table>
-                <tr><td>Namba ya Akaunti</td><td>${loan.loan_account_number || "—"}</td></tr>
-                <tr><td>ID Mkopo</td><td>#${loan.id}</td></tr>
-                <tr><td>Mwombaji</td><td>${loan.name}</td></tr>
-                <tr><td>Simu</td><td>${loan.phone || "N/A"}</td></tr>
-                <tr><td>Aina ya Mkopo</td><td style="text-transform:capitalize">${loan.type}</td></tr>
-                <tr><td>Kiasi Kilichotolewa</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
-                <tr><td>Deni Lililobaki</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
-                <tr><td>Tarehe ya Kwanza ya Kulipa</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
-                <tr><td>Hali ya Mkopo</td><td style="color:#16a34a;font-weight:700">ACTIVE</td></tr>
+                <tr><td>${t("voucher.accountNumber")}</td><td>${loan.loan_account_number || "—"}</td></tr>
+                <tr><td>${t("voucher.loanId")}</td><td>#${loan.id}</td></tr>
+                <tr><td>${t("voucher.applicant")}</td><td>${loan.name}</td></tr>
+                <tr><td>${t("voucher.phone")}</td><td>${loan.phone || "N/A"}</td></tr>
+                <tr><td>${t("voucher.loanType")}</td><td style="text-transform:capitalize">${loan.type}</td></tr>
+                <tr><td>${t("voucher.amountDisbursed")}</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
+                <tr><td>${t("voucher.remainingBalance")}</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
+                <tr><td>${t("voucher.firstPaymentDate")}</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
+                <tr><td>${t("voucher.loanStatus")}</td><td style="color:#16a34a;font-weight:700">${t("status.active")}</td></tr>
             </table>
         `;
-        printDocument("Hati ya Malipo / Disbursement Voucher", bodyHtml, `#${loan.id}`);
+        printDocument(t("voucher.title"), bodyHtml, `#${loan.id}`);
     };
 
     const deleteLoan = (id: number) => {
         setConfirmModal({
             isOpen: true,
-            title: "Futa Mkopo",
-            message: "Je, una uhakika unataka kufuta kabisa ombi hili la mkopo?",
+            title: t("confirm.deleteLoanTitle"),
+            message: t("confirm.deleteLoanMessage"),
             type: 'danger',
             onConfirm: () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -431,7 +434,7 @@ const Customers: React.FC = () => {
                     headers: { Authorization: token ? `Bearer ${token}` : "" }
                 })
                     .then(() => {
-                        setModalMessage("Mkopo umefutwa kikamilifu");
+                        setModalMessage(t("alerts.deleteSuccess"));
                         setModalType("success");
                         setShowModal(true);
                         fetchManagerLoans(user!.role);
@@ -439,7 +442,7 @@ const Customers: React.FC = () => {
                     })
                     .catch((err) => {
                         console.error(err);
-                        setModalMessage("Imefeli kufuta mkopo");
+                        setModalMessage(t("alerts.deleteFailed"));
                         setModalType("error");
                         setShowModal(true);
                     })
@@ -473,21 +476,21 @@ const Customers: React.FC = () => {
                         <div className="stat-box accent-blue">
                             <div className="stat-icon-circle"><IconWallet /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Jumla ya Mikopo (Deni)</div>
+                                <div className="stat-label">{t("stats.totalLoaned")}</div>
                                 <div className="stat-number">TZS {stats.total_loaned.toLocaleString()}</div>
                             </div>
                         </div>
                         <div className="stat-box accent-red">
                             <div className="stat-icon-circle"><IconAlertTriangle /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Malimbikizo (Arrears)</div>
+                                <div className="stat-label">{t("stats.arrears")}</div>
                                 <div className="stat-number" style={{ color: '#ef4444' }}>TZS {stats.total_arrears.toLocaleString()}</div>
                             </div>
                         </div>
                         <div className="stat-box accent-green">
                             <div className="stat-icon-circle"><IconUsers /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Wateja Amilifu</div>
+                                <div className="stat-label">{t("stats.activeCustomers")}</div>
                                 <div className="stat-number">{stats.active_customers}</div>
                             </div>
                         </div>
@@ -497,21 +500,21 @@ const Customers: React.FC = () => {
                         <div className="stat-box accent-blue">
                             <div className="stat-icon-circle"><IconClock /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Maombi Yanayosubiri</div>
+                                <div className="stat-label">{t("stats.pendingApplications")}</div>
                                 <div className="stat-number">{loanStats.pending}</div>
                             </div>
                         </div>
                         <div className="stat-box accent-green">
                             <div className="stat-icon-circle"><IconWallet /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Thamani ya Maombi</div>
+                                <div className="stat-label">{t("stats.applicationsValue")}</div>
                                 <div className="stat-number">TZS {loanStats.total_value.toLocaleString()}</div>
                             </div>
                         </div>
                         <div className="stat-box accent-purple">
                             <div className="stat-icon-circle"><IconUsers /></div>
                             <div className="stat-box-text">
-                                <div className="stat-label">Wateja (Active)</div>
+                                <div className="stat-label">{t("stats.activeCustomersShort")}</div>
                                 <div className="stat-number">{stats.active_customers || 0}</div>
                             </div>
                         </div>
@@ -523,14 +526,14 @@ const Customers: React.FC = () => {
             <div className="table-container full-width">
                 <div className="table-header-premium">
                     <label className="entries-filter">
-                        Show
+                        {t("filters.show")}
                         <select value={entriesPerPage} onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}>
                             <option value={10}>10</option>
                             <option value={25}>25</option>
                             <option value={50}>50</option>
                             <option value={100}>100</option>
                         </select>
-                        entries
+                        {t("filters.entries")}
                     </label>
                     <div className="search-wrapper">
                         <div className="search-icon">
@@ -538,8 +541,8 @@ const Customers: React.FC = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder={user?.role === "admin" ? "Tafuta kwa jina, namba ya mteja, simu, barua pepe, NIDA..." : "Tafuta kwa jina, namba ya akaunti, namba ya muamala, simu..."}
-                            title="Search by customer name, customer number, loan account number, transaction reference, phone, email, or NIDA number"
+                            placeholder={user?.role === "admin" ? t("filters.searchPlaceholderAdmin") : t("filters.searchPlaceholderManager")}
+                            title={t("filters.searchTitle")}
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />
@@ -551,23 +554,23 @@ const Customers: React.FC = () => {
                         <thead>
                             {user?.role === "admin" ? (
                                 <tr>
-                                    <th>Mteja</th>
-                                    <th>Namba ya Simu</th>
-                                    <th style={{ whiteSpace: 'nowrap' }}>Mikopo (Active)</th>
-                                    <th>Deni Lililobaki</th>
-                                    <th>Arrears</th>
-                                    <th style={{ textAlign: 'right' }}>Hatua</th>
+                                    <th>{t("table.customer")}</th>
+                                    <th>{t("table.phoneNumber")}</th>
+                                    <th style={{ whiteSpace: 'nowrap' }}>{t("table.activeLoans")}</th>
+                                    <th>{t("table.remainingBalance")}</th>
+                                    <th>{t("table.arrears")}</th>
+                                    <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
                                 </tr>
                             ) : (
                                 <tr>
                                     <th>#</th>
-                                    <th>Mwombaji</th>
-                                    <th>Simu</th>
-                                    <th>Kiasi</th>
-                                    <th>Aina</th>
-                                    <th>Status</th>
-                                    <th>SMS Status</th>
-                                    <th style={{ textAlign: 'right' }}>Hatua</th>
+                                    <th>{t("table.applicant")}</th>
+                                    <th>{t("table.phone")}</th>
+                                    <th>{t("table.amount")}</th>
+                                    <th>{t("table.type")}</th>
+                                    <th>{t("table.status")}</th>
+                                    <th>{t("table.smsStatus")}</th>
+                                    <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
                                 </tr>
                             )}
                         </thead>
@@ -591,7 +594,7 @@ const Customers: React.FC = () => {
                                 ))
                             ) : user?.role === "admin" ? (
                                 filteredCustomers.length === 0 ? (
-                                    <tr><td colSpan={6} className="table-empty">Hakuna mteja aliyepatikana.</td></tr>
+                                    <tr><td colSpan={6} className="table-empty">{t("empty.noCustomers")}</td></tr>
                                 ) : (
                                     pagedCustomers.map((customer) => (
                                         <tr key={customer.id}>
@@ -604,13 +607,13 @@ const Customers: React.FC = () => {
                                             <td>{customer.phone_number}</td>
                                             <td>
                                                 <div className="status-container">
-                                                    <span className="active-count">{customer.active_loans_count} Amilifu</span>
+                                                    <span className="active-count">{t("table.activeCount", { count: customer.active_loans_count })}</span>
                                                 </div>
                                             </td>
                                             <td className="col-amount">TZS {Number(customer.total_remaining_balance).toLocaleString()}</td>
                                             <td>
                                                 <span className={`arrears-badge ${Number(customer.total_arrears) > 0 ? 'has-arrears' : 'no-arrears'}`}>
-                                                    {Number(customer.total_arrears) > 0 ? `TZS ${Number(customer.total_arrears).toLocaleString()}` : 'Hakuna'}
+                                                    {Number(customer.total_arrears) > 0 ? `TZS ${Number(customer.total_arrears).toLocaleString()}` : t("table.none")}
                                                 </span>
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
@@ -626,7 +629,7 @@ const Customers: React.FC = () => {
                                                             window.location.href = prefix ? `/${prefix}/customers/${customer.id}` : `/customers/${customer.id}`;
                                                         }}
                                                     >
-                                                        <IconEye size={16} /> Profile
+                                                        <IconEye size={16} /> {t("actions.profile")}
                                                     </button>
                                                     <button
                                                         className="btn-repay"
@@ -639,7 +642,7 @@ const Customers: React.FC = () => {
                                                             window.location.href = prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`;
                                                         }}
                                                     >
-                                                        <IconCreditCard /> Repay
+                                                        <IconCreditCard /> {t("actions.repay")}
                                                     </button>
                                                 </div>
                                             </td>
@@ -648,7 +651,7 @@ const Customers: React.FC = () => {
                                 )
                             ) : (
                                 filteredLoans.length === 0 ? (
-                                    <tr><td colSpan={8} className="table-empty">Hakuna maombi yanayosubiri.</td></tr>
+                                    <tr><td colSpan={8} className="table-empty">{t("empty.noApplications")}</td></tr>
                                 ) : (
                                     pagedLoans.map((loan, index) => (
                                         <tr
@@ -677,7 +680,7 @@ const Customers: React.FC = () => {
                                                 </span>
                                                 {loan.rejection_reason && (loan.status === 'loan_officer') && (
                                                     <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: '500' }}>
-                                                        Sababu: {loan.rejection_reason}
+                                                        {t("table.reason")}: {loan.rejection_reason}
                                                     </div>
                                                 )}
                                             </td>
@@ -713,18 +716,18 @@ const Customers: React.FC = () => {
                                                                                 disabled={submitting}
                                                                             >
                                                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
-                                                                                Disburse
+                                                                                {t("actions.disburse")}
                                                                             </button>
                                                                         )}
                                                                         {loan.status === 'disbursed' && (
                                                                             <button onClick={() => printVoucher(loan)} disabled={submitting}>
                                                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
-                                                                                Print Voucher
+                                                                                {t("actions.printVoucher")}
                                                                             </button>
                                                                         )}
                                                                         <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                                                            View Details
+                                                                            {t("actions.viewDetails")}
                                                                         </button>
                                                                     </>
                                                                 );
@@ -739,11 +742,11 @@ const Customers: React.FC = () => {
                                                                             disabled={submitting}
                                                                         >
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                            Approve
+                                                                            {t("actions.approve")}
                                                                         </button>
                                                                         <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                                                            View Details
+                                                                            {t("actions.viewDetails")}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => openRejectModal(loan)}
@@ -751,7 +754,7 @@ const Customers: React.FC = () => {
                                                                             disabled={submitting}
                                                                         >
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                                            Reject
+                                                                            {t("actions.reject")}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => deleteLoan(loan.id)}
@@ -760,7 +763,7 @@ const Customers: React.FC = () => {
                                                                             style={{ color: '#ef4444' }}
                                                                         >
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                                                                            Delete Loan
+                                                                            {t("actions.deleteLoan")}
                                                                         </button>
                                                                     </>
                                                                 );
@@ -770,11 +773,11 @@ const Customers: React.FC = () => {
                                                                 <>
                                                                     <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                                                        View Details
+                                                                        {t("actions.viewDetails")}
                                                                     </button>
                                                                     <button onClick={() => viewHistory(loan)} disabled={submitting}>
                                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                                                                        Angalia Mapendekezo
+                                                                        {t("actions.viewHistory")}
                                                                     </button>
                                                                 </>
                                                             );
@@ -794,12 +797,16 @@ const Customers: React.FC = () => {
                 {!loading && currentListLength > 0 && (
                     <div className="pagination-row">
                         <span className="pagination-info">
-                            Showing {(currentPage - 1) * entriesPerPage + 1}–{Math.min(currentPage * entriesPerPage, currentListLength)} of {currentListLength}
+                            {t("pagination.showing", {
+                                from: (currentPage - 1) * entriesPerPage + 1,
+                                to: Math.min(currentPage * entriesPerPage, currentListLength),
+                                total: currentListLength,
+                            })}
                         </span>
                         <div className="pagination-buttons">
-                            <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+                            <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>{t("pagination.previous")}</button>
                             <span className="pagination-page">{currentPage} / {totalPages}</span>
-                            <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+                            <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>{t("pagination.next")}</button>
                         </div>
                     </div>
                 )}
@@ -818,21 +825,21 @@ const Customers: React.FC = () => {
             {showRejectModal && (
                 <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Reject Loan Application</h2>
+                        <h2>{t("rejectModal.title")}</h2>
                         <div className="modal-info">
-                            <p><strong>Client:</strong> {selectedLoan?.name}</p>
-                            <p><strong>Requested:</strong> TZS {Number(selectedLoan?.amount).toLocaleString()}</p>
+                            <p><strong>{t("rejectModal.client")}:</strong> {selectedLoan?.name}</p>
+                            <p><strong>{t("rejectModal.requested")}:</strong> TZS {Number(selectedLoan?.amount).toLocaleString()}</p>
                         </div>
                         <textarea
-                            placeholder="Enter rejection reason..."
+                            placeholder={t("rejectModal.reasonPlaceholder")}
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                             rows={4}
                         />
                         <div className="modal-actions">
-                            <button className="btn-secondary" onClick={() => setShowRejectModal(false)} disabled={submitting}>Cancel</button>
+                            <button className="btn-secondary" onClick={() => setShowRejectModal(false)} disabled={submitting}>{t("rejectModal.cancel")}</button>
                             <button className="btn-danger" onClick={submitRejection} disabled={submitting}>
-                                {submitting ? 'Returning...' : 'Return for Corrections'}
+                                {submitting ? t("rejectModal.returning") : t("rejectModal.returnForCorrections")}
                             </button>
                         </div>
                     </div>

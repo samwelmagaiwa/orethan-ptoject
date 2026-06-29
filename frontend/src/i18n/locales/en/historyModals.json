@@ -1,0 +1,159 @@
+{
+  "history": {
+    "table": {
+      "loanId": "Loan ID",
+      "applicant": "Applicant",
+      "customerPhone": "Customer Phone",
+      "loanOfficer": "Loan Officer",
+      "loanAmount": "Loan Amount",
+      "loanType": "Loan Type",
+      "currentStatus": "Current Status",
+      "loanDuration": "Loan Duration",
+      "expectedRepayment": "Expected Repayment"
+    },
+    "status": {
+      "pending": "PENDING"
+    },
+    "units": {
+      "months": "Months"
+    },
+    "heading": {
+      "approvalStatus": "Approval Status and Comments"
+    },
+    "steps": {
+      "officer": "OFFICER",
+      "lm": "LM",
+      "gm": "GM",
+      "md": "MD",
+      "final": "FINAL",
+      "completedMark": "OK"
+    },
+    "roles": {
+      "loanOfficer": "Loan Officer",
+      "loanManager": "Loan Manager",
+      "generalManager": "General Manager",
+      "managingDirector": "Managing Director",
+      "completed": "Completed"
+    },
+    "timeline": {
+      "first": "FIRST",
+      "now": "NOW",
+      "rejected": "REJECTED",
+      "recommended": "RECOMMENDED"
+    },
+    "empty": {
+      "noHistory": "There is no comment history for this loan yet."
+    },
+    "actions": {
+      "close": "Close"
+    }
+  },
+  "checklist": {
+    "sections": {
+      "identification": {
+        "title": "1. PERSONAL IDENTIFICATION"
+      },
+      "tax": {
+        "title": "2. TAX & LEGAL COMPLIANCE"
+      },
+      "financial": {
+        "title": "3. FINANCIAL DOCUMENTS"
+      },
+      "collateral": {
+        "title": "5. COLLATERAL DOCUMENTS"
+      },
+      "guarantor": {
+        "title": "6. GUARANTOR DOCUMENTS"
+      },
+      "loanForms": {
+        "title": "7. LOAN APPLICATION FORMS"
+      }
+    },
+    "items": {
+      "idDoc": "National ID / Passport / Voter ID",
+      "passportPhoto": "Passport-size Photo",
+      "proofResidence": "Proof of Residence (Ward Letter / Local Govt Introduction)",
+      "tin": "TIN Certificate",
+      "taxClearance": "Tax Clearance Certificate",
+      "businessLicense": "Business License",
+      "incorporation": "Certificate of Incorporation (for companies)",
+      "bankStatements": "Bank Statements (last 6–12 months)",
+      "salarySlips": "Salary Slips (last 3–6 months)",
+      "employmentContract": "Employment Contract / Offer Letter",
+      "otherIncome": "Proof of Other Income (if any)",
+      "titleDeed": "Title Deed / Ownership Documents",
+      "valuation": "Valuation Report",
+      "chattel": "Chattel Mortgage Form (movable assets)",
+      "altMortgage": "Alternative Mortgage Documents (if applicable)",
+      "insurance": "Insurance Cover for Collateral",
+      "guarantorId": "Guarantor ID Copy",
+      "guarantorResidence": "Guarantor Proof of Residence",
+      "guarantorPhotos": "Guarantor Passport Photos",
+      "applicationForm": "Completed Loan Application Form",
+      "twoGuarantorsSigned": "Form Signed by Two Guarantors",
+      "loanAgreement": "Signed Loan Agreement",
+      "creditConsent": "Credit Reference / Credit Report Consent",
+      "termsAck": "Terms & Conditions Acknowledgment"
+    },
+    "banner": {
+      "unresolved": "{{count}} document(s) not yet confirmed. Upload the documents you have, or use “Proceed without” to bypass missing items.",
+      "allResolved": "All documents confirmed or bypassed — you can submit the request."
+    },
+    "alerts": {
+      "uploadFailed": "Failed to upload document. Please try again."
+    },
+    "titles": {
+      "skippedFirst": "Skipped — undo ‘Proceed without’ first",
+      "replaceDocument": "Replace Document",
+      "uploadDocument": "Upload Document (PDF/Image)",
+      "viewDocument": "View Document",
+      "deleteDocument": "Delete Document"
+    },
+    "tags": {
+      "autoVerified": "Auto-verified",
+      "uploaded": "Uploaded"
+    },
+    "actions": {
+      "bypassedUndo": "Bypassed — undo",
+      "proceedWithout": "Proceed without"
+    },
+    "confirmDelete": {
+      "title": "Delete Document",
+      "message": "Are you sure you want to delete this document? You will need to upload it again or use 'Proceed without'.",
+      "confirm": "Yes, Delete",
+      "cancel": "Cancel"
+    }
+  },
+  "checklistView": {
+    "heading": "DOCUMENTATION CHECKLIST",
+    "summary": {
+      "confirmed": "{{count}} Confirmed",
+      "bypassed": "{{count}} Proceed-without",
+      "missing": "{{count}} Missing"
+    },
+    "gallery": {
+      "title": "UPLOADED ATTACHMENTS — {{count}}"
+    },
+    "actions": {
+      "view": "View",
+      "viewDocument": "View Document"
+    },
+    "status": {
+      "confirmed": "✓ CONFIRMED",
+      "bypassed": "↷ BYPASSED (Proceed without)",
+      "missing": "✕ MISSING"
+    }
+  },
+  "documentViewer": {
+    "defaultName": "Document",
+    "actions": {
+      "download": "Download"
+    },
+    "linkedAssets": {
+      "title": "Assets Linked to This Image",
+      "name": "ASSET NAME",
+      "marketValue": "CURRENT MARKET VALUE (TZS)",
+      "collateralValue": "COLLATERAL VALUE (70%)"
+    }
+  }
+}

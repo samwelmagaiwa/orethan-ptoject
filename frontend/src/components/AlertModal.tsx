@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AlertModalProps {
   isOpen: boolean;
@@ -12,9 +13,10 @@ const AlertModal: React.FC<AlertModalProps> = ({
   isOpen,
   message,
   onClose,
-  title = 'Taarifa',
+  title,
   type = 'info'
 }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const getTypeStyles = () => {
@@ -38,7 +40,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
         </div>
 
         <div className="alert-body-premium">
-          <h2>{title}</h2>
+          {title ? <h2>{title}</h2> : null}
           <p style={{ whiteSpace: 'pre-line' }}>{message}</p>
         </div>
 
@@ -48,7 +50,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
             style={{ backgroundColor: color }}
             onClick={onClose}
           >
-            SAWA, IMELEWEKA
+            {t("modal.ok")}
           </button>
         </div>
       </div>
