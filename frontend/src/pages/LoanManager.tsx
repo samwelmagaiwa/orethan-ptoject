@@ -374,12 +374,12 @@ const LoanManager = () => {
                   </td>
                   <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                   <td style={{ textAlign: 'right', position: 'relative' }}>
-                    <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e)}>
+                    <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'manager_review' ? 4 : 2)}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                     </button>
 
-                    {activeDropdown === loan.id && (
-                      <div ref={dropdownRef} className={`action-dropdown ${dropdownPosition}`}>
+                    {activeDropdown === loan.id && menuPos && createPortal(
+                      <div ref={dropdownRef} className="action-dropdown" style={{ top: menuPos.top, left: menuPos.left }}>
                         {loan.status === 'manager_review' ? (
                           <>
                             <button
@@ -424,7 +424,8 @@ const LoanManager = () => {
                             </button>
                           </>
                         )}
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </td>
                 </tr>
@@ -615,7 +616,8 @@ const LoanManager = () => {
         }
 
         .table-wrapper {
-          overflow-x: auto;
+          overflow: auto;
+          max-height: calc(100vh - 240px);
         }
 
         table {
@@ -633,6 +635,9 @@ const LoanManager = () => {
           text-transform: uppercase;
           letter-spacing: 1px;
           border-bottom: 1px solid #e2e8f0;
+          position: sticky;
+          top: 0;
+          z-index: 5;
         }
 
         td {
@@ -718,14 +723,13 @@ const LoanManager = () => {
         }
 
         .action-dropdown {
-          position: absolute;
-          right: 0;
+          position: fixed;
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-          z-index: 100;
-          width: 160px;
+          z-index: 1000;
+          width: 170px;
           padding: 8px;
           display: flex;
           flex-direction: column;

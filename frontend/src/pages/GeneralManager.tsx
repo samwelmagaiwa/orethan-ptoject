@@ -671,7 +671,8 @@ const GeneralManager = () => {
         }
 
         .table-wrapper {
-          overflow-x: auto;
+          overflow: auto;
+          max-height: calc(100vh - 240px);
         }
 
         .search-wrapper {
@@ -722,6 +723,9 @@ const GeneralManager = () => {
           text-transform: uppercase;
           letter-spacing: 1px;
           border-bottom: 1px solid #ddd0a0;
+          position: sticky;
+          top: 0;
+          z-index: 5;
         }
 
         td {
