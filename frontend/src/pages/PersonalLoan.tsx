@@ -618,6 +618,24 @@ const PersonalLoan: React.FC = () => {
     wdhamini2Simu: "Simu ya Mdhamini 2",
   };
 
+  // Collateral cover check: the pledged security must exceed the requested loan.
+  // - Dhamana list: total "Thamani yake kwa sasa" must be greater than the loan.
+  // - Chattel form: total "THAMANI DHAMANA (70%)" must be greater than the loan.
+  const collateralStatus = () => {
+    const loanAmount = Number(form.kiasiMkopo) || 0;
+    const totalDhamana = form.dhamanaList.reduce((sum, d) => sum + (Number(d.thamani) || 0), 0);
+    const totalChattel = form.chattelItems.reduce((sum, i) => sum + (Number(i.thamaniDhamana) || 0), 0);
+    return {
+      loanAmount,
+      totalDhamana,
+      totalChattel,
+      hasDhamana: totalDhamana > 0,
+      hasChattel: totalChattel > 0,
+      dhamanaCovers: totalDhamana > loanAmount,
+      chattelCovers: totalChattel > loanAmount,
+    };
+  };
+
   // Returns the list of missing/invalid field labels for a given wizard step,
   // and records the per-field error state as a side effect (so navigating the
   // officer back to that step highlights exactly which fields need attention.
@@ -666,6 +684,15 @@ const PersonalLoan: React.FC = () => {
         if (hasEmptyChattelItem) {
           missingFields.push("Jina au Thamani ya Mali katika Fomu ya Rehani");
         }
+      }
+
+      // Collateral must be worth MORE than the loan being requested.
+      const cs = collateralStatus();
+      if (cs.loanAmount > 0 && cs.hasDhamana && !cs.dhamanaCovers) {
+        missingFields.push(`Thamani ya dhamana (TZS ${formatMoney(cs.totalDhamana)}) lazima izidi kiasi cha mkopo (TZS ${formatMoney(cs.loanAmount)})`);
+      }
+      if (form.showChattelForm && cs.loanAmount > 0 && cs.hasChattel && !cs.chattelCovers) {
+        missingFields.push(`Thamani ya dhamana (70%) ya rehani (TZS ${formatMoney(cs.totalChattel)}) lazima izidi kiasi cha mkopo (TZS ${formatMoney(cs.loanAmount)})`);
       }
     }
 
@@ -1395,6 +1422,21 @@ const PersonalLoan: React.FC = () => {
                     </div>
                   ))}
 
+                  {/* Live collateral-cover check: total dhamana value vs requested loan */}
+                  {(() => {
+                    const cs = collateralStatus();
+                    if (cs.loanAmount <= 0 || !cs.hasDhamana) return null;
+                    return cs.dhamanaCovers ? (
+                      <div style={{ marginTop: '15px', padding: '12px 16px', borderRadius: '8px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.85rem', fontWeight: 600 }}>
+                        ✓ Jumla ya thamani ya dhamana (TZS {formatMoney(cs.totalDhamana)}) inazidi kiasi cha mkopo (TZS {formatMoney(cs.loanAmount)}). Dhamana inatosha.
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '15px', padding: '12px 16px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.85rem', fontWeight: 700 }}>
+                        ⚠ Jumla ya thamani ya dhamana (TZS {formatMoney(cs.totalDhamana)}) HAITOSHI. Lazima izidi kiasi cha mkopo (TZS {formatMoney(cs.loanAmount)}). Tafadhali ongeza thamani ya dhamana.
+                      </div>
+                    );
+                  })()}
+
                   <div style={{ marginTop: '20px', textAlign: 'center' }}>
                     <button
                       type="button"
@@ -1471,10 +1513,24 @@ const PersonalLoan: React.FC = () => {
                         </table>
                       </div>
 
-                      <div style={{ textAlign: 'left', marginBottom: '30px' }}>
+                      <div style={{ textAlign: 'left', marginBottom: '15px' }}>
                         <button type="button" onClick={handleAddChattelItem} style={{ background: '#e2e8f0', color: '#475569', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>+ ONGEZA MSTARI MWINGINE</button>
                       </div>
 
+                      {/* Live collateral-cover check: total THAMANI DHAMANA (70%) vs requested loan */}
+                      {(() => {
+                        const cs = collateralStatus();
+                        if (cs.loanAmount <= 0 || !cs.hasChattel) return null;
+                        return cs.chattelCovers ? (
+                          <div style={{ marginBottom: '25px', padding: '12px 16px', borderRadius: '8px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.85rem', fontWeight: 600 }}>
+                            ✓ Jumla ya THAMANI DHAMANA (70%) (TZS {formatMoney(cs.totalChattel)}) inazidi kiasi cha mkopo (TZS {formatMoney(cs.loanAmount)}). Dhamana inatosha.
+                          </div>
+                        ) : (
+                          <div style={{ marginBottom: '25px', padding: '12px 16px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.85rem', fontWeight: 700 }}>
+                            ⚠ Jumla ya THAMANI DHAMANA (70%) (TZS {formatMoney(cs.totalChattel)}) HAITOSHI. Lazima izidi kiasi cha mkopo (TZS {formatMoney(cs.loanAmount)}). Tafadhali ongeza thamani ya mali.
+                          </div>
+                        );
+                      })()}
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                         <div className="grid-field">
