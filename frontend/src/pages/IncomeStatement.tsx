@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -99,18 +100,32 @@ const IncomeStatement = () => {
 
       <div className="is-card">
         <div className="is-accent-bar" />
-        <div className="is-header">
-          <div>
-            <h1>{t("income.title")}</h1>
-            <p>{t("income.subtitle")}</p>
+        <div className="is-sticky-top">
+          <div className="is-header">
+            <div>
+              <h1>{t("income.title")}</h1>
+              <p>{t("income.subtitle")}</p>
+            </div>
+            <div className="is-filters">
+              <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+              <span>{t("common.to")}</span>
+              <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+              <button onClick={load}>{t("common.refresh")}</button>
+              <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
+            </div>
           </div>
-          <div className="is-filters">
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-            <span>{t("common.to")}</span>
-            <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-            <button onClick={load}>{t("common.refresh")}</button>
-            <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
-          </div>
+          <GetHelp
+            title="How to use the Income Statement (Profit & Loss)"
+            intro="The Income Statement shows all revenue earned and expenses incurred over a period, resulting in a net income (profit) or net loss. It is the primary measure of the institution's financial performance."
+            steps={[
+              { title: "1. Set the reporting period", text: "The default period is the current calendar year to date. Adjust the From and To dates to match your reporting period — monthly, quarterly, or annual.", example: "From: 2026-01-01 / To: 2026-03-31 → Q1 Profit & Loss." },
+              { title: "2. Click Refresh", text: "Click Refresh to load the statement. Income accounts (interest income, fees, penalties) appear in the top section; expense accounts (salaries, provisions, rent) in the lower section." },
+              { title: "3. Read the net income", text: "The coloured bar at the bottom shows Net Income = Total Income − Total Expenses. Green means profit; red means loss.", example: "Total Income TZS 8,200,000 − Total Expenses TZS 5,900,000 = Net Income TZS 2,300,000." },
+              { title: "4. Drill into any line", text: "Click any blue account code to open the General Ledger for that account and see each transaction that contributed to the total." },
+              { title: "5. Export or print", text: "Use Export for spreadsheet analysis or Print for board and regulatory submissions." },
+            ]}
+            tip="Compare this month's Net Income to last month's by toggling the date range — a shrinking margin signals rising NPLs or falling collections."
+          />
         </div>
 
         {loading ? (
@@ -131,8 +146,9 @@ const IncomeStatement = () => {
       </div>
 
       <style>{`
-        .is-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .is-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .is-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .is-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .is-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
         .is-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
         .is-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 24px; flex-wrap: wrap; gap: 14px; }
         .is-header h1 { font-size: 20px; font-weight: 700; color: #102a43; margin: 0 0 4px; }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -62,16 +63,30 @@ const TrialBalance = () => {
 
       <div className="tb-card">
         <div className="tb-accent-bar" />
-        <div className="tb-header">
-          <div>
-            <h1>{t("trial.title")}</h1>
-            <p>{t("trial.subtitle")}</p>
+        <div className="tb-sticky-top">
+          <div className="tb-header">
+            <div>
+              <h1>{t("trial.title")}</h1>
+              <p>{t("trial.subtitle")}</p>
+            </div>
+            <div className="tb-filters">
+              <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
+              <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
+              <ExportButtons getRows={exportRows} filename="trial-balance" sheetName="Trial Balance" onPrint={handlePrint} disabled={!data?.rows?.length} />
+            </div>
           </div>
-          <div className="tb-filters">
-            <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
-            <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
-            <ExportButtons getRows={exportRows} filename="trial-balance" sheetName="Trial Balance" onPrint={handlePrint} disabled={!data?.rows?.length} />
-          </div>
+          <GetHelp
+            title="How to use the Trial Balance"
+            intro="The Trial Balance lists every account with its total debits and credits as of a given date. It is the first check that your books are balanced — total debits must equal total credits."
+            steps={[
+              { title: "1. Set the as-of date", text: "The default date is today. Change it to any date to see the cumulative balances at that point in time.", example: "As of 2026-06-30 → shows all posted activity up to end of June." },
+              { title: "2. Click Refresh", text: "Click Refresh to load the report. Each account with at least one posted entry appears with its total debit and credit balance." },
+              { title: "3. Check the balance flag", text: "The coloured banner at the bottom confirms whether Total Debits = Total Credits. Green means balanced. Red means there is an imbalance — investigate journal entries for that period immediately." },
+              { title: "4. Drill into any account", text: "Click any blue account code to jump to the General Ledger for that account — you will see every transaction that built up that balance.", example: "Click '2100' to see all loan repayments and disbursements that make up the loan receivable balance." },
+              { title: "5. Export or print", text: "Use Export or Print to produce the Trial Balance for audit, board reports, or regulatory submissions." },
+            ]}
+            tip="Run the Trial Balance at month-end before closing entries. A balanced TB is a prerequisite for a reliable Income Statement and Balance Sheet."
+          />
         </div>
 
         {loading ? (
@@ -111,8 +126,9 @@ const TrialBalance = () => {
       </div>
 
       <style>{`
-        .tb-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .tb-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .tb-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .tb-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .tb-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
         .tb-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
         .tb-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
         .tb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
