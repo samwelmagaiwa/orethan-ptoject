@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import GetHelp from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -76,11 +77,25 @@ const LoanSettings = () => {
 
       <div className="ls-card">
         <div className="ls-accent-bar" />
-        <div className="ls-header">
-          <div>
-            <h1>Mipangilio ya Riba na Adhabu</h1>
-            <p>Vigezo hivi vinatumika mahali popote mfumo unapohesabu adhabu ya uchelewaji au riba chaguomsingi ya mkopo</p>
+        <div className="ls-sticky-top">
+          <div className="ls-header">
+            <div>
+              <h1>Mipangilio ya Riba na Adhabu</h1>
+              <p>Vigezo hivi vinatumika mahali popote mfumo unapohesabu adhabu ya uchelewaji au riba chaguomsingi ya mkopo</p>
+            </div>
           </div>
+
+          <GetHelp
+            title="How to use Loan Settings"
+            intro="These three rates are the system-wide defaults used every time a loan is calculated, a penalty is charged, or a processing fee is deducted at disbursement. Change them here and every future calculation picks up the new value instantly — existing loan schedules are not retroactively changed."
+            steps={[
+              { title: "1. Penalty rate", text: "The percentage applied to the overdue installment amount when a borrower is late. Used by the Overdue Management module and printed on guarantor SMS reminders.", example: "Set to 2.0% → a borrower with TZS 50,000 overdue owes TZS 1,000 as a late-payment penalty." },
+              { title: "2. Default interest rate", text: "The monthly interest rate applied to new loans when the loan officer does not set a specific rate during the application — common for standard products.", example: "Set to 3.0% per month → a TZS 1,000,000 loan accrues TZS 30,000 interest in the first month." },
+              { title: "3. Processing fee rate", text: "The percentage deducted from the gross loan amount at disbursement as an origination fee. Flows to Fee Income in the General Ledger.", example: "Set to 1.5% → a TZS 500,000 loan has TZS 7,500 withheld; the borrower receives TZS 492,500." },
+              { title: "4. Save", text: "Click Save Settings — the new rates take effect immediately. A confirmation shows the change was applied." },
+            ]}
+            tip="Loan officers can override the default interest rate on individual applications. These settings are the fallback when no specific rate is entered."
+          />
         </div>
 
         {loading ? (
@@ -104,6 +119,7 @@ const LoanSettings = () => {
         .ls-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .ls-card { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .ls-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #e2bc8a 100%); }
+        .ls-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
         .ls-header { margin: 6px 0 28px; }
         .ls-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 6px; }
         .ls-header p { font-size: 13px; color: #64748b; margin: 0; max-width: 640px; line-height: 1.5; }

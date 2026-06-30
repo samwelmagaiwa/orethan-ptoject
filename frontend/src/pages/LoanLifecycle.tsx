@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
+import GetHelp from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -140,14 +141,28 @@ const LoanLifecycle = () => {
   return (
     <div className="ll-wrap">
       <style>{styles}</style>
-      <div className="ll-head">
-        <div>
-          <h1>Loan Restructuring</h1>
-          <p>Reschedule a struggling loan, advance a top-up, or write off bad debt — with automatic GL postings.</p>
+      <div className="ll-sticky-top">
+        <div className="ll-head">
+          <div>
+            <h1>Loan Restructuring</h1>
+            <p>Reschedule a struggling loan, advance a top-up, or write off bad debt — with automatic GL postings.</p>
+          </div>
         </div>
-      </div>
 
-      <div className="ll-search">
+        <GetHelp
+          title="How to use Loan Restructuring"
+          intro="Three managed actions that go beyond recording a payment: re-amortize a struggling loan, advance more funds, or permanently close an uncollectible account — all with automatic General Ledger postings and a full audit trail."
+          steps={[
+            { title: "1. Find the loan", text: "Enter the Loan ID (the number shown in the loan list) and click Find Loan. The loan's current balance, status and next due date are displayed." },
+            { title: "2. Reschedule (struggling borrower)", text: "Switch to the Reschedule tab. Enter the new term in months, repayment frequency and an optional interest rate. Click Reschedule Loan — the system deletes unpaid future installments and re-builds them over the outstanding balance. No cash moves, so no GL entry is posted.", example: "Borrower has 8 months left but can't meet TZS 120,000/month. Set term to 16 months → installment drops to ~TZS 60,000." },
+            { title: "3. Top-Up (advance more funds)", text: "Switch to the Top-Up tab. Enter the amount to advance, the payment method, and a new repayment term. The system posts Dr Loans Receivable / Cr Cash (or Bank) and rebuilds the schedule over the new combined balance.", example: "Outstanding balance TZS 300,000 + TZS 200,000 top-up = TZS 500,000 re-amortized over 12 months." },
+            { title: "4. Write-Off (uncollectible debt)", text: "Switch to the Write-Off tab. Enter the reason (required for audit). The system absorbs the balance against the Allowance for Loan Losses (built up by monthly provisioning), charges any shortfall to the provision expense, and closes the loan as written_off.", example: "Write-off reason: 'Borrower deceased — confirmed by family 2026-06-15'." },
+            { title: "5. Review history", text: "Every action appears in the Lifecycle History table below the loan card — type, amounts, who performed it, and notes." },
+          ]}
+          tip="Write-off is permanent and immediately removes the balance from Loans Receivable. If there is any chance of future recovery, use Reschedule instead."
+        />
+
+        <div className="ll-search">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -155,6 +170,7 @@ const LoanLifecycle = () => {
           placeholder="Enter Loan ID…"
         />
         <button onClick={search} disabled={busy}>Find Loan</button>
+        </div>
       </div>
 
       {loan && (
@@ -254,6 +270,7 @@ const LoanLifecycle = () => {
 
 const styles = `
 .ll-wrap { max-width: 1100px; margin: 0 auto; padding: 8px 4px 48px; }
+.ll-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 6px; }
 .ll-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ll-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }
 .ll-search { display: flex; gap: 10px; margin-bottom: 18px; }

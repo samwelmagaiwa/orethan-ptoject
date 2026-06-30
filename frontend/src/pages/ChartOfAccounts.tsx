@@ -5,6 +5,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -141,54 +142,71 @@ const ChartOfAccounts = () => {
 
       <div className="coa-card">
         <div className="coa-accent-bar" />
-        <div className="coa-header">
-          <div>
-            <h1>{t("chart.title")}</h1>
-            <p>{t("chart.subtitle")}</p>
+        <div className="coa-sticky-top">
+          <div className="coa-header">
+            <div>
+              <h1>{t("chart.title")}</h1>
+              <p>{t("chart.subtitle")}</p>
+            </div>
+            <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("chart.addAccount")}</button>
           </div>
-          <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("chart.addAccount")}</button>
-        </div>
 
-        <div className="coa-filters">
-          <input type="text" placeholder={t("chart.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-            <option value="">{t("chart.allTypes")}</option>
-            {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
-          </select>
-          <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
+          <GetHelp
+            title="How to use the Chart of Accounts"
+            intro="This is the full list of General Ledger accounts the system posts to. Every Journal Entry, repayment, disbursement, provisioning run, and accrual ultimately lands on one of these accounts."
+            steps={[
+              { title: "1. Browse or search", text: "Use the search box to find an account by its code or name, and the Type filter to narrow to Asset, Liability, Equity, Income or Expense accounts only.", example: "Type \"1100\" to jump straight to Loans Receivable." },
+              { title: "2. Open an account's ledger", text: "Click any blue account code to open its General Ledger — every posted line for that account, in date order, with a running balance." },
+              { title: "3. Add a new account", text: "Click + Add Account, fill in a unique code, name, type and normal balance (Debit for assets/expenses, Credit for liabilities/equity/income), then Create Account." },
+              { title: "4. Activate / deactivate", text: "Click the Active/Inactive badge to toggle an account. System accounts (badged SYSTEM) are protected — the platform depends on them, so they can't be deactivated or deleted." },
+              { title: "5. Export or print", text: "Use CSV / Excel / Print to share the current filtered list with auditors or management." },
+            ]}
+            tip="System accounts (1010 Cash, 1100 Loans Receivable, 1110 Interest Receivable, 1150 Allowance for Loan Losses, etc.) are the backbone of every automated posting — never delete or rename them."
+          />
+
+          <div className="coa-filters">
+            <input type="text" placeholder={t("chart.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+              <option value="">{t("chart.allTypes")}</option>
+              {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
+            </select>
+            <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
+          </div>
         </div>
 
         {loading ? (
           <div className="coa-empty">{t("common.loading")}</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{t("common.code")}</th><th>{t("common.name")}</th><th>{t("common.type")}</th><th>{t("chart.normalBalance")}</th><th>{t("chart.cash")}</th><th>{t("common.status")}</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="coa-empty">{t("chart.noAccounts")}</td></tr>
-              ) : filtered.map(a => (
-                <tr key={a.id}>
-                  <td className="coa-code" onClick={() => navigate(`/accounting/general-ledger?account_id=${a.id}`)}>{a.code}</td>
-                  <td>{a.name} {a.is_system && <span className="coa-system-badge">SYSTEM</span>}</td>
-                  <td><span className={`coa-type-badge coa-type-${a.type}`}>{typeLabel(a.type)}</span></td>
-                  <td style={{ textTransform: "capitalize" }}>{a.normal_balance === "debit" ? t("common.debit") : t("common.credit")}</td>
-                  <td>{a.is_cash_account ? "Yes" : "—"}</td>
-                  <td>
-                    <span className={`coa-status-badge ${a.is_active ? "active" : "inactive"}`} onClick={() => toggleActive(a)} style={{ cursor: a.is_system ? "not-allowed" : "pointer" }}>
-                      {a.is_active ? t("chart.active") : t("chart.inactive")}
-                    </span>
-                  </td>
-                  <td>
-                    {!a.is_system && <button className="coa-delete-btn" onClick={() => deleteAccount(a)}>{t("common.delete")}</button>}
-                  </td>
+          <div className="coa-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t("common.code")}</th><th>{t("common.name")}</th><th>{t("common.type")}</th><th>{t("chart.normalBalance")}</th><th>{t("chart.cash")}</th><th>{t("common.status")}</th><th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={7} className="coa-empty">{t("chart.noAccounts")}</td></tr>
+                ) : filtered.map(a => (
+                  <tr key={a.id}>
+                    <td className="coa-code" onClick={() => navigate(`/accounting/general-ledger?account_id=${a.id}`)}>{a.code}</td>
+                    <td>{a.name} {a.is_system && <span className="coa-system-badge">SYSTEM</span>}</td>
+                    <td><span className={`coa-type-badge coa-type-${a.type}`}>{typeLabel(a.type)}</span></td>
+                    <td style={{ textTransform: "capitalize" }}>{a.normal_balance === "debit" ? t("common.debit") : t("common.credit")}</td>
+                    <td>{a.is_cash_account ? "Yes" : "—"}</td>
+                    <td>
+                      <span className={`coa-status-badge ${a.is_active ? "active" : "inactive"}`} onClick={() => toggleActive(a)} style={{ cursor: a.is_system ? "not-allowed" : "pointer" }}>
+                        {a.is_active ? t("chart.active") : t("chart.inactive")}
+                      </span>
+                    </td>
+                    <td>
+                      {!a.is_system && <button className="coa-delete-btn" onClick={() => deleteAccount(a)}>{t("common.delete")}</button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -238,6 +256,9 @@ const ChartOfAccounts = () => {
         .coa-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .coa-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .coa-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .coa-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
+        .coa-table-scroll { max-height: 62vh; overflow-y: auto; }
+        .coa-table-scroll thead th { position: sticky; top: 0; z-index: 2; }
         .coa-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
         .coa-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .coa-header p { font-size: 13px; color: #64748b; margin: 0; }

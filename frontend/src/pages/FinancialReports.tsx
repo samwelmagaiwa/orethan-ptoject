@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -146,30 +147,45 @@ const FinancialReports = () => {
 
       <div className="fr-card">
         <div className="fr-accent-bar" />
-        <div className="fr-header">
-          <div>
-            <h1>Financial Reports</h1>
-            <p>Executive, Collections, Interest Income, Penalties, and Profit &amp; Loss</p>
+        <div className="fr-sticky-top">
+          <div className="fr-header">
+            <div>
+              <h1>Financial Reports</h1>
+              <p>Executive, Collections, Interest Income, Penalties, and Profit &amp; Loss</p>
+            </div>
+            <div className="fr-filters">
+              <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+              <span>to</span>
+              <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+              <button onClick={load}>Refresh</button>
+              <ExportButtons getRows={exportRows} filename={`financial-report-${section}`} sheetName={SECTION_LABELS[section]} onPrint={handlePrint} disabled={loading} />
+            </div>
           </div>
-          <div className="fr-filters">
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-            <span>to</span>
-            <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-            <button onClick={load}>Refresh</button>
-            <ExportButtons getRows={exportRows} filename={`financial-report-${section}`} sheetName={SECTION_LABELS[section]} onPrint={handlePrint} disabled={loading} />
-          </div>
-        </div>
 
-        <div className="fr-tabs">
-          {SECTIONS.map(s => (
-            <button key={s} className={`fr-tab ${section === s ? "active" : ""}`} onClick={() => setSection(s)}>{SECTION_LABELS[s]}</button>
-          ))}
+          <GetHelp
+            title="How to use Financial Reports"
+            intro="Five views of the institution's financial performance, all driven by the same posted ledger — pick a date range, then switch tabs."
+            steps={[
+              { title: "1. Choose a period", text: "Set the From/To dates and click Refresh. All five tabs reload for that range." },
+              { title: "2. Executive", text: "A KPI snapshot — portfolio size, outstanding balance, disbursed/collected this period, loan counts, NPL ratio (PAR90), and net income." },
+              { title: "3. Collections", text: "Total cash collected, broken down by payment method (cash/bank/mobile) and by month — useful for spotting which channel borrowers actually use." },
+              { title: "4. Interest Income / Penalties", text: "Monthly trend of interest earned and penalties collected, so you can track whether portfolio yield is improving or slipping." },
+              { title: "5. Profit & Loss", text: "Every Income and Expense account's balance for the period, ending in Net Income — the same figures that feed the Balance Sheet's Current Period Earnings line." },
+              { title: "6. Export", text: "CSV / Excel / Print always exports whichever tab is currently open." },
+            ]}
+          />
+
+          <div className="fr-tabs">
+            {SECTIONS.map(s => (
+              <button key={s} className={`fr-tab ${section === s ? "active" : ""}`} onClick={() => setSection(s)}>{SECTION_LABELS[s]}</button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
           <div className="fr-empty">Loading...</div>
         ) : (
-          <>
+          <div className="fr-body-scroll">
             {section === "executive" && executive && (
               <div className="fr-kpi-grid">
                 <div className="fr-kpi"><span>Total Portfolio</span><strong>{fmt(executive.total_portfolio)}</strong></div>
@@ -253,7 +269,7 @@ const FinancialReports = () => {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
@@ -261,6 +277,9 @@ const FinancialReports = () => {
         .fr-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .fr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .fr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .fr-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; }
+        .fr-body-scroll { max-height: 62vh; overflow-y: auto; }
+        .fr-body-scroll table thead th { position: sticky; top: 0; z-index: 2; }
         .fr-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 18px; flex-wrap: wrap; gap: 14px; }
         .fr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .fr-header p { font-size: 13px; color: #64748b; margin: 0; }

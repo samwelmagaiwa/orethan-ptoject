@@ -5,6 +5,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -286,22 +287,38 @@ const JournalEntries = () => {
 
       <div className="je-card">
         <div className="je-accent-bar" />
-        <div className="je-header">
-          <div>
-            <h1>{t("journal.title")}</h1>
-            <p>{t("journal.subtitle")}</p>
+        <div className="je-sticky-top">
+          <div className="je-header">
+            <div>
+              <h1>{t("journal.title")}</h1>
+              <p>{t("journal.subtitle")}</p>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
+              <button className="je-prov-btn" onClick={runAccrual} title="Post today's interest accrual (Dr Interest Receivable / Cr Interest Income)">Accrue Interest</button>
+              <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision adjustment to the ledger">Run Provisioning</button>
+              <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
-            <button className="je-prov-btn" onClick={runAccrual} title="Post today's interest accrual (Dr Interest Receivable / Cr Interest Income)">Accrue Interest</button>
-            <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision adjustment to the ledger">Run Provisioning</button>
-            <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
-          </div>
+
+          <GetHelp
+            title="How to use Journal Entries"
+            intro="Every transaction in the system — loan disbursements, repayments, provisioning, interest accrual — posts here automatically. Use this page to review the ledger and to record manual entries (rent, salaries, capital, bank fees) that the system doesn't post on its own."
+            steps={[
+              { title: "1. Read the list", text: "Each row is a balanced entry — total debits always equal total credits. Click a row to expand its individual debit/credit lines and the accounts they hit." },
+              { title: "2. Post a manual entry", text: "Click New Entry, pick a Quick Template (e.g. Pay Rent, Capital Injection) to pre-fill the two accounts, or build your own lines. Add more lines with + Add Line if a transaction touches more than two accounts. The Post button only enables once total debits equal total credits.", example: "Paying TZS 200,000 office rent from the bank: template fills Dr 5020 Rent Expense / Cr 1020 Bank — just type 200,000 once." },
+              { title: "3. Reverse a mistake", text: "Click Reverse on a posted entry to create an exact mirror-image entry that cancels it out. The original is never edited or deleted — this keeps a clean audit trail." },
+              { title: "4. Accrue Interest", text: "Click Accrue Interest to post today's earned-but-uncollected interest (Dr Interest Receivable / Cr Interest Income) across every active loan. Safe to click daily — already-accrued loans for today are automatically skipped." },
+              { title: "5. Run Provisioning", text: "Click Run Provisioning to bring the Allowance for Loan Losses up (or down) to the level the current portfolio aging requires. Shows a preview of the required adjustment before posting; if nothing has changed, it posts nothing." },
+            ]}
+            tip="Loan disbursements and repayments are posted automatically by the Loan module — you should rarely, if ever, need to create a manual entry for those."
+          />
         </div>
 
         {loading ? (
           <div className="je-empty">{t("common.loading")}</div>
         ) : (
+          <div className="je-table-scroll">
           <table>
             <thead>
               <tr><th>{t("common.entryNo")}</th><th>{t("common.date")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.status")}</th><th></th></tr>
@@ -354,6 +371,7 @@ const JournalEntries = () => {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -435,6 +453,9 @@ const JournalEntries = () => {
         .je-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .je-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .je-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .je-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
+        .je-table-scroll { max-height: 62vh; overflow-y: auto; }
+        .je-table-scroll > table > thead th { position: sticky; top: 0; z-index: 2; }
         .je-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
         .je-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .je-header p { font-size: 13px; color: #64748b; margin: 0; }

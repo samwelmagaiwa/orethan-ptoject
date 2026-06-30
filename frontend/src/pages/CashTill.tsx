@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
+import GetHelp from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -105,9 +106,24 @@ const CashTill = () => {
   return (
     <div className="ct-wrap">
       <style>{styles}</style>
-      <div className="ct-head">
-        <h1>Cashier Till</h1>
-        <p>Open the drawer with a float, transact cash, then count and close — variance is flagged automatically.</p>
+      <div className="ct-sticky-top">
+        <div className="ct-head">
+          <h1>Cashier Till</h1>
+          <p>Open the drawer with a float, transact cash, then count and close — variance is flagged automatically.</p>
+        </div>
+
+        <GetHelp
+          title="How to use the Cashier Till"
+          intro="Every cashier opens one till session at the start of the shift and closes it at the end. The system automatically tracks cash in (repayments you record as 'cash') and cash out (cash disbursements you process) — the physical count at close reveals any shortage or overage."
+          steps={[
+            { title: "1. Open the drawer", text: "At the start of your shift, enter the cash float you are starting with (the amount physically in the drawer right now) and click Open Drawer.", example: "Opening float: TZS 100,000 — the float received from yesterday's close or petty cash." },
+            { title: "2. Transact normally", text: "Record cash repayments and process cash disbursements through the normal loan pages — the till tracks them automatically. You don't need to come back here during the shift." },
+            { title: "3. Check the board mid-shift", text: "Refresh this page any time to see the live position: opening float + cash in (collections) − cash out (disbursements) = expected amount in the drawer right now." },
+            { title: "4. Count and close", text: "At the end of the shift, physically count the cash in the drawer. Enter the exact count in the Close Till box and click Count & Close Drawer.", example: "Expected TZS 340,000, you count TZS 338,500 → variance = −TZS 1,500 (shortage — investigate before locking up)." },
+            { title: "5. Review history", text: "The Session History table shows all your past sessions. Admins see all cashiers. A zero variance means the drawer balanced perfectly." },
+          ]}
+          tip="Close the till every day even if there are no transactions — a zero-transaction close confirms the drawer was balanced and undisturbed."
+        />
       </div>
 
       {snap?.open ? (
@@ -178,6 +194,9 @@ const CashTill = () => {
 
 const styles = `
 .ct-wrap { max-width: 1100px; margin: 0 auto; padding: 8px 4px 48px; }
+.ct-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 6px; }
+.ct-table-scroll { max-height: 50vh; overflow-y: auto; }
+.ct-table-scroll thead th { position: sticky; top: 0; z-index: 2; background: white; }
 .ct-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ct-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }
 .ct-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
@@ -201,7 +220,7 @@ const styles = `
 .ct-btn { margin-top: 16px; background: #1f9254; color: #fff; border: none; padding: 12px 26px; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .ct-btn.danger { background: #c0392b; }
 .ct-btn:disabled { opacity: .5; cursor: not-allowed; }
-.ct-table-wrap { overflow-x: auto; }
+.ct-table-wrap { overflow-x: auto; max-height: 50vh; overflow-y: auto; }
 .ct-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ct-table th { text-align: left; padding: 9px; border-bottom: 2px solid #e6ebf1; color: #627d98; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
 .ct-table td { padding: 9px; border-bottom: 1px solid #f0f3f7; color: #334e68; white-space: nowrap; }

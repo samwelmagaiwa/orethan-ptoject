@@ -4,6 +4,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -174,20 +175,36 @@ const BankReconciliation = () => {
 
       <div className="br-card">
         <div className="br-accent-bar" />
-        <div className="br-header">
-          <div>
-            <h1>{t("bank.title")}</h1>
-            <p>{t("bank.subtitle")}</p>
+        <div className="br-sticky-top">
+          <div className="br-header">
+            <div>
+              <h1>{t("bank.title")}</h1>
+              <p>{t("bank.subtitle")}</p>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
+              <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("bank.newReconciliation")}</button>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
-            <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("bank.newReconciliation")}</button>
-          </div>
+
+          <GetHelp
+            title="How to use Bank Reconciliation"
+            intro="Bank Reconciliation matches the bank's statement against the General Ledger, flagging items in transit or outstanding payments that explain any gap between the two balances."
+            steps={[
+              { title: "1. Start a new reconciliation", text: "Click New Reconciliation, choose the account (Cash on Hand or Bank Account), enter the bank statement date and the ending balance shown on the statement." },
+              { title: "2. Enter statement lines", text: "Type or paste each line from your paper/online bank statement — date, description, amount (+/−). Click + Add Line for each row.", example: "Date: 2026-06-25 | Description: Customer deposit | Amount: 500,000" },
+              { title: "3. Auto-Match", text: "Click Auto-Match to automatically pair statement lines against book entries (same amount within ±0.01, nearest date within 7 days). Matched pairs are shaded green." },
+              { title: "4. Review gaps", text: "Unmatched book items (Deposits in Transit / Outstanding Payments) and unmatched statement lines (bank errors / missed postings) are listed separately so you can investigate." },
+              { title: "5. Save & export", text: "Save the reconciliation — status changes to Reconciled when the adjusted book balance equals the statement. Export or print for filing." },
+            ]}
+            tip="Run reconciliation at least monthly, right after receiving your bank statement. Frequent small reconciliations catch errors much faster than a year-end sweep."
+          />
         </div>
 
         {loading ? (
           <div className="br-empty">{t("common.loading")}</div>
         ) : (
+          <div className="br-table-scroll">
           <table>
             <thead><tr><th>{t("common.account")}</th><th>{t("bank.statementDate")}</th><th>{t("bank.statementBalance")}</th><th>{t("bank.bookBalance")}</th><th>{t("bank.adjustedBalance")}</th><th>{t("bank.difference")}</th><th>{t("common.status")}</th><th></th></tr></thead>
             <tbody>
@@ -207,6 +224,7 @@ const BankReconciliation = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -300,6 +318,9 @@ const BankReconciliation = () => {
         .br-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .br-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .br-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .br-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
+        .br-table-scroll { max-height: 62vh; overflow-y: auto; }
+        .br-table-scroll > table > thead th { position: sticky; top: 0; z-index: 2; }
         .br-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
         .br-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .br-header p { font-size: 13px; color: #64748b; margin: 0; }

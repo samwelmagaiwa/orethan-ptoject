@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
+import GetHelp from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -80,18 +81,32 @@ const RiskReports = () => {
 
       <div className="rr-card">
         <div className="rr-accent-bar" />
-        <div className="rr-header">
-          <div>
-            <h1>Risk Reports</h1>
-            <p>Portfolio at Risk (PAR) and default analysis</p>
+        <div className="rr-sticky-top">
+          <div className="rr-header">
+            <div>
+              <h1>Risk Reports</h1>
+              <p>Portfolio at Risk (PAR) and default analysis</p>
+            </div>
+            <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
           </div>
-          <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
+
+          <GetHelp
+            title="How to use Risk Reports"
+            intro="A portfolio-health view built from the live repayment schedule — no manual data entry, it reads straight off overdue installments."
+            steps={[
+              { title: "1. PAR cards", text: "Portfolio at Risk at 1, 30, 60 and 90 days — the percentage and TZS value of the outstanding portfolio that is overdue by at least that many days. Rising PAR90 is the clearest early warning of a deteriorating book." },
+              { title: "2. Risk distribution", text: "Counts how many overdue loans fall into Low / Medium / High / Critical bands, so you can prioritize collections calls by severity." },
+              { title: "3. Default analysis", text: "Loans 90+ days past due, grouped by the month they were disbursed (a \"cohort\"). Compare default rates across cohorts to spot whether a particular month's underwriting was weaker." },
+              { title: "4. Defaulted loans list", text: "The individual loans driving the default numbers — useful for handing a worklist straight to the collections team or escalating to Write-Off in Loan Restructuring." },
+            ]}
+            tip="PAR90 / total outstanding portfolio is the same NPL ratio Regulator Reports (BOT) uses, so the two pages should always agree for the same date."
+          />
         </div>
 
         {loading ? (
           <div className="rr-empty">Loading...</div>
         ) : (
-          <>
+          <div className="rr-body-scroll">
             <div className="rr-portfolio-line">Total Outstanding Portfolio: <strong>{fmt(par?.total_outstanding_portfolio)}</strong></div>
 
             <div className="rr-par-grid">
@@ -160,11 +175,14 @@ const RiskReports = () => {
                 </table>
               </>
             )}
-          </>
+          </div>
         )}
       </div>
 
       <style>{`
+        .rr-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
+        .rr-body-scroll { max-height: 62vh; overflow-y: auto; }
+        .rr-body-scroll table thead th { position: sticky; top: 0; z-index: 2; }
         .rr-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .rr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
