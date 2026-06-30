@@ -213,6 +213,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/accounting/bank-reconciliations/auto-match', [BankReconciliationController::class, 'autoMatch']);
         Route::get('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'show']);
         Route::delete('/accounting/bank-reconciliations/{id}', [BankReconciliationController::class, 'destroy']);
+
+        // Automated loan-loss provisioning
+        Route::get('/accounting/provisioning/preview', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'preview']);
+        Route::post('/accounting/provisioning/run', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'run']);
     });
 
     // ========== RISK & FINANCIAL REPORTS (Admin / Finance Officer / Managing Director) ==========

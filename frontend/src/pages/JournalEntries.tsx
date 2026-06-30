@@ -189,6 +189,37 @@ const JournalEntries = () => {
     }
   };
 
+  // Loan-loss provisioning: preview the required adjustment, then post it.
+  const runProvisioning = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/accounting/provisioning/preview`, { headers: authHeaders() });
+      const p = res.data.data;
+      if (Math.abs(p.adjustment) < 0.01) {
+        setModal({ isOpen: true, title: "Provisioning Up To Date", message: `Required provision (${fmt(p.required_provision)}) already matches the allowance — nothing to post.`, type: "info" });
+        return;
+      }
+      const verb = p.adjustment > 0 ? "charge" : "release";
+      setConfirm({
+        isOpen: true,
+        title: "Post Loan-Loss Provision",
+        message: `Required provision: ${fmt(p.required_provision)} | Current allowance: ${fmt(p.current_allowance)}. This will ${verb} ${fmt(Math.abs(p.adjustment))} to the General Ledger. Continue?`,
+        type: "info",
+        onConfirm: async () => {
+          setConfirm(prev => ({ ...prev, isOpen: false }));
+          try {
+            const r = await axios.post(`${API_BASE}/accounting/provisioning/run`, {}, { headers: authHeaders() });
+            load();
+            setModal({ isOpen: true, title: "Provision Posted", message: r.data.message || "Provision posted", type: "success" });
+          } catch (err: any) {
+            setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Provisioning failed", type: "error" });
+          }
+        },
+      });
+    } catch (err: any) {
+      setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Failed to preview provisioning", type: "error" });
+    }
+  };
+
   const viewReversal = (reversalEntryId: number) => {
     const el = document.getElementById(`je-row-${reversalEntryId}`);
     if (el) {
@@ -232,6 +263,7 @@ const JournalEntries = () => {
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
+            <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision adjustment to the ledger">Run Provisioning</button>
             <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
           </div>
         </div>
@@ -377,6 +409,8 @@ const JournalEntries = () => {
         .je-header p { font-size: 13px; color: #64748b; margin: 0; }
         .je-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .je-add-btn:hover { background: #1e5fae; }
+        .je-prov-btn { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .je-prov-btn:hover { background: #dcfce7; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }

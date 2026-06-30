@@ -19,6 +19,8 @@ class ChartOfAccountsSeeder extends Seeder
             ['code' => '1010', 'name' => 'Cash on Hand', 'type' => 'asset', 'normal_balance' => 'debit', 'is_cash_account' => true, 'is_system' => true],
             ['code' => '1020', 'name' => 'Bank Account', 'type' => 'asset', 'normal_balance' => 'debit', 'is_cash_account' => true, 'is_system' => true],
             ['code' => '1100', 'name' => 'Loans Receivable (Portfolio)', 'type' => 'asset', 'normal_balance' => 'debit', 'is_system' => true],
+            ['code' => '1110', 'name' => 'Interest Receivable', 'type' => 'asset', 'normal_balance' => 'debit', 'is_system' => true],
+            ['code' => '1150', 'name' => 'Allowance for Loan Losses', 'type' => 'asset', 'normal_balance' => 'credit', 'is_system' => true],
             ['code' => '1200', 'name' => 'Other Receivables', 'type' => 'asset', 'normal_balance' => 'debit'],
             ['code' => '1500', 'name' => 'Office Equipment', 'type' => 'asset', 'normal_balance' => 'debit'],
 

@@ -17,10 +17,13 @@ class AccountingService
     const CASH_ON_HAND = '1010';
     const BANK_ACCOUNT = '1020';
     const LOANS_RECEIVABLE = '1100';
+    const INTEREST_RECEIVABLE = '1110';
+    const ALLOWANCE_LOAN_LOSSES = '1150';
     const RETAINED_EARNINGS = '3020';
     const INTEREST_INCOME = '4010';
     const FEE_INCOME = '4020';
     const PENALTY_INCOME = '4030';
+    const LOAN_LOSS_PROVISION_EXPENSE = '5050';
 
     /**
      * Resolve a system account by its fixed code, throwing a clear error if the
