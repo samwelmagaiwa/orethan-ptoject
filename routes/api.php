@@ -217,6 +217,10 @@ Route::prefix('v1')->group(function () {
         // Automated loan-loss provisioning
         Route::get('/accounting/provisioning/preview', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'preview']);
         Route::post('/accounting/provisioning/run', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'run']);
+
+        // Daily interest accrual
+        Route::get('/accounting/interest-accrual/preview', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'preview']);
+        Route::post('/accounting/interest-accrual/run', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'run']);
     });
 
     // ========== LOAN LIFECYCLE (Reschedule / Write-off / Top-up) — Admin / LM / GM / MD ==========

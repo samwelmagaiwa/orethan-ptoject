@@ -220,6 +220,36 @@ const JournalEntries = () => {
     }
   };
 
+  // Daily interest accrual: preview the day's accrual, then post it.
+  const runAccrual = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/accounting/interest-accrual/preview`, { headers: authHeaders() });
+      const p = res.data.data;
+      if (!p.loan_count || p.total_interest < 0.01) {
+        setModal({ isOpen: true, title: "Nothing to Accrue", message: `No interest to accrue for ${p.date}${p.already_accrued_loans ? ` (${p.already_accrued_loans} loan(s) already accrued today)` : ""}.`, type: "info" });
+        return;
+      }
+      setConfirm({
+        isOpen: true,
+        title: "Post Daily Interest Accrual",
+        message: `Accrue ${fmt(p.total_interest)} of interest across ${p.loan_count} loan(s) for ${p.date}? Posts Dr Interest Receivable / Cr Interest Income.`,
+        type: "info",
+        onConfirm: async () => {
+          setConfirm(prev => ({ ...prev, isOpen: false }));
+          try {
+            const r = await axios.post(`${API_BASE}/accounting/interest-accrual/run`, {}, { headers: authHeaders() });
+            load();
+            setModal({ isOpen: true, title: "Interest Accrued", message: r.data.message || "Interest accrued", type: "success" });
+          } catch (err: any) {
+            setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Accrual failed", type: "error" });
+          }
+        },
+      });
+    } catch (err: any) {
+      setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Failed to preview accrual", type: "error" });
+    }
+  };
+
   const viewReversal = (reversalEntryId: number) => {
     const el = document.getElementById(`je-row-${reversalEntryId}`);
     if (el) {
@@ -263,6 +293,7 @@ const JournalEntries = () => {
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
+            <button className="je-prov-btn" onClick={runAccrual} title="Post today's interest accrual (Dr Interest Receivable / Cr Interest Income)">Accrue Interest</button>
             <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision adjustment to the ledger">Run Provisioning</button>
             <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
           </div>

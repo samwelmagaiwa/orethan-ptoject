@@ -208,12 +208,33 @@ class AccountingService
             ];
         }
         if ($repayment->interest_amount > 0) {
-            $lines[] = [
-                'chart_of_account_id' => $this->account(self::INTEREST_INCOME)->id,
-                'debit' => 0,
-                'credit' => $repayment->interest_amount,
-                'description' => 'Interest portion of repayment',
-            ];
+            // If interest was already accrued (Dr Interest Receivable / Cr Interest
+            // Income via the daily accrual run), collecting it should RELIEVE the
+            // receivable rather than recognize income twice. Credit Interest
+            // Receivable up to its current balance; book any remainder — interest
+            // not yet accrued — straight to Interest Income.
+            $interest = round((float) $repayment->interest_amount, 2);
+            $receivable = $this->account(self::INTEREST_RECEIVABLE);
+            $receivableBalance = round($receivable->balance($repayment->payment_date), 2);
+            $relieve = round(min(max($receivableBalance, 0), $interest), 2);
+            $toIncome = round($interest - $relieve, 2);
+
+            if ($relieve > 0) {
+                $lines[] = [
+                    'chart_of_account_id' => $receivable->id,
+                    'debit' => 0,
+                    'credit' => $relieve,
+                    'description' => 'Interest collected — relieves accrued receivable',
+                ];
+            }
+            if ($toIncome > 0) {
+                $lines[] = [
+                    'chart_of_account_id' => $this->account(self::INTEREST_INCOME)->id,
+                    'debit' => 0,
+                    'credit' => $toIncome,
+                    'description' => 'Interest portion of repayment',
+                ];
+            }
         }
         if ($repayment->penalty_amount > 0) {
             $lines[] = [
