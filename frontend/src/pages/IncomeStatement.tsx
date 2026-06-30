@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
@@ -13,6 +14,7 @@ interface Statement { from: string; to: string; income: Line[]; expense: Line[];
 
 const IncomeStatement = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
   const [from, setFrom] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<Statement | null>(null);
@@ -72,7 +74,7 @@ const IncomeStatement = () => {
     <div className="is-section">
       <div className="is-section-title">{title}</div>
       <table>
-        <thead><tr><th>Code</th><th>Account</th><th>Amount</th></tr></thead>
+        <thead><tr><th>{t("common.code")}</th><th>{t("common.account")}</th><th>{t("common.amount")}</th></tr></thead>
         <tbody>
           {lines.length === 0 ? (
             <tr><td colSpan={3} className="is-empty-small">{emptyText}</td></tr>
@@ -99,29 +101,29 @@ const IncomeStatement = () => {
         <div className="is-accent-bar" />
         <div className="is-header">
           <div>
-            <h1>Income Statement (Profit &amp; Loss)</h1>
-            <p>Revenue minus expenses for the selected period — click a code to open its ledger</p>
+            <h1>{t("income.title")}</h1>
+            <p>{t("income.subtitle")}</p>
           </div>
           <div className="is-filters">
             <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-            <span>to</span>
+            <span>{t("common.to")}</span>
             <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-            <button onClick={load}>Refresh</button>
+            <button onClick={load}>{t("common.refresh")}</button>
             <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
         {loading ? (
-          <div className="is-empty">Loading...</div>
+          <div className="is-empty">{t("common.loading")}</div>
         ) : !data ? (
           <div className="is-empty">No data</div>
         ) : (
           <div className="is-body">
-            {section("Income", data.income, data.total_income, "No income recorded for this period")}
-            {section("Expenses", data.expense, data.total_expense, "No expenses recorded for this period")}
+            {section(t("income.sectionIncome"), data.income, data.total_income, "No income recorded for this period")}
+            {section(t("income.sectionExpenses"), data.expense, data.total_expense, "No expenses recorded for this period")}
 
             <div className={`is-net ${data.net_income >= 0 ? "positive" : "negative"}`}>
-              <span>Net Income</span>
+              <span>{t("income.netIncome")}</span>
               <strong>{fmt(data.net_income)}</strong>
             </div>
           </div>

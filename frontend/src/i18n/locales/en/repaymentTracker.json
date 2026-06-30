@@ -77,7 +77,8 @@
     "completed": "completed",
     "overdue": "overdue",
     "pending": "Pending",
-    "paid": "Paid"
+    "paid": "Paid",
+    "partial": "Partial"
   },
   "empty": {
     "noPortfolioData": "No active portfolio data yet",

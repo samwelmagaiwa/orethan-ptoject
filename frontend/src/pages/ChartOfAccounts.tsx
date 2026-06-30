@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -20,6 +21,7 @@ interface Account {
   description?: string;
 }
 
+// English labels used for CSV/print export (locale-independent files).
 const TYPE_LABELS: Record<string, string> = {
   asset: "Asset",
   liability: "Liability",
@@ -30,6 +32,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 const ChartOfAccounts = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
+  // Localized type labels for on-screen display.
+  const typeLabel = (type: string) => t(`chart.type${type.charAt(0).toUpperCase() + type.slice(1)}`);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
@@ -138,47 +143,47 @@ const ChartOfAccounts = () => {
         <div className="coa-accent-bar" />
         <div className="coa-header">
           <div>
-            <h1>Chart of Accounts</h1>
-            <p>General Ledger account structure — click a code to open its ledger</p>
+            <h1>{t("chart.title")}</h1>
+            <p>{t("chart.subtitle")}</p>
           </div>
-          <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ Add Account</button>
+          <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("chart.addAccount")}</button>
         </div>
 
         <div className="coa-filters">
-          <input type="text" placeholder="Search by code or name..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input type="text" placeholder={t("chart.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
           <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-            <option value="">All Types</option>
-            {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            <option value="">{t("chart.allTypes")}</option>
+            {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
           </select>
           <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
         </div>
 
         {loading ? (
-          <div className="coa-empty">Loading...</div>
+          <div className="coa-empty">{t("common.loading")}</div>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Code</th><th>Name</th><th>Type</th><th>Normal Balance</th><th>Cash?</th><th>Status</th><th></th>
+                <th>{t("common.code")}</th><th>{t("common.name")}</th><th>{t("common.type")}</th><th>{t("chart.normalBalance")}</th><th>{t("chart.cash")}</th><th>{t("common.status")}</th><th></th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="coa-empty">No accounts found</td></tr>
+                <tr><td colSpan={7} className="coa-empty">{t("chart.noAccounts")}</td></tr>
               ) : filtered.map(a => (
                 <tr key={a.id}>
                   <td className="coa-code" onClick={() => navigate(`/accounting/general-ledger?account_id=${a.id}`)}>{a.code}</td>
                   <td>{a.name} {a.is_system && <span className="coa-system-badge">SYSTEM</span>}</td>
-                  <td><span className={`coa-type-badge coa-type-${a.type}`}>{TYPE_LABELS[a.type]}</span></td>
-                  <td style={{ textTransform: "capitalize" }}>{a.normal_balance}</td>
+                  <td><span className={`coa-type-badge coa-type-${a.type}`}>{typeLabel(a.type)}</span></td>
+                  <td style={{ textTransform: "capitalize" }}>{a.normal_balance === "debit" ? t("common.debit") : t("common.credit")}</td>
                   <td>{a.is_cash_account ? "Yes" : "—"}</td>
                   <td>
                     <span className={`coa-status-badge ${a.is_active ? "active" : "inactive"}`} onClick={() => toggleActive(a)} style={{ cursor: a.is_system ? "not-allowed" : "pointer" }}>
-                      {a.is_active ? "Active" : "Inactive"}
+                      {a.is_active ? t("chart.active") : t("chart.inactive")}
                     </span>
                   </td>
                   <td>
-                    {!a.is_system && <button className="coa-delete-btn" onClick={() => deleteAccount(a)}>Delete</button>}
+                    {!a.is_system && <button className="coa-delete-btn" onClick={() => deleteAccount(a)}>{t("common.delete")}</button>}
                   </td>
                 </tr>
               ))}
@@ -190,40 +195,40 @@ const ChartOfAccounts = () => {
       {showModal && (
         <div className="coa-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="coa-modal-content" onClick={e => e.stopPropagation()}>
-            <h2>Add Account</h2>
+            <h2>{t("chart.addAccountTitle")}</h2>
             <table className="coa-form-table">
               <tbody>
                 <tr>
-                  <td><strong>Code</strong><br /><input type="text" placeholder="e.g. 1030" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /></td>
-                  <td colSpan={2}><strong>Name</strong><br /><input type="text" placeholder="e.g. Mobile Money Wallet" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></td>
+                  <td><strong>{t("common.code")}</strong><br /><input type="text" placeholder={t("chart.codeExample")} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /></td>
+                  <td colSpan={2}><strong>{t("common.name")}</strong><br /><input type="text" placeholder={t("chart.nameExample")} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></td>
                 </tr>
                 <tr>
                   <td>
-                    <strong>Type</strong><br />
+                    <strong>{t("common.type")}</strong><br />
                     <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                      {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
                     </select>
                   </td>
                   <td>
-                    <strong>Normal Balance</strong><br />
+                    <strong>{t("chart.normalBalance")}</strong><br />
                     <select value={form.normal_balance} onChange={e => setForm({ ...form, normal_balance: e.target.value })}>
-                      <option value="debit">Debit</option>
-                      <option value="credit">Credit</option>
+                      <option value="debit">{t("common.debit")}</option>
+                      <option value="credit">{t("common.credit")}</option>
                     </select>
                   </td>
                   <td>
-                    <strong>Cash/Bank Account</strong><br />
-                    <label className="coa-checkbox-label"><input type="checkbox" checked={form.is_cash_account} onChange={e => setForm({ ...form, is_cash_account: e.target.checked })} /> Used in Cash Book</label>
+                    <strong>{t("chart.cashBankAccount")}</strong><br />
+                    <label className="coa-checkbox-label"><input type="checkbox" checked={form.is_cash_account} onChange={e => setForm({ ...form, is_cash_account: e.target.checked })} /> {t("chart.usedInCashBook")}</label>
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={3}><strong>Description</strong><br /><textarea rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></td>
+                  <td colSpan={3}><strong>{t("common.description")}</strong><br /><textarea rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></td>
                 </tr>
               </tbody>
             </table>
             <div className="coa-modal-actions">
-              <button className="coa-cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="coa-save-btn" onClick={saveAccount}>Create Account</button>
+              <button className="coa-cancel-btn" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
+              <button className="coa-save-btn" onClick={saveAccount}>{t("chart.createAccount")}</button>
             </div>
           </div>
         </div>

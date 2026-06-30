@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
@@ -16,6 +17,7 @@ interface Sheet {
 
 const BalanceSheet = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<Sheet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ const BalanceSheet = () => {
     <div className="bs-section">
       <div className="bs-section-title">{title}</div>
       <table>
-        <thead><tr><th>Code</th><th>Account</th><th>Amount</th></tr></thead>
+        <thead><tr><th>{t("common.code")}</th><th>{t("common.account")}</th><th>{t("common.amount")}</th></tr></thead>
         <tbody>
           {lines.length === 0 ? (
             <tr><td colSpan={3} className="bs-empty-small">None</td></tr>
@@ -103,27 +105,27 @@ const BalanceSheet = () => {
         <div className="bs-accent-bar" />
         <div className="bs-header">
           <div>
-            <h1>Balance Sheet</h1>
-            <p>Assets = Liabilities + Equity, as of a given date — click a code to open its ledger</p>
+            <h1>{t("balance.title")}</h1>
+            <p>{t("balance.subtitle")}</p>
           </div>
           <div className="bs-filters">
             <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
-            <button onClick={() => load(asOf)}>Refresh</button>
+            <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
             <ExportButtons getRows={exportRows} filename="balance-sheet" sheetName="Balance Sheet" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
         {loading ? (
-          <div className="bs-empty">Loading...</div>
+          <div className="bs-empty">{t("common.loading")}</div>
         ) : !data ? (
           <div className="bs-empty">No data</div>
         ) : (
           <>
             <div className="bs-columns">
-              <div>{section("Assets", data.assets, data.total_assets)}</div>
+              <div>{section(t("balance.assets"), data.assets, data.total_assets)}</div>
               <div>
-                {section("Liabilities", data.liabilities, data.total_liabilities)}
-                {section("Equity", data.equity, data.total_equity)}
+                {section(t("balance.liabilities"), data.liabilities, data.total_liabilities)}
+                {section(t("balance.equity"), data.equity, data.total_equity)}
               </div>
             </div>
             <div className={`bs-balance-flag ${data.is_balanced ? "ok" : "off"}`}>

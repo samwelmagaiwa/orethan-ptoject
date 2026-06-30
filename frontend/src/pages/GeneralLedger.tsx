@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
@@ -12,6 +13,7 @@ interface Account { id: number; code: string; name: string; }
 interface GLLine { date: string; entry_number: string; description: string; debit: number; credit: number; running_balance: number; }
 
 const GeneralLedger = () => {
+  const { t } = useTranslation("accounting");
   const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<number | "">(() => {
@@ -86,32 +88,32 @@ const GeneralLedger = () => {
       <div className="gl-card">
         <div className="gl-accent-bar" />
         <div className="gl-header">
-          <h1>General Ledger</h1>
-          <p>Every posted transaction for a single account, with a running balance</p>
+          <h1>{t("ledger.title")}</h1>
+          <p>{t("ledger.subtitle")}</p>
         </div>
 
         <div className="gl-filters">
           <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
-            <option value="">Select account...</option>
+            <option value="">{t("common.selectAccount")}</option>
             {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
           </select>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
           <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-          <button className="gl-load-btn" onClick={() => load()}>Load</button>
+          <button className="gl-load-btn" onClick={() => load()}>{t("common.refresh")}</button>
           <ExportButtons getRows={exportRows} filename="general-ledger" sheetName="General Ledger" onPrint={handlePrint} disabled={!ledger?.lines?.length} />
         </div>
 
-        {loading && <div className="gl-empty">Loading...</div>}
+        {loading && <div className="gl-empty">{t("common.loading")}</div>}
 
         {!loading && ledger && (
           <>
             <div className="gl-summary">
-              <div><span>Account</span><strong>{ledger.account.code} — {ledger.account.name}</strong></div>
-              <div><span>Opening Balance</span><strong>{fmt(ledger.opening_balance)}</strong></div>
-              <div><span>Closing Balance</span><strong>{fmt(ledger.closing_balance)}</strong></div>
+              <div><span>{t("common.account")}</span><strong>{ledger.account.code} — {ledger.account.name}</strong></div>
+              <div><span>{t("ledger.openingBalance")}</span><strong>{fmt(ledger.opening_balance)}</strong></div>
+              <div><span>{t("ledger.closingBalance")}</span><strong>{fmt(ledger.closing_balance)}</strong></div>
             </div>
             <table>
-              <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+              <thead><tr><th>{t("common.date")}</th><th>{t("common.entryNo")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.balance")}</th></tr></thead>
               <tbody>
                 {ledger.lines.length === 0 ? (
                   <tr><td colSpan={6} className="gl-empty">No transactions in this period</td></tr>

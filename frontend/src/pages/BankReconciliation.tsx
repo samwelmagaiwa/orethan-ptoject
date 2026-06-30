@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -17,6 +18,7 @@ interface Reconciliation {
 }
 
 const BankReconciliation = () => {
+  const { t } = useTranslation("accounting");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [list, setList] = useState<Reconciliation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,11 +163,11 @@ const BankReconciliation = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
       <ConfirmModal
         isOpen={confirmDeleteId !== null}
-        title="Delete Bank Reconciliation"
-        message="Delete this reconciliation working paper? This does not affect the ledger or any posted journal entries — it only removes this comparison record."
+        title={t("bank.deleteTitle")}
+        message={t("bank.deleteMessage")}
         type="danger"
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
+        confirmText={t("bank.yesDelete")}
+        cancelText={t("common.cancel")}
         onConfirm={deleteReconciliation}
         onCancel={() => setConfirmDeleteId(null)}
       />
@@ -174,23 +176,23 @@ const BankReconciliation = () => {
         <div className="br-accent-bar" />
         <div className="br-header">
           <div>
-            <h1>Bank Reconciliation</h1>
-            <p>Compare a bank statement balance against the GL-derived book balance</p>
+            <h1>{t("bank.title")}</h1>
+            <p>{t("bank.subtitle")}</p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
-            <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Reconciliation</button>
+            <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("bank.newReconciliation")}</button>
           </div>
         </div>
 
         {loading ? (
-          <div className="br-empty">Loading...</div>
+          <div className="br-empty">{t("common.loading")}</div>
         ) : (
           <table>
-            <thead><tr><th>Account</th><th>Statement Date</th><th>Statement Balance</th><th>Book Balance</th><th>Adjusted Balance</th><th>Difference</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>{t("common.account")}</th><th>{t("bank.statementDate")}</th><th>{t("bank.statementBalance")}</th><th>{t("bank.bookBalance")}</th><th>{t("bank.adjustedBalance")}</th><th>{t("bank.difference")}</th><th>{t("common.status")}</th><th></th></tr></thead>
             <tbody>
               {list.length === 0 ? (
-                <tr><td colSpan={8} className="br-empty">No reconciliations yet</td></tr>
+                <tr><td colSpan={8} className="br-empty">{t("bank.noReconciliations")}</td></tr>
               ) : list.map(r => (
                 <tr key={r.id}>
                   <td>{r.account.code} — {r.account.name}</td>
@@ -200,7 +202,7 @@ const BankReconciliation = () => {
                   <td>{fmt(r.adjusted_balance)}</td>
                   <td>{fmt(r.difference)}</td>
                   <td><span className={`br-status ${r.status}`}>{r.status}</span></td>
-                  <td><button type="button" className="br-delete-btn" onClick={() => setConfirmDeleteId(r.id)}>Delete</button></td>
+                  <td><button type="button" className="br-delete-btn" onClick={() => setConfirmDeleteId(r.id)}>{t("common.delete")}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -211,29 +213,40 @@ const BankReconciliation = () => {
       {showModal && (
         <div className="br-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="br-modal-content" onClick={e => e.stopPropagation()}>
-            <h2>New Bank Reconciliation</h2>
+            <h2>{t("bank.newReconciliationTitle")}</h2>
+
+            <div className="br-guide">
+              <strong>{t("bank.guideTitle")}</strong>
+              <ul>
+                <li>{t("bank.guideStatementBalance")}</li>
+                <li>{t("bank.guideAutoMatch")}</li>
+                <li>{t("bank.guideDepositInTransit")}</li>
+                <li>{t("bank.guideOutstandingPayment")}</li>
+              </ul>
+            </div>
+
             <div className="br-modal-form">
               <table className="br-form-table">
                 <tbody>
                   <tr>
                     <td>
-                      <strong>Cash/Bank Account</strong>
+                      <strong>{t("bank.cashBankAccount")}</strong>
                       <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
-                        <option value="">Select account</option>
+                        <option value="">{t("bank.selectAccount")}</option>
                         {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                       </select>
                     </td>
-                    <td><strong>Statement Date</strong><input type="date" value={statementDate} onChange={e => setStatementDate(e.target.value)} /></td>
-                    <td><strong>Statement Balance</strong><input type="number" value={statementBalance} onChange={e => setStatementBalance(e.target.value)} /></td>
+                    <td><strong>{t("bank.statementDate")}</strong><input type="date" value={statementDate} onChange={e => setStatementDate(e.target.value)} /></td>
+                    <td><strong>{t("bank.statementBalance")}</strong><input type="number" value={statementBalance} onChange={e => setStatementBalance(e.target.value)} /></td>
                   </tr>
                 </tbody>
               </table>
 
               <div className="br-items-section">
                 <div className="br-items-header">
-                  <strong>Bank Statement Lines — auto-match against the ledger</strong>
+                  <strong>{t("bank.statementLinesTitle")}</strong>
                 </div>
-                <p className="br-match-hint">Paste each statement transaction as <code>date, amount, description</code> (one per line). Amount: positive for deposits, negative for withdrawals/cheques. We'll match these against the book and pre-fill the unmatched items below.</p>
+                <p className="br-match-hint">{t("bank.statementLinesHint")}</p>
                 <textarea
                   className="br-statement-textarea"
                   rows={4}
@@ -242,7 +255,7 @@ const BankReconciliation = () => {
                   onChange={e => setStatementLinesText(e.target.value)}
                 />
                 <button type="button" className="br-match-btn" onClick={autoMatch} disabled={matching}>
-                  {matching ? "Matching..." : "Auto-Match Against Ledger"}
+                  {matching ? t("bank.matching") : t("bank.autoMatch")}
                 </button>
                 {matchSummary && (
                   <div className="br-match-summary">
@@ -256,28 +269,28 @@ const BankReconciliation = () => {
 
               <div className="br-items-section">
                 <div className="br-items-header">
-                  <strong>Outstanding Items {items.length > 0 ? `(${items.length})` : "(optional)"}</strong>
+                  <strong>{t("bank.outstandingItems")} {items.length > 0 ? `(${items.length})` : t("bank.optional")}</strong>
                   <div>
-                    <button type="button" onClick={() => addItem("deposit_in_transit")}>+ Deposit in Transit</button>
-                    <button type="button" onClick={() => addItem("outstanding_payment")}>+ Outstanding Payment</button>
+                    <button type="button" onClick={() => addItem("deposit_in_transit")}>{t("bank.depositInTransit")}</button>
+                    <button type="button" onClick={() => addItem("outstanding_payment")}>{t("bank.outstandingPayment")}</button>
                   </div>
                 </div>
                 {items.map((item, i) => (
                   <div className="br-item-row" key={i}>
-                    <span className="br-item-type">{item.type === "deposit_in_transit" ? "Deposit" : "Payment"}</span>
-                    <input type="text" placeholder="Description" value={item.description} onChange={e => updateItem(i, "description", e.target.value)} />
-                    <input type="number" placeholder="Amount" value={item.amount} onChange={e => updateItem(i, "amount", e.target.value)} />
+                    <span className="br-item-type">{item.type === "deposit_in_transit" ? t("bank.deposit") : t("bank.payment")}</span>
+                    <input type="text" placeholder={t("common.description")} value={item.description} onChange={e => updateItem(i, "description", e.target.value)} />
+                    <input type="number" placeholder={t("common.amount")} value={item.amount} onChange={e => updateItem(i, "amount", e.target.value)} />
                     <input type="date" value={item.date} onChange={e => updateItem(i, "date", e.target.value)} />
                     <button type="button" className="br-remove-btn" onClick={() => removeItem(i)}>×</button>
                   </div>
                 ))}
               </div>
 
-              <div className="br-field"><label>Notes</label><textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+              <div className="br-field"><label>{t("bank.notes")}</label><textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} /></div>
             </div>
             <div className="br-modal-actions">
-              <button className="br-cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="br-save-btn" onClick={submit}>Save Reconciliation</button>
+              <button className="br-cancel-btn" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
+              <button className="br-save-btn" onClick={submit}>{t("bank.saveReconciliation")}</button>
             </div>
           </div>
         </div>
@@ -303,7 +316,11 @@ const BankReconciliation = () => {
         .br-empty { text-align: center; padding: 40px; color: #64748b; }
         .br-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .br-modal-content { background: white; border-radius: 20px; padding: 26px; width: 720px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
-        .br-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 18px; }
+        .br-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 14px; }
+        .br-guide { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
+        .br-guide strong { font-size: 12.5px; color: #1e40af; }
+        .br-guide ul { margin: 8px 0 0; padding-left: 18px; }
+        .br-guide li { font-size: 11.5px; color: #334155; line-height: 1.55; margin-bottom: 5px; }
         .br-modal-form { display: flex; flex-direction: column; gap: 16px; }
         .br-form-table { border-collapse: collapse; }
         .br-form-table td { padding: 8px 10px 8px 0; border: none; vertical-align: top; }

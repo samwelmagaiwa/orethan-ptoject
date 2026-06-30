@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -45,6 +46,7 @@ interface Entry {
 
 const JournalEntries = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [accounts, setAccounts] = useState<{ id: number; code: string; name: string }[]>([]);
   const [highlightId, setHighlightId] = useState<number | null>(null);
@@ -225,25 +227,25 @@ const JournalEntries = () => {
         <div className="je-accent-bar" />
         <div className="je-header">
           <div>
-            <h1>Journal Entries</h1>
-            <p>General Ledger postings — auto-posted from disbursements/repayments, or entered manually</p>
+            <h1>{t("journal.title")}</h1>
+            <p>{t("journal.subtitle")}</p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
-            <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>+ New Entry</button>
+            <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
           </div>
         </div>
 
         {loading ? (
-          <div className="je-empty">Loading...</div>
+          <div className="je-empty">{t("common.loading")}</div>
         ) : (
           <table>
             <thead>
-              <tr><th>Entry No.</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Status</th><th></th></tr>
+              <tr><th>{t("common.entryNo")}</th><th>{t("common.date")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.status")}</th><th></th></tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
-                <tr><td colSpan={7} className="je-empty">No journal entries yet</td></tr>
+                <tr><td colSpan={7} className="je-empty">{t("journal.noEntries")}</td></tr>
               ) : entries.map(entry => {
                 const debit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
                 const credit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
@@ -259,17 +261,17 @@ const JournalEntries = () => {
                         <span className={`je-status ${entry.status}`}>{entry.status}</span>
                         {entry.status === "reversed" && entry.reversalEntry && (
                           <button className="je-view-reversal-btn" onClick={(e) => { e.stopPropagation(); viewReversal(entry.reversalEntry!.id); }} title={`Jump to ${entry.reversalEntry.entry_number}`}>
-                            View Reversal →
+                            {t("journal.viewReversal")}
                           </button>
                         )}
                       </td>
-                      <td>{entry.status === "posted" && <button className="je-reverse-btn" onClick={(e) => { e.stopPropagation(); reverseEntry(entry); }}>Reverse</button>}</td>
+                      <td>{entry.status === "posted" && <button className="je-reverse-btn" onClick={(e) => { e.stopPropagation(); reverseEntry(entry); }}>{t("journal.reverse")}</button>}</td>
                     </tr>
                     {expanded === entry.id && (
                       <tr className="je-detail-row">
                         <td colSpan={7}>
                           <table className="je-lines-table">
-                            <thead><tr><th>Account</th><th>Description</th><th>Debit</th><th>Credit</th></tr></thead>
+                            <thead><tr><th>{t("common.account")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th></tr></thead>
                             <tbody>
                               {entry.lines.map(line => (
                                 <tr key={line.id}>
@@ -295,20 +297,20 @@ const JournalEntries = () => {
       {showModal && (
         <div className="je-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="je-modal-content" onClick={e => e.stopPropagation()}>
-            <h2>New Journal Entry</h2>
+            <h2>{t("journal.newEntryTitle")}</h2>
 
             <div className="je-guide">
-              <strong>How to record an entry (double-entry):</strong>
+              <strong>{t("journal.guideTitle")}</strong>
               <ol>
-                <li>Every entry needs <b>at least two lines</b>: one account you <b>DEBIT</b> and a different account you <b>CREDIT</b>.</li>
-                <li>Each line takes <b>either a debit OR a credit</b> — never both on the same line.</li>
-                <li><b>Total Debit must equal Total Credit</b> (the entry must balance) before you can post.</li>
+                <li>{t("journal.guideStep1")}</li>
+                <li>{t("journal.guideStep2")}</li>
+                <li>{t("journal.guideStep3")}</li>
               </ol>
-              <div className="je-guide-eg">Example — paying TZS 50,000 office rent from the bank: <b>Debit</b> Rent Expense 50,000, <b>Credit</b> Bank Account 50,000. Or just tap a quick template below.</div>
+              <div className="je-guide-eg">{t("journal.guideExample")}</div>
             </div>
 
             <div className="je-templates">
-              <span className="je-templates-label">Quick templates:</span>
+              <span className="je-templates-label">{t("journal.quickTemplates")}</span>
               {JE_TEMPLATES.map(tpl => (
                 <button key={tpl.label} type="button" className="je-template-btn" title={tpl.description} onClick={() => applyTemplate(tpl)}>
                   {tpl.label}
@@ -320,20 +322,20 @@ const JournalEntries = () => {
               <table className="je-header-fields">
                 <tbody>
                   <tr>
-                    <td><strong>Date</strong><br /><input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} /></td>
-                    <td colSpan={2}><strong>Description</strong><br /><input type="text" placeholder="e.g. Office rent for June 2026" value={description} onChange={e => setDescription(e.target.value)} /></td>
+                    <td><strong>{t("common.date")}</strong><br /><input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} /></td>
+                    <td colSpan={2}><strong>{t("common.description")}</strong><br /><input type="text" placeholder={t("journal.descExample")} value={description} onChange={e => setDescription(e.target.value)} /></td>
                   </tr>
                 </tbody>
               </table>
 
               <table className="je-line-editor">
-                <thead><tr><th>Account</th><th>Debit</th><th>Credit</th><th>Description</th><th></th></tr></thead>
+                <thead><tr><th>{t("common.account")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.description")}</th><th></th></tr></thead>
                 <tbody>
                   {lines.map((line, i) => (
                     <tr key={i}>
                       <td>
                         <select value={line.chart_of_account_id} onChange={e => updateLine(i, "chart_of_account_id", Number(e.target.value))}>
-                          <option value="">Select account</option>
+                          <option value="">{t("bank.selectAccount")}</option>
                           {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                         </select>
                       </td>
@@ -348,19 +350,19 @@ const JournalEntries = () => {
                 </tbody>
               </table>
 
-              <button className="je-add-line-btn" onClick={() => setLines(prev => [...prev, { chart_of_account_id: "", debit: "", credit: "", description: "" }])}>+ Add Line</button>
+              <button className="je-add-line-btn" onClick={() => setLines(prev => [...prev, { chart_of_account_id: "", debit: "", credit: "", description: "" }])}>{t("journal.addLine")}</button>
 
               <div className={`je-balance-check ${isBalanced ? "ok" : "off"}`}>
-                Debit: {fmt(totalDebit)} &nbsp;|&nbsp; Credit: {fmt(totalCredit)} &nbsp;
-                {isBalanced ? "✓ Balanced — ready to post" :
-                  bothSidesLines.length > 0 ? "✗ A line has both a debit and a credit — use one side per line" :
-                    validLines.length < 2 ? "✗ Add at least 2 lines (one debit, one credit)" :
-                      "✗ Not balanced — total debit must equal total credit"}
+                {t("common.debit")}: {fmt(totalDebit)} &nbsp;|&nbsp; {t("common.credit")}: {fmt(totalCredit)} &nbsp;
+                {isBalanced ? t("journal.balancedReady") :
+                  bothSidesLines.length > 0 ? t("journal.errBothSides") :
+                    validLines.length < 2 ? t("journal.errNeedTwo") :
+                      t("journal.errNotBalanced")}
               </div>
             </div>
             <div className="je-modal-actions">
-              <button className="je-cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="je-save-btn" onClick={submit} disabled={!isBalanced}>Post Entry</button>
+              <button className="je-cancel-btn" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
+              <button className="je-save-btn" onClick={submit} disabled={!isBalanced}>{t("journal.postEntry")}</button>
             </div>
           </div>
         </div>

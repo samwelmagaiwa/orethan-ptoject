@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
@@ -13,6 +14,7 @@ interface AccountLedger { account: { id: number; code: string; name: string }; o
 
 const CashBook = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
   const [from, setFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<{ accounts: AccountLedger[]; combined_opening_balance: number; combined_closing_balance: number } | null>(null);
@@ -72,27 +74,27 @@ const CashBook = () => {
         <div className="cb-accent-bar" />
         <div className="cb-header">
           <div>
-            <h1>Cash Book</h1>
-            <p>Combined ledger across every Cash and Bank account</p>
+            <h1>{t("cashbook.title")}</h1>
+            <p>{t("cashbook.subtitle")}</p>
           </div>
           <div className="cb-filters">
             <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-            <span>to</span>
+            <span>{t("common.to")}</span>
             <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-            <button onClick={load}>Refresh</button>
+            <button onClick={load}>{t("common.refresh")}</button>
             <ExportButtons getRows={exportRows} filename="cash-book" sheetName="Cash Book" onPrint={handlePrint} disabled={!data} />
           </div>
         </div>
 
         {loading ? (
-          <div className="cb-empty">Loading...</div>
+          <div className="cb-empty">{t("common.loading")}</div>
         ) : !data ? (
           <div className="cb-empty">No data</div>
         ) : (
           <>
             <div className="cb-summary">
-              <div><span>Combined Opening Balance</span><strong>TZS {fmt(data.combined_opening_balance)}</strong></div>
-              <div><span>Combined Closing Balance</span><strong>TZS {fmt(data.combined_closing_balance)}</strong></div>
+              <div><span>{t("cashbook.combinedOpening")}</span><strong>TZS {fmt(data.combined_opening_balance)}</strong></div>
+              <div><span>{t("cashbook.combinedClosing")}</span><strong>TZS {fmt(data.combined_closing_balance)}</strong></div>
             </div>
 
             {data.accounts.length === 0 ? (
@@ -104,7 +106,7 @@ const CashBook = () => {
                   <span className="cb-account-balance">Closing: TZS {fmt(acc.closing_balance)}</span>
                 </div>
                 <table>
-                  <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+                  <thead><tr><th>{t("common.date")}</th><th>{t("common.entryNo")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.balance")}</th></tr></thead>
                   <tbody>
                     {acc.lines.length === 0 ? (
                       <tr><td colSpan={6} className="cb-empty-small">No transactions in this period</td></tr>

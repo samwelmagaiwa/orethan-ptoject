@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
@@ -12,6 +13,7 @@ interface Row { id: number; code: string; name: string; type: string; debit: num
 
 const TrialBalance = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("accounting");
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<{ rows: Row[]; total_debit: number; total_credit: number; is_balanced: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,24 +64,24 @@ const TrialBalance = () => {
         <div className="tb-accent-bar" />
         <div className="tb-header">
           <div>
-            <h1>Trial Balance</h1>
-            <p>Every account's balance as of a date — click a code to open its ledger</p>
+            <h1>{t("trial.title")}</h1>
+            <p>{t("trial.subtitle")}</p>
           </div>
           <div className="tb-filters">
             <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
-            <button onClick={() => load(asOf)}>Refresh</button>
+            <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
             <ExportButtons getRows={exportRows} filename="trial-balance" sheetName="Trial Balance" onPrint={handlePrint} disabled={!data?.rows?.length} />
           </div>
         </div>
 
         {loading ? (
-          <div className="tb-empty">Loading...</div>
+          <div className="tb-empty">{t("common.loading")}</div>
         ) : !data ? (
           <div className="tb-empty">No data</div>
         ) : (
           <>
             <table>
-              <thead><tr><th>Code</th><th>Account</th><th>Type</th><th>Debit</th><th>Credit</th></tr></thead>
+              <thead><tr><th>{t("common.code")}</th><th>{t("common.account")}</th><th>{t("common.type")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th></tr></thead>
               <tbody>
                 {data.rows.length === 0 ? (
                   <tr><td colSpan={5} className="tb-empty">No posted transactions yet</td></tr>
@@ -95,7 +97,7 @@ const TrialBalance = () => {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3}><strong>TOTAL</strong></td>
+                  <td colSpan={3}><strong>{t("common.total")}</strong></td>
                   <td><strong>{fmt(data.total_debit)}</strong></td>
                   <td><strong>{fmt(data.total_credit)}</strong></td>
                 </tr>

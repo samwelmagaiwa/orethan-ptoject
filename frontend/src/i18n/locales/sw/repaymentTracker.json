@@ -77,7 +77,8 @@
     "completed": "imekamilika",
     "overdue": "imechelewa",
     "pending": "Inasubiri",
-    "paid": "Imelipwa"
+    "paid": "Imelipwa",
+    "partial": "Sehemu"
   },
   "empty": {
     "noPortfolioData": "Hakuna data ya mikopo inayoendelea bado",
