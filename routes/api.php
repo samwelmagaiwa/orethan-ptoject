@@ -219,6 +219,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/accounting/provisioning/run', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'run']);
     });
 
+    // ========== LOAN LIFECYCLE (Reschedule / Write-off / Top-up) — Admin / LM / GM / MD ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/loans/{loanId}/restructures', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'history']);
+        Route::post('/loans/{loanId}/reschedule', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'reschedule']);
+        Route::post('/loans/{loanId}/top-up', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'topUp']);
+        Route::post('/loans/{loanId}/write-off', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'writeOff']);
+    });
+
     // ========== RISK & FINANCIAL REPORTS (Admin / Finance Officer / Managing Director) ==========
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/risk/par-summary', [RiskReportController::class, 'parSummary']);

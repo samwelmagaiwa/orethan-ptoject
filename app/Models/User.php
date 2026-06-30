@@ -77,6 +77,7 @@ class User extends Authenticatable
         'wateja',
         'accounting',
         'regulator_reports',
+        'loan_lifecycle',
         'disburse_payments',
         'profile',
         'logout',
@@ -125,5 +126,14 @@ class User extends Authenticatable
     public function canAccessAccounting()
     {
         return $this->isAdmin() || $this->isFinanceOfficer() || $this->isManagingDirector() || $this->isGeneralManager();
+    }
+
+    /**
+     * Loan-lifecycle actions (reschedule / write-off / top-up) and BOT regulator
+     * reporting are management decisions: Admin, Loan Manager, GM and MD only.
+     */
+    public function canManageLoanLifecycle()
+    {
+        return $this->isAdmin() || $this->isLoanManager() || $this->isGeneralManager() || $this->isManagingDirector();
     }
 }

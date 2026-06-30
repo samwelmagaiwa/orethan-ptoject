@@ -113,6 +113,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
   const canAccessRegulatorReports = isAllowed("regulator_reports", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
+  const canManageLoanLifecycle = isAllowed("loan_lifecycle", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -298,14 +299,22 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Compliance — Regulator reporting (LM / GM / MD / Admin) */}
-          {canAccessRegulatorReports && (
+          {/* Compliance — Regulator reporting & loan restructuring (LM / GM / MD / Admin) */}
+          {(canAccessRegulatorReports || canManageLoanLifecycle) && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.compliance") : "─"}</div>
-              <div className={`sd-item ${isActive("/reports/regulator") ? "sd-item--active" : ""}`} onClick={() => navigate("/reports/regulator")} title={t("sidebar.regulatorReports")}>
-                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><rect x="7" y="11" width="3" height="6" /><rect x="12" y="7" width="3" height="10" /><rect x="17" y="13" width="3" height="4" /></svg></span>
-                {!isCollapsed && <span className="sd-item__text">{t("sidebar.regulatorReports")}</span>}
-              </div>
+              {canAccessRegulatorReports && (
+                <div className={`sd-item ${isActive("/reports/regulator") ? "sd-item--active" : ""}`} onClick={() => navigate("/reports/regulator")} title={t("sidebar.regulatorReports")}>
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><rect x="7" y="11" width="3" height="6" /><rect x="12" y="7" width="3" height="10" /><rect x="17" y="13" width="3" height="4" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.regulatorReports")}</span>}
+                </div>
+              )}
+              {canManageLoanLifecycle && (
+                <div className={`sd-item ${isActive("/loan-lifecycle") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-lifecycle")} title={t("sidebar.loanLifecycle")}>
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.loanLifecycle")}</span>}
+                </div>
+              )}
             </>
           )}
 

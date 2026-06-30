@@ -44,6 +44,7 @@ import BankReconciliation from "./pages/BankReconciliation";
 import RiskReports from "./pages/RiskReports";
 import FinancialReports from "./pages/FinancialReports";
 import RegulatorReports from "./pages/RegulatorReports";
+import LoanLifecycle from "./pages/LoanLifecycle";
 
 // =========================
 // AXIOS INTERCEPTORS
@@ -1131,6 +1132,7 @@ function App() {
           <Route path="/reports/risk" element={<ProtectedRoute><MainLayout><RiskReports /></MainLayout></ProtectedRoute>} />
           <Route path="/reports/financial" element={<ProtectedRoute><MainLayout><FinancialReports /></MainLayout></ProtectedRoute>} />
           <Route path="/reports/regulator" element={<ProtectedRoute><MainLayout><RegulatorReports /></MainLayout></ProtectedRoute>} />
+          <Route path="/loan-lifecycle" element={<ProtectedRoute><MainLayout><LoanLifecycle /></MainLayout></ProtectedRoute>} />
 
           <Route
             path="/payment-requests"
