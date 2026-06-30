@@ -9,6 +9,22 @@ import { printDocument } from "../utils/printDoc";
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
 
+// Quick-entry templates for the most common MANUAL journal entries. Each picks
+// two accounts by their Chart-of-Accounts code and the side each sits on;
+// applying one fills the line editor so the operator only types the amount.
+// (Loan disbursements/repayments are auto-posted elsewhere — these are for the
+// day-to-day non-loan transactions: capital, rent, salaries, transfers, etc.)
+const JE_TEMPLATES: { label: string; description: string; lines: { code: string; side: "debit" | "credit" }[] }[] = [
+  { label: "Capital Injection", description: "Owner/shareholder capital deposited to bank", lines: [{ code: "1020", side: "debit" }, { code: "3010", side: "credit" }] },
+  { label: "Pay Rent", description: "Office rent paid from bank", lines: [{ code: "5020", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Pay Salaries", description: "Staff salaries paid from bank", lines: [{ code: "5010", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Pay Utilities", description: "Electricity / water / internet paid from bank", lines: [{ code: "5030", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Bank Charges", description: "Bank fees deducted by the bank", lines: [{ code: "5060", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Cash → Bank", description: "Deposit cash on hand into the bank", lines: [{ code: "1020", side: "debit" }, { code: "1010", side: "credit" }] },
+  { label: "Bank → Cash", description: "Withdraw cash from the bank", lines: [{ code: "1010", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Record Other Income", description: "Miscellaneous income received in cash", lines: [{ code: "1010", side: "debit" }, { code: "4040", side: "credit" }] },
+];
+
 interface Line {
   id?: number;
   chart_of_account_id: number | "";
@@ -86,9 +102,15 @@ const JournalEntries = () => {
     printDocument("Journal Entries", body);
   };
 
-  const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
-  const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
-  const isBalanced = lines.length >= 2 && totalDebit > 0 && Math.abs(totalDebit - totalCredit) < 0.01;
+  // A line counts only when it has an account AND exactly one side filled
+  // (a debit OR a credit — never both, never neither). The XOR below excludes
+  // both the "both sides on one line" mistake and empty rows.
+  const validLines = lines.filter(l => l.chart_of_account_id && ((Number(l.debit) > 0) !== (Number(l.credit) > 0)));
+  // Lines the operator wrongly put a debit AND a credit on (the common mistake).
+  const bothSidesLines = lines.filter(l => l.chart_of_account_id && Number(l.debit) > 0 && Number(l.credit) > 0);
+  const totalDebit = validLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+  const totalCredit = validLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+  const isBalanced = validLines.length >= 2 && bothSidesLines.length === 0 && totalDebit > 0 && Math.abs(totalDebit - totalCredit) < 0.01;
 
   const resetForm = () => {
     setEntryDate(new Date().toISOString().slice(0, 10));
@@ -100,23 +122,61 @@ const JournalEntries = () => {
   };
 
   const updateLine = (index: number, field: keyof Line, value: any) => {
-    setLines(prev => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
+    setLines(prev => prev.map((l, i) => {
+      if (i !== index) return l;
+      const next = { ...l, [field]: value };
+      // One side per line: typing a debit clears the credit and vice versa, so a
+      // single account line can never carry both (which would be meaningless).
+      if (field === "debit" && Number(value) > 0) next.credit = "";
+      if (field === "credit" && Number(value) > 0) next.debit = "";
+      return next;
+    }));
+  };
+
+  // Fill the line editor from a quick template (accounts + sides preset).
+  const applyTemplate = (tpl: typeof JE_TEMPLATES[number]) => {
+    const byCode = (code: string) => accounts.find(a => a.code === code);
+    const missing = tpl.lines.filter(l => !byCode(l.code));
+    if (missing.length) {
+      setModal({ isOpen: true, title: "Account Missing", message: "This template needs accounts that aren't in your Chart of Accounts. Add them first.", type: "warning" });
+      return;
+    }
+    setLines(tpl.lines.map(l => ({
+      chart_of_account_id: byCode(l.code)!.id,
+      debit: "",
+      credit: "",
+      description: "",
+    })));
+    if (!description.trim()) setDescription(tpl.description);
   };
 
   const submit = async () => {
-    if (!description) {
-      setModal({ isOpen: true, title: "Missing Information", message: "Description is required", type: "warning" });
+    if (!description.trim()) {
+      setModal({ isOpen: true, title: "Missing Information", message: "Please enter a description for this entry.", type: "warning" });
+      return;
+    }
+    if (bothSidesLines.length > 0) {
+      setModal({ isOpen: true, title: "One Side Per Line", message: "A line can have EITHER a debit OR a credit — not both on the same account. Put the debit on one account and the credit on a different account.", type: "warning" });
+      return;
+    }
+    if (validLines.length < 2) {
+      setModal({ isOpen: true, title: "Need At Least 2 Lines", message: "Double-entry needs at least two lines: one account to DEBIT and a different account to CREDIT. Pick an account on each line and enter an amount on one side only.", type: "warning" });
       return;
     }
     if (!isBalanced) {
-      setModal({ isOpen: true, title: "Not Balanced", message: `Total debit (${fmt(totalDebit)}) must equal total credit (${fmt(totalCredit)})`, type: "warning" });
+      setModal({ isOpen: true, title: "Not Balanced", message: `Total debit (${fmt(totalDebit)}) must equal total credit (${fmt(totalCredit)}). Adjust the amounts so both sides match.`, type: "warning" });
       return;
     }
     try {
       await axios.post(`${API_BASE}/accounting/journal-entries`, {
         entry_date: entryDate,
         description,
-        lines: lines.filter(l => l.chart_of_account_id && (Number(l.debit) > 0 || Number(l.credit) > 0)),
+        lines: validLines.map(l => ({
+          chart_of_account_id: l.chart_of_account_id,
+          debit: Number(l.debit) || 0,
+          credit: Number(l.credit) || 0,
+          description: l.description || "",
+        })),
       }, { headers: authHeaders() });
       setShowModal(false);
       resetForm();
@@ -236,6 +296,26 @@ const JournalEntries = () => {
         <div className="je-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="je-modal-content" onClick={e => e.stopPropagation()}>
             <h2>New Journal Entry</h2>
+
+            <div className="je-guide">
+              <strong>How to record an entry (double-entry):</strong>
+              <ol>
+                <li>Every entry needs <b>at least two lines</b>: one account you <b>DEBIT</b> and a different account you <b>CREDIT</b>.</li>
+                <li>Each line takes <b>either a debit OR a credit</b> — never both on the same line.</li>
+                <li><b>Total Debit must equal Total Credit</b> (the entry must balance) before you can post.</li>
+              </ol>
+              <div className="je-guide-eg">Example — paying TZS 50,000 office rent from the bank: <b>Debit</b> Rent Expense 50,000, <b>Credit</b> Bank Account 50,000. Or just tap a quick template below.</div>
+            </div>
+
+            <div className="je-templates">
+              <span className="je-templates-label">Quick templates:</span>
+              {JE_TEMPLATES.map(tpl => (
+                <button key={tpl.label} type="button" className="je-template-btn" title={tpl.description} onClick={() => applyTemplate(tpl)}>
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
+
             <div className="je-modal-form">
               <table className="je-header-fields">
                 <tbody>
@@ -272,7 +352,10 @@ const JournalEntries = () => {
 
               <div className={`je-balance-check ${isBalanced ? "ok" : "off"}`}>
                 Debit: {fmt(totalDebit)} &nbsp;|&nbsp; Credit: {fmt(totalCredit)} &nbsp;
-                {isBalanced ? "✓ Balanced" : "✗ Not balanced"}
+                {isBalanced ? "✓ Balanced — ready to post" :
+                  bothSidesLines.length > 0 ? "✗ A line has both a debit and a credit — use one side per line" :
+                    validLines.length < 2 ? "✗ Add at least 2 lines (one debit, one credit)" :
+                      "✗ Not balanced — total debit must equal total credit"}
               </div>
             </div>
             <div className="je-modal-actions">
@@ -314,7 +397,17 @@ const JournalEntries = () => {
         .je-empty { text-align: center; padding: 40px; color: #64748b; }
         .je-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .je-modal-content { background: white; border-radius: 20px; padding: 26px; width: 760px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
-        .je-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 18px; }
+        .je-modal-content h2 { font-size: 18px; font-weight: 700; color: #102a43; margin: 0 0 14px; }
+        .je-guide { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+        .je-guide strong { font-size: 12.5px; color: #1e40af; }
+        .je-guide ol { margin: 8px 0 0; padding-left: 18px; }
+        .je-guide li { font-size: 12px; color: #334155; line-height: 1.55; margin-bottom: 2px; }
+        .je-guide b { color: #102a43; }
+        .je-guide-eg { margin-top: 8px; font-size: 11.5px; color: #475569; font-style: italic; border-top: 1px dashed #bfdbfe; padding-top: 8px; }
+        .je-templates { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-bottom: 16px; }
+        .je-templates-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-right: 2px; }
+        .je-template-btn { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 6px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+        .je-template-btn:hover { background: #dcfce7; border-color: #86efac; }
         .je-modal-form { display: flex; flex-direction: column; gap: 14px; }
         .je-header-fields { border-collapse: collapse; margin-bottom: 4px; }
         .je-header-fields td { padding: 6px 10px 6px 0; border: none; }
