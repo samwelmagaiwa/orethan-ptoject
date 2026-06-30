@@ -142,9 +142,17 @@ class Loan extends Model
 
     public function nextInstallment()
     {
-        return $this->hasOne(LoanSchedule::class)
-            ->where('status', '!=', 'paid')
-            ->oldestOfMany('due_date');
+        // The "!= paid" filter must live inside the ofMany() closure, not chained
+        // after oldestOfMany() — otherwise the MIN(due_date) subquery is computed
+        // across ALL schedule rows (including paid ones) before the filter is
+        // applied outside, which can wrongly pick an already-paid earliest row
+        // and return nothing once the outer filter excludes it.
+        return $this->hasOne(LoanSchedule::class)->ofMany(
+            ['due_date' => 'min'],
+            function ($query) {
+                $query->where('status', '!=', 'paid');
+            }
+        );
     }
 
     public function collectionActivities()

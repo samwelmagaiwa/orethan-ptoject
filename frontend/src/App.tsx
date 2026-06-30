@@ -958,7 +958,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         transition: "margin-left 0.3s ease"
       }}>
         <Navbar />
-        <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
           {children}
         </div>
         <Footer />

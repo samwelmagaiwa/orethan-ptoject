@@ -37,7 +37,7 @@ const CashTill = () => {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
-  const [confirm, setConfirm] = useState<any>({ isOpen: false, title: "", message: "", type: "info", onConfirm: () => {} });
+  const [confirm, setConfirm] = useState<any>({ isOpen: false, title: "", message: "", type: "info", onConfirm: () => { } });
 
   const authHeaders = () => {
     const token = localStorage.getItem("token");
@@ -193,7 +193,7 @@ const CashTill = () => {
 };
 
 const styles = `
-.ct-wrap { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
+.ct-wrap { flex: 1; min-height: 0; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
 .ct-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 8px; }
 .ct-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ct-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }

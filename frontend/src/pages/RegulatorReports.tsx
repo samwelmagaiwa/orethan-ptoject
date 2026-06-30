@@ -136,21 +136,21 @@ const RegulatorReports = () => {
           />
 
           <div className="rr-filters">
-          <select value={periodType} onChange={e => { setPeriodType(e.target.value as any); setPeriod(1); }}>
-            <option value="quarter">Quarterly</option>
-            <option value="half">Mid-Annual (Half-Year)</option>
-            <option value="annual">Annual</option>
-          </select>
-          {periodType !== "annual" && (
-            <select value={period} onChange={e => setPeriod(Number(e.target.value))}>
-              {periodOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+            <select value={periodType} onChange={e => { setPeriodType(e.target.value as any); setPeriod(1); }}>
+              <option value="quarter">Quarterly</option>
+              <option value="half">Mid-Annual (Half-Year)</option>
+              <option value="annual">Annual</option>
             </select>
-          )}
-          <select value={year} onChange={e => setYear(Number(e.target.value))}>
-            {Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i).map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <button className="rr-generate-btn" onClick={generate} disabled={loading}>{loading ? "Generating..." : "Generate"}</button>
-        </div>
+            {periodType !== "annual" && (
+              <select value={period} onChange={e => setPeriod(Number(e.target.value))}>
+                {periodOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            )}
+            <select value={year} onChange={e => setYear(Number(e.target.value))}>
+              {Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i).map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <button className="rr-generate-btn" onClick={generate} disabled={loading}>{loading ? "Generating..." : "Generate"}</button>
+          </div>
         </div>
 
         {loading ? (
@@ -223,7 +223,7 @@ const RegulatorReports = () => {
       </div>
 
       <style>{`
-        .rr-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .rr-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .rr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #e2bc8a 100%); }
         .rr-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }

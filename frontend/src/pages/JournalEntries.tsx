@@ -61,7 +61,7 @@ const JournalEntries = () => {
     { chart_of_account_id: "", debit: "", credit: "", description: "" },
   ]);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
-  const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => {}, type: "info" as any });
+  const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: "info" as any });
 
   const authHeaders = () => {
     const token = localStorage.getItem("token");
@@ -319,58 +319,58 @@ const JournalEntries = () => {
           <div className="je-empty">{t("common.loading")}</div>
         ) : (
           <div className="je-table-scroll">
-          <table>
-            <thead>
-              <tr><th>{t("common.entryNo")}</th><th>{t("common.date")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.status")}</th><th></th></tr>
-            </thead>
-            <tbody>
-              {entries.length === 0 ? (
-                <tr><td colSpan={7} className="je-empty">{t("journal.noEntries")}</td></tr>
-              ) : entries.map(entry => {
-                const debit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
-                const credit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
-                return (
-                  <Fragment key={entry.id}>
-                    <tr id={`je-row-${entry.id}`} className={`je-row ${highlightId === entry.id ? "je-row--highlight" : ""}`} onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
-                      <td className="je-number">{entry.entry_number}</td>
-                      <td>{entry.entry_date}</td>
-                      <td>{entry.description}</td>
-                      <td>{fmt(debit)}</td>
-                      <td>{fmt(credit)}</td>
-                      <td>
-                        <span className={`je-status ${entry.status}`}>{entry.status}</span>
-                        {entry.status === "reversed" && entry.reversalEntry && (
-                          <button className="je-view-reversal-btn" onClick={(e) => { e.stopPropagation(); viewReversal(entry.reversalEntry!.id); }} title={`Jump to ${entry.reversalEntry.entry_number}`}>
-                            {t("journal.viewReversal")}
-                          </button>
-                        )}
-                      </td>
-                      <td>{entry.status === "posted" && <button className="je-reverse-btn" onClick={(e) => { e.stopPropagation(); reverseEntry(entry); }}>{t("journal.reverse")}</button>}</td>
-                    </tr>
-                    {expanded === entry.id && (
-                      <tr className="je-detail-row">
-                        <td colSpan={7}>
-                          <table className="je-lines-table">
-                            <thead><tr><th>{t("common.account")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th></tr></thead>
-                            <tbody>
-                              {entry.lines.map(line => (
-                                <tr key={line.id}>
-                                  <td className="je-account-link" onClick={() => navigate(`/accounting/general-ledger?account_id=${line.account.id}`)}>{line.account.code} — {line.account.name}</td>
-                                  <td>{line.description || "—"}</td>
-                                  <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
-                                  <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+            <table>
+              <thead>
+                <tr><th>{t("common.entryNo")}</th><th>{t("common.date")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.status")}</th><th></th></tr>
+              </thead>
+              <tbody>
+                {entries.length === 0 ? (
+                  <tr><td colSpan={7} className="je-empty">{t("journal.noEntries")}</td></tr>
+                ) : entries.map(entry => {
+                  const debit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
+                  const credit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
+                  return (
+                    <Fragment key={entry.id}>
+                      <tr id={`je-row-${entry.id}`} className={`je-row ${highlightId === entry.id ? "je-row--highlight" : ""}`} onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
+                        <td className="je-number">{entry.entry_number}</td>
+                        <td>{entry.entry_date}</td>
+                        <td>{entry.description}</td>
+                        <td>{fmt(debit)}</td>
+                        <td>{fmt(credit)}</td>
+                        <td>
+                          <span className={`je-status ${entry.status}`}>{entry.status}</span>
+                          {entry.status === "reversed" && entry.reversalEntry && (
+                            <button className="je-view-reversal-btn" onClick={(e) => { e.stopPropagation(); viewReversal(entry.reversalEntry!.id); }} title={`Jump to ${entry.reversalEntry.entry_number}`}>
+                              {t("journal.viewReversal")}
+                            </button>
+                          )}
                         </td>
+                        <td>{entry.status === "posted" && <button className="je-reverse-btn" onClick={(e) => { e.stopPropagation(); reverseEntry(entry); }}>{t("journal.reverse")}</button>}</td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                      {expanded === entry.id && (
+                        <tr className="je-detail-row">
+                          <td colSpan={7}>
+                            <table className="je-lines-table">
+                              <thead><tr><th>{t("common.account")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th></tr></thead>
+                              <tbody>
+                                {entry.lines.map(line => (
+                                  <tr key={line.id}>
+                                    <td className="je-account-link" onClick={() => navigate(`/accounting/general-ledger?account_id=${line.account.id}`)}>{line.account.code} — {line.account.name}</td>
+                                    <td>{line.description || "—"}</td>
+                                    <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
+                                    <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -450,7 +450,7 @@ const JournalEntries = () => {
       )}
 
       <style>{`
-        .je-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .je-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .je-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .je-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
         .je-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }

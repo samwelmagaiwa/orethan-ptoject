@@ -38,7 +38,7 @@ const LoanLifecycle = () => {
   const [action, setAction] = useState<Action>("reschedule");
   const [busy, setBusy] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
-  const [confirm, setConfirm] = useState<any>({ isOpen: false, title: "", message: "", type: "info", onConfirm: () => {} });
+  const [confirm, setConfirm] = useState<any>({ isOpen: false, title: "", message: "", type: "info", onConfirm: () => { } });
 
   // form fields
   const [termMonths, setTermMonths] = useState(12);
@@ -163,13 +163,13 @@ const LoanLifecycle = () => {
         />
 
         <div className="ll-search">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && search()}
-          placeholder="Enter Loan ID…"
-        />
-        <button onClick={search} disabled={busy}>Find Loan</button>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && search()}
+            placeholder="Enter Loan ID…"
+          />
+          <button onClick={search} disabled={busy}>Find Loan</button>
         </div>
       </div>
 
@@ -269,7 +269,7 @@ const LoanLifecycle = () => {
 };
 
 const styles = `
-.ll-wrap { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
+.ll-wrap { flex: 1; min-height: 0; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
 .ll-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 8px; }
 .ll-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ll-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }

@@ -487,8 +487,8 @@ const RepaymentTracker = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), t("scheduleModal.total"), t("table.status"), t("table.management")].map((h, i) => (
-                  <th key={h} style={{ textAlign: i === 8 ? "right" : i >= 4 && i <= 6 ? "right" : "left", padding: "0 0.8rem 1rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
+                {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), t("scheduleModal.total"), t("table.balance"), t("table.status"), t("table.management")].map((h, i) => (
+                  <th key={h} style={{ textAlign: i === 9 ? "right" : i >= 4 && i <= 7 ? "right" : "left", padding: "0 0.8rem 1rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -524,6 +524,9 @@ const RepaymentTracker = () => {
                       <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 900, color: "#0f172a", fontSize: "0.85rem" }}>
                         {loan.next_installment ? fmt(loan.next_installment.total_amount) : "—"}
                       </td>
+                      <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
+                        {fmt(loan.remaining_balance)}
+                      </td>
                       <td style={{ padding: "1rem 0.8rem" }}>
                         {(() => {
                           const instStatus = loan.next_installment?.status ?? (loan.payment_status === "completed" ? "paid" : loan.payment_status || "current");
@@ -541,7 +544,14 @@ const RepaymentTracker = () => {
                       <td style={{ padding: "1rem 0.8rem", textAlign: "right" }}>
                         <div className="rt-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "0.4rem" }}>
                           {activeTab === "active" && (
-                            <button onClick={() => { setSelectedLoan(loan); setShowRepaymentModal(true); }}
+                            <button onClick={() => {
+                              const due = loan.next_installment ? Math.min(loan.next_installment.total_amount, loan.remaining_balance) : loan.remaining_balance;
+                              setSelectedLoan(loan);
+                              setRepaymentAmount(due > 0 ? String(due) : "");
+                              setTransactionId(""); setReceivedBy(""); setNotes("");
+                              setPaymentDate(new Date().toISOString().split("T")[0]);
+                              setShowRepaymentModal(true);
+                            }}
                               style={{ padding: "0.4rem 0.9rem", borderRadius: 10, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer", boxShadow: "0 2px 8px rgba(99,102,241,0.3)" }} className="rt-btn-pay">
                               {t("actions.addPayment")}
                             </button>
@@ -556,7 +566,7 @@ const RepaymentTracker = () => {
                 })}
               </AnimatePresence>
               {currentLoans.length === 0 && !loading && (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "#475569", fontWeight: 600 }}>{t("empty.noLoansInCategory")}</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "3rem", color: "#475569", fontWeight: 600 }}>{t("empty.noLoansInCategory")}</td></tr>
               )}
             </tbody>
           </table>
@@ -572,7 +582,7 @@ const RepaymentTracker = () => {
               <div style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", padding: "1.5rem", color: "white" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                   <h2 style={{ fontSize: "1.3rem", fontWeight: 900, margin: 0 }}>{t("modal.postRepayment")}</h2>
-                  <button onClick={() => setShowRepaymentModal(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>✕</button>
+                  <button onClick={() => { setShowRepaymentModal(false); setRepaymentAmount(""); setTransactionId(""); setReceivedBy(""); setNotes(""); }} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>✕</button>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: "1rem", display: "flex", alignItems: "center", gap: "0.8rem" }}>
                   <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.1rem" }}>{selectedLoan?.name.charAt(0)}</div>
@@ -615,7 +625,7 @@ const RepaymentTracker = () => {
                 <input type="text" placeholder={t("modal.notesOptional")} value={notes} onChange={(e) => setNotes(e.target.value)}
                   style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", marginTop: "0.8rem", boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: "0.8rem", marginTop: "1.5rem" }}>
-                  <button onClick={() => setShowRepaymentModal(false)} style={{ flex: 1, padding: "0.85rem", borderRadius: 14, background: "#1e293b", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "#94a3b8" }}>{t("actions.discard")}</button>
+                  <button onClick={() => { setShowRepaymentModal(false); setRepaymentAmount(""); setTransactionId(""); setReceivedBy(""); setNotes(""); }} style={{ flex: 1, padding: "0.85rem", borderRadius: 14, background: "#1e293b", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "#94a3b8" }}>{t("actions.discard")}</button>
                   <button onClick={submitRepayment} style={{ flex: 2, padding: "0.85rem", borderRadius: 14, background: "#6366f1", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 20px rgba(99,102,241,0.35)" }}>{t("actions.confirmPayment")}</button>
                 </div>
               </div>

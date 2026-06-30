@@ -205,25 +205,25 @@ const BankReconciliation = () => {
           <div className="br-empty">{t("common.loading")}</div>
         ) : (
           <div className="br-table-scroll">
-          <table>
-            <thead><tr><th>{t("common.account")}</th><th>{t("bank.statementDate")}</th><th>{t("bank.statementBalance")}</th><th>{t("bank.bookBalance")}</th><th>{t("bank.adjustedBalance")}</th><th>{t("bank.difference")}</th><th>{t("common.status")}</th><th></th></tr></thead>
-            <tbody>
-              {list.length === 0 ? (
-                <tr><td colSpan={8} className="br-empty">{t("bank.noReconciliations")}</td></tr>
-              ) : list.map(r => (
-                <tr key={r.id}>
-                  <td>{r.account.code} — {r.account.name}</td>
-                  <td>{r.statement_date}</td>
-                  <td>{fmt(r.statement_balance)}</td>
-                  <td>{fmt(r.book_balance)}</td>
-                  <td>{fmt(r.adjusted_balance)}</td>
-                  <td>{fmt(r.difference)}</td>
-                  <td><span className={`br-status ${r.status}`}>{r.status}</span></td>
-                  <td><button type="button" className="br-delete-btn" onClick={() => setConfirmDeleteId(r.id)}>{t("common.delete")}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <table>
+              <thead><tr><th>{t("common.account")}</th><th>{t("bank.statementDate")}</th><th>{t("bank.statementBalance")}</th><th>{t("bank.bookBalance")}</th><th>{t("bank.adjustedBalance")}</th><th>{t("bank.difference")}</th><th>{t("common.status")}</th><th></th></tr></thead>
+              <tbody>
+                {list.length === 0 ? (
+                  <tr><td colSpan={8} className="br-empty">{t("bank.noReconciliations")}</td></tr>
+                ) : list.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.account.code} — {r.account.name}</td>
+                    <td>{r.statement_date}</td>
+                    <td>{fmt(r.statement_balance)}</td>
+                    <td>{fmt(r.book_balance)}</td>
+                    <td>{fmt(r.adjusted_balance)}</td>
+                    <td>{fmt(r.difference)}</td>
+                    <td><span className={`br-status ${r.status}`}>{r.status}</span></td>
+                    <td><button type="button" className="br-delete-btn" onClick={() => setConfirmDeleteId(r.id)}>{t("common.delete")}</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -315,7 +315,7 @@ const BankReconciliation = () => {
       )}
 
       <style>{`
-        .br-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .br-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .br-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .br-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
         .br-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
