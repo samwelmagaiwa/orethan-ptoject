@@ -269,8 +269,8 @@ const LoanLifecycle = () => {
 };
 
 const styles = `
-.ll-wrap { max-width: 1100px; margin: 0 auto; padding: 8px 4px 48px; }
-.ll-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 6px; }
+.ll-wrap { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
+.ll-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 8px; }
 .ll-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ll-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }
 .ll-search { display: flex; gap: 10px; margin-bottom: 18px; }

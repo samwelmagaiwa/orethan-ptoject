@@ -116,10 +116,10 @@ const LoanSettings = () => {
       </div>
 
       <style>{`
-        .ls-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .ls-card { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .ls-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .ls-card { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .ls-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #e2bc8a 100%); }
-        .ls-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
+        .ls-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
         .ls-header { margin: 6px 0 28px; }
         .ls-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 6px; }
         .ls-header p { font-size: 13px; color: #64748b; margin: 0; max-width: 640px; line-height: 1.5; }

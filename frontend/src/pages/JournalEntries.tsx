@@ -450,12 +450,11 @@ const JournalEntries = () => {
       )}
 
       <style>{`
-        .je-page { min-height: 100vh; background: #f1f5f9; padding: 80px 28px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .je-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .je-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .je-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .je-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-        .je-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-top: 6px; margin-bottom: 4px; }
-        .je-table-scroll { max-height: 62vh; overflow-y: auto; }
-        .je-table-scroll > table > thead th { position: sticky; top: 0; z-index: 2; }
+        .je-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
+        .je-table-scroll { overflow-x: auto; }
         .je-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
         .je-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .je-header p { font-size: 13px; color: #64748b; margin: 0; }

@@ -944,7 +944,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div style={{
         flex: 1,
@@ -952,18 +952,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         marginLeft: isMobile ? "0" : (isCollapsed ? "80px" : "260px"),
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         backgroundColor: "#f1f5f9",
         transition: "margin-left 0.3s ease"
       }}>
         <Navbar />
-        <div style={{
-          flex: 1,
-          minWidth: 0,
-          padding: isMobile ? "10px 10px" : "10px 16px",
-          overflowX: "hidden",
-          overflowY: "auto"
-        }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {children}
         </div>
         <Footer />

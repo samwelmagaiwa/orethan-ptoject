@@ -193,10 +193,8 @@ const CashTill = () => {
 };
 
 const styles = `
-.ct-wrap { max-width: 1100px; margin: 0 auto; padding: 8px 4px 48px; }
-.ct-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 6px; }
-.ct-table-scroll { max-height: 50vh; overflow-y: auto; }
-.ct-table-scroll thead th { position: sticky; top: 0; z-index: 2; background: white; }
+.ct-wrap { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f8fafc; padding: 14px 18px 48px; }
+.ct-sticky-top { position: sticky; top: 0; z-index: 5; background: #f8fafc; padding-bottom: 8px; }
 .ct-head h1 { font-size: 24px; color: #102a43; margin: 0 0 4px; }
 .ct-head p { color: #627d98; margin: 0 0 18px; font-size: 14px; }
 .ct-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; }
@@ -220,7 +218,7 @@ const styles = `
 .ct-btn { margin-top: 16px; background: #1f9254; color: #fff; border: none; padding: 12px 26px; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .ct-btn.danger { background: #c0392b; }
 .ct-btn:disabled { opacity: .5; cursor: not-allowed; }
-.ct-table-wrap { overflow-x: auto; max-height: 50vh; overflow-y: auto; }
+.ct-table-wrap { overflow-x: auto; }
 .ct-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ct-table th { text-align: left; padding: 9px; border-bottom: 2px solid #e6ebf1; color: #627d98; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
 .ct-table td { padding: 9px; border-bottom: 1px solid #f0f3f7; color: #334e68; white-space: nowrap; }
