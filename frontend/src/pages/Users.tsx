@@ -27,6 +27,7 @@ const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "md_auth", label: "MD Auth" },
   { key: "wateja", label: "Wateja (Customers)" },
   { key: "accounting", label: "Accounting & Reports" },
+  { key: "regulator_reports", label: "Regulator Reports (BOT)" },
   { key: "disburse_payments", label: "Disburse & Payments" },
   { key: "profile", label: "My Signature" },
   { key: "logout", label: "Log Out", hint: "Sidebar link only — the top user-menu logout always stays available" },
@@ -48,6 +49,7 @@ const SIDEBAR_ROLE_DEFAULTS: Record<string, "all" | string[]> = {
   md_auth: ["admin", "managing_director"],
   wateja: ["admin", "loan_manager", "general_manager", "managing_director"],
   accounting: ["admin", "finance_officer", "managing_director", "general_manager"],
+  regulator_reports: ["admin", "loan_manager", "general_manager", "managing_director"],
   disburse_payments: ["admin", "finance_officer"],
 };
 

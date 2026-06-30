@@ -112,6 +112,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessManagement = isAllowed("wateja", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
   const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
+  const canAccessRegulatorReports = isAllowed("regulator_reports", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -293,6 +294,17 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               }} title={t("sidebar.customers")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
                 {!isCollapsed && <span className="sd-item__text">{t("sidebar.customers")}</span>}
+              </div>
+            </>
+          )}
+
+          {/* Compliance — Regulator reporting (LM / GM / MD / Admin) */}
+          {canAccessRegulatorReports && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.compliance") : "─"}</div>
+              <div className={`sd-item ${isActive("/reports/regulator") ? "sd-item--active" : ""}`} onClick={() => navigate("/reports/regulator")} title={t("sidebar.regulatorReports")}>
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><rect x="7" y="11" width="3" height="6" /><rect x="12" y="7" width="3" height="10" /><rect x="17" y="13" width="3" height="4" /></svg></span>
+                {!isCollapsed && <span className="sd-item__text">{t("sidebar.regulatorReports")}</span>}
               </div>
             </>
           )}

@@ -58,6 +58,7 @@
       "management": "USIMAMIZI",
       "accounting": "UHASIBU",
       "reports": "TAARIFA",
+      "compliance": "UTII WA SHERIA",
       "preferences": "MAPENDELEO"
     },
     "dashboard": "Dashibodi",
@@ -91,6 +92,7 @@
     "reports": "Taarifa",
     "riskReports": "Taarifa za Hatari",
     "financialReports": "Taarifa za Fedha",
+    "regulatorReports": "Taarifa za Mdhibiti (BOT)",
     "mySignature": "Sahihi Yangu",
     "logOut": "Toka"
   },

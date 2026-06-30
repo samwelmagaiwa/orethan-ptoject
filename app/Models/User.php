@@ -76,6 +76,7 @@ class User extends Authenticatable
         'md_auth',
         'wateja',
         'accounting',
+        'regulator_reports',
         'disburse_payments',
         'profile',
         'logout',

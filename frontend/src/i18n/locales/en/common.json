@@ -58,6 +58,7 @@
       "management": "MANAGEMENT",
       "accounting": "ACCOUNTING",
       "reports": "REPORTS",
+      "compliance": "COMPLIANCE",
       "preferences": "PREFERENCES"
     },
     "dashboard": "Dashboard",
@@ -91,6 +92,7 @@
     "reports": "Reports",
     "riskReports": "Risk Reports",
     "financialReports": "Financial Reports",
+    "regulatorReports": "Regulator Reports (BOT)",
     "mySignature": "My Signature",
     "logOut": "Log Out"
   },

@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\BankReconciliationController;
 use App\Http\Controllers\Api\V1\RiskReportController;
 use App\Http\Controllers\Api\V1\FinancialReportController;
 use App\Http\Controllers\Api\V1\LoanSettingController;
+use App\Http\Controllers\Api\V1\RegulatorReportController;
 
 Route::prefix('v1')->group(function () {
 
@@ -224,6 +225,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/reports/financial/interest-income', [FinancialReportController::class, 'interestIncomeReport']);
         Route::get('/reports/financial/penalties', [FinancialReportController::class, 'penaltiesReport']);
         Route::get('/reports/financial/profit-and-loss', [FinancialReportController::class, 'profitAndLoss']);
+
+        // BOT Tier-2 regulator reporting (Loan Manager / GM / MD / Admin)
+        Route::get('/reports/regulator/bot', [RegulatorReportController::class, 'generate']);
     });
 
     // Location routes (Public)
