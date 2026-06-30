@@ -227,6 +227,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/loans/{loanId}/write-off', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'writeOff']);
     });
 
+    // ========== CASHIER TILL / CASH MANAGEMENT (Finance Officer / Admin) ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/till/status', [\App\Http\Controllers\Api\V1\TillController::class, 'status']);
+        Route::post('/till/open', [\App\Http\Controllers\Api\V1\TillController::class, 'open']);
+        Route::post('/till/close', [\App\Http\Controllers\Api\V1\TillController::class, 'close']);
+        Route::get('/till/history', [\App\Http\Controllers\Api\V1\TillController::class, 'history']);
+    });
+
     // ========== RISK & FINANCIAL REPORTS (Admin / Finance Officer / Managing Director) ==========
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/risk/par-summary', [RiskReportController::class, 'parSummary']);

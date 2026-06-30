@@ -30,6 +30,7 @@ const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "regulator_reports", label: "Regulator Reports (BOT)" },
   { key: "loan_lifecycle", label: "Loan Restructuring" },
   { key: "disburse_payments", label: "Disburse & Payments" },
+  { key: "cash_till", label: "Cashier Till" },
   { key: "profile", label: "My Signature" },
   { key: "logout", label: "Log Out", hint: "Sidebar link only — the top user-menu logout always stays available" },
 ];
@@ -53,6 +54,7 @@ const SIDEBAR_ROLE_DEFAULTS: Record<string, "all" | string[]> = {
   regulator_reports: ["admin", "loan_manager", "general_manager", "managing_director"],
   loan_lifecycle: ["admin", "loan_manager", "general_manager", "managing_director"],
   disburse_payments: ["admin", "finance_officer"],
+  cash_till: ["admin", "finance_officer"],
 };
 
 const sidebarRoleDefault = (key: string, role: string) => {

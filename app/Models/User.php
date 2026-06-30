@@ -79,6 +79,7 @@ class User extends Authenticatable
         'regulator_reports',
         'loan_lifecycle',
         'disburse_payments',
+        'cash_till',
         'profile',
         'logout',
     ];

@@ -112,6 +112,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessManagement = isAllowed("wateja", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
   const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
+  const canAccessCashTill = isAllowed("cash_till", userRole === "finance_officer" || userRole === "admin");
   const canAccessRegulatorReports = isAllowed("regulator_reports", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
   const canManageLoanLifecycle = isAllowed("loan_lifecycle", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
 
@@ -193,6 +194,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>{t("sidebar.overdueManagement")}</div>
                       {canAccessDisbursePayments && (
                         <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>{t("sidebar.disbursePayments")}</div>
+                      )}
+                      {canAccessCashTill && (
+                        <div className={`sd-sub__link ${isActive("/cash-till") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/cash-till")}>{t("sidebar.cashTill")}</div>
                       )}
                     </div>
                   )}
