@@ -4,7 +4,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -188,16 +188,10 @@ const BankReconciliation = () => {
           </div>
 
           <GetHelp
-            title="How to use Bank Reconciliation"
-            intro="Bank Reconciliation matches the bank's statement against the General Ledger, flagging items in transit or outstanding payments that explain any gap between the two balances."
-            steps={[
-              { title: "1. Start a new reconciliation", text: "Click New Reconciliation, choose the account (Cash on Hand or Bank Account), enter the bank statement date and the ending balance shown on the statement." },
-              { title: "2. Enter statement lines", text: "Type or paste each line from your paper/online bank statement — date, description, amount (+/−). Click + Add Line for each row.", example: "Date: 2026-06-25 | Description: Customer deposit | Amount: 500,000" },
-              { title: "3. Auto-Match", text: "Click Auto-Match to automatically pair statement lines against book entries (same amount within ±0.01, nearest date within 7 days). Matched pairs are shaded green." },
-              { title: "4. Review gaps", text: "Unmatched book items (Deposits in Transit / Outstanding Payments) and unmatched statement lines (bank errors / missed postings) are listed separately so you can investigate." },
-              { title: "5. Save & export", text: "Save the reconciliation — status changes to Reconciled when the adjusted book balance equals the statement. Export or print for filing." },
-            ]}
-            tip="Run reconciliation at least monthly, right after receiving your bank statement. Frequent small reconciliations catch errors much faster than a year-end sweep."
+            title={t("bank.help.title")}
+            intro={t("bank.help.intro")}
+            steps={t("bank.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("bank.help.tip")}
           />
         </div>
 

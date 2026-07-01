@@ -47,7 +47,19 @@
     "typeLiability": "Deni",
     "typeEquity": "Mtaji",
     "typeIncome": "Mapato",
-    "typeExpense": "Gharama"
+    "typeExpense": "Gharama",
+    "help": {
+      "title": "Jinsi ya kutumia Orodha ya Akaunti",
+      "intro": "Hii ni orodha kamili ya akaunti za Daftari Kuu ambazo mfumo unaweka kwenye. Kila Ingizo la Jarida, malipo ya mkopo, utoaji wa mkopo, uendeshaji wa mzigo, na mkusanyiko mwishowe unaingia kwenye moja ya akaunti hizi.",
+      "steps": [
+        { "title": "1. Vinjari au tafuta", "text": "Tumia kisanduku cha utafutaji kupata akaunti kwa msimbo wake au jina, na kichujio cha Aina ili kupunguza kwenye akaunti za Mali, Madeni, Mtaji, Mapato, au Gharama tu.", "example": "Andika '1100' kuruka moja kwa moja kwenye Mikopo Inayodaiwa." },
+        { "title": "2. Fungua daftari la akaunti", "text": "Bonyeza msimbo wowote wa akaunti wa bluu kufungua Daftari Kuu lake — kila mstari uliowekwa wa akaunti hiyo, kwa mpangilio wa tarehe, pamoja na salio linaloendelea." },
+        { "title": "3. Ongeza akaunti mpya", "text": "Bonyeza + Ongeza Akaunti, jaza msimbo wa kipekee, jina, aina na salio la kawaida (Debiti kwa mali/gharama, Krediti kwa madeni/mtaji/mapato), kisha Tengeneza Akaunti." },
+        { "title": "4. Amsha / Zima", "text": "Bonyeza beji ya Inatumika/Haitumiki kubadilisha akaunti. Akaunti za mfumo (zenye beji ya MFUMO) zinalindwa — jukwaa linategemea kwenye, kwa hivyo haziwezi kuzimwa au kufutwa." },
+        { "title": "5. Hamisha au chapisha", "text": "Tumia CSV / Excel / Chapisha kushiriki orodha ya sasa iliyochujwa na wakaguzi au usimamizi." }
+      ],
+      "tip": "Akaunti za mfumo (1010 Fedha Taslimu, 1100 Mikopo Inayodaiwa, 1110 Riba Inayodaiwa, 1150 Ruhusa ya Hasara ya Mkopo, n.k.) ni msingi wa kila uwekaji otomatiki — usifute au ubadilishe majina yao."
+    }
   },
   "journal": {
     "title": "Maingizo ya Jarida",
@@ -69,37 +81,109 @@
     "balancedReady": "✓ Limelingana — tayari kuweka",
     "errBothSides": "✗ Mstari una debiti na krediti kwa pamoja — tumia upande mmoja kwa kila mstari",
     "errNeedTwo": "✗ Ongeza angalau mistari 2 (debiti moja, krediti moja)",
-    "errNotBalanced": "✗ Halijalingana — jumla ya debiti lazima ilingane na jumla ya krediti"
+    "errNotBalanced": "✗ Halijalingana — jumla ya debiti lazima ilingane na jumla ya krediti",
+    "help": {
+      "title": "Jinsi ya kutumia Maingizo ya Jarida",
+      "intro": "Kila muamala katika mfumo — utoaji wa mkopo, malipo, mzigo, mkusanyiko wa riba — unawekwa hapa kiotomatiki. Tumia ukurasa huu kupitia daftari na kurekodi maingizo ya mkono (kodi, mishahara, mtaji, ada za benki) ambayo mfumo hauweki peke yake.",
+      "steps": [
+        { "title": "1. Soma orodha", "text": "Kila safu ni ingizo lililosawazishwa — debiti jumla daima zinalingana na krediti jumla. Bonyeza safu ili kupanua mistari yake ya kibinafsi ya debiti/krediti na akaunti wanazogonga." },
+        { "title": "2. Weka ingizo la mkono", "text": "Bonyeza Ingizo Jipya, chagua Kiolezo cha Haraka (mf. Lipa Kodi, Mtaji) ili kujaza akaunti mbili mapema, au jenga mistari yako mwenyewe. Ongeza mistari zaidi na + Ongeza Mstari ikiwa muamala unagusa zaidi ya akaunti mbili. Kitufe cha Weka kinajumuishwa tu wakati debiti jumla zinalingana na krediti jumla.", "example": "Kulipa kodi ya ofisi TZS 200,000 kutoka benki: kiolezo kinajaza Dr 5020 Gharama ya Kodi / Cr 1020 Benki — andika tu 200,000 mara moja." },
+        { "title": "3. Tengua kosa", "text": "Bonyeza Tengua kwenye ingizo lililowekwa kuunda ingizo hasa halisi la kioo linalolifuta. Asili haibadilishwi wala kufutwa — hii inaweka historia safi ya ukaguzi." },
+        { "title": "4. Kusanya Riba", "text": "Bonyeza Kusanya Riba kuweka riba ya leo iliyopatikana lakini bado haijokusanywa (Dr Riba Inayodaiwa / Cr Mapato ya Riba) katika kila mkopo amilifu. Salama kubonyeza kila siku — mikopo iliyokusanywa tayari leo inazingatiwa kiotomatiki." },
+        { "title": "5. Endesha Mzigo", "text": "Bonyeza Endesha Mzigo kuleta Ruhusa ya Hasara ya Mkopo juu (au chini) hadi kiwango ambacho uzee wa sasa wa portfolio unahitaji. Inaonyesha onyesho la marekebisho yanayohitajika kabla ya kuweka; ikiwa hakuna kilichobadilika, haiweki chochote." }
+      ],
+      "tip": "Utoaji wa mikopo na malipo yanawekwa kiotomatiki na moduli ya Mikopo — huhitajiki sana, ikiwa siyo kamwe, kuunda ingizo la mkono kwa hilo."
+    }
   },
   "ledger": {
     "title": "Daftari Kuu",
     "subtitle": "Kila muamala uliowekwa wa akaunti moja, pamoja na salio linaloendelea",
     "openingBalance": "Salio la Ufunguzi",
-    "closingBalance": "Salio la Kufunga"
+    "closingBalance": "Salio la Kufunga",
+    "help": {
+      "title": "Jinsi ya kutumia Daftari Kuu",
+      "intro": "Daftari Kuu linaonyesha kila debiti na krediti iliyowekwa kwenye akaunti moja, pamoja na salio linaloendelea. Litumie kufuatilia muamala wowote hadi kwenye ingizo lake la asili la jarida.",
+      "steps": [
+        { "title": "1. Chagua akaunti", "text": "Chagua akaunti yoyote kutoka kwenye orodha ya kunjua — akaunti zote amilifu za Orodha yako ya Akaunti zinaonekana hapa. Akaunti zimeorodheshwa kwa msimbo kisha jina.", "example": "1100 — Fedha Mkononi, 2100 — Mikopo Inayodaiwa ya Wateja, 4100 — Mapato ya Riba." },
+        { "title": "2. Weka kipindi cha tarehe (hiari)", "text": "Acha tarehe zote wazi ili kuona historia yote. Ingiza tarehe ya Kuanzia, tarehe ya Hadi, au zote mbili ili kuchuja kipindi. Salio la ufunguzi linaloonyeshwa ni salio kabla ya tarehe yako ya Kuanzia.", "example": "Kuanzia: 2026-01-01 / Hadi: 2026-06-30 → inaonyesha shughuli za H1 na salio lililosafirishwa kutoka 31 Des." },
+        { "title": "3. Bonyeza Pakia", "text": "Bonyeza kitufe cha Pakia kupata daftari. Upau wa muhtasari unaonyesha salio la ufunguzi, salio la kufunga, na jina la akaunti kwa mtazamo wa haraka." },
+        { "title": "4. Soma salio linaloendelea", "text": "Kila safu inaonyesha debiti au krediti iliyowekwa na ingizo la jarida, pamoja na salio la jumla baada ya ingizo hilo. Debiti huongeza akaunti za mali/gharama; krediti huongeza akaunti za madeni/mapato/mtaji." },
+        { "title": "5. Hamisha au chapisha", "text": "Tumia Hamisha CSV/Excel kushiriki data, au Chapisha kuzalisha ukurasa wa daftari uliopangwa kwa ukaguzi au uwasilishaji." }
+      ],
+      "tip": "Bonyeza msimbo wowote wa akaunti kwenye Salio la Majaribio au Daftari la Fedha kuruka moja kwa moja hapa na akaunti hiyo ikichaguliwa mapema."
+    }
   },
   "trial": {
     "title": "Salio la Majaribio",
-    "subtitle": "Salio la kila akaunti hadi tarehe fulani — bonyeza msimbo kufungua daftari lake"
+    "subtitle": "Salio la kila akaunti hadi tarehe fulani — bonyeza msimbo kufungua daftari lake",
+    "help": {
+      "title": "Jinsi ya kutumia Salio la Majaribio",
+      "intro": "Salio la Majaribio linaorodhesha kila akaunti pamoja na debiti na krediti zake jumla hadi tarehe fulani. Ni ukaguzi wa kwanza kwamba vitabu vyako vimesawazishwa — debiti jumla lazima zilingane na krediti jumla.",
+      "steps": [
+        { "title": "1. Weka tarehe ya hadi", "text": "Tarehe ya msingi ni leo. Ibadilishe hadi tarehe yoyote ili kuona salio la jumla wakati huo.", "example": "Hadi 2026-06-30 → inaonyesha shughuli zote zilizowekwa hadi mwisho wa Juni." },
+        { "title": "2. Bonyeza Onyesha Upya", "text": "Bonyeza Onyesha Upya kupakia ripoti. Kila akaunti yenye angalau ingizo moja lililowekwa inaonekana pamoja na salio lake la jumla la debiti na krediti." },
+        { "title": "3. Angalia bendera ya usawa", "text": "Bango la rangi chini linathibitisha kama Debiti Jumla = Krediti Jumla. Kijani inamaanisha imesawazishwa. Nyekundu inamaanisha kuna usawa usiofaa — chunguza maingizo ya jarida kwa kipindi hicho mara moja." },
+        { "title": "4. Fanya uchambuzi wa akaunti yoyote", "text": "Bonyeza msimbo wowote wa akaunti wa bluu kuruka kwenye Daftari Kuu la akaunti hiyo — utaona kila muamala ambao ulijenga salio hilo.", "example": "Bonyeza '2100' kuona malipo yote ya mkopo na utoaji ambao unaunda salio la mikopo inayodaiwa." },
+        { "title": "5. Hamisha au chapisha", "text": "Tumia Hamisha au Chapisha kuzalisha Salio la Majaribio kwa ukaguzi, ripoti za bodi, au uwasilishaji wa udhibiti." }
+      ],
+      "tip": "Endesha Salio la Majaribio mwishoni mwa mwezi kabla ya maingizo ya kufunga. Salio la Majaribio lililosawazishwa ni sharti la Taarifa ya Mapato na Mizani ya Hesabu inayotegemewa."
+    }
   },
   "income": {
     "title": "Taarifa ya Mapato (Faida na Hasara)",
     "subtitle": "Mapato kuondoa gharama kwa kipindi kilichochaguliwa — bonyeza msimbo kufungua daftari lake",
     "netIncome": "Mapato Halisi",
     "sectionIncome": "Mapato",
-    "sectionExpenses": "Gharama"
+    "sectionExpenses": "Gharama",
+    "help": {
+      "title": "Jinsi ya kutumia Taarifa ya Mapato (Faida na Hasara)",
+      "intro": "Taarifa ya Mapato inaonyesha mapato yote yaliyopatikana na gharama zote zilizotokea katika kipindi, ikisababisha mapato halisi (faida) au hasara halisi. Ni kipimo kikuu cha utendaji wa kifedha wa taasisi.",
+      "steps": [
+        { "title": "1. Weka kipindi cha kuripoti", "text": "Kipindi cha msingi ni mwaka wa sasa wa kalenda hadi sasa. Rekebisha tarehe za Kuanzia na Hadi kulingana na kipindi chako cha kuripoti — kila mwezi, kila robo, au mwaka.", "example": "Kuanzia: 2026-01-01 / Hadi: 2026-03-31 → Faida na Hasara ya Q1." },
+        { "title": "2. Bonyeza Onyesha Upya", "text": "Bonyeza Onyesha Upya kupakia taarifa. Akaunti za mapato (mapato ya riba, ada, adhabu) zinaonekana kwenye sehemu ya juu; akaunti za gharama (mishahara, mzigo, kodi) kwenye sehemu ya chini." },
+        { "title": "3. Soma mapato halisi", "text": "Upau wa rangi chini unaonyesha Mapato Halisi = Jumla ya Mapato − Jumla ya Gharama. Kijani inamaanisha faida; nyekundu inamaanisha hasara.", "example": "Jumla ya Mapato TZS 8,200,000 − Jumla ya Gharama TZS 5,900,000 = Mapato Halisi TZS 2,300,000." },
+        { "title": "4. Fanya uchambuzi wa mstari wowote", "text": "Bonyeza msimbo wowote wa akaunti wa bluu kufungua Daftari Kuu la akaunti hiyo na kuona kila muamala uliochangia jumla." },
+        { "title": "5. Hamisha au chapisha", "text": "Tumia Hamisha kwa uchambuzi wa lahajedwali au Chapisha kwa bodi na uwasilishaji wa udhibiti." }
+      ],
+      "tip": "Linganisha Mapato Halisi ya mwezi huu na ya mwezi uliopita kwa kubadilisha kipindi cha tarehe — margin inayopungua inaashiria NPL zinazopanda au ukusanyaji unaoshuka."
+    }
   },
   "balance": {
     "title": "Mizania",
     "subtitle": "Mali = Madeni + Mtaji, hadi tarehe fulani — bonyeza msimbo kufungua daftari lake",
     "assets": "Mali",
     "liabilities": "Madeni",
-    "equity": "Mtaji"
+    "equity": "Mtaji",
+    "help": {
+      "title": "Jinsi ya kutumia Mizania",
+      "intro": "Mizania ni picha ya hali ya kifedha ya taasisi katika tarehe fulani. Inaonyesha kinachomilikiwa na taasisi (Mali), inachokidaiwa (Madeni), na hisa za wamiliki (Mtaji). Mali lazima ilingane na Madeni + Mtaji.",
+      "steps": [
+        { "title": "1. Weka tarehe ya hadi", "text": "Chagua tarehe yoyote kuona msimamo wa mizania wakati huo. Msingi ni leo.", "example": "Hadi 2026-06-30 → inaonyesha msimamo wa mwisho wa Juni kwa ripoti ya nusu ya mwaka." },
+        { "title": "2. Bonyeza Onyesha Upya", "text": "Bonyeza Onyesha Upya kupakia ripoti. Mali zinaonekana kwenye safu ya kushoto; Madeni na Mtaji upande wa kulia." },
+        { "title": "3. Thibitisha ukaguzi wa usawa", "text": "Bango chini linathibitisha Mali = Madeni + Mtaji. Kijani inamaanisha imesawazishwa. Nyekundu inamaanisha haijasawazishwa — angalia maingizo ya jarida yasiyowekwa au maingizo yanayokosekana.", "example": "Mali TZS 45,200,000 = Madeni TZS 12,800,000 + Mtaji TZS 32,400,000 ✓" },
+        { "title": "4. Fanya uchambuzi wa akaunti yoyote", "text": "Bonyeza msimbo wowote wa akaunti wa bluu kufungua Daftari Kuu na kufuatilia miamala iliyojenga salio hilo." },
+        { "title": "5. Hamisha au chapisha", "text": "Tumia Hamisha kwa mapitio ya kina ya lahajedwali au Chapisha kwa mikutano ya bodi, wakaguzi, na uwasilishaji wa udhibiti." }
+      ],
+      "tip": "Linganisha salio la Mikopo Inayodaiwa hapa na portfolio ya mikopo inayodaiwa katika Usimamizi wa Mikopo — zinapaswa kulingana. Pengo linaonyesha miamala isiyowekwa."
+    }
   },
   "cashbook": {
     "title": "Daftari la Fedha",
     "subtitle": "Daftari la pamoja la akaunti zote za Fedha na Benki",
     "combinedOpening": "Salio la Pamoja la Ufunguzi",
-    "combinedClosing": "Salio la Pamoja la Kufunga"
+    "combinedClosing": "Salio la Pamoja la Kufunga",
+    "help": {
+      "title": "Jinsi ya kutumia Daftari la Fedha",
+      "intro": "Daftari la Fedha linaonyesha kila harakati ya fedha taslimu na benki kwa kipindi — mapokezi (debiti) huongeza salio, malipo (krediti) hupunguza. Inashughulikia akaunti zote zilizowekwa alama kama fedha taslimu au benki katika Orodha ya Akaunti.",
+      "steps": [
+        { "title": "1. Weka kipindi", "text": "Kipindi cha msingi ni mwezi wa sasa. Badilisha tarehe za Kuanzia na Hadi kuona kipindi chochote — kila siku, kila wiki, au kila mwezi.", "example": "Kuanzia: 2026-06-01 / Hadi: 2026-06-30 → harakati zote za fedha za Juni." },
+        { "title": "2. Bonyeza Onyesha Upya", "text": "Bonyeza Onyesha Upya kupakia daftari zote za akaunti za fedha/benki. Kila akaunti inaonekana kama kizuizi tofauti chenye salio lake la ufunguzi, orodha ya miamala, na salio la kufunga." },
+        { "title": "3. Soma muhtasari wa pamoja", "text": "Upau wa muhtasari juu unaonyesha salio la pamoja la ufunguzi na kufunga katika akaunti zote za fedha/benki — hii ni msimamo jumla wa kioevu wa taasisi.", "example": "Ufunguzi wa Pamoja TZS 4,200,000 → Kufunga kwa Pamoja TZS 6,850,000 = fedha taslimu zilizoingizwa TZS 2,650,000." },
+        { "title": "4. Pitia harakati za akaunti za mtu binafsi", "text": "Kila kizuizi cha akaunti kinaorodhesha kila debiti (fedha zilizopokelewa) na krediti (fedha zilizolipwa) pamoja na salio linaloendelea baada ya kila muamala." },
+        { "title": "5. Fanya uchambuzi au hamisha", "text": "Bonyeza jina lolote la akaunti (kiungo cha bluu) kuruka kwenye Daftari Kuu lake kamili. Tumia Hamisha kupakua akaunti zote kwenye lahajedwali moja au Chapisha kwa daftari la fedha lililopangwa." }
+      ],
+      "tip": "Sawazisha salio la kufunga la Daftari la Fedha na hesabu ya droo halisi na taarifa ya benki mwishoni mwa mwezi — tofauti yoyote lazima ichunguzwe na kuelezwa."
+    }
   },
   "bank": {
     "title": "Ulinganishaji wa Benki",
@@ -133,6 +217,61 @@
     "guideStatementBalance": "Salio la Taarifa ya Benki — salio la mwisho lililochapishwa kwenye taarifa halisi ya benki ya akaunti hii kwa tarehe ya taarifa. Andika kiasi halisi kinachoonyeshwa na benki.",
     "guideDepositInTransit": "Amana Iliyoko Njiani — fedha uliyorekodi kwenye daftari lako lakini benki bado haijaionyesha kwenye taarifa (mf. fedha/hundi iliyowekwa jioni). Ingiza maelezo, kiasi na tarehe.",
     "guideOutstandingPayment": "Malipo Yaliyobaki — malipo/hundi uliyorekodi kwenye daftari lako lakini bado hayajakamilika benki. Ingiza maelezo, kiasi na tarehe.",
-    "guideAutoMatch": "Linganisha Kiotomatiki na Daftari — bandika mistari ya taarifa ya benki na mfumo utailinganisha kwa tarehe na kiasi dhidi ya Daftari Kuu lako, ukiweka alama vinavyolingana na kuorodhesha visivyolingana ili uvikague au uvirekodi."
+    "guideAutoMatch": "Linganisha Kiotomatiki na Daftari — bandika mistari ya taarifa ya benki na mfumo utailinganisha kwa tarehe na kiasi dhidi ya Daftari Kuu lako, ukiweka alama vinavyolingana na kuorodhesha visivyolingana ili uvikague au uvirekodi.",
+    "help": {
+      "title": "Jinsi ya kutumia Ulinganishaji wa Benki",
+      "intro": "Ulinganishaji wa Benki unalinganisha taarifa ya benki dhidi ya Daftari Kuu, ukibainisha vipengele vilivyo njiani au malipo yaliyobaki ambayo yanaelezea pengo lolote kati ya salio zote mbili.",
+      "steps": [
+        { "title": "1. Anza ulinganishaji mpya", "text": "Bonyeza Ulinganishaji Mpya, chagua akaunti (Fedha Mkononi au Akaunti ya Benki), ingiza tarehe ya taarifa ya benki na salio la mwisho linaloonyeshwa kwenye taarifa." },
+        { "title": "2. Ingiza mistari ya taarifa", "text": "Andika au bandika kila mstari kutoka taarifa yako ya benki ya karatasi/mtandaoni — tarehe, maelezo, kiasi (+/−). Bonyeza + Ongeza Mstari kwa kila safu.", "example": "Tarehe: 2026-06-25 | Maelezo: Amana ya mteja | Kiasi: 500,000" },
+        { "title": "3. Linganisha Kiotomatiki", "text": "Bonyeza Linganisha Kiotomatiki ili kuunganisha kiotomatiki mistari ya taarifa dhidi ya maingizo ya daftari (kiasi sawa ndani ya ±0.01, tarehe ya karibu zaidi ndani ya siku 7). Jozi zilizounganishwa zinatiwa kivuli cha kijani." },
+        { "title": "4. Pitia mapungufu", "text": "Vipengele vya daftari visivyounganishwa (Amana Zilizoko Njiani / Malipo Yaliyobaki) na mistari ya taarifa isiyounganishwa (makosa ya benki / uwasilishaji uliokosekana) vinaorodheshwa tofauti ili uweze kuchunguza." },
+        { "title": "5. Hifadhi na hamisha", "text": "Hifadhi ulinganishaji — hali inabadilika kuwa Imesawazishwa wakati salio la daftari lililorekebishwa linalingana na taarifa. Hamisha au chapisha kwa uwasilishaji." }
+      ],
+      "tip": "Endesha ulinganishaji angalau kila mwezi, mara baada ya kupokea taarifa yako ya benki. Ulinganishaji wa mara kwa mara mdogo hugunduwa makosa haraka zaidi kuliko ukaguzi wa mwaka."
+    }
+  },
+  "financial": {
+    "help": {
+      "title": "Jinsi ya kutumia Taarifa za Fedha",
+      "intro": "Mitazamo mitano ya utendaji wa kifedha wa taasisi, yote inayotokana na daftari moja lililowekwa — chagua kipindi cha tarehe, kisha badilisha vichupo.",
+      "steps": [
+        { "title": "1. Chagua kipindi", "text": "Weka tarehe za Kuanzia/Hadi na ubonyeze Onyesha Upya. Vichupo vyote vitano vinapakuliwa upya kwa kipindi hicho." },
+        { "title": "2. Muhtasari wa Mtendaji", "text": "Picha ya KPI — ukubwa wa portfolio, salio linalodaiwa, iliyotolewa/kukusanywa kipindi hiki, hesabu za mikopo, uwiano wa NPL (PAR90), na mapato halisi." },
+        { "title": "3. Ukusanyaji", "text": "Jumla ya fedha zilizokusanywa, zimegawanywa kwa njia ya malipo (fedha taslimu/benki/simu) na kwa mwezi — muhimu kwa kutambua njia ambayo wakopeshaji wanaipenda." },
+        { "title": "4. Mapato ya Riba / Adhabu", "text": "Mwelekeo wa kila mwezi wa riba iliyopatikana na adhabu zilizokusanywa, ili uweze kufuatilia ikiwa mavuno ya portfolio yanaboresha au kupungua." },
+        { "title": "5. Faida na Hasara", "text": "Salio la kila akaunti ya Mapato na Gharama kwa kipindi, ikimalizia na Mapato Halisi — nambari hizo hizo zinazolisha mstari wa Mapato ya Kipindi cha Sasa wa Mizania." },
+        { "title": "6. Hamisha", "text": "CSV / Excel / Chapisha daima husafirisha kichupo kilichofunguliwa sasa hivi." }
+      ],
+      "tip": "Uwiano wa NPL wa kichupo cha Mtendaji na takwimu ya PAR90 ya Taarifa za Mdhibiti (BOT) zinakokotolewa kwa njia moja — zinapaswa daima kukubaliana kwa kipindi sawa."
+    }
+  },
+  "risk": {
+    "help": {
+      "title": "Jinsi ya kutumia Taarifa za Hatari",
+      "intro": "Mtazamo wa afya ya portfolio uliojengwa kutoka ratiba ya malipo halisi — hakuna uingizaji wa data wa mkono, inasoma moja kwa moja kutoka kwenye malipo yaliyopita wakati.",
+      "steps": [
+        { "title": "1. Kadi za PAR", "text": "Portfolio Katika Hatari kwa siku 1, 30, 60 na 90 — asilimia na thamani ya TZS ya portfolio inayodaiwa ambayo imechelewa kwa angalau idadi hiyo ya siku. PAR90 inayopanda ni onyo wazi la mapema la daftari linaloharibika." },
+        { "title": "2. Usambazaji wa hatari", "text": "Inakokotoa idadi ya mikopo iliyochelewa inayoanguka katika bendi za Chini / Kati / Juu / Muhimu, ili uweze kupanga simu za ukusanyaji kwa uzito." },
+        { "title": "3. Uchambuzi wa mkopo mbaya", "text": "Mikopo iliyopita siku 90 ya muda, imegawanywa kwa mwezi wa utoaji ('kikundi'). Linganisha viwango vya mkopo mbaya katika vikundi ili kutambua ikiwa uandishi wa mkopo wa mwezi fulani ulikuwa dhaifu zaidi." },
+        { "title": "4. Orodha ya mikopo mibaya", "text": "Mikopo ya mtu binafsi inayoendesha nambari za mkopo mbaya — muhimu kwa kuwasilisha orodha ya kazi moja kwa moja kwa timu ya ukusanyaji au kupandisha hadi Kuondoa-Mkopo katika Urekebishaji wa Mikopo." }
+      ],
+      "tip": "PAR90 / jumla ya portfolio inayodaiwa ni uwiano sawa wa NPL unaotumia Taarifa za Mdhibiti (BOT), kwa hivyo kurasa mbili zinapaswa daima kukubaliana kwa tarehe moja."
+    }
+  },
+  "regulator": {
+    "help": {
+      "title": "Jinsi ya kutumia Taarifa za Mdhibiti (BOT)",
+      "intro": "Inazalisha mapato ya kisheria ya taasisi ya fedha ndogo ya Daraja la 2 isiyopokea amana ya Benki ya Tanzania kwa kipindi unachochagua. Takwimu zinatokana moja kwa moja kutoka kwenye portfolio na Daftari Kuu — hakuna uingizaji wa mkono.",
+      "steps": [
+        { "title": "1. Chagua aina ya mapato", "text": "Chagua Kila Robo (Q1–Q4), Nusu ya Mwaka (H1 au H2), au Mwaka Mzima." },
+        { "title": "2. Weka mwaka na kipindi kidogo", "text": "Chagua mwaka na — kwa mapato ya kila robo/nusu ya mwaka — robo au nusu maalum.", "example": "Q2 2026 = Aprili 1 → Juni 30, 2026." },
+        { "title": "3. Zalisha", "text": "Bonyeza Zalisha. Mfumo unakokotoa shughuli za portfolio, uainishaji wa mkopo wa BOT, PAR, mzigo, idadi ya wakopeshaji, na takwimu za taarifa ya mapato/mizania kwa kipindi." },
+        { "title": "4. Jedwali la uainishaji wa mkopo", "text": "Safu zinaonyesha kila bendi ya uzee ya BOT (Sasa, Iliyotajwa Hasa, Chini ya Kiwango, Shaka, Hasara) pamoja na hesabu za mikopo, salio zinazodaiwa, viwango vya mzigo, na mzigo unaohitajika." },
+        { "title": "5. Bendera ya PAR", "text": "Portfolio Katika Hatari (mikopo yote ≥ siku 1 ya kuchelewa) kama asilimia ya portfolio yote. BOT inazindua usimamizi kwa PAR30 > 10% — angalia nambari hii kila mwezi." },
+        { "title": "6. Hamisha / Chapisha", "text": "Tumia CSV / Excel kujaza lahajedwali lako la uwasilishaji wa BOT, au Chapisha kwa rekodi ya karatasi iliyosainiwa." }
+      ],
+      "tip": "Endesha hii mwishoni mwa kila robo mara baada ya mzigo wa mwisho wa mwezi na mkusanyiko wa riba zimewekwa, ili takwimu za daftari zinazosoma ziwe kamili."
+    }
   }
 }

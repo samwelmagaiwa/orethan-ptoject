@@ -47,7 +47,19 @@
     "typeLiability": "Liability",
     "typeEquity": "Equity",
     "typeIncome": "Income",
-    "typeExpense": "Expense"
+    "typeExpense": "Expense",
+    "help": {
+      "title": "How to use the Chart of Accounts",
+      "intro": "This is the full list of General Ledger accounts the system posts to. Every Journal Entry, repayment, disbursement, provisioning run, and accrual ultimately lands on one of these accounts.",
+      "steps": [
+        { "title": "1. Browse or search", "text": "Use the search box to find an account by its code or name, and the Type filter to narrow to Asset, Liability, Equity, Income or Expense accounts only.", "example": "Type \"1100\" to jump straight to Loans Receivable." },
+        { "title": "2. Open an account's ledger", "text": "Click any blue account code to open its General Ledger — every posted line for that account, in date order, with a running balance." },
+        { "title": "3. Add a new account", "text": "Click + Add Account, fill in a unique code, name, type and normal balance (Debit for assets/expenses, Credit for liabilities/equity/income), then Create Account." },
+        { "title": "4. Activate / deactivate", "text": "Click the Active/Inactive badge to toggle an account. System accounts (badged SYSTEM) are protected — the platform depends on them, so they can't be deactivated or deleted." },
+        { "title": "5. Export or print", "text": "Use CSV / Excel / Print to share the current filtered list with auditors or management." }
+      ],
+      "tip": "System accounts (1010 Cash, 1100 Loans Receivable, 1110 Interest Receivable, 1150 Allowance for Loan Losses, etc.) are the backbone of every automated posting — never delete or rename them."
+    }
   },
   "journal": {
     "title": "Journal Entries",
@@ -69,37 +81,109 @@
     "balancedReady": "✓ Balanced — ready to post",
     "errBothSides": "✗ A line has both a debit and a credit — use one side per line",
     "errNeedTwo": "✗ Add at least 2 lines (one debit, one credit)",
-    "errNotBalanced": "✗ Not balanced — total debit must equal total credit"
+    "errNotBalanced": "✗ Not balanced — total debit must equal total credit",
+    "help": {
+      "title": "How to use Journal Entries",
+      "intro": "Every transaction in the system — loan disbursements, repayments, provisioning, interest accrual — posts here automatically. Use this page to review the ledger and to record manual entries (rent, salaries, capital, bank fees) that the system doesn't post on its own.",
+      "steps": [
+        { "title": "1. Read the list", "text": "Each row is a balanced entry — total debits always equal total credits. Click a row to expand its individual debit/credit lines and the accounts they hit." },
+        { "title": "2. Post a manual entry", "text": "Click New Entry, pick a Quick Template (e.g. Pay Rent, Capital Injection) to pre-fill the two accounts, or build your own lines. Add more lines with + Add Line if a transaction touches more than two accounts. The Post button only enables once total debits equal total credits.", "example": "Paying TZS 200,000 office rent from the bank: template fills Dr 5020 Rent Expense / Cr 1020 Bank — just type 200,000 once." },
+        { "title": "3. Reverse a mistake", "text": "Click Reverse on a posted entry to create an exact mirror-image entry that cancels it out. The original is never edited or deleted — this keeps a clean audit trail." },
+        { "title": "4. Accrue Interest", "text": "Click Accrue Interest to post today's earned-but-uncollected interest (Dr Interest Receivable / Cr Interest Income) across every active loan. Safe to click daily — already-accrued loans for today are automatically skipped." },
+        { "title": "5. Run Provisioning", "text": "Click Run Provisioning to bring the Allowance for Loan Losses up (or down) to the level the current portfolio aging requires. Shows a preview of the required adjustment before posting; if nothing has changed, it posts nothing." }
+      ],
+      "tip": "Loan disbursements and repayments are posted automatically by the Loan module — you should rarely, if ever, need to create a manual entry for those."
+    }
   },
   "ledger": {
     "title": "General Ledger",
     "subtitle": "Every posted transaction for a single account, with a running balance",
     "openingBalance": "Opening Balance",
-    "closingBalance": "Closing Balance"
+    "closingBalance": "Closing Balance",
+    "help": {
+      "title": "How to use the General Ledger",
+      "intro": "The General Ledger shows every debit and credit posted to a single account, with a running balance. Use it to trace any transaction back to its source journal entry.",
+      "steps": [
+        { "title": "1. Select an account", "text": "Pick any account from the dropdown — all active accounts in your Chart of Accounts appear here. Accounts are listed by code then name.", "example": "1100 — Cash on Hand, 2100 — Customer Loans Receivable, 4100 — Interest Income." },
+        { "title": "2. Set a date range (optional)", "text": "Leave both dates blank to see all history. Enter a From date, a To date, or both to filter the period. The opening balance shown is the balance at midnight before your From date.", "example": "From: 2026-01-01 / To: 2026-06-30 → shows H1 activity with the balance carried forward from 31 Dec." },
+        { "title": "3. Click Load", "text": "Click the Load button to fetch the ledger. The summary bar shows the opening balance, closing balance, and account name at a glance." },
+        { "title": "4. Read the running balance", "text": "Each row shows the debit or credit posted by a journal entry, plus the cumulative balance after that entry. Debits increase asset/expense accounts; credits increase liability/income/equity accounts." },
+        { "title": "5. Export or print", "text": "Use Export CSV/Excel to share the data, or Print to produce a formatted ledger page for audit or filing." }
+      ],
+      "tip": "Click any account code in the Trial Balance or Cash Book to jump directly here with that account pre-selected."
+    }
   },
   "trial": {
     "title": "Trial Balance",
-    "subtitle": "Every account's balance as of a date — click a code to open its ledger"
+    "subtitle": "Every account's balance as of a date — click a code to open its ledger",
+    "help": {
+      "title": "How to use the Trial Balance",
+      "intro": "The Trial Balance lists every account with its total debits and credits as of a given date. It is the first check that your books are balanced — total debits must equal total credits.",
+      "steps": [
+        { "title": "1. Set the as-of date", "text": "The default date is today. Change it to any date to see the cumulative balances at that point in time.", "example": "As of 2026-06-30 → shows all posted activity up to end of June." },
+        { "title": "2. Click Refresh", "text": "Click Refresh to load the report. Each account with at least one posted entry appears with its total debit and credit balance." },
+        { "title": "3. Check the balance flag", "text": "The coloured banner at the bottom confirms whether Total Debits = Total Credits. Green means balanced. Red means there is an imbalance — investigate journal entries for that period immediately." },
+        { "title": "4. Drill into any account", "text": "Click any blue account code to jump to the General Ledger for that account — you will see every transaction that built up that balance.", "example": "Click '2100' to see all loan repayments and disbursements that make up the loan receivable balance." },
+        { "title": "5. Export or print", "text": "Use Export or Print to produce the Trial Balance for audit, board reports, or regulatory submissions." }
+      ],
+      "tip": "Run the Trial Balance at month-end before closing entries. A balanced TB is a prerequisite for a reliable Income Statement and Balance Sheet."
+    }
   },
   "income": {
     "title": "Income Statement (Profit & Loss)",
     "subtitle": "Revenue minus expenses for the selected period — click a code to open its ledger",
     "netIncome": "Net Income",
     "sectionIncome": "Income",
-    "sectionExpenses": "Expenses"
+    "sectionExpenses": "Expenses",
+    "help": {
+      "title": "How to use the Income Statement (Profit & Loss)",
+      "intro": "The Income Statement shows all revenue earned and expenses incurred over a period, resulting in a net income (profit) or net loss. It is the primary measure of the institution's financial performance.",
+      "steps": [
+        { "title": "1. Set the reporting period", "text": "The default period is the current calendar year to date. Adjust the From and To dates to match your reporting period — monthly, quarterly, or annual.", "example": "From: 2026-01-01 / To: 2026-03-31 → Q1 Profit & Loss." },
+        { "title": "2. Click Refresh", "text": "Click Refresh to load the statement. Income accounts (interest income, fees, penalties) appear in the top section; expense accounts (salaries, provisions, rent) in the lower section." },
+        { "title": "3. Read the net income", "text": "The coloured bar at the bottom shows Net Income = Total Income − Total Expenses. Green means profit; red means loss.", "example": "Total Income TZS 8,200,000 − Total Expenses TZS 5,900,000 = Net Income TZS 2,300,000." },
+        { "title": "4. Drill into any line", "text": "Click any blue account code to open the General Ledger for that account and see each transaction that contributed to the total." },
+        { "title": "5. Export or print", "text": "Use Export for spreadsheet analysis or Print for board and regulatory submissions." }
+      ],
+      "tip": "Compare this month's Net Income to last month's by toggling the date range — a shrinking margin signals rising NPLs or falling collections."
+    }
   },
   "balance": {
     "title": "Balance Sheet",
     "subtitle": "Assets = Liabilities + Equity, as of a given date — click a code to open its ledger",
     "assets": "Assets",
     "liabilities": "Liabilities",
-    "equity": "Equity"
+    "equity": "Equity",
+    "help": {
+      "title": "How to use the Balance Sheet",
+      "intro": "The Balance Sheet is a snapshot of the institution's financial position at a specific date. It shows what the institution owns (Assets), what it owes (Liabilities), and the owners' stake (Equity). Assets must equal Liabilities + Equity.",
+      "steps": [
+        { "title": "1. Set the as-of date", "text": "Pick any date to see the balance sheet position at that point. The default is today.", "example": "As of 2026-06-30 → shows end-of-June position for half-year reporting." },
+        { "title": "2. Click Refresh", "text": "Click Refresh to load the report. Assets appear on the left column; Liabilities and Equity on the right." },
+        { "title": "3. Verify the balance check", "text": "The banner at the bottom confirms Assets = Liabilities + Equity. Green means balanced. Red means unbalanced — check for unposted journals or missing entries.", "example": "Assets TZS 45,200,000 = Liabilities TZS 12,800,000 + Equity TZS 32,400,000 ✓" },
+        { "title": "4. Drill into any account", "text": "Click any blue account code to open the General Ledger and trace the transactions that built up that balance." },
+        { "title": "5. Export or print", "text": "Use Export for detailed spreadsheet review or Print for board meetings, auditors, and regulatory submissions." }
+      ],
+      "tip": "Compare the Loan Receivable balance here to the outstanding loan portfolio in Loan Management — they should match. A gap indicates unposted transactions."
+    }
   },
   "cashbook": {
     "title": "Cash Book",
     "subtitle": "Combined ledger across every Cash and Bank account",
     "combinedOpening": "Combined Opening Balance",
-    "combinedClosing": "Combined Closing Balance"
+    "combinedClosing": "Combined Closing Balance",
+    "help": {
+      "title": "How to use the Cash Book",
+      "intro": "The Cash Book shows every cash and bank movement for the period — receipts (debits) increase the balance, payments (credits) reduce it. It covers all accounts flagged as cash or bank in the Chart of Accounts.",
+      "steps": [
+        { "title": "1. Set the period", "text": "The default period is the current month. Change From and To dates to see any range — daily, weekly, or monthly.", "example": "From: 2026-06-01 / To: 2026-06-30 → full June cash movements." },
+        { "title": "2. Click Refresh", "text": "Click Refresh to load all cash/bank account ledgers. Each account appears as a separate block with its own opening balance, transaction list, and closing balance." },
+        { "title": "3. Read the combined summary", "text": "The summary bar at the top shows the combined opening and closing balance across all cash/bank accounts — this is the institution's total liquid position.", "example": "Combined Opening TZS 4,200,000 → Combined Closing TZS 6,850,000 = net cash in TZS 2,650,000." },
+        { "title": "4. Review individual account movements", "text": "Each account block lists every debit (cash received) and credit (cash paid out) with the running balance after every transaction." },
+        { "title": "5. Drill or export", "text": "Click any account name (blue link) to jump to its full General Ledger. Use Export to download all accounts to one spreadsheet or Print for a formatted cash book." }
+      ],
+      "tip": "Reconcile the Cash Book closing balance against the physical till count and bank statement at month-end — any difference must be investigated and explained."
+    }
   },
   "bank": {
     "title": "Bank Reconciliation",
@@ -133,6 +217,61 @@
     "guideStatementBalance": "Statement Balance — the closing balance printed on the actual bank statement for this account on the statement date. Type the exact figure the bank shows.",
     "guideDepositInTransit": "Deposit in Transit — money you've recorded in your books but the bank hasn't yet shown on the statement (e.g. a cash/cheque deposited late in the day). Enter its description, amount and date.",
     "guideOutstandingPayment": "Outstanding Payment — a payment/cheque you've recorded in your books but that hasn't yet cleared the bank. Enter its description, amount and date.",
-    "guideAutoMatch": "Auto-Match Against Ledger — paste the bank statement lines and the system compares them by date and amount against your General Ledger, ticking off what matches and listing anything that doesn't so you can review or record it."
+    "guideAutoMatch": "Auto-Match Against Ledger — paste the bank statement lines and the system compares them by date and amount against your General Ledger, ticking off what matches and listing anything that doesn't so you can review or record it.",
+    "help": {
+      "title": "How to use Bank Reconciliation",
+      "intro": "Bank Reconciliation matches the bank's statement against the General Ledger, flagging items in transit or outstanding payments that explain any gap between the two balances.",
+      "steps": [
+        { "title": "1. Start a new reconciliation", "text": "Click New Reconciliation, choose the account (Cash on Hand or Bank Account), enter the bank statement date and the ending balance shown on the statement." },
+        { "title": "2. Enter statement lines", "text": "Type or paste each line from your paper/online bank statement — date, description, amount (+/−). Click + Add Line for each row.", "example": "Date: 2026-06-25 | Description: Customer deposit | Amount: 500,000" },
+        { "title": "3. Auto-Match", "text": "Click Auto-Match to automatically pair statement lines against book entries (same amount within ±0.01, nearest date within 7 days). Matched pairs are shaded green." },
+        { "title": "4. Review gaps", "text": "Unmatched book items (Deposits in Transit / Outstanding Payments) and unmatched statement lines (bank errors / missed postings) are listed separately so you can investigate." },
+        { "title": "5. Save & export", "text": "Save the reconciliation — status changes to Reconciled when the adjusted book balance equals the statement. Export or print for filing." }
+      ],
+      "tip": "Run reconciliation at least monthly, right after receiving your bank statement. Frequent small reconciliations catch errors much faster than a year-end sweep."
+    }
+  },
+  "financial": {
+    "help": {
+      "title": "How to use Financial Reports",
+      "intro": "Five views of the institution's financial performance, all driven by the same posted ledger — pick a date range, then switch tabs.",
+      "steps": [
+        { "title": "1. Choose a period", "text": "Set the From/To dates and click Refresh. All five tabs reload for that range." },
+        { "title": "2. Executive", "text": "A KPI snapshot — portfolio size, outstanding balance, disbursed/collected this period, loan counts, NPL ratio (PAR90), and net income." },
+        { "title": "3. Collections", "text": "Total cash collected, broken down by payment method (cash/bank/mobile) and by month — useful for spotting which channel borrowers actually use." },
+        { "title": "4. Interest Income / Penalties", "text": "Monthly trend of interest earned and penalties collected, so you can track whether portfolio yield is improving or slipping." },
+        { "title": "5. Profit & Loss", "text": "Every Income and Expense account's balance for the period, ending in Net Income — the same figures that feed the Balance Sheet's Current Period Earnings line." },
+        { "title": "6. Export", "text": "CSV / Excel / Print always exports whichever tab is currently open." }
+      ],
+      "tip": "The Executive tab's NPL ratio and the Regulator Reports (BOT) PAR90 figure are computed the same way — they should always agree for the same date range."
+    }
+  },
+  "risk": {
+    "help": {
+      "title": "How to use Risk Reports",
+      "intro": "A portfolio-health view built from the live repayment schedule — no manual data entry, it reads straight off overdue installments.",
+      "steps": [
+        { "title": "1. PAR cards", "text": "Portfolio at Risk at 1, 30, 60 and 90 days — the percentage and TZS value of the outstanding portfolio that is overdue by at least that many days. Rising PAR90 is the clearest early warning of a deteriorating book." },
+        { "title": "2. Risk distribution", "text": "Counts how many overdue loans fall into Low / Medium / High / Critical bands, so you can prioritize collections calls by severity." },
+        { "title": "3. Default analysis", "text": "Loans 90+ days past due, grouped by the month they were disbursed (a \"cohort\"). Compare default rates across cohorts to spot whether a particular month's underwriting was weaker." },
+        { "title": "4. Defaulted loans list", "text": "The individual loans driving the default numbers — useful for handing a worklist straight to the collections team or escalating to Write-Off in Loan Restructuring." }
+      ],
+      "tip": "PAR90 / total outstanding portfolio is the same NPL ratio Regulator Reports (BOT) uses, so the two pages should always agree for the same date."
+    }
+  },
+  "regulator": {
+    "help": {
+      "title": "How to use Regulator Reports (BOT)",
+      "intro": "Generates Bank of Tanzania Tier-2 non-deposit-taking microfinance statutory returns for the period you choose. Figures are pulled live from the portfolio and the General Ledger — no manual entry.",
+      "steps": [
+        { "title": "1. Choose the return type", "text": "Select Quarterly (Q1–Q4), Mid-Annual (H1 or H2), or Annual." },
+        { "title": "2. Set the year and sub-period", "text": "Pick the year and — for quarterly/half-year returns — the specific quarter or half.", "example": "Q2 2026 = April 1 → June 30, 2026." },
+        { "title": "3. Generate", "text": "Click Generate. The system computes portfolio activity, BOT loan classification, PAR, provisioning, borrower demographics, and income-statement/balance-sheet figures for the period." },
+        { "title": "4. Loan classification table", "text": "Rows show each BOT aging band (Current, Especially Mentioned, Substandard, Doubtful, Loss) with loan counts, outstanding balances, provision rates, and required provisions." },
+        { "title": "5. PAR flag", "text": "Portfolio at Risk (all loans ≥1 day overdue) as a percentage of the total portfolio. BOT triggers supervision at PAR30 > 10% — watch this number monthly." },
+        { "title": "6. Export / Print", "text": "Use CSV / Excel to populate your BOT submission spreadsheet, or Print for a signed paper record." }
+      ],
+      "tip": "Run this at the end of each quarter immediately after month-end provisioning and interest accrual have been posted, so the ledger figures it reads are complete."
+    }
   }
 }

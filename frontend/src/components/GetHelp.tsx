@@ -1,6 +1,6 @@
 import { useState, ReactNode } from "react";
 
-interface HelpStep {
+export interface HelpStep {
   title: string;
   text: string;
   example?: string;

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -96,16 +96,10 @@ const GeneralLedger = () => {
           </div>
 
           <GetHelp
-            title="How to use the General Ledger"
-            intro="The General Ledger shows every debit and credit posted to a single account, with a running balance. Use it to trace any transaction back to its source journal entry."
-            steps={[
-              { title: "1. Select an account", text: "Pick any account from the dropdown — all active accounts in your Chart of Accounts appear here. Accounts are listed by code then name.", example: "1100 — Cash on Hand, 2100 — Customer Loans Receivable, 4100 — Interest Income." },
-              { title: "2. Set a date range (optional)", text: "Leave both dates blank to see all history. Enter a From date, a To date, or both to filter the period. The opening balance shown is the balance at midnight before your From date.", example: "From: 2026-01-01 / To: 2026-06-30 → shows H1 activity with the balance carried forward from 31 Dec." },
-              { title: "3. Click Load", text: "Click the Load button to fetch the ledger. The summary bar shows the opening balance, closing balance, and account name at a glance." },
-              { title: "4. Read the running balance", text: "Each row shows the debit or credit posted by a journal entry, plus the cumulative balance after that entry. Debits increase asset/expense accounts; credits increase liability/income/equity accounts." },
-              { title: "5. Export or print", text: "Use Export CSV/Excel to share the data, or Print to produce a formatted ledger page for audit or filing." },
-            ]}
-            tip="Click any account code in the Trial Balance or Cash Book to jump directly here with that account pre-selected."
+            title={t("ledger.help.title")}
+            intro={t("ledger.help.intro")}
+            steps={t("ledger.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("ledger.help.tip")}
           />
 
           <div className="gl-filters">

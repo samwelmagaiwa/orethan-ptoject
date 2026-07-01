@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -21,6 +22,7 @@ const SECTIONS = ["executive", "collections", "interest", "penalties", "pnl"] as
 const SECTION_LABELS: Record<string, string> = { executive: "Executive", collections: "Collections", interest: "Interest Income", penalties: "Penalties", pnl: "Profit & Loss" };
 
 const FinancialReports = () => {
+  const { t } = useTranslation("accounting");
   const [section, setSection] = useState<typeof SECTIONS[number]>("executive");
   const [from, setFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
@@ -163,16 +165,10 @@ const FinancialReports = () => {
           </div>
 
           <GetHelp
-            title="How to use Financial Reports"
-            intro="Five views of the institution's financial performance, all driven by the same posted ledger — pick a date range, then switch tabs."
-            steps={[
-              { title: "1. Choose a period", text: "Set the From/To dates and click Refresh. All five tabs reload for that range." },
-              { title: "2. Executive", text: "A KPI snapshot — portfolio size, outstanding balance, disbursed/collected this period, loan counts, NPL ratio (PAR90), and net income." },
-              { title: "3. Collections", text: "Total cash collected, broken down by payment method (cash/bank/mobile) and by month — useful for spotting which channel borrowers actually use." },
-              { title: "4. Interest Income / Penalties", text: "Monthly trend of interest earned and penalties collected, so you can track whether portfolio yield is improving or slipping." },
-              { title: "5. Profit & Loss", text: "Every Income and Expense account's balance for the period, ending in Net Income — the same figures that feed the Balance Sheet's Current Period Earnings line." },
-              { title: "6. Export", text: "CSV / Excel / Print always exports whichever tab is currently open." },
-            ]}
+            title={t("financial.help.title")}
+            intro={t("financial.help.intro")}
+            steps={t("financial.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("financial.help.tip")}
           />
 
           <div className="fr-tabs">

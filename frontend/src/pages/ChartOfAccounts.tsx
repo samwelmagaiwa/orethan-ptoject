@@ -5,7 +5,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -152,16 +152,10 @@ const ChartOfAccounts = () => {
           </div>
 
           <GetHelp
-            title="How to use the Chart of Accounts"
-            intro="This is the full list of General Ledger accounts the system posts to. Every Journal Entry, repayment, disbursement, provisioning run, and accrual ultimately lands on one of these accounts."
-            steps={[
-              { title: "1. Browse or search", text: "Use the search box to find an account by its code or name, and the Type filter to narrow to Asset, Liability, Equity, Income or Expense accounts only.", example: "Type \"1100\" to jump straight to Loans Receivable." },
-              { title: "2. Open an account's ledger", text: "Click any blue account code to open its General Ledger — every posted line for that account, in date order, with a running balance." },
-              { title: "3. Add a new account", text: "Click + Add Account, fill in a unique code, name, type and normal balance (Debit for assets/expenses, Credit for liabilities/equity/income), then Create Account." },
-              { title: "4. Activate / deactivate", text: "Click the Active/Inactive badge to toggle an account. System accounts (badged SYSTEM) are protected — the platform depends on them, so they can't be deactivated or deleted." },
-              { title: "5. Export or print", text: "Use CSV / Excel / Print to share the current filtered list with auditors or management." },
-            ]}
-            tip="System accounts (1010 Cash, 1100 Loans Receivable, 1110 Interest Receivable, 1150 Allowance for Loan Losses, etc.) are the backbone of every automated posting — never delete or rename them."
+            title={t("chart.help.title")}
+            intro={t("chart.help.intro")}
+            steps={t("chart.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("chart.help.tip")}
           />
 
           <div className="coa-filters">

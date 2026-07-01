@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -88,16 +88,10 @@ const CashBook = () => {
             </div>
           </div>
           <GetHelp
-            title="How to use the Cash Book"
-            intro="The Cash Book shows every cash and bank movement for the period — receipts (debits) increase the balance, payments (credits) reduce it. It covers all accounts flagged as cash or bank in the Chart of Accounts."
-            steps={[
-              { title: "1. Set the period", text: "The default period is the current month. Change From and To dates to see any range — daily, weekly, or monthly.", example: "From: 2026-06-01 / To: 2026-06-30 → full June cash movements." },
-              { title: "2. Click Refresh", text: "Click Refresh to load all cash/bank account ledgers. Each account appears as a separate block with its own opening balance, transaction list, and closing balance." },
-              { title: "3. Read the combined summary", text: "The summary bar at the top shows the combined opening and closing balance across all cash/bank accounts — this is the institution's total liquid position.", example: "Combined Opening TZS 4,200,000 → Combined Closing TZS 6,850,000 = net cash in TZS 2,650,000." },
-              { title: "4. Review individual account movements", text: "Expand each account block to see each debit (cash received) and credit (cash paid out) with the running balance after every transaction." },
-              { title: "5. Drill or export", text: "Click any account name (blue link) to jump to its full General Ledger. Use Export to download all accounts to one spreadsheet or Print for a formatted cash book." },
-            ]}
-            tip="Reconcile the Cash Book closing balance against the physical till count and bank statement at month-end — any difference must be investigated and explained."
+            title={t("cashbook.help.title")}
+            intro={t("cashbook.help.intro")}
+            steps={t("cashbook.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("cashbook.help.tip")}
           />
         </div>
 

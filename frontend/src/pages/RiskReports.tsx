@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -15,6 +16,7 @@ interface DefaultedLoan { loan_id: number; loan_number: string; borrower: string
 interface DefaultAnalysis { cohorts: Cohort[]; overall: { defaulted_loans: number; defaulted_amount: number; default_rate_by_count: number; default_rate_by_amount: number }; defaulted_loans: DefaultedLoan[]; }
 
 const RiskReports = () => {
+  const { t } = useTranslation("accounting");
   const [par, setPar] = useState<ParSummary | null>(null);
   const [defaults, setDefaults] = useState<DefaultAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,15 +93,10 @@ const RiskReports = () => {
           </div>
 
           <GetHelp
-            title="How to use Risk Reports"
-            intro="A portfolio-health view built from the live repayment schedule — no manual data entry, it reads straight off overdue installments."
-            steps={[
-              { title: "1. PAR cards", text: "Portfolio at Risk at 1, 30, 60 and 90 days — the percentage and TZS value of the outstanding portfolio that is overdue by at least that many days. Rising PAR90 is the clearest early warning of a deteriorating book." },
-              { title: "2. Risk distribution", text: "Counts how many overdue loans fall into Low / Medium / High / Critical bands, so you can prioritize collections calls by severity." },
-              { title: "3. Default analysis", text: "Loans 90+ days past due, grouped by the month they were disbursed (a \"cohort\"). Compare default rates across cohorts to spot whether a particular month's underwriting was weaker." },
-              { title: "4. Defaulted loans list", text: "The individual loans driving the default numbers — useful for handing a worklist straight to the collections team or escalating to Write-Off in Loan Restructuring." },
-            ]}
-            tip="PAR90 / total outstanding portfolio is the same NPL ratio Regulator Reports (BOT) uses, so the two pages should always agree for the same date."
+            title={t("risk.help.title")}
+            intro={t("risk.help.intro")}
+            steps={t("risk.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("risk.help.tip")}
           />
         </div>
 

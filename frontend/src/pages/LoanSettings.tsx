@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -12,6 +13,7 @@ interface Settings {
 }
 
 const LoanSettings = () => {
+  const { t } = useTranslation("common");
   const [form, setForm] = useState<Settings>({ penalty_rate: "", default_interest_rate: "", default_processing_fee_rate: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,15 +88,10 @@ const LoanSettings = () => {
           </div>
 
           <GetHelp
-            title="How to use Loan Settings"
-            intro="These three rates are the system-wide defaults used every time a loan is calculated, a penalty is charged, or a processing fee is deducted at disbursement. Change them here and every future calculation picks up the new value instantly — existing loan schedules are not retroactively changed."
-            steps={[
-              { title: "1. Penalty rate", text: "The percentage applied to the overdue installment amount when a borrower is late. Used by the Overdue Management module and printed on guarantor SMS reminders.", example: "Set to 2.0% → a borrower with TZS 50,000 overdue owes TZS 1,000 as a late-payment penalty." },
-              { title: "2. Default interest rate", text: "The monthly interest rate applied to new loans when the loan officer does not set a specific rate during the application — common for standard products.", example: "Set to 3.0% per month → a TZS 1,000,000 loan accrues TZS 30,000 interest in the first month." },
-              { title: "3. Processing fee rate", text: "The percentage deducted from the gross loan amount at disbursement as an origination fee. Flows to Fee Income in the General Ledger.", example: "Set to 1.5% → a TZS 500,000 loan has TZS 7,500 withheld; the borrower receives TZS 492,500." },
-              { title: "4. Save", text: "Click Save Settings — the new rates take effect immediately. A confirmation shows the change was applied." },
-            ]}
-            tip="Loan officers can override the default interest rate on individual applications. These settings are the fallback when no specific rate is entered."
+            title={t("loanSettings.help.title")}
+            intro={t("loanSettings.help.intro")}
+            steps={t("loanSettings.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("loanSettings.help.tip")}
           />
         </div>
 

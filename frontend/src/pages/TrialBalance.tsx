@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -76,16 +76,10 @@ const TrialBalance = () => {
             </div>
           </div>
           <GetHelp
-            title="How to use the Trial Balance"
-            intro="The Trial Balance lists every account with its total debits and credits as of a given date. It is the first check that your books are balanced — total debits must equal total credits."
-            steps={[
-              { title: "1. Set the as-of date", text: "The default date is today. Change it to any date to see the cumulative balances at that point in time.", example: "As of 2026-06-30 → shows all posted activity up to end of June." },
-              { title: "2. Click Refresh", text: "Click Refresh to load the report. Each account with at least one posted entry appears with its total debit and credit balance." },
-              { title: "3. Check the balance flag", text: "The coloured banner at the bottom confirms whether Total Debits = Total Credits. Green means balanced. Red means there is an imbalance — investigate journal entries for that period immediately." },
-              { title: "4. Drill into any account", text: "Click any blue account code to jump to the General Ledger for that account — you will see every transaction that built up that balance.", example: "Click '2100' to see all loan repayments and disbursements that make up the loan receivable balance." },
-              { title: "5. Export or print", text: "Use Export or Print to produce the Trial Balance for audit, board reports, or regulatory submissions." },
-            ]}
-            tip="Run the Trial Balance at month-end before closing entries. A balanced TB is a prerequisite for a reliable Income Statement and Balance Sheet."
+            title={t("trial.help.title")}
+            intro={t("trial.help.intro")}
+            steps={t("trial.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("trial.help.tip")}
           />
         </div>
 

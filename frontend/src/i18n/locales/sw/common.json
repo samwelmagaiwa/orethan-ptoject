@@ -101,6 +101,47 @@
   "footer": {
     "copyright": "© {{year}} Mfumo wa Mikopo Midogo. Haki zote zimehifadhiwa."
   },
+  "loanLifecycle": {
+    "help": {
+      "title": "Jinsi ya kutumia Urekebishaji wa Mikopo",
+      "intro": "Vitendo vitatu vilivyosimamiwa ambavyo vinazidi kurekodi malipo: kuweka tena amortizesheni ya mkopo wenye shida, kutoa fedha zaidi, au kufunga akaunti isiyoweza kukusanywa milele — yote yanafanywa kwa kuwasilisha kiotomatiki kwenye Daftari Kuu na njia kamili ya ukaguzi.",
+      "steps": [
+        { "title": "1. Tafuta mkopo", "text": "Ingiza Kitambulisho cha Mkopo (nambari inayoonyeshwa kwenye orodha ya mikopo) na ubonyeze Tafuta Mkopo. Salio la sasa la mkopo, hali na tarehe ya malipo inayofuata zinaonyeshwa." },
+        { "title": "2. Panga Upya (mkopeshaji mwenye shida)", "text": "Badilisha hadi kichupo cha Panga Upya. Ingiza muda mpya kwa miezi, mzunguko wa ulipaji na kiwango cha riba kwa hiari. Bonyeza Panga Upya Mkopo — mfumo unafuta malipo ya baadaye yasiyolipwa na kuyajenga upya juu ya salio linalodaiwa. Fedha hazisogei, kwa hivyo hakuna ingizo la GL linalowekwa.", "example": "Mkopeshaji ana miezi 8 iliyobaki lakini hawezi kukutana na TZS 120,000/mwezi. Weka muda wa miezi 16 → malipo yapungue hadi ~TZS 60,000." },
+        { "title": "3. Ongeza Juu (toa fedha zaidi)", "text": "Badilisha hadi kichupo cha Ongeza Juu. Ingiza kiasi cha kutoa, njia ya malipo, na muda mpya wa ulipaji. Mfumo unawasilisha Dr Mikopo Inayodaiwa / Cr Fedha Taslimu (au Benki) na kujenga upya ratiba juu ya salio jipya la pamoja.", "example": "Salio linalodaiwa TZS 300,000 + nyongeza ya TZS 200,000 = TZS 500,000 ya amortizesheni upya kwa miezi 12." },
+        { "title": "4. Ondoa Mkopo (deni lisiloweza kukusanywa)", "text": "Badilisha hadi kichupo cha Ondoa Mkopo. Ingiza sababu (inahitajika kwa ukaguzi). Mfumo unachukua salio dhidi ya Ruhusa ya Hasara ya Mkopo (iliyojengwa na mzigo wa kila mwezi), unalipa upungufu wowote kwa gharama ya mzigo, na kufunga mkopo kama umeondolewa.", "example": "Sababu ya kuondoa mkopo: 'Mkopeshaji amefariki — imethibitishwa na familia 2026-06-15'." },
+        { "title": "5. Pitia historia", "text": "Kila kitendo kinaonekana kwenye jedwali la Historia ya Mzunguko chini ya kadi ya mkopo — aina, kiasi, aliyeifanya, na maelezo." }
+      ],
+      "tip": "Kuondoa mkopo ni ya kudumu na mara moja kunaondoa salio kutoka kwa Mikopo Inayodaiwa. Ikiwa kuna nafasi yoyote ya urejeshaji wa baadaye, tumia Panga Upya badala yake."
+    }
+  },
+  "cashTill": {
+    "help": {
+      "title": "Jinsi ya kutumia Droo la Keshia",
+      "intro": "Kila keshia anafungua kipindi kimoja cha droo mwanzoni mwa zamu na kuifunga mwishoni. Mfumo hufuatilia kiotomatiki fedha zinazoingia (malipo unayorekodi kama 'fedha taslimu') na fedha zinazotoka (utoaji wa fedha taslimu unaoshughulikia) — hesabu ya mwili wakati wa kufunga inaonyesha upungufu au ziada yoyote.",
+      "steps": [
+        { "title": "1. Fungua droo", "text": "Mwanzoni mwa zamu yako, ingiza kiasi cha fedha unachoanzia nacho (kiasi kilicho ndani ya droo kimwili sasa hivi) na ubonyeze Fungua Droo.", "example": "Fedha ya kuanza: TZS 100,000 — fedha iliyopokelewa kutoka kufungwa kwa jana au fedha ndogo." },
+        { "title": "2. Fanya miamala kawaida", "text": "Rekodi malipo ya fedha taslimu na ushughulikie utoaji wa fedha taslimu kupitia kurasa za kawaida za mkopo — droo huzifuatilia kiotomatiki. Huhitajiki kurudi hapa wakati wa zamu." },
+        { "title": "3. Angalia ubao wakati wa zamu", "text": "Refresh ukurasa huu wakati wowote kuona msimamo halisi: fedha ya kuanza + fedha zinazoingia (ukusanyaji) − fedha zinazotoka (utoaji) = kiasi kinachotarajiwa ndani ya droo sasa hivi." },
+        { "title": "4. Hesabu na funga", "text": "Mwishoni mwa zamu, hesabu kimwili fedha zilizo ndani ya droo. Ingiza hesabu halisi kwenye kisanduku cha Funga Droo na ubonyeze Hesabu na Funga Droo.", "example": "Inatarajiwa TZS 340,000, unahesabu TZS 338,500 → tofauti = −TZS 1,500 (upungufu — chunguza kabla ya kufunga)." },
+        { "title": "5. Pitia historia", "text": "Jedwali la Historia ya Kipindi linaonyesha vipindi vyako vyote vilivyopita. Wasimamizi wanaona wakeshia wote. Tofauti ya sifuri inamaanisha droo iliwiana kikamilifu." }
+      ],
+      "tip": "Funga droo kila siku hata kama hakuna miamala — kufunga kwa bila miamala kunathibitisha droo iliwiana na haikubadilishwa."
+    }
+  },
+  "loanSettings": {
+    "help": {
+      "title": "Jinsi ya kutumia Mipangilio ya Mikopo",
+      "intro": "Viwango hivi vitatu ni msingi wa mfumo mzima unaotumika kila wakati mkopo unakokotolewa, adhabu inachukuliwa, au ada ya usindikaji inakatwa wakati wa utoaji. Vibadilishe hapa na kila kokotoo la baadaye linachukua thamani mpya mara moja — ratiba za mikopo zilizopo hazibadilishwi nyuma.",
+      "steps": [
+        { "title": "1. Kiwango cha adhabu", "text": "Asilimia inayotumika kwa kiasi cha malipo ya muda wake kilichopita muda wake wakati mkopeshaji amechelewa. Inatumika na moduli ya Usimamizi wa Madeni na kuchapishwa kwenye ukumbusho wa SMS wa dhamana.", "example": "Weka kwa 2.0% → mkopeshaji mwenye TZS 50,000 inayodaiwa anakody TZS 1,000 kama adhabu ya malipo ya muda wake." },
+        { "title": "2. Kiwango cha riba cha msingi", "text": "Kiwango cha riba cha kila mwezi kinachotumika kwa mikopo mipya wakati afisa wa mikopo hakuweka kiwango maalum wakati wa ombi — cha kawaida kwa bidhaa za kawaida.", "example": "Weka kwa 3.0% kwa mwezi → mkopo wa TZS 1,000,000 unakusanya riba ya TZS 30,000 katika mwezi wa kwanza." },
+        { "title": "3. Kiwango cha ada ya usindikaji", "text": "Asilimia inayokatwa kutoka kiasi cha mkopo mzima wakati wa utoaji kama ada ya uasili. Inapita kwenye Mapato ya Ada katika Daftari Kuu.", "example": "Weka kwa 1.5% → mkopo wa TZS 500,000 una TZS 7,500 zilizozuiliwa; mkopeshaji anapokea TZS 492,500." },
+        { "title": "4. Hifadhi", "text": "Bonyeza Hifadhi Mipangilio — viwango vipya vinaanza mara moje. Uthibitisho unaonyesha mabadiliko yalitekelezwa." }
+      ],
+      "tip": "Maafisa wa mikopo wanaweza kubadilisha kiwango cha riba cha msingi kwenye maombi ya mtu binafsi. Mipangilio hii ni msingi wakati hakuna kiwango maalum kilichoingizwa."
+    }
+  },
   "modal": {
     "confirmYes": "Ndio, Endelea",
     "confirmNo": "Hapana, Ghairi",

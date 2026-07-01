@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -117,16 +117,10 @@ const BalanceSheet = () => {
             </div>
           </div>
           <GetHelp
-            title="How to use the Balance Sheet"
-            intro="The Balance Sheet is a snapshot of the institution's financial position at a specific date. It shows what the institution owns (Assets), what it owes (Liabilities), and the owners' stake (Equity). Assets must equal Liabilities + Equity."
-            steps={[
-              { title: "1. Set the as-of date", text: "Pick any date to see the balance sheet position at that point. The default is today.", example: "As of 2026-06-30 → shows end-of-June position for half-year reporting." },
-              { title: "2. Click Refresh", text: "Click Refresh to load the report. Assets appear on the left column; Liabilities and Equity on the right." },
-              { title: "3. Verify the balance check", text: "The banner at the bottom confirms Assets = Liabilities + Equity. Green means balanced. Red means unbalanced — check for unposted journals or missing entries.", example: "Assets TZS 45,200,000 = Liabilities TZS 12,800,000 + Equity TZS 32,400,000 ✓" },
-              { title: "4. Drill into any account", text: "Click any blue account code to open the General Ledger and trace the transactions that built up that balance." },
-              { title: "5. Export or print", text: "Use Export for detailed spreadsheet review or Print for board meetings, auditors, and regulatory submissions." },
-            ]}
-            tip="Compare the Loan Receivable balance here to the outstanding loan portfolio in Loan Management — they should match. A gap indicates unposted transactions."
+            title={t("balance.help.title")}
+            intro={t("balance.help.intro")}
+            steps={t("balance.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("balance.help.tip")}
           />
         </div>
 

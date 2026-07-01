@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -30,6 +31,7 @@ interface SessionRow {
 }
 
 const CashTill = () => {
+  const { t } = useTranslation("common");
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [history, setHistory] = useState<SessionRow[]>([]);
   const [openingFloat, setOpeningFloat] = useState<string>("");
@@ -113,16 +115,10 @@ const CashTill = () => {
         </div>
 
         <GetHelp
-          title="How to use the Cashier Till"
-          intro="Every cashier opens one till session at the start of the shift and closes it at the end. The system automatically tracks cash in (repayments you record as 'cash') and cash out (cash disbursements you process) — the physical count at close reveals any shortage or overage."
-          steps={[
-            { title: "1. Open the drawer", text: "At the start of your shift, enter the cash float you are starting with (the amount physically in the drawer right now) and click Open Drawer.", example: "Opening float: TZS 100,000 — the float received from yesterday's close or petty cash." },
-            { title: "2. Transact normally", text: "Record cash repayments and process cash disbursements through the normal loan pages — the till tracks them automatically. You don't need to come back here during the shift." },
-            { title: "3. Check the board mid-shift", text: "Refresh this page any time to see the live position: opening float + cash in (collections) − cash out (disbursements) = expected amount in the drawer right now." },
-            { title: "4. Count and close", text: "At the end of the shift, physically count the cash in the drawer. Enter the exact count in the Close Till box and click Count & Close Drawer.", example: "Expected TZS 340,000, you count TZS 338,500 → variance = −TZS 1,500 (shortage — investigate before locking up)." },
-            { title: "5. Review history", text: "The Session History table shows all your past sessions. Admins see all cashiers. A zero variance means the drawer balanced perfectly." },
-          ]}
-          tip="Close the till every day even if there are no transactions — a zero-transaction close confirms the drawer was balanced and undisturbed."
+          title={t("cashTill.help.title")}
+          intro={t("cashTill.help.intro")}
+          steps={t("cashTill.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("cashTill.help.tip")}
         />
       </div>
 

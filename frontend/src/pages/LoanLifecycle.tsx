@@ -1,8 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -32,6 +33,7 @@ interface HistoryRow {
 }
 
 const LoanLifecycle = () => {
+  const { t } = useTranslation("common");
   const [query, setQuery] = useState("");
   const [loan, setLoan] = useState<Loan | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
@@ -150,16 +152,10 @@ const LoanLifecycle = () => {
         </div>
 
         <GetHelp
-          title="How to use Loan Restructuring"
-          intro="Three managed actions that go beyond recording a payment: re-amortize a struggling loan, advance more funds, or permanently close an uncollectible account — all with automatic General Ledger postings and a full audit trail."
-          steps={[
-            { title: "1. Find the loan", text: "Enter the Loan ID (the number shown in the loan list) and click Find Loan. The loan's current balance, status and next due date are displayed." },
-            { title: "2. Reschedule (struggling borrower)", text: "Switch to the Reschedule tab. Enter the new term in months, repayment frequency and an optional interest rate. Click Reschedule Loan — the system deletes unpaid future installments and re-builds them over the outstanding balance. No cash moves, so no GL entry is posted.", example: "Borrower has 8 months left but can't meet TZS 120,000/month. Set term to 16 months → installment drops to ~TZS 60,000." },
-            { title: "3. Top-Up (advance more funds)", text: "Switch to the Top-Up tab. Enter the amount to advance, the payment method, and a new repayment term. The system posts Dr Loans Receivable / Cr Cash (or Bank) and rebuilds the schedule over the new combined balance.", example: "Outstanding balance TZS 300,000 + TZS 200,000 top-up = TZS 500,000 re-amortized over 12 months." },
-            { title: "4. Write-Off (uncollectible debt)", text: "Switch to the Write-Off tab. Enter the reason (required for audit). The system absorbs the balance against the Allowance for Loan Losses (built up by monthly provisioning), charges any shortfall to the provision expense, and closes the loan as written_off.", example: "Write-off reason: 'Borrower deceased — confirmed by family 2026-06-15'." },
-            { title: "5. Review history", text: "Every action appears in the Lifecycle History table below the loan card — type, amounts, who performed it, and notes." },
-          ]}
-          tip="Write-off is permanent and immediately removes the balance from Loans Receivable. If there is any chance of future recovery, use Reschedule instead."
+          title={t("loanLifecycle.help.title")}
+          intro={t("loanLifecycle.help.intro")}
+          steps={t("loanLifecycle.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("loanLifecycle.help.tip")}
         />
 
         <div className="ll-search">

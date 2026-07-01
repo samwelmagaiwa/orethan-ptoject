@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -115,16 +115,10 @@ const IncomeStatement = () => {
             </div>
           </div>
           <GetHelp
-            title="How to use the Income Statement (Profit & Loss)"
-            intro="The Income Statement shows all revenue earned and expenses incurred over a period, resulting in a net income (profit) or net loss. It is the primary measure of the institution's financial performance."
-            steps={[
-              { title: "1. Set the reporting period", text: "The default period is the current calendar year to date. Adjust the From and To dates to match your reporting period — monthly, quarterly, or annual.", example: "From: 2026-01-01 / To: 2026-03-31 → Q1 Profit & Loss." },
-              { title: "2. Click Refresh", text: "Click Refresh to load the statement. Income accounts (interest income, fees, penalties) appear in the top section; expense accounts (salaries, provisions, rent) in the lower section." },
-              { title: "3. Read the net income", text: "The coloured bar at the bottom shows Net Income = Total Income − Total Expenses. Green means profit; red means loss.", example: "Total Income TZS 8,200,000 − Total Expenses TZS 5,900,000 = Net Income TZS 2,300,000." },
-              { title: "4. Drill into any line", text: "Click any blue account code to open the General Ledger for that account and see each transaction that contributed to the total." },
-              { title: "5. Export or print", text: "Use Export for spreadsheet analysis or Print for board and regulatory submissions." },
-            ]}
-            tip="Compare this month's Net Income to last month's by toggling the date range — a shrinking margin signals rising NPLs or falling collections."
+            title={t("income.help.title")}
+            intro={t("income.help.intro")}
+            steps={t("income.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("income.help.tip")}
           />
         </div>
 

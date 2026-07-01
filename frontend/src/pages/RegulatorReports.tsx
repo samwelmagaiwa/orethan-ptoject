@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp";
+import GetHelp, { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -22,6 +23,7 @@ interface Report {
 const CURRENT_YEAR = new Date().getFullYear();
 
 const RegulatorReports = () => {
+  const { t } = useTranslation("accounting");
   const [periodType, setPeriodType] = useState<"quarter" | "half" | "annual">("quarter");
   const [year, setYear] = useState(CURRENT_YEAR);
   const [period, setPeriod] = useState(1);
@@ -122,17 +124,10 @@ const RegulatorReports = () => {
           </div>
 
           <GetHelp
-            title="How to use Regulator Reports (BOT)"
-            intro="Generates Bank of Tanzania Tier-2 non-deposit-taking microfinance statutory returns for the period you choose. Figures are pulled live from the portfolio and the General Ledger — no manual entry."
-            steps={[
-              { title: "1. Choose the return type", text: "Select Quarterly (Q1–Q4), Mid-Annual (H1 or H2), or Annual." },
-              { title: "2. Set the year and sub-period", text: "Pick the year and — for quarterly/half-year returns — the specific quarter or half.", example: "Q2 2026 = April 1 → June 30, 2026." },
-              { title: "3. Generate", text: "Click Generate. The system computes portfolio activity, BOT loan classification, PAR, provisioning, borrower demographics, and income-statement/balance-sheet figures for the period." },
-              { title: "4. Loan classification table", text: "Rows show each BOT aging band (Current, Especially Mentioned, Substandard, Doubtful, Loss) with loan counts, outstanding balances, provision rates, and required provisions." },
-              { title: "5. PAR flag", text: "Portfolio at Risk (all loans ≥1 day overdue) as a percentage of the total portfolio. BOT triggers supervision at PAR30 > 10% — watch this number monthly." },
-              { title: "6. Export / Print", text: "Use CSV / Excel to populate your BOT submission spreadsheet, or Print for a signed paper record." },
-            ]}
-            tip="Run this at the end of each quarter immediately after month-end provisioning and interest accrual have been posted, so the ledger figures it reads are complete."
+            title={t("regulator.help.title")}
+            intro={t("regulator.help.intro")}
+            steps={t("regulator.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("regulator.help.tip")}
           />
 
           <div className="rr-filters">
