@@ -117,6 +117,16 @@ export default function Payroll() {
   );
   // admin always sees management; others only if their role is in payrollRoles
   const isPayrollAdmin = myRole === "admin" || payrollRoles.includes(myRole);
+  const allowedTabs = (() => {
+    const list: Tab[] = [];
+    if (isPayrollAdmin) {
+      list.push("runs", "components", "employees");
+    }
+    if (hasEmpRecord) {
+      list.push("myslips");
+    }
+    return list;
+  })();
 
   // Modals for employees / components
   const [showEmpForm, setShowEmpForm] = useState(false);
@@ -497,6 +507,24 @@ export default function Payroll() {
   const earnings = selItem?.details.filter(d => d.component.type === "earning") ?? [];
   const deductions = selItem?.details.filter(d => d.component.type === "deduction") ?? [];
 
+  if (settingsLoaded && allowedTabs.length === 0) {
+    return (
+      <div className="pay-page">
+        <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
+        <ConfirmModal isOpen={confirm.isOpen} title={confirm.title} message={confirm.message} type={confirm.type} onConfirm={confirm.onConfirm} onCancel={() => setConfirm({ ...confirm, isOpen: false })} />
+        <div className="pay-empty pay-empty--big" style={{ margin: "auto", padding: "40px" }}>
+          <div className="pay-empty-icon">🔒</div>
+          <div style={{ fontSize: "18px", fontWeight: "bold", color: "#102a43" }}>
+            {t("no_access_title", { defaultValue: "Access Restricted" })}
+          </div>
+          <div style={{ fontSize: "13px", color: "#64748b", maxWidth: "450px", marginTop: "8px", lineHeight: "1.6" }}>
+            {t("no_access_desc", { defaultValue: "No payroll management permissions are assigned to your role, and there is no employee record linked to your user account. Please contact your administrator to link your profile." })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pay-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
@@ -553,9 +581,9 @@ export default function Payroll() {
                   {pmAccounts.length > 0
                     ? pmAccounts.map(a => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)
                     : <>
-                        <option value="1020">1020 — NMB / Bank Account</option>
-                        <option value="1010">1010 — Cash in Hand</option>
-                      </>
+                      <option value="1020">1020 — NMB / Bank Account</option>
+                      <option value="1010">1010 — Cash in Hand</option>
+                    </>
                   }
                 </select>
               </div>
@@ -606,29 +634,274 @@ export default function Payroll() {
         </div>
       )}
 
-      {/* --- Tabs ---------------------------------------------------------------- */}
-      <div className="pay-tab-bar">
-        {(["runs", "components", "employees"] as Tab[]).map(tKey => (
-          <button key={tKey} className={`pay-tab ${tab === tKey ? "pay-tab--active" : ""}`} onClick={() => setTab(tKey)}>
-            {tKey === "runs" ? `📋 ${t("payroll_runs")}` : tKey === "components" ? `⚙️ ${t("salary_components")}` : `👥 ${t("employees")}`}
-          </button>
-        ))}
-        <div className="pay-tab-space" />
-        {tab === "runs" && (
-          <button className="pay-btn pay-btn--primary" onClick={() => setShowCreate(true)}>{t("new_payroll")}</button>
-        )}
-        {tab === "components" && (
-          <button className="pay-btn pay-btn--primary" onClick={() => openCompForm()}>{t("add_component")}</button>
-        )}
-        {tab === "employees" && (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button className="pay-btn pay-btn--outline" onClick={syncUsers} disabled={busy}>
-              {busy ? t("importing") : `🔄 ${t("import_from_users")}`}
-            </button>
-            <button className="pay-btn pay-btn--primary" onClick={() => openEmpForm()}>{t("add_employee")}</button>
+      {/* --- Employee-only slip view: clean dedicated layout when user has NO management access --- */}
+      {settingsLoaded && !isPayrollAdmin && hasEmpRecord && tab === "myslips" && (() => {
+        const filteredSlips = mySlips.filter((s: any) => s.payroll?.year === myYearFilter);
+        const slip = mySelSlip;
+        const earnings_my = slip?.details?.filter((d: any) => d.component?.type === "earning") ?? [];
+        const deductions_my = slip?.details?.filter((d: any) => d.component?.type === "deduction") ?? [];
+        return (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f8f7f4", fontFamily: "Inter, sans-serif" }}>
+            {/* Page header */}
+            <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "18px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1e293b" }}>🧾 {t("my_salary_slips", { defaultValue: "My Salary Slips" })}</div>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>{t("my_slips_subtitle", { defaultValue: "View and print your monthly salary details and payment status" })}</div>
+              </div>
+              {slip && (
+                <button onClick={printMySlip} style={{ background: "#102a43", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+                  🖨️ Print Slip
+                </button>
+              )}
+            </div>
+
+            {/* Employee info strip */}
+            {myEmployee && (
+              <div style={{ background: "#102a43", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#4f7c3f", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+                  {myEmployee.full_name.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{myEmployee.full_name}</div>
+                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>
+                    {myEmployee.employee_id}
+                    {myEmployee.designation ? ` · ${myEmployee.designation}` : ""}
+                    {myEmployee.department ? ` · ${myEmployee.department}` : ""}
+                    {myEmployee.employment_type ? ` · ${myEmployee.employment_type.replace(/_/g, " ")}` : ""}
+                  </div>
+                </div>
+                {/* Year filter */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <label style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>Year</label>
+                  <select
+                    value={myYearFilter}
+                    onChange={e => {
+                      const yr = Number(e.target.value);
+                      setMyYearFilter(yr);
+                      const first = mySlips.find((s: any) => s.payroll?.year === yr);
+                      if (first) setMySelSlip(first);
+                    }}
+                    style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, cursor: "pointer" }}
+                  >
+                    {[...new Set(mySlips.map((s: any) => s.payroll?.year).filter(Boolean))].sort((a: any, b: any) => b - a).map((yr: any) => (
+                      <option key={yr} value={yr} style={{ color: "#000" }}>{yr}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* No employee record */}
+            {!myEmployee && (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#64748b" }}>
+                <div style={{ fontSize: 40 }}>🔍</div>
+                <div style={{ fontWeight: 600 }}>No employee record linked to your account</div>
+                <div style={{ fontSize: 13 }}>Ask your administrator to link your user profile.</div>
+              </div>
+            )}
+
+            {/* Content area */}
+            {myEmployee && (
+              <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+                {/* Left: slip list (month pills) */}
+                <div style={{ width: 220, borderRight: "1px solid #e5e7eb", background: "#fff", overflow: "auto", flexShrink: 0 }}>
+                  {filteredSlips.length === 0 ? (
+                    <div style={{ padding: 24, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+                      No slips for {myYearFilter}
+                    </div>
+                  ) : (
+                    filteredSlips.map((s: any) => {
+                      const isActive = mySelSlip?.id === s.id;
+                      const isPaid = s.payment_status === "paid" || s.payroll?.status === "paid";
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => setMySelSlip(s)}
+                          style={{
+                            padding: "14px 16px",
+                            borderBottom: "1px solid #f1f5f9",
+                            cursor: "pointer",
+                            background: isActive ? "#f0fdf4" : "#fff",
+                            borderLeft: isActive ? "3px solid #4f7c3f" : "3px solid transparent",
+                            transition: "all .15s",
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, fontSize: 13, color: isActive ? "#4f7c3f" : "#1e293b" }}>
+                            {getMonthName((s.payroll?.month || 1) - 1)} {s.payroll?.year}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{s.payroll?.payroll_no}</div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{fmt(s.net_salary)}</span>
+                            {isPaid ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: "#d1fae5", color: "#059669", padding: "2px 7px", borderRadius: 10 }}>PAID</span>
+                            ) : (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: "#fef9c3", color: "#a16207", padding: "2px 7px", borderRadius: 10 }}>
+                                {(s.payroll?.status || "draft").toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Right: slip detail */}
+                <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
+                  {!slip ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 8, color: "#9ca3af" }}>
+                      <div style={{ fontSize: 40 }}>👈</div>
+                      <div style={{ fontSize: 14 }}>Select a month to view your slip</div>
+                    </div>
+                  ) : (
+                    <div style={{ maxWidth: 700, margin: "0 auto" }}>
+                      {/* Slip card */}
+                      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                        {/* Slip header */}
+                        <div style={{ background: "#102a43", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                            <div style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>
+                              {getMonthName((slip.payroll?.month || 1) - 1)} {slip.payroll?.year} — Salary Slip
+                            </div>
+                            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 4 }}>
+                              {slip.payroll?.payroll_no} · Pay Date: {slip.payroll?.pay_date}
+                            </div>
+                          </div>
+                          {slip.payment_status === "paid" ? (
+                            <span style={{ background: "#d1fae5", color: "#059669", fontWeight: 800, fontSize: 12, padding: "5px 14px", borderRadius: 20 }}>✅ PAID</span>
+                          ) : (
+                            <span style={{ background: "#fef9c3", color: "#a16207", fontWeight: 800, fontSize: 12, padding: "5px 14px", borderRadius: 20 }}>
+                              {(slip.payroll?.status || "draft").toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Net salary highlight */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: "1px solid #f1f5f9" }}>
+                          {[
+                            { label: "Gross Salary", val: slip.gross_salary, color: "#059669" },
+                            { label: "Deductions", val: slip.total_deductions, color: "#ef4444" },
+                            { label: "Net Salary", val: slip.net_salary, color: "#102a43" },
+                          ].map((item, i) => (
+                            <div key={i} style={{ padding: "18px 20px", textAlign: "center", borderRight: i < 2 ? "1px solid #f1f5f9" : "none", background: i === 2 ? "#f0fdf4" : "#fff" }}>
+                              <div style={{ fontWeight: 800, fontSize: 22, color: item.color }}>{fmtNum(item.val)}</div>
+                              <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 3 }}>{item.label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Breakdown table */}
+                        <div style={{ padding: "0 0 20px" }}>
+                          {earnings_my.length > 0 && (
+                            <>
+                              <div style={{ padding: "12px 20px 6px", fontSize: 11, fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "1px", borderBottom: "1px solid #f1f5f9" }}>Earnings</div>
+                              {earnings_my.map((d: any) => d.amount > 0 && (
+                                <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #f9fafb", fontSize: 13 }}>
+                                  <span style={{ color: "#374151", fontWeight: 500 }}>{d.component?.name}</span>
+                                  <span style={{ fontWeight: 600, color: "#1e293b" }}>TZS {fmtNum(d.amount)}</span>
+                                </div>
+                              ))}
+                            </>
+                          )}
+                          {deductions_my.length > 0 && (
+                            <>
+                              <div style={{ padding: "12px 20px 6px", fontSize: 11, fontWeight: 800, color: "#ef4444", textTransform: "uppercase", letterSpacing: "1px", borderBottom: "1px solid #f1f5f9" }}>Deductions</div>
+                              {deductions_my.map((d: any) => d.amount > 0 && (
+                                <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #f9fafb", fontSize: 13 }}>
+                                  <span style={{ color: "#374151", fontWeight: 500 }}>{d.component?.name}</span>
+                                  <span style={{ fontWeight: 600, color: "#ef4444" }}>− TZS {fmtNum(d.amount)}</span>
+                                </div>
+                              ))}
+                            </>
+                          )}
+                          {/* Net total row */}
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 20px", background: "#f0fdf4", marginTop: 4, borderTop: "2px solid #bbf7d0" }}>
+                            <span style={{ fontWeight: 800, fontSize: 14, color: "#102a43" }}>NET SALARY</span>
+                            <span style={{ fontWeight: 800, fontSize: 14, color: "#059669" }}>TZS {fmtNum(slip.net_salary)}</span>
+                          </div>
+                          <div style={{ padding: "4px 20px 10px", fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>
+                            {numberToWords(Number(slip.net_salary))}
+                          </div>
+                        </div>
+
+                        {/* Payment + email footer */}
+                        <div style={{ borderTop: "1px solid #f1f5f9", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafafa" }}>
+                          <div>
+                            {slip.payment_status === "paid" ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 20 }}>✅</span>
+                                <div>
+                                  <div style={{ fontWeight: 700, fontSize: 13, color: "#059669" }}>Salary Paid</div>
+                                  <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                                    {slip.payment_date || slip.payroll?.pay_date}
+                                    {slip.payment_method ? ` · ${slip.payment_method.replace(/_/g, " ")}` : ""}
+                                    {slip.payment_reference ? ` · Ref: ${slip.payment_reference}` : ""}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 20 }}>⏳</span>
+                                <div style={{ fontWeight: 700, fontSize: 13, color: "#f59e0b" }}>Payment Pending</div>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            {slip.email_status === "sent" ? (
+                              <span style={{ fontSize: 12, color: "#059669", background: "#d1fae5", padding: "3px 10px", borderRadius: 12 }}>
+                                ✉ Slip emailed {slip.email_sent_at ? new Date(slip.email_sent_at).toLocaleDateString() : ""}
+                              </span>
+                            ) : slip.email_status === "failed" ? (
+                              <span style={{ fontSize: 12, color: "#ef4444", background: "#fee2e2", padding: "3px 10px", borderRadius: 12 }}>✕ Email failed</span>
+                            ) : (
+                              <span style={{ fontSize: 12, color: "#9ca3af" }}>Email not sent</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
+
+      {/* --- Page Header for mgmt view with myslips tab only (payroll admin who also has emp record) --- */}
+      {settingsLoaded && isPayrollAdmin && allowedTabs.length === 1 && allowedTabs[0] === "myslips" && (
+        <div style={{ padding: "20px 24px 10px", background: "#f1f5f9" }}>
+          <h1 style={{ fontSize: "22px", fontWeight: "800", color: "#102a43", margin: 0 }}>
+            {t("my_salary_slips", { defaultValue: "My Salary Slips" })}
+          </h1>
+        </div>
+      )}
+
+      {/* --- Tabs (payroll admins only) ----------------------------------------- */}
+      {settingsLoaded && isPayrollAdmin && allowedTabs.length > 1 && (
+        <div className="pay-tab-bar">
+          {allowedTabs.map(tKey => (
+            <button key={tKey} className={`pay-tab ${tab === tKey ? "pay-tab--active" : ""}`} onClick={() => setTab(tKey)}>
+              {tKey === "runs" ? `📋 ${t("payroll_runs")}` : tKey === "components" ? `⚙️ ${t("salary_components")}` : tKey === "employees" ? `👥 ${t("employees")}` : `🧾 ${t("my_slips")}`}
+            </button>
+          ))}
+          <div className="pay-tab-space" />
+          {tab === "runs" && (
+            <button className="pay-btn pay-btn--primary" onClick={() => setShowCreate(true)}>{t("new_payroll")}</button>
+          )}
+          {tab === "components" && (
+            <button className="pay-btn pay-btn--primary" onClick={() => openCompForm()}>{t("add_component")}</button>
+          )}
+          {tab === "employees" && (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="pay-btn pay-btn--outline" onClick={syncUsers} disabled={busy}>
+                {busy ? t("importing") : `🔄 ${t("import_from_users")}`}
+              </button>
+              <button className="pay-btn pay-btn--primary" onClick={() => openEmpForm()}>{t("add_employee")}</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TAB: RUNS " 3-column layout
@@ -951,7 +1224,7 @@ export default function Payroll() {
       {/* ══════════════════════════════════════════════════════════════
           TAB: MY SALARY SLIPS (employee self-service)
           ══════════════════════════════════════════════════════════════ */}
-      {tab === "myslips" && (
+      {tab === "myslips" && isPayrollAdmin && (
         <div className="pay-myslips">
           {/* Employee info card */}
           {myEmployee && (
