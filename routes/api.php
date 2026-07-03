@@ -20,6 +20,9 @@ use App\Http\Controllers\Api\V1\RiskReportController;
 use App\Http\Controllers\Api\V1\FinancialReportController;
 use App\Http\Controllers\Api\V1\LoanSettingController;
 use App\Http\Controllers\Api\V1\RegulatorReportController;
+use App\Http\Controllers\Api\V1\BiometricController;
+use App\Http\Controllers\Api\V1\CustomerBiometricController;
+use App\Http\Controllers\Api\V1\BranchReportController;
 
 Route::prefix('v1')->group(function () {
 
@@ -90,6 +93,9 @@ Route::prefix('v1')->group(function () {
 
         // FINANCE OFFICER VIEW (Loans approved and awaiting disbursement)
         Route::get('/loans/finance', [LoanController::class, 'financeLoans']);
+
+        // LOAN SEARCH by ID, account number, name, or phone
+        Route::get('/loans/search', [LoanController::class, 'search']);
 
         // SINGLE LOAN DETAILS
         Route::get('/loans/{id}', [LoanController::class, 'show']);
@@ -181,8 +187,26 @@ Route::prefix('v1')->group(function () {
         Route::post('/users/{id}/lock', [UserController::class, 'lock']);
         Route::post('/users/{id}/unlock', [UserController::class, 'unlock']);
 
+        // Customer biometrics (fingerprint storage & retrieval)
+        Route::get('/biometrics/{customerId}',                          [CustomerBiometricController::class, 'index']);
+        Route::get('/biometrics/{customerId}/{finger}',                 [CustomerBiometricController::class, 'show']);
+        Route::get('/biometrics/{customerId}/{finger}/template',        [CustomerBiometricController::class, 'template']);
+        Route::post('/biometrics/store',                                [CustomerBiometricController::class, 'store']);
+        Route::delete('/biometrics/{id}',                               [CustomerBiometricController::class, 'destroy']);
+
+        // Branch weekly/daily/monthly reports
+        Route::get('/branch-reports',                [BranchReportController::class, 'index']);
+        Route::get('/branch-reports/{id}',          [BranchReportController::class, 'show']);
+        Route::post('/branch-reports',              [BranchReportController::class, 'store']);
+        Route::post('/branch-reports/{id}/approve', [BranchReportController::class, 'approve']);
+        Route::delete('/branch-reports/{id}',       [BranchReportController::class, 'destroy']);
+
+        // Accounting → Branch Report integration (all auth roles, incl. Loan Officers)
+        Route::get('/accounting/branch-summary', [AccountingReportController::class, 'branchSummary']);
+
         // Loan policy rates — admin-only write (read is public, see above)
         Route::put('/loan-settings', [LoanSettingController::class, 'update']);
+        Route::post('/loan-settings/logo', [LoanSettingController::class, 'uploadLogo']);
 
         // ========== DRAFT PERSISTENCE ROUTES ==========
         Route::get('/drafts/{type}', [\App\Http\Controllers\Api\V1\LoanDraftController::class, 'show']);
@@ -252,6 +276,77 @@ Route::prefix('v1')->group(function () {
 
         // BOT Tier-2 regulator reporting (Loan Manager / GM / MD / Admin)
         Route::get('/reports/regulator/bot', [RegulatorReportController::class, 'generate']);
+    });
+
+    // ========== PAYROLL / HR (Admin / Finance Officer / Managing Director) ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        // Salary Components
+        Route::get('/hr/components', [\App\Http\Controllers\Api\V1\PayrollController::class, 'componentsIndex']);
+        Route::post('/hr/components', [\App\Http\Controllers\Api\V1\PayrollController::class, 'componentsStore']);
+        Route::put('/hr/components/{id}', [\App\Http\Controllers\Api\V1\PayrollController::class, 'componentsUpdate']);
+        Route::delete('/hr/components/{id}', [\App\Http\Controllers\Api\V1\PayrollController::class, 'componentsDestroy']);
+
+        // Employees
+        Route::get('/hr/employees/next-id', [\App\Http\Controllers\Api\V1\PayrollController::class, 'nextEmployeeId']);
+        Route::post('/hr/employees/sync-users', [\App\Http\Controllers\Api\V1\PayrollController::class, 'syncUsersToEmployees']);
+        Route::get('/hr/employees', [\App\Http\Controllers\Api\V1\PayrollController::class, 'employeesIndex']);
+        Route::post('/hr/employees', [\App\Http\Controllers\Api\V1\PayrollController::class, 'employeesStore']);
+        Route::put('/hr/employees/{id}', [\App\Http\Controllers\Api\V1\PayrollController::class, 'employeesUpdate']);
+        Route::delete('/hr/employees/{id}', [\App\Http\Controllers\Api\V1\PayrollController::class, 'employeesDestroy']);
+
+        // Employee self-service (any authenticated user)
+        Route::get('/payroll/my-slips', [\App\Http\Controllers\Api\V1\PayrollController::class, 'mySlips']);
+
+        // Payroll Runs
+        Route::get('/payroll/payment-accounts',         [\App\Http\Controllers\Api\V1\PayrollController::class, 'paymentAccounts']);
+        Route::get('/payroll/analytics',                [\App\Http\Controllers\Api\V1\PayrollController::class, 'analytics']);
+        Route::get('/payroll',                          [\App\Http\Controllers\Api\V1\PayrollController::class, 'index']);
+        Route::post('/payroll',                         [\App\Http\Controllers\Api\V1\PayrollController::class, 'store']);
+        Route::get('/payroll/{id}',                     [\App\Http\Controllers\Api\V1\PayrollController::class, 'show']);
+        Route::get('/payroll/{id}/breakdown',           [\App\Http\Controllers\Api\V1\PayrollController::class, 'breakdown']);
+        Route::put('/payroll/{id}/status',              [\App\Http\Controllers\Api\V1\PayrollController::class, 'updateStatus']);
+        Route::put('/payroll/item/{itemId}',            [\App\Http\Controllers\Api\V1\PayrollController::class, 'updateItem']);
+        Route::put('/payroll/item/{itemId}/pay',        [\App\Http\Controllers\Api\V1\PayrollController::class, 'payItem']);
+        Route::post('/payroll/item/{itemId}/resend-email', [\App\Http\Controllers\Api\V1\PayrollController::class, 'resendSlipEmail']);
+        Route::delete('/payroll/{id}',                  [\App\Http\Controllers\Api\V1\PayrollController::class, 'destroy']);
+    });
+
+    // ========== BIOMETRIC MODULE ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        // Config (admin)
+        Route::get('/biometric/config',                         [BiometricController::class, 'getConfig']);
+        Route::put('/biometric/config',                         [BiometricController::class, 'updateConfig']);
+
+        // Enrollment & profile
+        Route::post('/biometric/enroll',                        [BiometricController::class, 'enroll']);
+        Route::get('/biometric/profile',                        [BiometricController::class, 'getProfile']);
+        Route::get('/biometric/templates',                      [BiometricController::class, 'getTemplates']);
+        Route::delete('/biometric/templates/{id}',              [BiometricController::class, 'deleteTemplate']);
+
+        // Duplicate check & verification
+        Route::post('/biometric/duplicate-check',               [BiometricController::class, 'duplicateCheck']);
+        Route::post('/biometric/verify',                        [BiometricController::class, 'verify']);
+
+        // Exception handling
+        Route::post('/biometric/exceptions',                    [BiometricController::class, 'createException']);
+        Route::get('/biometric/exceptions/check',               [BiometricController::class, 'checkException']);
+
+        // Loan-level status
+        Route::get('/biometric/loan/{loanId}/status',           [BiometricController::class, 'loanBiometricStatus']);
+
+        // Devices CRUD (admin)
+        Route::get('/biometric/devices',                        [BiometricController::class, 'devicesIndex']);
+        Route::post('/biometric/devices',                       [BiometricController::class, 'devicesStore']);
+        Route::put('/biometric/devices/{id}',                   [BiometricController::class, 'devicesUpdate']);
+        Route::delete('/biometric/devices/{id}',                [BiometricController::class, 'devicesDestroy']);
+
+        // Profiles list & status management (admin)
+        Route::get('/biometric/profiles',                       [BiometricController::class, 'profilesList']);
+        Route::put('/biometric/profiles/{id}/status',           [BiometricController::class, 'profileUpdateStatus']);
+
+        // Audit logs & stats (read-only)
+        Route::get('/biometric/logs',                           [BiometricController::class, 'logs']);
+        Route::get('/biometric/stats',                          [BiometricController::class, 'logStats']);
     });
 
     // Location routes (Public)

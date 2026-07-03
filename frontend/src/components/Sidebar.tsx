@@ -3,7 +3,8 @@ import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { FC } from "react";
-import logo from "../assets/logo.png";
+import staticLogo from "../assets/logo.png";
+import { useOrgSettings } from "../utils/orgSettings";
 
 interface User {
   id: number;
@@ -23,6 +24,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const org = useOrgSettings();
+  const logoSrc = org.company_logo_url || staticLogo;
+  const orgName = org.company_name || "Orethan Microfinance";
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
   const [user, setUser] = useState<User | null>(null);
   const [showLoans, setShowLoans] = useState(false);
@@ -31,18 +35,53 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [showRequests, setShowRequests] = useState(false);
   const [showAccounting, setShowAccounting] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [showConfigs, setShowConfigs] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [complianceRoles, setComplianceRoles] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("compliance_roles") || "null") || ["admin", "general_manager", "managing_director"]; } catch { return ["admin", "general_manager", "managing_director"]; }
+  });
+  const [payrollRoles, setPayrollRoles] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("payroll_access_roles") || "null") || ["admin", "finance_officer", "general_manager", "managing_director"]; } catch { return ["admin", "finance_officer", "general_manager", "managing_director"]; }
+  });
+  const [branchReportRoles, setBranchReportRoles] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("branch_report_roles") || "null") || ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; } catch { return ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; }
+  });
+  const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser();
+    fetchSettings();
   }, []);
 
-  // On phones/tablets the sidebar becomes an off-canvas drawer instead of
-  // pushing content — close it automatically whenever the route changes.
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  const fetchSettings = async () => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+      const res = await axios.get(`${API_BASE}/loan-settings`);
+      const data = res.data.data || {};
+      const compRoles: string[] = data.compliance_roles || ["admin", "general_manager", "managing_director"];
+      const payRoles: string[] = data.payroll_access_roles || ["admin", "finance_officer", "general_manager", "managing_director"];
+      const brRoles: string[] = data.branch_report_roles || ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"];
+      const brPerms = data.branch_report_permissions || {
+        submit:   ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"],
+        view_all: ["loan_manager","general_manager","managing_director","admin"],
+        print:    ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"],
+        approve:  ["loan_manager","admin"],
+        delete:   ["admin"],
+      };
+      setComplianceRoles(compRoles);
+      setPayrollRoles(payRoles);
+      setBranchReportRoles(brRoles);
+      localStorage.setItem("compliance_roles", JSON.stringify(compRoles));
+      localStorage.setItem("payroll_access_roles", JSON.stringify(payRoles));
+      localStorage.setItem("branch_report_roles", JSON.stringify(brRoles));
+      localStorage.setItem("branch_report_permissions", JSON.stringify(brPerms));
+    } catch { /* keep cached values */ }
+  };
 
   const fetchCurrentUser = async () => {
     const token = localStorage.getItem("token");
@@ -53,6 +92,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
+      setHasEmployeeRecord(!!res.data.has_employee_record);
     } catch (err) {
       localStorage.removeItem("token");
       navigate("/login");
@@ -113,8 +153,12 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
   const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
   const canAccessCashTill = isAllowed("cash_till", userRole === "finance_officer" || userRole === "admin");
-  const canAccessRegulatorReports = isAllowed("regulator_reports", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
-  const canManageLoanLifecycle = isAllowed("loan_lifecycle", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
+  const canAccessComplianceSection = !!userRole && complianceRoles.includes(userRole);
+  const canAccessRegulatorReports = isAllowed("regulator_reports", canAccessComplianceSection);
+  const canManageLoanLifecycle = isAllowed("loan_lifecycle", canAccessComplianceSection);
+  const canAccessPayrollMgmt = !!userRole && (userRole === "admin" || payrollRoles.includes(userRole));
+  const canSeePayroll = canAccessPayrollMgmt || hasEmployeeRecord;
+  const canAccessBranchReport = isAllowed("branch_report", !!userRole && branchReportRoles.includes(userRole));
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -141,7 +185,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
       <div className="sd-logo">
         <div className="sd-logo__brand">
           <div className="sd-logo__icon">
-            <img src={logo} alt="Orethan" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={logoSrc} alt={orgName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
         <button className="sd-logo__menu" onClick={() => (isMobileViewport() ? setMobileOpen(false) : setIsCollapsed(!isCollapsed))} title={isCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}>
@@ -233,12 +277,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   )}
                 </>
               )}
-              {canAccessLoanSettings && (
-                <div className={`sd-item ${isActive("/loan-settings") ? "sd-item--active" : ""}`} onClick={() => navigate("/loan-settings")} title={t("sidebar.loanSettings")}>
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.loanSettings")}</span>}
-                </div>
-              )}
             </>
 
           {/* Loan Operations */}
@@ -285,8 +323,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Management — skip when Manager Review already points at the same Customers page */}
-          {canAccessManagement && !canAccessManagerReview && (
+          {/* Management — skip for any role that already has a dedicated approval page (LM/GM/MD/admin) */}
+          {canAccessManagement && !canAccessApprovals && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.management") : "─"}</div>
               <div className={`sd-item ${isActive("/customers") || location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => {
@@ -322,6 +360,56 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
+          {/* Payroll / HR — dynamic via admin-configured payroll_access_roles, plus any user with an employee record */}
+          {canSeePayroll && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? "PAYROLL" : "─"}</div>
+              <div className={`sd-item ${isActive("/payroll") ? "sd-item--active" : ""}`} onClick={() => navigate("/payroll")} title={canAccessPayrollMgmt ? "Payroll Management" : "My Salary Slip"}>
+                <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>
+                {!isCollapsed && <span className="sd-item__text">{canAccessPayrollMgmt ? "Payroll Management" : "My Salary Slip"}</span>}
+              </div>
+            </>
+          )}
+
+          {/* ── Configurations dropdown — Settings + Biometric ────────── */}
+          {(canAccessLoanSettings || userRole === "admin" || userRole === "finance_officer") && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? "CONFIGURATIONS" : "─"}</div>
+              <div
+                className={`sd-item ${(isActive("/configurations") || isActive("/biometric")) ? "sd-item--active" : ""}`}
+                onClick={() => { if (isCollapsed) navigate("/configurations"); else setShowConfigs(s => !s); }}
+                title="Configurations"
+              >
+                <span className="sd-item__icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </span>
+                {!isCollapsed && <span className="sd-item__text">Configurations</span>}
+                {!isCollapsed && (
+                  <span className={`sd-item__arrow ${showConfigs || isActive("/configurations") || isActive("/biometric") ? "sd-item__arrow--open" : ""}`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </span>
+                )}
+              </div>
+              {(showConfigs || isActive("/configurations") || isActive("/biometric")) && !isCollapsed && (
+                <div className="sd-sub">
+                  {canAccessLoanSettings && (
+                    <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
+                      ⚙️ Global Settings
+                    </div>
+                  )}
+                  {(userRole === "admin" || userRole === "finance_officer") && (
+                    <div className={`sd-sub__link ${isActive("/biometric") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/biometric")}>
+                      🔏 Biometric
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
           {/* Accounting Module — Admin / Finance Officer / Managing Director */}
           {canAccessAccounting && (
             <>
@@ -343,17 +431,31 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   <div className={`sd-sub__link ${isActive("/accounting/bank-reconciliation") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/accounting/bank-reconciliation")}>{t("sidebar.bankReconciliation")}</div>
                 </div>
               )}
+            </>
+          )}
 
+          {/* Reports — visible to accounting users AND anyone with branch report access */}
+          {(canAccessAccounting || canAccessBranchReport) && (
+            <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.reports") : "─"}</div>
-              <div className={`sd-item ${isActive("/reports") ? "sd-item--active" : ""}`} onClick={() => setShowReports(!showReports)} title={t("sidebar.reports")}>
+              <div className={`sd-item ${isActive("/reports") || isActive("/branch-report") ? "sd-item--active" : ""}`} onClick={() => setShowReports(!showReports)} title={t("sidebar.reports")}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14" /></svg></span>
                 {!isCollapsed && <span className="sd-item__text">{t("sidebar.reports")}</span>}
-                {!isCollapsed && <span className={`sd-item__arrow ${showReports ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
+                {!isCollapsed && <span className={`sd-item__arrow ${showReports || isActive("/branch-report") ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
               </div>
-              {(showReports || isActive("/reports")) && !isCollapsed && (
+              {(showReports || isActive("/reports") || isActive("/branch-report")) && !isCollapsed && (
                 <div className="sd-sub">
-                  <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>{t("sidebar.riskReports")}</div>
-                  <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>{t("sidebar.financialReports")}</div>
+                  {canAccessAccounting && (
+                    <>
+                      <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>{t("sidebar.riskReports")}</div>
+                      <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>{t("sidebar.financialReports")}</div>
+                    </>
+                  )}
+                  {canAccessBranchReport && (
+                    <div className={`sd-sub__link ${isActive("/branch-report") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/branch-report")}>
+                      📋 {t("sidebar.branchReport")}
+                    </div>
+                  )}
                 </div>
               )}
             </>

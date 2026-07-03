@@ -18,6 +18,31 @@ class LoanSetting extends Model
         'penalty_rate',
         'default_interest_rate',
         'default_processing_fee_rate',
+        'compliance_roles',
+        'payroll_access_roles',
+        'branch_report_roles',
+        'branch_report_permissions',
+        'salary_bank_account_code',
+        'salary_cash_account_code',
+        'paye_payable_account_code',
+        'nssf_payable_account_code',
+        // Organisation identity
+        'company_name',
+        'company_branch',
+        'company_tagline',
+        'company_address',
+        'company_phone',
+        'company_email',
+        'company_website',
+        'company_logo',
+        'company_registration_no',
+        'company_tin',
+        // Display / regional
+        'currency_code',
+        'date_format',
+        'timezone',
+        'fiscal_year_start_month',
+        'brand_color',
         'updated_by',
     ];
 
@@ -25,6 +50,10 @@ class LoanSetting extends Model
         'penalty_rate' => 'decimal:2',
         'default_interest_rate' => 'decimal:2',
         'default_processing_fee_rate' => 'decimal:2',
+        'compliance_roles'           => 'array',
+        'payroll_access_roles'       => 'array',
+        'branch_report_roles'        => 'array',
+        'branch_report_permissions'  => 'array',
     ];
 
     /** The active settings row, cached — creates the default row if the table is ever empty. */
