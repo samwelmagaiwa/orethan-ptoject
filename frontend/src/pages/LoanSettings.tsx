@@ -125,7 +125,7 @@ const LoanSettings = () => {
           step="0.01"
           min="0"
           max="100"
-          value={form[key]}
+          value={form[key] as string | number}
           onChange={e => setForm({ ...form, [key]: e.target.value })}
         />
         <span className="ls-percent">%</span>

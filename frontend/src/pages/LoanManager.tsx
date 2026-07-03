@@ -44,10 +44,6 @@ const LoanManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredLoans = loans.filter(l =>
-    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    l.phone?.includes(searchQuery)
-  );
 
   useEffect(() => {
     fetchLoans();
@@ -82,18 +78,6 @@ const LoanManager = () => {
       .finally(() => setLoading(false));
   };
 
-  const getStatusStep = (status: string) => {
-    switch (status) {
-      case 'loan_officer': return 0;
-      case 'manager_review': return 1;
-      case 'gm_review': return 2;
-      case 'md_review': return 3;
-      case 'approved': return 4;
-      case 'disbursed':
-      case 'completed': return 5;
-      default: return 0;
-    }
-  };
 
   const toggleDropdown = (id: number, event: React.MouseEvent, buttonCount: number) => {
     if (activeDropdown === id) {

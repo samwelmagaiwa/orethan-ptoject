@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil, Lock, UserCheck } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, ShieldCheck, ArrowRight, Info as InfoIcon, Pencil, Lock, UserCheck } from "lucide-react";
+import PageHeader from "../components/PageHeader";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
 import DelegationForm from "../components/DelegationForm";
@@ -163,19 +164,19 @@ const LeaveRequests = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.7rem 1rem 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#f1f5f9", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <CalendarDays size={22} style={{ color: "#4f46e5" }} />
-        <h1 style={{ fontSize: "1.3rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>Leave Request Form / Fomu ya Maombi ya Likizo</h1>
-        <div style={{ marginLeft: "auto", display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 10, gap: 3 }}>
+      <PageHeader icon="🗓️" title="Leave Request Form" subtitle="Fomu ya Maombi ya Likizo — submit and track your leave requests">
+        <div style={{ display: "flex", background: "white", border: "1.5px solid #e2e8f0", padding: 3, borderRadius: 10, gap: 3 }}>
           {([["list", "Requests", Inbox], ["new", "New Request", PlusCircle]] as const).map(([k, lbl, Icon]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", borderRadius: 8, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "white" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: tab === k ? "0 1px 4px rgba(15,23,42,0.1)" : "none" }}>
+            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", borderRadius: 7, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "#f1f5f9" : "transparent", color: tab === k ? "#4f46e5" : "#64748b" }}>
               <Icon size={15} /> {lbl}
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
+
+      <div style={{ padding: "1rem 1rem 1.5rem" }}>
 
       {tab === "new" && isMD ? (
         <div className="prf-page">
@@ -403,6 +404,8 @@ const LeaveRequests = () => {
       </AnimatePresence>
 
       <SuccessModal open={success.open} title={success.title} message={success.message} onClose={() => setSuccess({ ...success, open: false })} />
+
+      </div>{/* /padding wrapper */}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -85,7 +86,7 @@ const CashTill = () => {
       setModal({
         isOpen: true,
         title: "Till Closed",
-        message: v === 0 ? "Drawer balanced perfectly — no variance." : `Closed with a ${v > 0 ? "overage" : "shortage"} of ${fmt(Math.abs(v))}.`,
+        message: v === 0 ? "Drawer balanced perfectly – no variance." : `Closed with a ${v > 0 ? "overage" : "shortage"} of ${fmt(Math.abs(v))}.`,
         type: v === 0 ? "success" : "warning",
       });
     } catch (err: any) {
@@ -98,7 +99,7 @@ const CashTill = () => {
     const variance = Number(counted) - Number(snap?.expected_close || 0);
     setConfirm({
       isOpen: true, title: "Close Till", type: variance === 0 ? "info" : "warning",
-      message: `Expected ${fmt(snap?.expected_close)}, counted ${fmt(counted)} — variance ${fmt(variance)}. Close the drawer?`,
+      message: `Expected ${fmt(snap?.expected_close)}, counted ${fmt(counted)} – variance ${fmt(variance)}. Close the drawer?`,
       onConfirm: () => { setConfirm((p: any) => ({ ...p, isOpen: false })); doClose(); },
     });
   };
@@ -111,7 +112,7 @@ const CashTill = () => {
       <div className="ct-sticky-top">
         <div className="ct-head">
           <h1>Cashier Till</h1>
-          <p>Open the drawer with a float, transact cash, then count and close — variance is flagged automatically.</p>
+          <p>Open the drawer with a float, transact cash, then count and close &ndash; variance is flagged automatically.</p>
         </div>
 
         <GetHelp
@@ -127,7 +128,7 @@ const CashTill = () => {
           <div className="ct-board">
             <div className="ct-stat"><span>Opening Float</span><strong>{fmt(snap.opening_float)}</strong></div>
             <div className="ct-stat ct-in"><span>Cash In (repayments)</span><strong>+{fmt(snap.cash_in)}</strong></div>
-            <div className="ct-stat ct-out"><span>Cash Out (disbursed)</span><strong>−{fmt(snap.cash_out)}</strong></div>
+            <div className="ct-stat ct-out"><span>Cash Out (disbursed)</span><strong>âˆ’{fmt(snap.cash_out)}</strong></div>
             <div className="ct-stat ct-exp"><span>Expected in Drawer</span><strong>{fmt(expected)}</strong></div>
           </div>
 
@@ -135,7 +136,7 @@ const CashTill = () => {
             <h3>Close Till</h3>
             <div className="ct-form">
               <label>Counted cash<input type="number" value={counted} onChange={(e) => setCounted(e.target.value)} placeholder="0" /></label>
-              <label className="ct-full">Notes<input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — explain any variance" /></label>
+              <label className="ct-full">Notes<input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional – explain any variance" /></label>
             </div>
             {counted !== "" && (
               <p className={`ct-variance ${Number(counted) - expected === 0 ? "ok" : "bad"}`}>
@@ -166,13 +167,13 @@ const CashTill = () => {
                 {history.map((s) => (
                   <tr key={s.id}>
                     <td>{new Date(s.opened_at).toLocaleString()}</td>
-                    <td>{s.user?.name || "—"}</td>
+                    <td>{s.user?.name || "–"}</td>
                     <td>{fmt(s.opening_float)}</td>
                     <td className="ct-in-t">+{fmt(s.cash_in)}</td>
-                    <td className="ct-out-t">−{fmt(s.cash_out)}</td>
+                    <td className="ct-out-t">âˆ’{fmt(s.cash_out)}</td>
                     <td>{fmt(s.expected_close)}</td>
-                    <td>{s.counted_close != null ? fmt(s.counted_close) : "—"}</td>
-                    <td className={s.variance == null ? "" : Number(s.variance) === 0 ? "ct-ok" : "ct-bad"}>{s.variance != null ? fmt(s.variance) : "—"}</td>
+                    <td>{s.counted_close != null ? fmt(s.counted_close) : "–"}</td>
+                    <td className={s.variance == null ? "" : Number(s.variance) === 0 ? "ct-ok" : "ct-bad"}>{s.variance != null ? fmt(s.variance) : "–"}</td>
                     <td><span className={`ct-badge ct-${s.status}`}>{s.status}</span></td>
                   </tr>
                 ))}
@@ -228,3 +229,4 @@ const styles = `
 `;
 
 export default CashTill;
+

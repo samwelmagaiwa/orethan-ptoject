@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import PageHeader from "../components/PageHeader";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -140,43 +142,37 @@ const FinancialReports = () => {
         <p style="margin-top:14px;font-weight:700">Net Income: ${fmt(pnl.net_income)}</p>
       `;
     }
-    if (body) printDocument(`Financial Reports — ${SECTION_LABELS[section]}`, body, `${from} to ${to}`);
+    if (body) printDocument(`Financial Reports " ${SECTION_LABELS[section]}`, body, `${from} to ${to}`);
   };
+
+  const frTabs = SECTIONS.map(s => ({ key: s, label: SECTION_LABELS[s] }));
 
   return (
     <div className="fr-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
+      <PageHeader
+        icon="📊"
+        title="Financial Reports"
+        subtitle="Executive, Collections, Interest Income, Penalties, and Profit & Loss"
+        tabs={frTabs}
+        activeTab={section}
+        onTabChange={s => setSection(s as typeof section)}
+      >
+        <input type="date" className="fr-date-inp" value={from} onChange={e => setFrom(e.target.value)} />
+        <span className="fr-date-sep">to</span>
+        <input type="date" className="fr-date-inp" value={to} onChange={e => setTo(e.target.value)} />
+        <button className="fr-refresh-btn" onClick={load}>↻ Refresh</button>
+        <ExportButtons getRows={exportRows} filename={`financial-report-${section}`} sheetName={SECTION_LABELS[section]} onPrint={handlePrint} disabled={loading} />
+      </PageHeader>
+
       <div className="fr-card">
-        <div className="fr-accent-bar" />
-        <div className="fr-sticky-top">
-          <div className="fr-header">
-            <div>
-              <h1>Financial Reports</h1>
-              <p>Executive, Collections, Interest Income, Penalties, and Profit &amp; Loss</p>
-            </div>
-            <div className="fr-filters">
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-              <span>to</span>
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-              <button onClick={load}>Refresh</button>
-              <ExportButtons getRows={exportRows} filename={`financial-report-${section}`} sheetName={SECTION_LABELS[section]} onPrint={handlePrint} disabled={loading} />
-            </div>
-          </div>
-
-          <GetHelp
-            title={t("financial.help.title")}
-            intro={t("financial.help.intro")}
-            steps={t("financial.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("financial.help.tip")}
-          />
-
-          <div className="fr-tabs">
-            {SECTIONS.map(s => (
-              <button key={s} className={`fr-tab ${section === s ? "active" : ""}`} onClick={() => setSection(s)}>{SECTION_LABELS[s]}</button>
-            ))}
-          </div>
-        </div>
+        <GetHelp
+          title={t("financial.help.title")}
+          intro={t("financial.help.intro")}
+          steps={t("financial.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("financial.help.tip")}
+        />
 
         {loading ? (
           <div className="fr-empty">Loading...</div>
@@ -234,7 +230,7 @@ const FinancialReports = () => {
             {section === "penalties" && penalties && (
               <>
                 <div className="fr-total-line">Total Penalties Collected: <strong>{fmt(penalties.total_penalties_collected)}</strong></div>
-                <p className="fr-note">Note: the repayment flow does not yet let a Finance Officer earmark part of a payment as a penalty, so this will read TZS 0 until that capability is added — it is not estimated or fabricated here.</p>
+                <p className="fr-note">Note: the repayment flow does not yet let a Finance Officer earmark part of a payment as a penalty, so this will read TZS 0 until that capability is added " it is not estimated or fabricated here.</p>
                 <div className="fr-section-title">Monthly Trend</div>
                 <table>
                   <thead><tr><th>Month</th><th>Penalties Collected</th></tr></thead>
@@ -270,22 +266,13 @@ const FinancialReports = () => {
       </div>
 
       <style>{`
-        .fr-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .fr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .fr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-        .fr-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
+        .fr-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 0 0 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .fr-card { max-width: 1900px; margin: 14px 18px 0; background: white; border-radius: 16px; padding: 20px 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .fr-body-scroll { overflow-x: auto; }
-        .fr-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 18px; flex-wrap: wrap; gap: 14px; }
-        .fr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
-        .fr-header p { font-size: 13px; color: #64748b; margin: 0; }
-        .fr-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .fr-filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; }
-        .fr-filters span { font-size: 12px; color: #64748b; }
-        .fr-filters button { background: #102a43; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .fr-filters button:hover { background: #1e5fae; }
-        .fr-tabs { display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
-        .fr-tab { background: none; border: none; padding: 10px 16px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
-        .fr-tab.active { color: #102a43; border-bottom-color: #22c55e; }
+        .fr-date-inp { padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; background: white; }
+        .fr-date-sep { font-size: 12px; color: #64748b; font-weight: 600; }
+        .fr-refresh-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; }
+        .fr-refresh-btn:hover { background: #f1f5f9; }
         .fr-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
         .fr-kpi { background: #f8fafc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
         .fr-kpi span { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; }
@@ -312,3 +299,4 @@ const FinancialReports = () => {
 };
 
 export default FinancialReports;
+

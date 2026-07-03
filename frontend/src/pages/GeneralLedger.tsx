@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import AccountingTabBar from "../components/AccountingTabBar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -40,7 +42,7 @@ const GeneralLedger = () => {
           load(Number(searchParams.get("account_id")));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,13 +74,13 @@ const GeneralLedger = () => {
   const handlePrint = () => {
     if (!ledger) return;
     const body = `
-      <p><strong>Account:</strong> ${ledger.account.code} — ${ledger.account.name} &nbsp; | &nbsp; <strong>Opening:</strong> ${fmt(ledger.opening_balance)} &nbsp; | &nbsp; <strong>Closing:</strong> ${fmt(ledger.closing_balance)}</p>
+      <p><strong>Account:</strong> ${ledger.account.code} " ${ledger.account.name} &nbsp; | &nbsp; <strong>Opening:</strong> ${fmt(ledger.opening_balance)} &nbsp; | &nbsp; <strong>Closing:</strong> ${fmt(ledger.closing_balance)}</p>
       <table>
         <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
-        <tbody>${ledger.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
+        <tbody>${ledger.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "–"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "–"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
       </table>
     `;
-    printDocument("General Ledger", body, `${from || "—"} to ${to || "—"}`);
+    printDocument("General Ledger", body, `${from || "–"} to ${to || "–"}`);
   };
 
   return (
@@ -86,40 +88,33 @@ const GeneralLedger = () => {
       <style>{styles}</style>
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <div className="gl-card">
-        <div className="gl-accent-bar" />
-
-        <div className="gl-sticky-top">
-          <div className="gl-header">
-            <h1>{t("ledger.title")}</h1>
-            <p>{t("ledger.subtitle")}</p>
-          </div>
-
-          <GetHelp
-            title={t("ledger.help.title")}
-            intro={t("ledger.help.intro")}
-            steps={t("ledger.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("ledger.help.tip")}
-          />
-
-          <div className="gl-filters">
-            <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
-              <option value="">{t("common.selectAccount")}</option>
-              {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
-            </select>
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-            <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-            <button className="gl-load-btn" onClick={() => load()}>{t("common.refresh")}</button>
-            <ExportButtons getRows={exportRows} filename="general-ledger" sheetName="General Ledger" onPrint={handlePrint} disabled={!ledger?.lines?.length} />
-          </div>
+      <AccountingTabBar activePath="/accounting/general-ledger">
+        <div className="gl-filters" style={{ margin: 0 }}>
+          <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
+            <option value="">{t("common.selectAccount")}</option>
+            {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+          </select>
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+          <button className="gl-load-btn" onClick={() => load()}>{t("common.refresh")}</button>
+          <ExportButtons getRows={exportRows} filename="general-ledger" sheetName="General Ledger" onPrint={handlePrint} disabled={!ledger?.lines?.length} />
         </div>
+      </AccountingTabBar>
+
+      <div className="gl-card">
+        <GetHelp
+          title={t("ledger.help.title")}
+          intro={t("ledger.help.intro")}
+          steps={t("ledger.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("ledger.help.tip")}
+        />
 
         {loading && <div className="gl-empty">{t("common.loading")}</div>}
 
         {!loading && ledger && (
           <>
             <div className="gl-summary">
-              <div><span>{t("common.account")}</span><strong>{ledger.account.code} — {ledger.account.name}</strong></div>
+              <div><span>{t("common.account")}</span><strong>{ledger.account.code} " {ledger.account.name}</strong></div>
               <div><span>{t("ledger.openingBalance")}</span><strong>{fmt(ledger.opening_balance)}</strong></div>
               <div><span>{t("ledger.closingBalance")}</span><strong>{fmt(ledger.closing_balance)}</strong></div>
             </div>
@@ -134,8 +129,8 @@ const GeneralLedger = () => {
                       <td>{line.date}</td>
                       <td className="gl-entry-number">{line.entry_number}</td>
                       <td>{line.description}</td>
-                      <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
-                      <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
+                      <td>{Number(line.debit) > 0 ? fmt(line.debit) : "–"}</td>
+                      <td>{Number(line.credit) > 0 ? fmt(line.credit) : "–"}</td>
                       <td className="gl-balance">{fmt(line.running_balance)}</td>
                     </tr>
                   ))}
@@ -152,14 +147,9 @@ const GeneralLedger = () => {
 };
 
 const styles = `
-  .gl-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  .gl-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: clip; position: relative; }
-  .gl-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-  .gl-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
-  .gl-header { margin-bottom: 10px; }
-  .gl-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
-  .gl-header p { font-size: 13px; color: #64748b; margin: 0 0 10px; }
-  .gl-filters { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .gl-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .gl-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: clip; position: relative; }
+  .gl-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .gl-filters select, .gl-filters input { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
   .gl-filters select { flex: 1; min-width: 240px; }
   .gl-load-btn { background: #102a43; color: white; border: none; padding: 9px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -178,3 +168,4 @@ const styles = `
 `;
 
 export default GeneralLedger;
+

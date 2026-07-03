@@ -1219,7 +1219,7 @@ const GroupLoan: React.FC = () => {
                 <div className="tamko-card" style={{ borderLeft: 'none' }}>
                   <p><strong>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</strong></p>
                   <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 14px' }}>
-                    Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>“Proceed without”</strong>.
+                    Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>–Proceed without</strong>.
                   </p>
                   <LoanChecklist
                     category="group"

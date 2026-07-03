@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Building2, CreditCard, Calendar, Calculator, Banknote, FileText, Check, ShieldCheck, ArrowLeft, TrendingUp, X } from "lucide-react";
+import { User, CreditCard, Calculator, Banknote, FileText, ShieldCheck, ArrowLeft, TrendingUp, X, Fingerprint } from "lucide-react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import { letterheadBlock, watermarkBlock, triggerPrint } from "../utils/printDoc";
+import { BiometricScanner } from "../components/BiometricScanner";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const PAYMENT_METHODS = [{ value: "cash", label: "Cash" }, { value: "bank_transfer", label: "Bank Transfer" }, { value: "mpesa", label: "M-Pesa" }, { value: "airtel_money", label: "Airtel Money" }, { value: "tigo_pesa", label: "Tigo Pesa" }, { value: "halopesa", label: "HaloPesa" }, { value: "cheque", label: "Cheque" }];
@@ -24,6 +25,87 @@ const buildAccountNumber = (loan: any, dateStr: string) => {
     return `${prefix}-ZKM-${d}-${m}-${y}-${seq}`.toUpperCase();
 };
 
+const FINGERS = [
+    { value: "right_thumb",  label: "Right Thumb" },
+    { value: "right_index",  label: "Right Index" },
+    { value: "right_middle", label: "Right Middle" },
+    { value: "right_ring",   label: "Right Ring" },
+    { value: "right_little", label: "Right Little" },
+    { value: "left_thumb",   label: "Left Thumb" },
+    { value: "left_index",   label: "Left Index" },
+    { value: "left_middle",  label: "Left Middle" },
+    { value: "left_ring",    label: "Left Ring" },
+    { value: "left_little",  label: "Left Little" },
+    { value: "skip",         label: "— Skip (no fingerprint) —" },
+];
+
+const BioCard = ({ role, roleKey, name, ok, finger, capturedImage, sessionId, onCapture, onError }: {
+    role: string; roleKey: string; name: string; ok: boolean; finger: string;
+    capturedImage?: string; sessionId: string;
+    onCapture: (r: import("../components/BiometricScanner").ScanResult) => void;
+    onError: (msg: string) => void;
+}) => {
+    const skipped = finger === "skip";
+    const borderColor = ok ? "#86efac" : skipped ? "#fcd34d" : "#e2e8f0";
+    const bg = ok ? "#f0fdf4" : skipped ? "#fffbeb" : "#fafafa";
+    const fingerLabel = FINGERS.find(f => f.value === finger)?.label ?? finger;
+
+    return (
+        <div style={{ border: `2px solid ${borderColor}`, borderRadius: "14px", padding: "16px 12px 20px", background: bg, transition: "all 0.3s", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "100%", textAlign: "center" }}>
+                <div style={{ fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#64748b" }}>{role}</div>
+                <div style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a", marginTop: "3px" }}>{name}</div>
+            </div>
+
+            {/* Finger label badge (read-only — controlled by shared selector above) */}
+            {!skipped && (
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "#7c3aed", background: "#faf5ff", border: "1px solid #ddd6fe", borderRadius: "20px", padding: "3px 12px" }}>
+                    {fingerLabel}
+                </div>
+            )}
+
+            {skipped && (
+                <div style={{ padding: "18px 0", textAlign: "center" }}>
+                    <div style={{ fontSize: "28px", marginBottom: "6px" }}>⏭️</div>
+                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#92400e" }}>Fingerprint skipped</div>
+                    <div style={{ fontSize: "11px", color: "#b45309", marginTop: "3px" }}>Supervisor override required</div>
+                </div>
+            )}
+
+            {/* Captured fingerprint image preview */}
+            {ok && !skipped && capturedImage && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "#059669" }}>✓ {fingerLabel} verified</div>
+                    <img
+                        src={`data:image/bmp;base64,${capturedImage}`}
+                        alt="fingerprint"
+                        style={{ width: "90px", height: "90px", objectFit: "cover", borderRadius: "8px", border: "2px solid #86efac", background: "#000" }}
+                    />
+                </div>
+            )}
+            {ok && !skipped && !capturedImage && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: "#059669", marginTop: "4px" }}>
+                    ✓ {fingerLabel} verified
+                </div>
+            )}
+
+            {!skipped && (
+                <BiometricScanner
+                    finger={finger}
+                    minQuality={60}
+                    onCapture={onCapture}
+                    onError={onError}
+                    disabled={ok}
+                    label={fingerLabel}
+                    role={roleKey}
+                    personName={name}
+                    sessionId={sessionId}
+                />
+            )}
+        </div>
+    );
+};
+
 const DisburseLoan = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -42,6 +124,18 @@ const DisburseLoan = () => {
     const [narration, setNarration] = useState("");
     const [confirm, setConfirm] = useState(false);
     const [password, setPassword] = useState("");
+    const [borrowerOk, setBorrowerOk] = useState(false);
+    const [guarantor1Ok, setGuarantor1Ok] = useState(false);
+    const [guarantor2Ok, setGuarantor2Ok] = useState(false);
+    const [borrowerFinger, setBorrowerFinger] = useState("right_thumb");
+    const [guarantor1Finger, setGuarantor1Finger] = useState("right_thumb");
+    const [guarantor2Finger, setGuarantor2Finger] = useState("right_thumb");
+    // Shared session ID — all three scanners send this so the agent can cross-check
+    const sessionId = useMemo(() => crypto.randomUUID(), []);
+    // Captured fingerprint data: { template, image (base64 BMP), finger }
+    const [borrowerBio, setBorrowerBio] = useState<{ template: string; image: string; finger: string } | null>(null);
+    const [guarantor1Bio, setGuarantor1Bio] = useState<{ template: string; image: string; finger: string } | null>(null);
+    const [guarantor2Bio, setGuarantor2Bio] = useState<{ template: string; image: string; finger: string } | null>(null);
 
     const getLoggedInUserName = () => {
         try {
@@ -88,7 +182,10 @@ const DisburseLoan = () => {
     const approvedAmount = Number(loan?.amount || 0);
     const totalCharges = Number(processingFee || 0) + Number(insuranceFee || 0) + Number(otherCharges || 0);
     const netAmount = approvedAmount - totalCharges;
-    const canDisburse = !alreadyDisbursed && confirm && password.trim().length > 0 && netAmount >= 0 && !submitting;
+    const hasGuarantor1 = !!loan?.details?.wdhamini1JinaKamili;
+    const hasGuarantor2 = !!loan?.details?.wdhamini2JinaKamili;
+    const biometricsComplete = borrowerOk && (!hasGuarantor1 || guarantor1Ok) && (!hasGuarantor2 || guarantor2Ok);
+    const canDisburse = !alreadyDisbursed && confirm && password.trim().length > 0 && netAmount >= 0 && !submitting && biometricsComplete;
     const setDetail = (k: string, v: string) => setPayDetails((p) => ({ ...p, [k]: v }));
 
     const handleDisburse = async () => {
@@ -109,6 +206,28 @@ const DisburseLoan = () => {
                 confirm: true,
                 password,
             });
+
+            // Save biometrics to DB (fire-and-forget — don't block success on this)
+            const customerId = preview?.customer_id ?? loan?.customer_id;
+            if (customerId) {
+                const bios = [
+                    { bio: borrowerBio, finger: borrowerFinger },
+                    { bio: guarantor1Bio, finger: guarantor1Finger },
+                    { bio: guarantor2Bio, finger: guarantor2Finger },
+                ];
+                for (const { bio, finger } of bios) {
+                    if (bio?.template) {
+                        axios.post(`${API_BASE}/biometrics/store`, {
+                            customer_id: customerId,
+                            finger_position: finger,
+                            template: bio.template,
+                            image_b64: bio.image || null,
+                            device_serial: null,
+                        }).catch(() => { /* silent — biometric save failure is non-fatal */ });
+                    }
+                }
+            }
+
             setAlert({ isOpen: true, title: "Disbursement Successful", message: `The loan for ${loan.name} has been successfully disbursed and activated.`, type: "success" });
         } catch (err: any) {
             setAlert({ isOpen: true, title: "Error", message: err?.response?.data?.message || "Disbursement failed", type: "error" });
@@ -120,25 +239,23 @@ const DisburseLoan = () => {
     const methodLabel = PAYMENT_METHODS.find((m) => m.value === method)?.label || method;
 
     const buildVoucherBody = () => {
-        const metaCell = (label, value, mono = false) => `
+        const metaCell = (label: string, value: string, mono = false) => `
           <div style="padding:14px 18px">
             <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700">${label}</div>
             <div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:5px;${mono ? "font-family:ui-monospace,monospace;letter-spacing:0.5px" : ""}">${value}</div>
           </div>`;
-        const sectionTitle = (t, n) => `
+        const sectionTitle = (title: string, n: number) => `
           <div style="display:flex;align-items:center;gap:11px;margin:13px 0 7px">
             <span style="width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,#102a43,#1d3a5f);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(16,42,67,0.25)">${n}</span>
-            <span style="font-size:15px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#102a43">${t}</span>
+            <span style="font-size:15px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#102a43">${title}</span>
             <span style="flex:1;height:3px;border-radius:3px;background:linear-gradient(90deg,#7cb342 0%,#1d8ad1 45%,rgba(29,138,209,0) 100%)"></span>
           </div>`;
-        const kv = (k, v, mono = false) => `<tr><td style="padding:11px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;width:46%">${k}</td><td style="padding:11px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;${mono ? "font-family:ui-monospace,monospace" : ""}">${v}</td></tr>`;
-        // Clean stacked label/value for the 3-column layout (no card box)
-        const block = (label, value, opts = {}) => `
+        const block = (label: string, value: string, opts: { color?: string; mono?: boolean } = {}) => `
           <div style="padding:5px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700">${label}</div>
             <div style="font-size:12.5px;font-weight:700;color:${opts.color || "#0f172a"};margin-top:2px;${opts.mono ? "font-family:ui-monospace,monospace;letter-spacing:0.3px" : ""}">${value}</div>
           </div>`;
-        const grid3 = (cells) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px 24px">${cells.join("")}</div>`;
+        const grid3 = (cells: string[]) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px 24px">${cells.join("")}</div>`;
         return `
 <div style="max-width:700px;margin:0 auto;color:#0f172a">
   <!-- Title row -->
@@ -189,6 +306,33 @@ const DisburseLoan = () => {
             transactionRef ? block("Transaction Reference", transactionRef, { mono: true }) : block("Transaction Reference", "—"),
             block("Instruction Narration", narration),
         ])}
+
+  <!-- Biometric Confirmation -->
+  ${(borrowerBio?.image || guarantor1Bio?.image || guarantor2Bio?.image) ? `
+  ${sectionTitle("Biometric Confirmation", 4)}
+  <div style="display:flex;gap:32px;align-items:flex-start;margin:12px 0 20px">
+    ${borrowerBio?.image ? `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <img src="data:image/bmp;base64,${borrowerBio.image}" style="width:90px;height:90px;object-fit:cover;border:2px solid #059669;border-radius:8px;background:#000" />
+      <div style="font-size:9px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:0.8px">Borrower</div>
+      <div style="font-size:9px;color:#64748b">${loan.name}</div>
+      <div style="font-size:8px;color:#94a3b8">${FINGERS.find(f => f.value === borrowerBio.finger)?.label ?? borrowerBio.finger}</div>
+    </div>` : ""}
+    ${guarantor1Bio?.image ? `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <img src="data:image/bmp;base64,${guarantor1Bio.image}" style="width:90px;height:90px;object-fit:cover;border:2px solid #059669;border-radius:8px;background:#000" />
+      <div style="font-size:9px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:0.8px">Guarantor 1</div>
+      <div style="font-size:9px;color:#64748b">${loan.details.wdhamini1JinaKamili}</div>
+      <div style="font-size:8px;color:#94a3b8">${FINGERS.find(f => f.value === guarantor1Bio.finger)?.label ?? guarantor1Bio.finger}</div>
+    </div>` : ""}
+    ${guarantor2Bio?.image ? `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <img src="data:image/bmp;base64,${guarantor2Bio.image}" style="width:90px;height:90px;object-fit:cover;border:2px solid #059669;border-radius:8px;background:#000" />
+      <div style="font-size:9px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:0.8px">Guarantor 2</div>
+      <div style="font-size:9px;color:#64748b">${loan.details.wdhamini2JinaKamili}</div>
+      <div style="font-size:8px;color:#94a3b8">${FINGERS.find(f => f.value === guarantor2Bio.finger)?.label ?? guarantor2Bio.finger}</div>
+    </div>` : ""}
+  </div>` : ""}
 
   <!-- Signatures -->
   <div style="margin-top:34px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:36px">
@@ -305,6 +449,72 @@ const DisburseLoan = () => {
 
                     <hr style={{ border: "none", borderTop: "2px solid #f1f5f9", margin: "40px 0" }} />
 
+                    {/* BIOMETRIC VERIFICATION */}
+                    <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: biometricsComplete ? "#059669" : "#7c3aed", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 6px 0", paddingBottom: "12px", borderBottom: `2px solid ${biometricsComplete ? "#d1fae5" : "#ede9fe"}` }}>
+                            <Fingerprint size={18} />
+                            Biometric Verification
+                            {biometricsComplete && <span style={{ marginLeft: "auto", fontSize: "12px", background: "#d1fae5", color: "#059669", padding: "3px 12px", borderRadius: "20px", fontWeight: 700 }}>✓ All Verified</span>}
+                            {!biometricsComplete && <span style={{ marginLeft: "auto", fontSize: "12px", background: "#ede9fe", color: "#7c3aed", padding: "3px 12px", borderRadius: "20px", fontWeight: 700 }}>Required before disbursement</span>}
+                        </h3>
+
+                        {/* Shared finger selector — all participants use the same finger so duplicate detection works */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "#faf5ff", border: "1.5px solid #ddd6fe", borderRadius: "10px", padding: "12px 18px", margin: "12px 0 20px 0" }}>
+                            <Fingerprint size={16} color="#7c3aed" />
+                            <span style={{ fontSize: "12px", fontWeight: 700, color: "#7c3aed", whiteSpace: "nowrap" }}>Finger for all participants:</span>
+                            <select
+                                value={borrowerFinger}
+                                onChange={e => {
+                                    const f = e.target.value;
+                                    // Sync to all roles and reset captured state
+                                    setBorrowerFinger(f);  setGuarantor1Finger(f); setGuarantor2Finger(f);
+                                    if (f === "skip") {
+                                        setBorrowerOk(true); setGuarantor1Ok(true); setGuarantor2Ok(true);
+                                        setBorrowerBio(null); setGuarantor1Bio(null); setGuarantor2Bio(null);
+                                    } else {
+                                        setBorrowerOk(false); setGuarantor1Ok(false); setGuarantor2Ok(false);
+                                        setBorrowerBio(null); setGuarantor1Bio(null); setGuarantor2Bio(null);
+                                    }
+                                }}
+                                style={{ flex: 1, padding: "7px 12px", border: "1.5px solid #c4b5fd", borderRadius: "8px", fontSize: "13px", fontWeight: 700, color: "#5b21b6", background: "#fff", outline: "none", cursor: "pointer" }}
+                            >
+                                {FINGERS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                            </select>
+                            <span style={{ fontSize: "11px", color: "#94a3b8", whiteSpace: "nowrap" }}>Same finger required to detect duplicates</span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${1 + (hasGuarantor1 ? 1 : 0) + (hasGuarantor2 ? 1 : 0)}, 1fr)`, gap: "20px" }}>
+                            {/* Borrower */}
+                            <BioCard
+                                role="Borrower" roleKey="borrower" name={loan?.name}
+                                ok={borrowerOk} finger={borrowerFinger}
+                                capturedImage={borrowerBio?.image} sessionId={sessionId}
+                                onCapture={r => { setBorrowerOk(true); setBorrowerBio({ template: r.template, image: r.image, finger: borrowerFinger }); }}
+                                onError={msg => { setBorrowerOk(false); setAlert({ isOpen: true, title: "Biometric Error", message: msg, type: "error" }); }}
+                            />
+                            {/* Guarantor 1 */}
+                            {hasGuarantor1 && (
+                                <BioCard
+                                    role="Guarantor 1" roleKey="guarantor1" name={loan.details.wdhamini1JinaKamili}
+                                    ok={guarantor1Ok} finger={guarantor1Finger}
+                                    capturedImage={guarantor1Bio?.image} sessionId={sessionId}
+                                        onCapture={r => { setGuarantor1Ok(true); setGuarantor1Bio({ template: r.template, image: r.image, finger: guarantor1Finger }); }}
+                                    onError={msg => { setGuarantor1Ok(false); setAlert({ isOpen: true, title: "Biometric Error", message: msg, type: "error" }); }}
+                                />
+                            )}
+                            {/* Guarantor 2 */}
+                            {hasGuarantor2 && (
+                                <BioCard
+                                    role="Guarantor 2" roleKey="guarantor2" name={loan.details.wdhamini2JinaKamili}
+                                    ok={guarantor2Ok} finger={guarantor2Finger}
+                                    capturedImage={guarantor2Bio?.image} sessionId={sessionId}
+                                        onCapture={r => { setGuarantor2Ok(true); setGuarantor2Bio({ template: r.template, image: r.image, finger: guarantor2Finger }); }}
+                                    onError={msg => { setGuarantor2Ok(false); setAlert({ isOpen: true, title: "Biometric Error", message: msg, type: "error" }); }}
+                                />
+                            )}
+                        </div>
+                    </div>
+
                     {/* LOWER SECTIONS: 2-COLUMN GRID */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
 
@@ -394,9 +604,10 @@ const DisburseLoan = () => {
                             </div>
 
                             {/* Cashier PIN */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "20px", opacity: biometricsComplete ? 1 : 0.4, pointerEvents: biometricsComplete ? "auto" : "none", transition: "opacity 0.3s" }}>
                                 <h3 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", margin: 0, paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
                                     <ShieldCheck size={18} /> Cashier Authorization
+                                    {!biometricsComplete && <span style={{ marginLeft: "auto", fontSize: "11px", color: "#94a3b8", fontWeight: 600, textTransform: "none", letterSpacing: 0 }}>🔒 Complete biometrics first</span>}
                                 </h3>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

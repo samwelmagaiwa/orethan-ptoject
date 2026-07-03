@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -62,22 +62,22 @@ Route::prefix('v1')->group(function () {
     // All loans
     Route::get('/loans/all', [LoanController::class, 'allLoans']);
 
-    // ✅ ROUTES MAALUM ZIWE KABLA YA PARAMETER
+    // âœ… ROUTES MAALUM ZIWE KABLA YA PARAMETER
     // ROUTE YA ACTIVE LOANS - Inaonyesha mikopo inayoendelea (ambayo haijakamilika)
     Route::get('/loans/active', [LoanController::class, 'activeLoans']);
 
-    // ✅ ROUTE YA COMPLETED LOANS - Inaonyesha mikopo iliyokamilika (waliomaliza kulipa)
+    // âœ… ROUTE YA COMPLETED LOANS - Inaonyesha mikopo iliyokamilika (waliomaliza kulipa)
     // HII NDIO ROUTE MPYA ILIOONGEWA - Inahitajika kwa completed loans
     Route::get('/loans/completed', [LoanController::class, 'completedLoans']);
 
 
-    // ✅ ROUTE YA UPLOAD PASSPORT PHOTO - Kwa ajili ya kupakia picha ya passport
+    // âœ… ROUTE YA UPLOAD PASSPORT PHOTO - Kwa ajili ya kupakia picha ya passport
     Route::post('/upload/passport', [LoanController::class, 'uploadPassport']);
 
-    // ✅ ROUTE YA UPLOAD NYARAKA (DOCUMENTATION CHECKLIST ATTACHMENTS) - PDF au picha
+    // âœ… ROUTE YA UPLOAD NYARAKA (DOCUMENTATION CHECKLIST ATTACHMENTS) - PDF au picha
     Route::post('/upload/document', [LoanController::class, 'uploadDocument']);
 
-    // Loan policy rates (penalty / default interest / default processing fee) —
+    // Loan policy rates (penalty / default interest / default processing fee) â€”
     // public read so the landing-page calculator can pre-fill before login.
     Route::get('/loan-settings', [LoanSettingController::class, 'show']);
 
@@ -201,10 +201,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/branch-reports/{id}/approve', [BranchReportController::class, 'approve']);
         Route::delete('/branch-reports/{id}',       [BranchReportController::class, 'destroy']);
 
-        // Accounting → Branch Report integration (all auth roles, incl. Loan Officers)
+        // Accounting â†’ Branch Report integration (all auth roles, incl. Loan Officers)
         Route::get('/accounting/branch-summary', [AccountingReportController::class, 'branchSummary']);
 
-        // Loan policy rates — admin-only write (read is public, see above)
+        // Loan policy rates â€” admin-only write (read is public, see above)
         Route::put('/loan-settings', [LoanSettingController::class, 'update']);
         Route::post('/loan-settings/logo', [LoanSettingController::class, 'uploadLogo']);
 
@@ -247,7 +247,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/accounting/interest-accrual/run', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'run']);
     });
 
-    // ========== LOAN LIFECYCLE (Reschedule / Write-off / Top-up) — Admin / LM / GM / MD ==========
+    // ========== LOAN LIFECYCLE (Reschedule / Write-off / Top-up) â€” Admin / LM / GM / MD ==========
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/loans/{loanId}/restructures', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'history']);
         Route::post('/loans/{loanId}/reschedule', [\App\Http\Controllers\Api\V1\LoanRestructureController::class, 'reschedule']);
@@ -349,6 +349,46 @@ Route::prefix('v1')->group(function () {
         Route::get('/biometric/stats',                          [BiometricController::class, 'logStats']);
     });
 
+
+    // ========== GUARANTORS ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/guarantors/stats',              [\App\Http\Controllers\Api\V1\GuarantorController::class, 'stats']);
+        Route::get('/guarantors',                    [\App\Http\Controllers\Api\V1\GuarantorController::class, 'index']);
+        Route::post('/guarantors',                   [\App\Http\Controllers\Api\V1\GuarantorController::class, 'store']);
+        Route::get('/guarantors/{id}',               [\App\Http\Controllers\Api\V1\GuarantorController::class, 'show']);
+        Route::put('/guarantors/{id}',               [\App\Http\Controllers\Api\V1\GuarantorController::class, 'update']);
+        Route::delete('/guarantors/{id}',            [\App\Http\Controllers\Api\V1\GuarantorController::class, 'destroy']);
+        Route::get('/loans/{loanId}/guarantors',     [\App\Http\Controllers\Api\V1\GuarantorController::class, 'byLoan']);
+    });
+
+    // ========== CUSTOMER STATEMENT ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/customers/{id}/statement',      [\App\Http\Controllers\Api\V1\CustomerStatementController::class, 'generate']);
+    });
+
+    // ========== GROUP MANAGEMENT ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/groups/performance',            [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'performance']);
+        Route::get('/groups',                        [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'index']);
+        Route::get('/groups/{loanId}',               [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'show']);
+        Route::get('/groups/{loanId}/members',       [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'members']);
+        Route::post('/groups/{loanId}/members',      [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'storeMember']);
+        Route::put('/groups/members/{memberId}',     [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'updateMember']);
+        Route::delete('/groups/members/{memberId}',  [\App\Http\Controllers\Api\V1\GroupManagementController::class, 'destroyMember']);
+    });
+
+    // ========== RISK RATING ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/risk/portfolio',                [\App\Http\Controllers\Api\V1\RiskRatingController::class, 'portfolio']);
+        Route::post('/risk/score/{customerId}',      [\App\Http\Controllers\Api\V1\RiskRatingController::class, 'score']);
+        Route::post('/risk/score-all',               [\App\Http\Controllers\Api\V1\RiskRatingController::class, 'scoreAll']);
+    });
+
+    // ========== STAFF PERFORMANCE ==========
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/staff/performance',             [\App\Http\Controllers\Api\V1\StaffPerformanceController::class, 'index']);
+        Route::get('/staff/performance/{userId}',    [\App\Http\Controllers\Api\V1\StaffPerformanceController::class, 'show']);
+    });
     // Location routes (Public)
     Route::get('/locations/regions', [\App\Http\Controllers\Api\V1\LocationController::class, 'getRegions']);
     Route::get('/locations/districts/{region_id}', [\App\Http\Controllers\Api\V1\LocationController::class, 'getDistricts']);

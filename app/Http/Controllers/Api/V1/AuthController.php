@@ -199,7 +199,10 @@ class AuthController extends Controller
         // server cron entry. See GuarantorOverdueChecker for details.
         GuarantorOverdueChecker::runIfDue(app(SmsService::class));
 
-        return response()->json($request->user());
+        $user = $request->user();
+        $data = $user->toArray();
+        $data['has_employee_record'] = \App\Models\Employee::where('user_id', $user->id)->exists();
+        return response()->json($data);
     }
 
     // SAVE DRAWN SIGNATURE (base64 PNG data URL)

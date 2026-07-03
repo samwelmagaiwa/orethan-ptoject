@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import AccountingTabBar from "../components/AccountingTabBar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -59,7 +61,7 @@ const BalanceSheet = () => {
     <h4 style="margin:18px 0 8px">${title}</h4>
     <table>
       <thead><tr><th>Code</th><th>Account</th><th style="text-align:right">Amount</th></tr></thead>
-      <tbody>${lines.map(l => `<tr><td>${l.code ?? "—"}</td><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}</tbody>
+      <tbody>${lines.map(l => `<tr><td>${l.code ?? ""}</td><td>${l.name}</td><td style="text-align:right">${fmt(l.amount)}</td></tr>`).join("")}</tbody>
       <tfoot><tr><td colspan="2"><strong>Total ${title}</strong></td><td style="text-align:right"><strong>${fmt(total)}</strong></td></tr></tfoot>
     </table>
   `;
@@ -70,7 +72,7 @@ const BalanceSheet = () => {
       ${sectionHtml("Assets", data.assets, data.total_assets)}
       ${sectionHtml("Liabilities", data.liabilities, data.total_liabilities)}
       ${sectionHtml("Equity", data.equity, data.total_equity)}
-      <p style="margin-top:14px;font-weight:700;color:${data.is_balanced ? "#059669" : "#dc2626"}">${data.is_balanced ? "Balanced" : "NOT balanced"} — Assets ${fmt(data.total_assets)} vs Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}</p>
+      <p style="margin-top:14px;font-weight:700;color:${data.is_balanced ? "#059669" : "#dc2626"}">${data.is_balanced ? "Balanced" : "NOT balanced"} " Assets ${fmt(data.total_assets)} vs Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}</p>
     `;
     printDocument("Balance Sheet", body, asOf);
   };
@@ -85,7 +87,7 @@ const BalanceSheet = () => {
             <tr><td colSpan={3} className="bs-empty-small">None</td></tr>
           ) : lines.map((l, i) => (
             <tr key={l.id ?? i}>
-              <td className={l.id ? "bs-code" : "bs-code-disabled"} onClick={() => l.id && navigate(`/accounting/general-ledger?account_id=${l.id}`)}>{l.code ?? "—"}</td>
+              <td className={l.id ? "bs-code" : "bs-code-disabled"} onClick={() => l.id && navigate(`/accounting/general-ledger?account_id=${l.id}`)}>{l.code ?? ""}</td>
               <td>{l.name}</td>
               <td>{fmt(l.amount)}</td>
             </tr>
@@ -102,27 +104,21 @@ const BalanceSheet = () => {
     <div className="bs-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <div className="bs-card">
-        <div className="bs-accent-bar" />
-        <div className="bs-sticky-top">
-          <div className="bs-header">
-            <div>
-              <h1>{t("balance.title")}</h1>
-              <p>{t("balance.subtitle")}</p>
-            </div>
-            <div className="bs-filters">
-              <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
-              <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
-              <ExportButtons getRows={exportRows} filename="balance-sheet" sheetName="Balance Sheet" onPrint={handlePrint} disabled={!data} />
-            </div>
-          </div>
-          <GetHelp
-            title={t("balance.help.title")}
-            intro={t("balance.help.intro")}
-            steps={t("balance.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("balance.help.tip")}
-          />
+      <AccountingTabBar>
+        <div className="bs-filters" style={{ margin: 0 }}>
+          <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} />
+          <button onClick={() => load(asOf)}>{t("common.refresh")}</button>
+          <ExportButtons getRows={exportRows} filename="balance-sheet" sheetName="Balance Sheet" onPrint={handlePrint} disabled={!data} />
         </div>
+      </AccountingTabBar>
+
+      <div className="bs-card">
+        <GetHelp
+          title={t("balance.help.title")}
+          intro={t("balance.help.intro")}
+          steps={t("balance.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("balance.help.tip")}
+        />
 
         {loading ? (
           <div className="bs-empty">{t("common.loading")}</div>
@@ -139,18 +135,16 @@ const BalanceSheet = () => {
             </div>
             <div className={`bs-balance-flag ${data.is_balanced ? "ok" : "off"}`}>
               {data.is_balanced
-                ? `✓ Balanced — Assets ${fmt(data.total_assets)} = Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}`
-                : `✗ NOT balanced — Assets ${fmt(data.total_assets)} vs Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}`}
+                ? `âœ– Balanced " Assets ${fmt(data.total_assets)} = Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}`
+                : `âœ— NOT balanced " Assets ${fmt(data.total_assets)} vs Liabilities + Equity ${fmt(data.total_liabilities + data.total_equity)}`}
             </div>
           </>
         )}
       </div>
 
       <style>{`
-        .bs-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .bs-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .bs-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
-        .bs-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .bs-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .bs-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .bs-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 24px; flex-wrap: wrap; gap: 14px; }
         .bs-header h1 { font-size: 20px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .bs-header p { font-size: 13px; color: #64748b; margin: 0; }
@@ -180,3 +174,4 @@ const BalanceSheet = () => {
 };
 
 export default BalanceSheet;
+

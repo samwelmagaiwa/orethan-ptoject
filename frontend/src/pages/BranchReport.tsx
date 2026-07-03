@@ -68,14 +68,6 @@ const OPS_COL3 = [
   { key: "phone_reminders", icon: "📲" },
   { key: "sms_sent",        icon: "💬" },
 ] as const;
-// Financial column keys — labels resolved via t("fin.colXxx") at render time
-const FIN_COLS = [
-  { key: "mapato",       color: "#059669", hasNote: true  },
-  { key: "matumizi",     color: "#dc2626", hasNote: true  },
-  { key: "mkopo",        color: "#7c3aed", hasNote: true  },
-  { key: "kutoka_benki", color: "#0ea5e9", hasNote: false },
-  { key: "kwenda_benki", color: "#f59e0b", hasNote: false },
-] as const;
 
 const blankOps = (): Operations => ({
   new_customers_inquired:"", customers_called:"", forms_issued:"",
@@ -766,7 +758,7 @@ export default function BranchReport() {
   // ── FORM TAB ───────────────────────────────────────────────────────────────
   const renderForm = () => {
     const ops = form.operations;
-    const renderOpsCol = (fields: readonly {key: string; label: string; icon: string}[], last = false) => (
+    const renderOpsCol = (fields: readonly {key: string; icon: string; label?: string}[], last = false) => (
       <div style={S.col(last)}>
         {fields.map(f => (
           <div key={f.key} style={S.field}>
@@ -917,7 +909,7 @@ export default function BranchReport() {
               <div style={S.field}>
                 <label style={S.label}>{t("meta.sectionLabel")}</label>
                 <div style={{ ...S.input, background:"#f8fafc", color:"#0f172a", fontWeight:700, display:"flex", alignItems:"center", minHeight:36 } as React.CSSProperties}>
-                  {form.section || ROLE_SEHEMU[userRole] || userRole}
+                  {form.section || userRole}
                 </div>
               </div>
             </div>
@@ -1385,7 +1377,6 @@ export default function BranchReport() {
     const expected: ExpectedLoan[] = r.expected_loans || [];
     const tot = finTotals(fins);
     const totalBal = Number(bal.cash||0)+Number(bal.mobile||0)+Number(bal.safe||0);
-    const tLabel = typeLabels[r.report_type as keyof typeof typeLabels] || r.report_type;
     const opGroups = [
       { title:t("detail.col1Title"), color:"#7c3aed", bg:"#faf5ff", items: [
         { label:t("detail.opLabels.new_customers"), val: ops.new_customers_inquired },

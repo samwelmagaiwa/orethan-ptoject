@@ -56,7 +56,7 @@ function Home() {
 function DashboardLayout() {
   return (
     <div style={{ display: "flex" }}>
-      <Sidebar />
+      <Sidebar isCollapsed={false} setIsCollapsed={() => {}} />
 
       <div
         style={{

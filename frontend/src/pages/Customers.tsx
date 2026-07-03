@@ -7,7 +7,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
-import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
+import SmsStatusBadge from "../components/SmsStatusBadge";
 import { printDocument } from "../utils/printDoc";
 
 // INLINE SVG ICONS FOR PREMIUM LOOK
@@ -344,17 +344,6 @@ const Customers: React.FC = () => {
         }
     };
 
-    const openDisburseModal = (loan: Loan) => {
-        setSelectedLoan(loan);
-        setDisburseForm({
-            amount: String(loan.amount),
-            method: "cash",
-            disbursement_date: new Date().toISOString().slice(0, 10),
-            transaction_reference: "",
-        });
-        setShowDisburseModal(true);
-        setActiveDropdown(null);
-    };
 
     const submitDisbursement = async () => {
         if (!disburseForm.amount || !disburseForm.disbursement_date) {
@@ -643,6 +632,13 @@ const Customers: React.FC = () => {
                                                         }}
                                                     >
                                                         <IconCreditCard /> {t("actions.repay")}
+                                                    </button>
+                                                    <button
+                                                        className="btn-repay"
+                                                        style={{ background: '#ede9fe', color: '#6366f1', borderColor: '#c4b5fd' }}
+                                                        onClick={(e) => { e.stopPropagation(); window.open(`/api/v1/customers/${customer.id}/statement?to=${new Date().toISOString().slice(0,10)}`, '_blank'); }}
+                                                    >
+                                                        📄 Taarifa
                                                     </button>
                                                 </div>
                                             </td>

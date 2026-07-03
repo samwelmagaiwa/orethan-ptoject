@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import logo from '../assets/logo.png';
+import staticLogo from '../assets/logo.png';
 import LoanChecklistView from './LoanChecklistView';
 import CollateralDirectory from './CollateralDirectory';
+import { letterheadBlock, watermarkBlock, triggerPrint } from '../utils/printDoc';
 
 // Common Loan interface that should match your types
 interface User {
@@ -48,8 +49,76 @@ interface LoanDetailsModalProps {
   onClose: () => void;
 }
 
+const LOAN_PRINT_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: white; color: #1a1a1a;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 32px 40px; }
+  @page { margin: 8mm; size: A4; }
+
+  .pdf-section { margin-bottom: 0 !important; border-bottom: 1px solid #1a1a1a; page-break-inside: avoid; }
+  .pdf-section:last-of-type { border-bottom: none; }
+  .pdf-section-title { background: #f1f1f1; color: #000; padding: 14px 60px;
+    font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;
+    border-bottom: 2px solid #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .pdf-grid-12 { display: flex; }
+  .photo-cell { border-right: 2px solid #1a1a1a; padding: 20px 20px 20px 60px; width: 240px; flex-shrink: 0; }
+  .pdf-passport-img { width: 100%; aspect-ratio: 0.85; object-fit: cover; border: 1px solid #ddd; display: block; }
+  .photo-placeholder { font-size: 14px; border: 2px dashed #ccc; height: 200px; display: flex;
+    align-items: center; justify-content: center; color: #999; }
+
+  .pdf-inner-grid { display: grid; grid-template-columns: repeat(12, 1fr); width: 100%; }
+  .pdf-item { border-right: 1px solid #1a1a1a; border-bottom: 1px solid #1a1a1a;
+    padding: 10px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .pdf-inner-grid .pdf-item:nth-child(4n), .pdf-inner-grid .pdf-item.col-12 { border-right: none; }
+  .pdf-inner-grid .pdf-item:first-child { padding-left: 60px; }
+  .pdf-inner-grid .pdf-item.col-12 { padding-left: 60px; }
+  .pdf-grid-12 .pdf-item:last-child { border-right: none; }
+  .pdf-item span { font-size: 10px; font-weight: 700; color: #666; text-transform: uppercase; }
+  .pdf-item strong { font-size: 14px; min-height: 20px; font-weight: 800; color: #059669; }
+
+  .col-2 { grid-column: span 2; } .col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; }
+  .col-6 { grid-column: span 6; } .col-8 { grid-column: span 8; }
+  .col-10 { grid-column: span 10; } .col-12 { grid-column: span 12; border-right: none !important; }
+
+  .pdf-sub-title { background: #f1f1f1; padding: 5px 60px; font-size: 11px;
+    font-weight: 900; border-bottom: 1px solid #1a1a1a; text-transform: uppercase; }
+  .pdf-table-container { padding: 0 60px; margin: 14px 0; }
+  .table-caption { font-size: 11px; font-weight: 800; margin-bottom: 6px; color: #1a1a1a; }
+  .pdf-table { width: 100%; border-collapse: collapse; }
+  .pdf-table th { background: #f1f1f1; border: 1px solid #1a1a1a; padding: 7px 10px; font-size: 10px; text-align: left; }
+  .pdf-table td { border: 1px solid #1a1a1a; padding: 7px 10px; font-size: 12px; color: #059669; font-weight: 700; }
+
+  .pdf-guarantors-row { display: grid; grid-template-columns: 1fr 1fr; }
+  .pdf-guarantor-box { border-right: 1px solid #1a1a1a; }
+  .pdf-guarantor-box:last-child { border-right: none; }
+  .pdf-guarantor-box .pdf-item:last-child { border-bottom: none; }
+
+  .declaration-text { padding: 16px 60px; font-size: 12px; font-style: italic; line-height: 1.6; }
+  .signature-grid { padding: 0 60px 32px 60px; }
+  .signature-line { border-bottom: 1px dashed #000; margin-top: 10px; height: 24px;
+    display: flex; align-items: flex-end; justify-content: center; }
+  .signature-line strong { font-size: 12px !important; color: #059669 !important; }
+  .thumbprint-box { width: 50px; height: 70px; border: 1px solid #000; margin-top: 5px;
+    display: flex; align-items: center; justify-content: center; }
+  .thumbprint-indicator { font-size: 8px; font-weight: 900; transform: rotate(-45deg); opacity: 0.8; color: #059669; }
+
+  .text-success { color: #059669 !important; }
+  .bg-highlight { background: #fffdf0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bg-light-gray { background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-border-right { border-right: none !important; }
+  .no-border-bottom { border-bottom: none !important; }
+  .border-bottom { border-bottom: 1px solid #1a1a1a; }
+  .border-top { border-top: 1px solid #1a1a1a; }
+  .chattel-break { page-break-before: always; }
+  .declaration-page { page-break-before: always; }
+  img { max-width: 100%; }
+`;
+
 const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose }) => {
   const { t } = useTranslation('loanModals');
+  const paperRef = useRef<HTMLDivElement>(null);
   if (!show || !loan) return null;
 
   // Helper to format currency
@@ -59,7 +128,44 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
   };
 
   const handlePrint = () => {
-    window.print();
+    const paper = paperRef.current;
+    if (!paper) return;
+
+    const clone = paper.cloneNode(true) as HTMLElement;
+    // Remove static header — we replace with dynamic org letterhead
+    clone.querySelector('.pdf-page-header')?.remove();
+    // Remove interactive / screen-only elements
+    clone.querySelectorAll('.no-print').forEach(el => el.remove());
+
+    const formTitle = paper.querySelector('.form-title')?.textContent || 'LOAN APPLICATION FORM';
+    const formCode  = paper.querySelector('.form-code')?.textContent  || '';
+
+    const win = window.open('', '_blank', 'width=1060,height=1200');
+    if (!win) return;
+
+    win.document.write(`<!DOCTYPE html><html><head>
+      <meta charset="utf-8" />
+      <title>${formTitle}</title>
+      <style>${LOAN_PRINT_CSS}</style>
+    </head><body>
+      ${watermarkBlock()}
+      <div style="position:relative;z-index:1">
+        ${letterheadBlock()}
+        <div style="text-align:center;font-size:20px;font-weight:900;text-transform:uppercase;
+          letter-spacing:0.06em;color:#102a43;margin:18px 0 4px;border-top:3px solid #1a1a1a;
+          border-bottom:3px solid #1a1a1a;padding:10px 0">
+          ${formTitle}
+        </div>
+        ${formCode ? `<div style="text-align:right;font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px">Form No: ${formCode}</div>` : ''}
+        ${clone.innerHTML}
+        <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;
+          font-size:10px;color:#94a3b8;text-align:center">
+          This is a system generated document. &copy; ${new Date().getFullYear()} — Printed ${new Date().toLocaleString('en-GB')}
+        </div>
+      </div>
+    </body></html>`);
+    win.document.close();
+    triggerPrint(win);
   };
 
   const renderVal = (val: any) => {
@@ -74,12 +180,12 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div className="pdf-form-body">
-          <div className="pdf-document-paper">
-            {/* PDF HEADER */}
+          <div className="pdf-document-paper" ref={paperRef}>
+            {/* PDF HEADER — screen view only; print uses dynamic org letterhead */}
             <div className="pdf-page-header">
               <div className="header-top-row">
                 <div className="header-left">
-                  <img src={logo} alt="ORETHAN MICROFINANCE" className="logo-image-main" />
+                  <img src={staticLogo} alt="ORETHAN MICROFINANCE" className="logo-image-main" />
                 </div>
                 <div className="header-center">
                   <div className="form-title">{t('loanDetails.header.formTitle')}</div>
@@ -263,7 +369,7 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                         <div className="pdf-item col-6"><span>{t('loanDetails.section4.fullName')}</span><strong>{renderVal(loan.details?.[`${p}JinaKamili`])}</strong></div>
                         <div className="pdf-item col-6" style={{ borderLeft: '1px solid #1a1a1a', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {(() => {
-                            const photoUrl = loan?.[`guarantor_${i}_photo`] || loan.details?.[`guarantor${i}PhotoUrl`];
+                            const photoUrl = (loan as any)?.[`guarantor_${i}_photo`] || loan.details?.[`guarantor${i}PhotoUrl`];
                             if (!photoUrl) return (
                               <div style={{
                                 border: '2px dashed #ccc',
@@ -370,67 +476,6 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
           </div>
 
           <style>{`
-        @media print {
-          @page { margin: 2mm; size: auto; }
-          body * { visibility: hidden !important; }
-          .modal-overlay { 
-            visibility: visible !important; 
-            background: white !important; 
-            backdrop-filter: none !important; 
-            position: absolute !important; 
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            display: block !important; 
-          }
-          .modal-content.modal-large.print-container { 
-            visibility: visible !important;
-            position: static !important; 
-            width: 100% !important; 
-            height: auto !important;
-            margin: 0 !important; 
-            padding: 0 !important;
-            overflow: visible !important;
-            display: block !important;
-            box-shadow: none !important;
-          }
-          .modal-content.modal-large.print-container * { visibility: visible !important; }
-          .no-print { display: none !important; }
-          .pdf-form-body { 
-            padding: 0 !important; 
-            background: white !important; 
-            overflow: visible !important; 
-            height: auto !important;
-            display: block !important;
-            width: 100% !important;
-          }
-          .pdf-document-paper { 
-            max-width: none !important; width: 100% !important; 
-            box-shadow: none !important; padding: 0 !important; 
-            margin: 0 !important;
-            border: none !important;
-          }
-          .pdf-section { page-break-inside: avoid; border-top: 2px solid #000 !important; }
-          .pdf-section:first-child { border-top: none !important; }
-          
-          .pdf-section-title, .pdf-section-title * {
-             color: #000 !important;
-             background: #f1f1f1 !important;
-             font-weight: 900 !important;
-             font-size: 18px !important;
-             border-bottom: 2px solid #000 !important;
-             -webkit-print-color-adjust: exact;
-             print-color-adjust: exact;
-          }
-
-          /* Shrink the header so it doesn't eat up most of page 1 and push
-             SEHEMU 1 (and everything after it) onto a near-blank page 2. */
-          .pdf-page-header { padding: 6px 30px !important; }
-          .logo-image-main { height: 70px !important; max-width: 130px !important; }
-          .form-title { font-size: 18px !important; padding-bottom: 2px !important; }
-          .form-code { font-size: 11px !important; }
-        }
-
         .modal-overlay {
           position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98);
           backdrop-filter: blur(10px); display: flex; align-items: stretch; justify-content: stretch;

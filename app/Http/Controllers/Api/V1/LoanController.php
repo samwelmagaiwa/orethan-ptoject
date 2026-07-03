@@ -185,6 +185,30 @@ class LoanController extends Controller
         return Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])->orderBy('created_at', 'desc')->get();
     }
 
+    // SEARCH LOANS by ID, loan_account_number, name, or phone
+    public function search(Request $request)
+    {
+        $q = trim($request->query('q', ''));
+        if ($q === '') {
+            return response()->json(['data' => [], 'message' => 'Query required'], 422);
+        }
+
+        $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
+            ->where(function ($query) use ($q) {
+                if (is_numeric($q)) {
+                    $query->where('id', $q);
+                }
+                $query->orWhere('loan_account_number', 'like', "%{$q}%")
+                      ->orWhere('name', 'like', "%{$q}%")
+                      ->orWhere('phone', 'like', "%{$q}%");
+            })
+            ->limit(10)
+            ->get();
+
+        $this->appendBorrowerMetrics($loans);
+        return response()->json(['data' => $loans]);
+    }
+
     // GET SINGLE LOAN
     public function show($id)
     {

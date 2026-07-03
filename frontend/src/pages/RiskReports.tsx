@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import PageHeader from "../components/PageHeader";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -81,24 +83,22 @@ const RiskReports = () => {
     <div className="rr-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <div className="rr-card">
-        <div className="rr-accent-bar" />
-        <div className="rr-sticky-top">
-          <div className="rr-header">
-            <div>
-              <h1>Risk Reports</h1>
-              <p>Portfolio at Risk (PAR) and default analysis</p>
-            </div>
-            <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
-          </div>
+      <PageHeader
+        icon="📉"
+        title="Risk Reports"
+        subtitle="Portfolio at Risk (PAR) and default analysis"
+      >
+        <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
+        <button className="rr-refresh-btn" onClick={load}>↻ Refresh</button>
+      </PageHeader>
 
-          <GetHelp
-            title={t("risk.help.title")}
-            intro={t("risk.help.intro")}
-            steps={t("risk.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("risk.help.tip")}
-          />
-        </div>
+      <div className="rr-card">
+        <GetHelp
+          title={t("risk.help.title")}
+          intro={t("risk.help.intro")}
+          steps={t("risk.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("risk.help.tip")}
+        />
 
         {loading ? (
           <div className="rr-empty">Loading...</div>
@@ -177,14 +177,11 @@ const RiskReports = () => {
       </div>
 
       <style>{`
-        .rr-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
         .rr-body-scroll { overflow-x: auto; }
         .rr-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .rr-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-        .rr-header { margin-top: 6px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; }
-        .rr-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
-        .rr-header p { font-size: 13px; color: #64748b; margin: 0 0 20px; }
+        .rr-card { max-width: 1900px; margin: 14px auto 0; background: white; border-radius: 16px; padding: 20px 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .rr-refresh-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; }
+        .rr-refresh-btn:hover { background: #f1f5f9; }
         .rr-portfolio-line { font-size: 14px; color: #334155; margin-bottom: 18px; }
         .rr-par-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
         .rr-par-card { background: linear-gradient(135deg, #102a43 0%, #1e5fae 100%); color: white; border-radius: 14px; padding: 18px; text-align: center; }
@@ -210,3 +207,4 @@ const RiskReports = () => {
 };
 
 export default RiskReports;
+

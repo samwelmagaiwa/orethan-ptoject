@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChartOfAccount;
+use App\Models\JournalEntryLine;
 use App\Services\AccountingService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AccountingReportController extends Controller
@@ -103,6 +106,103 @@ class AccountingReportController extends Controller
         } catch (\Exception $e) {
             Log::error('cashBook error: ' . $e->getMessage());
             return $this->error('Failed to load Cash Book', 500);
+        }
+    }
+
+    /**
+     * Branch Report Summary — per-day GL aggregates for the period.
+     * Accessible to all authenticated roles (Loan Officers need this for Branch Reports).
+     *
+     * Returns:
+     *   daily[date] = { mapato, matumizi, mkopo, kutoka_benki, kwenda_benki }
+     *   closing_cash  — Cash on Hand (1010) balance as of period end
+     *   closing_bank  — Bank Account (1020) balance as of period end
+     */
+    public function branchSummary(Request $request)
+    {
+        $data = $request->validate([
+            'from' => 'required|date',
+            'to'   => 'required|date|after_or_equal:from',
+        ]);
+
+        $from = $data['from'];
+        $to   = $data['to'];
+
+        try {
+            // Pull all relevant journal entry lines for the period, joined with entry date + account info
+            $rows = DB::table('journal_entry_lines as jel')
+                ->join('journal_entries as je',   'je.id',  '=', 'jel.journal_entry_id')
+                ->join('chart_of_accounts as coa','coa.id', '=', 'jel.account_id')
+                ->whereBetween('je.entry_date', [$from, $to])
+                ->where('je.status', '!=', 'reversed')
+                ->select(
+                    'je.entry_date as date',
+                    'coa.type',
+                    'coa.code',
+                    'coa.normal_balance',
+                    DB::raw('COALESCE(jel.debit,0)  as debit'),
+                    DB::raw('COALESCE(jel.credit,0) as credit')
+                )
+                ->get();
+
+            // Aggregate per day
+            $daily = [];
+            foreach ($rows as $row) {
+                $date = $row->date;
+                if (!isset($daily[$date])) {
+                    $daily[$date] = [
+                        'mapato'       => 0,
+                        'matumizi'     => 0,
+                        'mkopo'        => 0,
+                        'kutoka_benki' => 0,
+                        'kwenda_benki' => 0,
+                    ];
+                }
+
+                // Income accounts (4xxx) — credit side = revenue earned
+                if ($row->type === 'income') {
+                    $daily[$date]['mapato'] += (float) $row->credit;
+                }
+
+                // Expense accounts (5xxx) — debit side = cost incurred
+                if ($row->type === 'expense') {
+                    $daily[$date]['matumizi'] += (float) $row->debit;
+                }
+
+                // Loans Receivable (1100) — debit = new loan disbursed
+                if ($row->code === '1100') {
+                    $daily[$date]['mkopo'] += (float) $row->debit;
+                }
+
+                // Bank Account (1020) — credit = cash pulled FROM bank; debit = cash pushed TO bank
+                if ($row->code === '1020') {
+                    $daily[$date]['kutoka_benki'] += (float) $row->credit;
+                    $daily[$date]['kwenda_benki'] += (float) $row->debit;
+                }
+            }
+
+            // Round all values
+            foreach ($daily as $d => &$v) {
+                foreach ($v as $k => $amount) {
+                    $v[$k] = round($amount, 2);
+                }
+            }
+
+            // Closing balances of cash-type accounts as of period end
+            $cashAccount  = ChartOfAccount::where('code', '1010')->first();
+            $bankAccount  = ChartOfAccount::where('code', '1020')->first();
+
+            return $this->success([
+                'from'         => $from,
+                'to'           => $to,
+                'daily'        => $daily,
+                'closing_cash' => $cashAccount ? round($cashAccount->balance($to), 2) : 0,
+                'closing_bank' => $bankAccount ? round($bankAccount->balance($to), 2) : 0,
+            ], 'Branch accounting summary loaded');
+
+        } catch (\Exception $e) {
+            Log::error('branchSummary error: ' . $e->getMessage());
+            return $this->error('Failed to load branch summary', 500);
         }
     }
 }

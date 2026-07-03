@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\LoanSchedule;
+use App\Models\GroupMember;
+use App\Models\Guarantor;
 
 class Loan extends Model
 {
@@ -163,6 +165,16 @@ class Loan extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function groupMembers()
+    {
+        return $this->hasMany(GroupMember::class);
+    }
+
+    public function guarantors()
+    {
+        return $this->hasMany(Guarantor::class);
     }
 
     /**

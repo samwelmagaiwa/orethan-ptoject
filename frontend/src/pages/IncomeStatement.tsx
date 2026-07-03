@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import AccountingTabBar from "../components/AccountingTabBar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
@@ -98,29 +100,23 @@ const IncomeStatement = () => {
     <div className="is-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <div className="is-card">
-        <div className="is-accent-bar" />
-        <div className="is-sticky-top">
-          <div className="is-header">
-            <div>
-              <h1>{t("income.title")}</h1>
-              <p>{t("income.subtitle")}</p>
-            </div>
-            <div className="is-filters">
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-              <span>{t("common.to")}</span>
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-              <button onClick={load}>{t("common.refresh")}</button>
-              <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
-            </div>
-          </div>
-          <GetHelp
-            title={t("income.help.title")}
-            intro={t("income.help.intro")}
-            steps={t("income.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("income.help.tip")}
-          />
+      <AccountingTabBar>
+        <div className="is-filters" style={{ margin: 0 }}>
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+          <span>{t("common.to")}</span>
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+          <button onClick={load}>{t("common.refresh")}</button>
+          <ExportButtons getRows={exportRows} filename="income-statement" sheetName="Income Statement" onPrint={handlePrint} disabled={!data} />
         </div>
+      </AccountingTabBar>
+
+      <div className="is-card">
+        <GetHelp
+          title={t("income.help.title")}
+          intro={t("income.help.intro")}
+          steps={t("income.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("income.help.tip")}
+        />
 
         {loading ? (
           <div className="is-empty">{t("common.loading")}</div>
@@ -140,10 +136,8 @@ const IncomeStatement = () => {
       </div>
 
       <style>{`
-        .is-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .is-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .is-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
-        .is-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .is-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .is-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .is-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 24px; flex-wrap: wrap; gap: 14px; }
         .is-header h1 { font-size: 20px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .is-header p { font-size: 13px; color: #64748b; margin: 0; }
@@ -171,3 +165,4 @@ const IncomeStatement = () => {
 };
 
 export default IncomeStatement;
+

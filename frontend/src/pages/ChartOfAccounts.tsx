@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import AccountingTabBar from "../components/AccountingTabBar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -87,7 +89,7 @@ const ChartOfAccounts = () => {
     setConfirm({
       isOpen: true,
       title: account.is_active ? "Deactivate Account" : "Activate Account",
-      message: `${account.is_active ? "Deactivate" : "Activate"} ${account.code} — ${account.name}?`,
+      message: `${account.is_active ? "Deactivate" : "Activate"} ${account.code} " ${account.name}?`,
       type: "info",
       onConfirm: async () => {
         setConfirm(prev => ({ ...prev, isOpen: false }));
@@ -105,7 +107,7 @@ const ChartOfAccounts = () => {
     setConfirm({
       isOpen: true,
       title: "Delete Account",
-      message: `Delete ${account.code} — ${account.name}? This cannot be undone.`,
+      message: `Delete ${account.code} " ${account.name}? This cannot be undone.`,
       type: "danger",
       onConfirm: async () => {
         setConfirm(prev => ({ ...prev, isOpen: false }));
@@ -130,7 +132,7 @@ const ChartOfAccounts = () => {
   }));
 
   const handlePrint = () => {
-    const rowsHtml = filtered.map(a => `<tr><td>${a.code}</td><td>${a.name}${a.is_system ? " (SYSTEM)" : ""}</td><td style="text-transform:capitalize">${a.type}</td><td style="text-transform:capitalize">${a.normal_balance}</td><td>${a.is_cash_account ? "Yes" : "—"}</td><td>${a.is_active ? "Active" : "Inactive"}</td></tr>`).join("");
+    const rowsHtml = filtered.map(a => `<tr><td>${a.code}</td><td>${a.name}${a.is_system ? " (SYSTEM)" : ""}</td><td style="text-transform:capitalize">${a.type}</td><td style="text-transform:capitalize">${a.normal_balance}</td><td>${a.is_cash_account ? "Yes" : "–"}</td><td>${a.is_active ? "Active" : "Inactive"}</td></tr>`).join("");
     const body = `<table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Normal Balance</th><th>Cash?</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
     printDocument("Chart of Accounts", body);
   };
@@ -140,33 +142,25 @@ const ChartOfAccounts = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
       <ConfirmModal isOpen={confirm.isOpen} title={confirm.title} message={confirm.message} type={confirm.type} onConfirm={confirm.onConfirm} onCancel={() => setConfirm({ ...confirm, isOpen: false })} />
 
-      <div className="coa-card">
-        <div className="coa-accent-bar" />
-        <div className="coa-sticky-top">
-          <div className="coa-header">
-            <div>
-              <h1>{t("chart.title")}</h1>
-              <p>{t("chart.subtitle")}</p>
-            </div>
-            <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("chart.addAccount")}</button>
-          </div>
-
-          <GetHelp
-            title={t("chart.help.title")}
-            intro={t("chart.help.intro")}
-            steps={t("chart.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("chart.help.tip")}
-          />
-
-          <div className="coa-filters">
-            <input type="text" placeholder={t("chart.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
-            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-              <option value="">{t("chart.allTypes")}</option>
-              {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
-            </select>
-            <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
-          </div>
+      <AccountingTabBar>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="text" placeholder={t("chart.searchPlaceholder")} style={{ padding: "7px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "13px" }} value={search} onChange={e => setSearch(e.target.value)} />
+          <select style={{ padding: "7px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "13px" }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+            <option value="">{t("chart.allTypes")}</option>
+            {Object.keys(TYPE_LABELS).map(k => <option key={k} value={k}>{typeLabel(k)}</option>)}
+          </select>
+          <ExportButtons getRows={exportRows} filename="chart-of-accounts" sheetName="Chart of Accounts" onPrint={handlePrint} disabled={!filtered.length} />
+          <button className="coa-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("chart.addAccount")}</button>
         </div>
+      </AccountingTabBar>
+
+      <div className="coa-card">
+        <GetHelp
+          title={t("chart.help.title")}
+          intro={t("chart.help.intro")}
+          steps={t("chart.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("chart.help.tip")}
+        />
 
         {loading ? (
           <div className="coa-empty">{t("common.loading")}</div>
@@ -187,7 +181,7 @@ const ChartOfAccounts = () => {
                     <td>{a.name} {a.is_system && <span className="coa-system-badge">SYSTEM</span>}</td>
                     <td><span className={`coa-type-badge coa-type-${a.type}`}>{typeLabel(a.type)}</span></td>
                     <td style={{ textTransform: "capitalize" }}>{a.normal_balance === "debit" ? t("common.debit") : t("common.credit")}</td>
-                    <td>{a.is_cash_account ? "Yes" : "—"}</td>
+                    <td>{a.is_cash_account ? "Yes" : "–"}</td>
                     <td>
                       <span className={`coa-status-badge ${a.is_active ? "active" : "inactive"}`} onClick={() => toggleActive(a)} style={{ cursor: a.is_system ? "not-allowed" : "pointer" }}>
                         {a.is_active ? t("chart.active") : t("chart.inactive")}
@@ -247,14 +241,9 @@ const ChartOfAccounts = () => {
       )}
 
       <style>{`
-        .coa-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .coa-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .coa-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
-        .coa-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
+        .coa-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .coa-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .coa-table-scroll { overflow-x: auto; }
-        .coa-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
-        .coa-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
-        .coa-header p { font-size: 13px; color: #64748b; margin: 0; }
         .coa-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .coa-add-btn:hover { background: #1e5fae; }
         .coa-filters { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -295,3 +284,4 @@ const ChartOfAccounts = () => {
 };
 
 export default ChartOfAccounts;
+

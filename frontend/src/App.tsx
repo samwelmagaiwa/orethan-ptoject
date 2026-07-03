@@ -12,7 +12,8 @@ import Footer from "./components/Footer";
 
 import GroupLoan from "./pages/GroupLoan";
 import PersonalLoan from "./pages/PersonalLoan";
-import logo from "./assets/logo.png";
+import staticLogo from "./assets/logo.png";
+import { useOrgSettings, setOrgSettings, dispatchOrgUpdate } from "./utils/orgSettings";
 
 import Users from "./pages/Users";
 
@@ -31,7 +32,7 @@ import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
 import DisburseLoan from "./pages/DisburseLoan";
-import LoanSettings from "./pages/LoanSettings";
+import Configurations from "./pages/Configurations";
 
 import ChartOfAccounts from "./pages/ChartOfAccounts";
 import JournalEntries from "./pages/JournalEntries";
@@ -46,6 +47,12 @@ import FinancialReports from "./pages/FinancialReports";
 import RegulatorReports from "./pages/RegulatorReports";
 import LoanLifecycle from "./pages/LoanLifecycle";
 import CashTill from "./pages/CashTill";
+import Payroll from "./pages/Payroll";
+import Biometric from "./pages/Biometric";
+import BranchReport from "./pages/BranchReport";
+import Guarantors from "./pages/Guarantors";
+import GroupManagement from "./pages/GroupManagement";
+import StaffPerformance from "./pages/StaffPerformance";
 
 // =========================
 // AXIOS INTERCEPTORS
@@ -533,6 +540,9 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 // HOME PAGE (LANDING PAGE)
 // =========================
 function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => void, setSyncMessages: (m: string[]) => void }) {
+  const _org = useOrgSettings();
+  const logoSrc = _org.company_logo_url || staticLogo;
+  const companyName = _org.company_name || "Orethan Microfinance";
   return (
     <div className="landing-page">
       {/* Top Navigation */}
@@ -541,8 +551,8 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
         {/* Badilisha class hizi hapa kama unataka kubadilisha style ya logo */}
         <div className="custom-logo-wrapper">
           <img
-            src={logo}
-            alt="Company Logo"
+            src={logoSrc}
+            alt={companyName}
             className="custom-logo-image"
           />
         </div>
@@ -560,7 +570,7 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
 
       {/* Footer */}
       <div className="footer">
-        <p>© 2026 Orethan Microfinance. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
       </div>
 
       <style>{`
@@ -974,6 +984,36 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [syncMessages, setSyncMessages] = useState<string[]>([]);
 
+  // Bootstrap org settings from API on every cold start so logo/name are
+  // always fresh even on first visit or after localStorage was cleared.
+  useEffect(() => {
+    const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+    fetch(`${API}/loan-settings`)
+      .then(r => r.json())
+      .then(json => {
+        const d = json?.data;
+        if (!d) return;
+        setOrgSettings({
+          company_name:            d.company_name,
+          company_tagline:         d.company_tagline,
+          company_address:         d.company_address,
+          company_phone:           d.company_phone,
+          company_email:           d.company_email,
+          company_website:         d.company_website,
+          company_logo_url:        d.company_logo_url,
+          company_registration_no: d.company_registration_no,
+          company_tin:             d.company_tin,
+          currency_code:           d.currency_code,
+          date_format:             d.date_format,
+          timezone:                d.timezone,
+          fiscal_year_start_month: d.fiscal_year_start_month,
+          brand_color:             d.brand_color,
+        });
+        dispatchOrgUpdate();
+      })
+      .catch(() => { /* non-critical — falls back to localStorage */ });
+  }, []);
+
   return (
     <>
       {loading && <LoadingScreen onFinish={() => { setLoading(false); setSyncMessages([]); }} statusMessages={syncMessages} />}
@@ -1040,15 +1080,17 @@ function App() {
           />
 
           <Route
-            path="/loan-settings"
+            path="/configurations"
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <LoanSettings />
+                  <Configurations />
                 </MainLayout>
               </ProtectedRoute>
             }
           />
+          {/* legacy redirect so any saved /loan-settings bookmark still works */}
+          <Route path="/loan-settings" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
 
           <Route
             path="/loan-manager"
@@ -1130,6 +1172,12 @@ function App() {
           <Route path="/reports/regulator" element={<ProtectedRoute><MainLayout><RegulatorReports /></MainLayout></ProtectedRoute>} />
           <Route path="/loan-lifecycle" element={<ProtectedRoute><MainLayout><LoanLifecycle /></MainLayout></ProtectedRoute>} />
           <Route path="/cash-till" element={<ProtectedRoute><MainLayout><CashTill /></MainLayout></ProtectedRoute>} />
+          <Route path="/payroll" element={<ProtectedRoute><MainLayout><Payroll /></MainLayout></ProtectedRoute>} />
+          <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
+          <Route path="/branch-report" element={<ProtectedRoute><MainLayout><BranchReport /></MainLayout></ProtectedRoute>} />
+          <Route path="/guarantors" element={<ProtectedRoute><MainLayout><Guarantors /></MainLayout></ProtectedRoute>} />
+          <Route path="/groups" element={<ProtectedRoute><MainLayout><GroupManagement /></MainLayout></ProtectedRoute>} />
+          <Route path="/staff-performance" element={<ProtectedRoute><MainLayout><StaffPerformance /></MainLayout></ProtectedRoute>} />
 
           <Route
             path="/payment-requests"

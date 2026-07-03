@@ -159,6 +159,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessPayrollMgmt = !!userRole && (userRole === "admin" || payrollRoles.includes(userRole));
   const canSeePayroll = canAccessPayrollMgmt || hasEmployeeRecord;
   const canAccessBranchReport = isAllowed("branch_report", !!userRole && branchReportRoles.includes(userRole));
+  const canAccessGuarantors = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'loan_officer';
+  const canAccessGroupMgmt = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'general_manager' || userRole === 'managing_director';
+  const canAccessStaffPerf = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'general_manager' || userRole === 'managing_director';
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -456,6 +459,44 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       📋 {t("sidebar.branchReport")}
                     </div>
                   )}
+                </div>
+              )}
+            </>
+          )}
+          {/* ── TOOLS SECTION: Guarantors, Groups, Staff Performance ── */}
+          {(canAccessGuarantors || canAccessGroupMgmt || canAccessStaffPerf) && (
+            <>
+              <div className="sd-sec">{!isCollapsed ? "Zana za Usimamizi" : "─"}</div>
+              {canAccessGuarantors && (
+                <div className={`sd-item ${isActive("/guarantors") ? "sd-item--active" : ""}`} onClick={() => navigate("/guarantors")} title="Wadhamini">
+                  <span className="sd-item__icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </span>
+                  {!isCollapsed && <span className="sd-item__text">Wadhamini</span>}
+                </div>
+              )}
+              {canAccessGroupMgmt && (
+                <div className={`sd-item ${isActive("/groups") ? "sd-item--active" : ""}`} onClick={() => navigate("/groups")} title="Vikundi">
+                  <span className="sd-item__icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+                      <circle cx="19" cy="7" r="2"/><path d="M23 21v-1.5a2 2 0 0 0-2-2h-2"/>
+                    </svg>
+                  </span>
+                  {!isCollapsed && <span className="sd-item__text">Vikundi vya Mikopo</span>}
+                </div>
+              )}
+              {canAccessStaffPerf && (
+                <div className={`sd-item ${isActive("/staff-performance") ? "sd-item--active" : ""}`} onClick={() => navigate("/staff-performance")} title="Utendaji wa Wafanyakazi">
+                  <span className="sd-item__icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                  </span>
+                  {!isCollapsed && <span className="sd-item__text">Utendaji wa Wafanyakazi</span>}
                 </div>
               )}
             </>

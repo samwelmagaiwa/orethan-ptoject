@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp, { HelpStep } from "../components/GetHelp";
+import GetHelp from "../components/GetHelp"
+import type { HelpStep } from "../components/GetHelp";
 import { printDocument } from "../utils/printDoc";
+import AccountingTabBar from "../components/AccountingTabBar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
@@ -45,7 +47,7 @@ const CashBook = () => {
     if (!data) return [];
     const rows: Record<string, unknown>[] = [];
     data.accounts.forEach(acc => acc.lines.forEach(line => rows.push({
-      Account: `${acc.account.code} — ${acc.account.name}`,
+      Account: `${acc.account.code} " ${acc.account.name}`,
       Date: line.date, "Entry No.": line.entry_number, Description: line.description,
       Debit: line.debit, Credit: line.credit, Balance: line.running_balance,
     })));
@@ -57,10 +59,10 @@ const CashBook = () => {
     const body = `
       <p><strong>Combined Opening Balance:</strong> TZS ${fmt(data.combined_opening_balance)} &nbsp; | &nbsp; <strong>Combined Closing Balance:</strong> TZS ${fmt(data.combined_closing_balance)}</p>
       ${data.accounts.map(acc => `
-        <h4 style="margin:18px 0 8px">${acc.account.code} — ${acc.account.name} (Closing: TZS ${fmt(acc.closing_balance)})</h4>
+        <h4 style="margin:18px 0 8px">${acc.account.code} " ${acc.account.name} (Closing: TZS ${fmt(acc.closing_balance)})</h4>
         <table>
           <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
-          <tbody>${acc.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
+          <tbody>${acc.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "–"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "–"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
         </table>
       `).join("")}
     `;
@@ -71,29 +73,23 @@ const CashBook = () => {
     <div className="cb-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <div className="cb-card">
-        <div className="cb-accent-bar" />
-        <div className="cb-sticky-top">
-          <div className="cb-header">
-            <div>
-              <h1>{t("cashbook.title")}</h1>
-              <p>{t("cashbook.subtitle")}</p>
-            </div>
-            <div className="cb-filters">
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-              <span>{t("common.to")}</span>
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-              <button onClick={load}>{t("common.refresh")}</button>
-              <ExportButtons getRows={exportRows} filename="cash-book" sheetName="Cash Book" onPrint={handlePrint} disabled={!data} />
-            </div>
-          </div>
-          <GetHelp
-            title={t("cashbook.help.title")}
-            intro={t("cashbook.help.intro")}
-            steps={t("cashbook.help.steps", { returnObjects: true }) as HelpStep[]}
-            tip={t("cashbook.help.tip")}
-          />
+      <AccountingTabBar>
+        <div className="cb-filters" style={{ margin: 0 }}>
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+          <span>{t("common.to")}</span>
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+          <button onClick={load}>{t("common.refresh")}</button>
+          <ExportButtons getRows={exportRows} filename="cash-book" sheetName="Cash Book" onPrint={handlePrint} disabled={!data} />
         </div>
+      </AccountingTabBar>
+
+      <div className="cb-card">
+        <GetHelp
+          title={t("cashbook.help.title")}
+          intro={t("cashbook.help.intro")}
+          steps={t("cashbook.help.steps", { returnObjects: true }) as HelpStep[]}
+          tip={t("cashbook.help.tip")}
+        />
 
         {loading ? (
           <div className="cb-empty">{t("common.loading")}</div>
@@ -111,7 +107,7 @@ const CashBook = () => {
             ) : data.accounts.map(acc => (
               <div className="cb-account-block" key={acc.account.id}>
                 <div className="cb-account-title">
-                  <span className="cb-account-name" onClick={() => navigate(`/accounting/general-ledger?account_id=${acc.account.id}`)}>{acc.account.code} — {acc.account.name}</span>
+                  <span className="cb-account-name" onClick={() => navigate(`/accounting/general-ledger?account_id=${acc.account.id}`)}>{acc.account.code} " {acc.account.name}</span>
                   <span className="cb-account-balance">Closing: TZS {fmt(acc.closing_balance)}</span>
                 </div>
                 <table>
@@ -124,8 +120,8 @@ const CashBook = () => {
                         <td>{line.date}</td>
                         <td className="cb-entry-number">{line.entry_number}</td>
                         <td>{line.description}</td>
-                        <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
-                        <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
+                        <td>{Number(line.debit) > 0 ? fmt(line.debit) : "–"}</td>
+                        <td>{Number(line.credit) > 0 ? fmt(line.credit) : "–"}</td>
                         <td className="cb-balance">{fmt(line.running_balance)}</td>
                       </tr>
                     ))}
@@ -138,10 +134,8 @@ const CashBook = () => {
       </div>
 
       <style>{`
-        .cb-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .cb-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
-        .cb-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding: 22px 0 10px; margin-bottom: 4px; }
-        .cb-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .cb-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .cb-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
         .cb-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 6px 0 20px; flex-wrap: wrap; gap: 14px; }
         .cb-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
         .cb-header p { font-size: 13px; color: #64748b; margin: 0; }
@@ -172,3 +166,4 @@ const CashBook = () => {
 };
 
 export default CashBook;
+

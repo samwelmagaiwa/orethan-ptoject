@@ -1820,7 +1820,7 @@ const PersonalLoan: React.FC = () => {
               <div className="form-section">
                 <div className="section-divider">ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
                 <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 18px' }}>
-                  Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>“Proceed without”</strong>.
+                  Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>–Proceed without</strong>.
                 </p>
                 <LoanChecklist
                   category={form.umeajiriwa === 'Ndio' ? 'employee' : 'business'}

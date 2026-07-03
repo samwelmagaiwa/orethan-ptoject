@@ -13,6 +13,8 @@ import loanModalsEn from "./locales/en/loanModals.json";
 import historyModalsEn from "./locales/en/historyModals.json";
 import miscModalsEn from "./locales/en/miscModals.json";
 import accountingEn from "./locales/en/accounting.json";
+import payrollEn from "./locales/en/payroll.json";
+import branchReportEn from "./locales/en/branchReport.json";
 
 import commonSw from "./locales/sw/common.json";
 import customersSw from "./locales/sw/customers.json";
@@ -26,6 +28,8 @@ import loanModalsSw from "./locales/sw/loanModals.json";
 import historyModalsSw from "./locales/sw/historyModals.json";
 import miscModalsSw from "./locales/sw/miscModals.json";
 import accountingSw from "./locales/sw/accounting.json";
+import payrollSw from "./locales/sw/payroll.json";
+import branchReportSw from "./locales/sw/branchReport.json";
 
 export const LANGUAGE_STORAGE_KEY = "lang";
 
@@ -38,7 +42,7 @@ i18n.use(initReactI18next).init({
   defaultNS: "common",
   ns: [
     "common", "customers", "generalManager", "managingDirector", "myLoans",
-    "repaymentTracker", "loanManager", "dashboard", "loanModals", "historyModals", "miscModals", "accounting",
+    "repaymentTracker", "loanManager", "dashboard", "loanModals", "historyModals", "miscModals", "accounting", "payroll", "branchReport",
   ],
   resources: {
     en: {
@@ -54,6 +58,8 @@ i18n.use(initReactI18next).init({
       historyModals: historyModalsEn,
       miscModals: miscModalsEn,
       accounting: accountingEn,
+      payroll: payrollEn,
+      branchReport: branchReportEn,
     },
     sw: {
       common: commonSw,
@@ -68,6 +74,8 @@ i18n.use(initReactI18next).init({
       historyModals: historyModalsSw,
       miscModals: miscModalsSw,
       accounting: accountingSw,
+      payroll: payrollSw,
+      branchReport: branchReportSw,
     },
   },
   interpolation: { escapeValue: false },

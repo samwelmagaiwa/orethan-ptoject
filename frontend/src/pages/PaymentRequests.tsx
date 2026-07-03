@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil, Printer, Lock } from "lucide-react";
+import PageHeader from "../components/PageHeader";
 import { printDocument } from "../utils/printDoc";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
@@ -217,19 +218,19 @@ const PaymentRequests = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.7rem 1rem 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#f1f5f9", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <FileText size={22} style={{ color: "#4f46e5" }} />
-        <h1 style={{ fontSize: "1.3rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>Request Form for Payment</h1>
-        <div style={{ marginLeft: "auto", display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 10, gap: 3 }}>
+      <PageHeader icon="📋" title="Request Form for Payment" subtitle="Submit and track payment requests through the approval chain">
+        <div style={{ display: "flex", background: "white", border: "1.5px solid #e2e8f0", padding: 3, borderRadius: 10, gap: 3 }}>
           {([["list", "Requests", Inbox], ["new", "New Request", PlusCircle]] as const).map(([k, lbl, Icon]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", borderRadius: 8, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "white" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: tab === k ? "0 1px 4px rgba(15,23,42,0.1)" : "none" }}>
+            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", borderRadius: 7, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "#f1f5f9" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: "none" }}>
               <Icon size={15} /> {lbl}
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
+
+      <div style={{ padding: "1rem 1rem 1.5rem" }}>
 
       {tab === "new" ? (
         <div className="prf-page">
@@ -513,6 +514,8 @@ const PaymentRequests = () => {
       </AnimatePresence>
 
       <SuccessModal open={success.open} title={success.title} message={success.message} onClose={() => setSuccess({ ...success, open: false })} />
+
+      </div>{/* /padding wrapper */}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
