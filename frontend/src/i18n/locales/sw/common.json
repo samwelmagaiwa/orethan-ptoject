@@ -59,6 +59,7 @@
       "accounting": "UHASIBU",
       "reports": "TAARIFA",
       "compliance": "UTII WA SHERIA",
+      "tools": "ZANA ZA USIMAMIZI",
       "preferences": "MAPENDELEO"
     },
     "dashboard": "Dashibodi",
@@ -96,6 +97,14 @@
     "loanLifecycle": "Urekebishaji wa Mikopo",
     "cashTill": "Droo la Keshia",
     "branchReport": "Ripoti ya Tawi",
+    "payrollMgmt": "Usimamizi wa Mishahara",
+    "mySalarySlip": "Stakabadhi Yangu ya Mshahara",
+    "configurations": "Mipangilio",
+    "globalSettings": "Mipangilio ya Jumla",
+    "biometric": "Alama za Kibiolojia",
+    "guarantors": "Wadhamini",
+    "groupLoans": "Vikundi vya Mikopo",
+    "staffPerformance": "Utendaji wa Wafanyakazi",
     "mySignature": "Sahihi Yangu",
     "logOut": "Toka"
   },

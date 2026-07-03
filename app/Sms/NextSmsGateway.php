@@ -23,15 +23,6 @@ class NextSmsGateway implements SmsGatewayInterface
             return SmsResult::failed('SMS gateway credentials are not configured');
         }
 
-        // ============================================================
-        // SMS SENDING TEMPORARILY DISABLED (no real messages go out).
-        // To re-enable, delete the two lines just below and uncomment
-        // the real-send block underneath them.
-        // ============================================================
-        Log::info("SMS sending is disabled — would have sent to {$phone}: {$message}");
-        return SmsResult::ok(null, 'SMS sending disabled (commented out in NextSmsGateway)');
-
-        /*
         try {
             $response = Http::withBasicAuth($apiKey, $secretKey)
                 ->asJson()
@@ -64,6 +55,5 @@ class NextSmsGateway implements SmsGatewayInterface
             Log::error('NextSmsGateway send error: ' . $e->getMessage());
             return SmsResult::failed($e->getMessage());
         }
-        */
     }
 }

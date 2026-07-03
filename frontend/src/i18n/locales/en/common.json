@@ -59,6 +59,7 @@
       "accounting": "ACCOUNTING",
       "reports": "REPORTS",
       "compliance": "COMPLIANCE",
+      "tools": "MANAGEMENT TOOLS",
       "preferences": "PREFERENCES"
     },
     "dashboard": "Dashboard",
@@ -96,6 +97,14 @@
     "loanLifecycle": "Loan Restructuring",
     "cashTill": "Cashier Till",
     "branchReport": "Branch Report",
+    "payrollMgmt": "Payroll Management",
+    "mySalarySlip": "My Salary Slip",
+    "configurations": "Configurations",
+    "globalSettings": "Global Settings",
+    "biometric": "Biometric",
+    "guarantors": "Guarantors",
+    "groupLoans": "Group Loans",
+    "staffPerformance": "Staff Performance",
     "mySignature": "My Signature",
     "logOut": "Log Out"
   },
