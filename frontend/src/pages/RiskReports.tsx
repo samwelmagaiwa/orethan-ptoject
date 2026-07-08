@@ -3,12 +3,12 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp"
-import type { HelpStep } from "../components/GetHelp";
+import GetHelp, { type HelpStep } from "../components/GetHelp";
+import ReportsNav from "../components/ReportsNav";
 import { printDocument } from "../utils/printDoc";
-import PageHeader from "../components/PageHeader";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
 
 interface ParBucket { days: number; outstanding_at_risk: number; percentage: number; }
@@ -83,27 +83,27 @@ const RiskReports = () => {
     <div className="rr-page">
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
 
-      <PageHeader
-        icon="📉"
-        title="Risk Reports"
-        subtitle="Portfolio at Risk (PAR) and default analysis"
-      >
-        <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
-        <button className="rr-refresh-btn" onClick={load}>↻ Refresh</button>
-      </PageHeader>
+      <ReportsNav />
 
       <div className="rr-card">
-        <GetHelp
-          title={t("risk.help.title")}
-          intro={t("risk.help.intro")}
-          steps={t("risk.help.steps", { returnObjects: true }) as HelpStep[]}
-          tip={t("risk.help.tip")}
-        />
+        <div className="rr-accent-bar" />
+
+        <div className="rr-sticky-top">
+          <GetHelp
+            title={t("risk.help.title")}
+            intro={t("risk.help.intro")}
+            steps={t("risk.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("risk.help.tip")}
+            actions={
+              <ExportButtons getRows={exportRows} filename="risk-reports" sheetName="Risk Reports" onPrint={handlePrint} disabled={!defaults} />
+            }
+          />
+        </div>
 
         {loading ? (
           <div className="rr-empty">Loading...</div>
         ) : (
-          <div className="rr-body-scroll">
+          <div className="rr-body">
             <div className="rr-portfolio-line">Total Outstanding Portfolio: <strong>{fmt(par?.total_outstanding_portfolio)}</strong></div>
 
             <div className="rr-par-grid">
@@ -135,41 +135,45 @@ const RiskReports = () => {
               Default rate: {defaults?.overall.default_rate_by_count ?? 0}% by count, {defaults?.overall.default_rate_by_amount ?? 0}% by amount
             </div>
 
-            <table>
-              <thead><tr><th>Cohort (Disbursement Month)</th><th>Disbursed</th><th>Disbursed Amount</th><th>Defaulted</th><th>Defaulted Amount</th><th>Default Rate</th></tr></thead>
-              <tbody>
-                {!defaults || defaults.cohorts.length === 0 ? (
-                  <tr><td colSpan={6} className="rr-empty-small">No disbursed loans yet</td></tr>
-                ) : defaults.cohorts.map(c => (
-                  <tr key={c.cohort}>
-                    <td>{c.cohort}</td>
-                    <td>{c.disbursed_count}</td>
-                    <td>{fmt(c.disbursed_amount)}</td>
-                    <td>{c.defaulted_count}</td>
-                    <td>{fmt(c.defaulted_amount)}</td>
-                    <td>{c.default_rate_by_amount}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="rr-table-wrap">
+              <table>
+                <thead><tr><th>Cohort (Disbursement Month)</th><th>Disbursed</th><th>Disbursed Amount</th><th>Defaulted</th><th>Defaulted Amount</th><th>Default Rate</th></tr></thead>
+                <tbody>
+                  {!defaults || defaults.cohorts.length === 0 ? (
+                    <tr><td colSpan={6} className="rr-empty-small">No disbursed loans yet</td></tr>
+                  ) : defaults.cohorts.map(c => (
+                    <tr key={c.cohort}>
+                      <td>{c.cohort}</td>
+                      <td>{c.disbursed_count}</td>
+                      <td>{fmt(c.disbursed_amount)}</td>
+                      <td>{c.defaulted_count}</td>
+                      <td>{fmt(c.defaulted_amount)}</td>
+                      <td>{c.default_rate_by_amount}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {defaults && defaults.defaulted_loans.length > 0 && (
               <>
                 <div className="rr-section-title">Defaulted Loans</div>
-                <table>
-                  <thead><tr><th>Loan No.</th><th>Borrower</th><th>Disbursed</th><th>Amount</th><th>Outstanding</th></tr></thead>
-                  <tbody>
-                    {defaults.defaulted_loans.map(l => (
-                      <tr key={l.loan_id}>
-                        <td className="rr-loan-number">{l.loan_number}</td>
-                        <td>{l.borrower}</td>
-                        <td>{l.disbursed_at}</td>
-                        <td>{fmt(l.amount)}</td>
-                        <td>{fmt(l.remaining_balance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="rr-table-wrap">
+                  <table>
+                    <thead><tr><th>Loan No.</th><th>Borrower</th><th>Disbursed</th><th>Amount</th><th>Outstanding</th></tr></thead>
+                    <tbody>
+                      {defaults.defaulted_loans.map(l => (
+                        <tr key={l.loan_id}>
+                          <td className="rr-loan-number">{l.loan_number}</td>
+                          <td>{l.borrower}</td>
+                          <td>{l.disbursed_at}</td>
+                          <td>{fmt(l.amount)}</td>
+                          <td>{fmt(l.remaining_balance)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
           </div>
@@ -177,30 +181,73 @@ const RiskReports = () => {
       </div>
 
       <style>{`
-        .rr-body-scroll { overflow-x: auto; }
-        .rr-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .rr-card { max-width: 1900px; margin: 14px auto 0; background: white; border-radius: 16px; padding: 20px 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .rr-refresh-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; }
-        .rr-refresh-btn:hover { background: #f1f5f9; }
-        .rr-portfolio-line { font-size: 14px; color: #334155; margin-bottom: 18px; }
+        /* ── page shell ── */
+        .rr-page { height: 100%; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box; }
+        .rr-card { max-width: 1900px; margin: 0 auto; background: #fff; border-radius: 20px; padding: 0 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .rr-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg,#102a43 0%,#1e5fae 45%,#22c55e 100%); }
+
+        /* ── sticky header ── */
+        .rr-sticky-top { position: sticky; top: 0; z-index: 5; background: #fff; padding: 22px 0 10px; }
+
+        /* ── body ── */
+        .rr-body { padding-top: 10px; }
+        .rr-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
+
+        /* ── stat lines ── */
+        .rr-portfolio-line { font-size: 14px; color: #334155; margin-bottom: 18px; padding: 12px 16px; background: #f8fafc; border-radius: 10px; }
+
+        /* ── PAR grid ── */
         .rr-par-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
-        .rr-par-card { background: linear-gradient(135deg, #102a43 0%, #1e5fae 100%); color: white; border-radius: 14px; padding: 18px; text-align: center; }
-        .rr-par-label { font-size: 12px; font-weight: 700; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+        .rr-par-card { background: linear-gradient(135deg,#102a43 0%,#1e5fae 100%); color: #fff; border-radius: 14px; padding: 18px; text-align: center; }
+        .rr-par-label { font-size: 12px; font-weight: 700; opacity: .7; text-transform: uppercase; letter-spacing: .5px; }
         .rr-par-pct { font-size: 28px; font-weight: 800; margin: 6px 0; }
-        .rr-par-amount { font-size: 12px; opacity: 0.85; }
-        .rr-section-title { font-size: 14px; font-weight: 700; color: #102a43; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
-        .rr-risk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .rr-par-amount { font-size: 12px; opacity: .85; }
+
+        /* ── risk grid ── */
+        .rr-risk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 8px; }
         .rr-risk-card { border-radius: 14px; padding: 16px; text-align: center; }
         .rr-risk-count { font-size: 26px; font-weight: 800; }
         .rr-risk-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px; }
+
+        /* ── section labels ── */
+        .rr-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #334155; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
         .rr-overall-line { font-size: 13px; color: #475569; margin-bottom: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        th { text-align: left; padding: 11px 10px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
+
+        /* ── tables ── */
+        table { width: 100%; border-collapse: collapse; min-width: 360px; }
+        th { text-align: left; padding: 11px 12px; background: #f8fafc; color: #334155; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; }
         .rr-loan-number { font-family: monospace; font-weight: 700; }
-        .rr-empty, .rr-empty-small { text-align: center; padding: 16px; color: #94a3b8; }
-        .rr-empty { padding: 40px; }
-        @media (max-width: 900px) { .rr-par-grid, .rr-risk-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* ── empty ── */
+        .rr-empty { text-align: center; padding: 40px; color: #64748b; }
+        .rr-empty-small { text-align: center; padding: 16px; color: #94a3b8; font-size: 13px; }
+
+        /* ── responsive ── */
+        @media (max-width: 900px) {
+          .rr-par-grid { grid-template-columns: repeat(2, 1fr); }
+          .rr-risk-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+          .rr-card { padding: 0 14px 20px; border-radius: 14px; }
+          .rr-par-pct { font-size: 22px; }
+          .rr-par-card { padding: 14px; }
+          .rr-sticky-top { padding: 14px 0 8px; }
+        }
+        @media (max-width: 480px) {
+          .rr-page { padding: 8px 8px 32px; }
+          .rr-par-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .rr-risk-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .rr-sticky-top { padding: 10px 0 6px; }
+          .rr-par-card { padding: 12px; }
+          .rr-par-pct { font-size: 20px; }
+          .rr-par-label { font-size: 10px; }
+          .rr-par-amount { font-size: 10px; }
+          .rr-risk-count { font-size: 20px; }
+          .rr-risk-label { font-size: 10px; }
+          .rr-section-title { font-size: 10.5px; margin: 14px 0 8px; }
+          .rr-portfolio-line { font-size: 13px; padding: 10px 12px; margin-bottom: 12px; }
+        }
       `}</style>
     </div>
   );

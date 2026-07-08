@@ -42,7 +42,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                         </thead>
                         <tbody>
                             <tr>
-                                <td>#{loan?.id}</td>
+                                <td>#{loan?.id ? String(loan.id).padStart(5,'0') : '—'}</td>
                                 <td>{loan?.name}</td>
                                 <td>{loan?.phone}</td>
                                 <td style={{ fontWeight: 600, color: '#2563eb' }}>{renderVal(loan?.user?.name)}</td>

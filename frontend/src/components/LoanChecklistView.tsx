@@ -10,7 +10,7 @@ type ItemState = { checked?: boolean; skip?: boolean; attachmentUrl?: string; at
 interface Props {
   /** loan type as stored on the loan record */
   type?: string;
-  /** loan.details — used to derive the category and the saved checklist */
+  /** loan.details -- used to derive the category and the saved checklist */
   details?: Record<string, any> | null;
 }
 

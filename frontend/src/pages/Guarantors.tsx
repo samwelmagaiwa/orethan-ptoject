@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { fmtLoanId } from '../lib/api';
 
 interface Guarantor {
   id: number;
@@ -150,7 +151,7 @@ export default function Guarantors() {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, padding: '20px 28px 0', flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, padding: '20px 28px 0', flexShrink: 0 }}>
         {statCards.map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ background: s.bg, color: s.color, borderRadius: 10, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{s.value}</div>
@@ -191,9 +192,9 @@ export default function Guarantors() {
                   <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa', cursor: 'pointer' }} onClick={() => setSelected(g)}>
                     <td style={{ padding: '11px 14px', fontWeight: 600, color: '#4f7c3f' }}>{g.guarantor_number}</td>
                     <td style={{ padding: '11px 14px', fontWeight: 500, color: '#1e293b' }}>{g.full_name}</td>
-                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.relationship ?? '—'}</td>
-                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.phone ?? '—'}</td>
-                    <td style={{ padding: '11px 14px', color: '#6366f1', fontWeight: 500 }}>{g.loan?.loan_account_number ?? `#${g.loan_id}`}</td>
+                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.relationship ?? '--'}</td>
+                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.phone ?? '--'}</td>
+                    <td style={{ padding: '11px 14px', color: '#6366f1', fontWeight: 500 }}>{g.loan?.loan_account_number ?? `#${fmtLoanId(g.loan_id)}`}</td>
                     <td style={{ padding: '11px 14px' }}>
                       <span style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status], padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
                         {g.status === 'active' ? 'Hai' : g.status === 'released' ? 'Aliyeachiliwa' : 'Mkosaji'}

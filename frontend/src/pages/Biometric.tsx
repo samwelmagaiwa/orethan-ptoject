@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
-
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+import { API_BASE as API, fmtLoanId } from "../lib/api";
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` });
-const fmtDate = (d: any) => d ? new Date(d).toLocaleString() : "—";
+const fmtDate = (d: any) => d ? new Date(d).toLocaleString() : "--";
 
 type Tab = "dashboard" | "devices" | "profiles" | "logs" | "exceptions" | "config";
 
@@ -150,7 +149,7 @@ export default function Biometric() {
               ].map(k => (
                 <div key={k.label} className="bio-kpi" style={{ borderTop:`3px solid ${k.color}` }}>
                   <div className="bio-kpi-icon">{k.icon}</div>
-                  <div className="bio-kpi-val" style={{ color: k.color }}>{k.value ?? "—"}</div>
+                  <div className="bio-kpi-val" style={{ color: k.color }}>{k.value ?? "--"}</div>
                   <div className="bio-kpi-label">{k.label}</div>
                 </div>
               ))}
@@ -161,7 +160,7 @@ export default function Biometric() {
               <div className="bio-flow">
                 {[
                   { step:"1", icon:"🏦", title:"Loan Approved", desc:"Loan reaches awaiting disbursement status" },
-                  { step:"2", icon:"👆", title:"Verify Borrower", desc:"Scan borrower's fingerprint — enroll if first time" },
+                  { step:"2", icon:"👆", title:"Verify Borrower", desc:"Scan borrower's fingerprint -- enroll if first time" },
                   { step:"3", icon:"✅", title:"Match Confirmed", desc:"Score ≥ threshold (default 75%) or exception granted" },
                   { step:"4", icon:"👥", title:"Verify Guarantor", desc:"Same process for the loan guarantor" },
                   { step:"5", icon:"💰", title:"Disbursement Unlocked", desc:"Cashier can now enter password and disburse" },
@@ -236,10 +235,10 @@ export default function Biometric() {
                     <td><div className="bio-bold">{d.device_name}</div><div className="bio-sub">{d.device_model}</div></td>
                     <td>{d.manufacturer}</td>
                     <td className="bio-mono">{d.serial_number}</td>
-                    <td>{d.firmware_version ?? "—"}</td>
-                    <td>{d.branch ?? "—"}</td>
+                    <td>{d.firmware_version ?? "--"}</td>
+                    <td>{d.branch ?? "--"}</td>
                     <td><span className="bio-badge" style={{ background: deviceStatus[d.status] + "22", color: deviceStatus[d.status] }}>{d.status}</span></td>
-                    <td>{d.registered_by?.name ?? "—"}</td>
+                    <td>{d.registered_by?.name ?? "--"}</td>
                     {isAdmin && (
                       <td>
                         <button className="bio-btn-sm bio-btn-sm--edit" onClick={() => { setDevForm(d); setDevEditing(d.id); setDevFormOpen(true); }}>Edit</button>
@@ -272,7 +271,7 @@ export default function Biometric() {
                     <td><span className="bio-badge" style={{ background: statusColor[p.status] + "22", color: statusColor[p.status] }}>{p.status}</span></td>
                     <td><span className="bio-fingers">{p.fingers_enrolled} finger{p.fingers_enrolled !== 1 ? "s" : ""}</span></td>
                     <td>{fmtDate(p.enrollment_date)}</td>
-                    <td>{p.creator?.name ?? "—"}</td>
+                    <td>{p.creator?.name ?? "--"}</td>
                     {isAdmin && (
                       <td>
                         {p.status === "enrolled" && <button className="bio-btn-sm bio-btn-sm--del" onClick={() => changeProfileStatus(p.id, "suspended")}>Suspend</button>}
@@ -306,7 +305,7 @@ export default function Biometric() {
               </div>
             </div>
 
-            <div className="bio-log-info">🔒 Audit logs are immutable — they cannot be edited or deleted.</div>
+            <div className="bio-log-info">🔒 Audit logs are immutable -- they cannot be edited or deleted.</div>
 
             <div className="bio-table-scroll">
               <table className="bio-table">
@@ -321,18 +320,18 @@ export default function Biometric() {
                     <tr key={l.id}>
                       <td className="bio-mono" style={{ whiteSpace:"nowrap" }}>{new Date(l.logged_at).toLocaleString()}</td>
                       <td><span className="bio-action-pill">{l.action?.replace(/_/g," ")}</span></td>
-                      <td>{l.person_type ? <span>{l.person_type} #{l.person_id}</span> : "—"}</td>
-                      <td>{l.loan_id ? `#${l.loan_id}` : "—"}</td>
-                      <td>{l.finger_name?.replace(/_/g," ") ?? "—"}</td>
+                      <td>{l.person_type ? <span>{l.person_type} #{l.person_id}</span> : "--"}</td>
+                      <td>{l.loan_id ? `#${fmtLoanId(l.loan_id)}` : "--"}</td>
+                      <td>{l.finger_name?.replace(/_/g," ") ?? "--"}</td>
                       <td>{l.verification_result
                         ? <span className="bio-badge" style={{ background: resultColor[l.verification_result] + "22", color: resultColor[l.verification_result] }}>{l.verification_result}</span>
-                        : "—"}</td>
-                      <td>{l.similarity_score != null ? `${l.similarity_score}%` : "—"}</td>
-                      <td>{l.quality_score != null ? `${l.quality_score}%` : "—"}</td>
-                      <td className="bio-mono">{l.device_id ?? "—"}</td>
-                      <td>{l.operator?.name ?? "—"}</td>
-                      <td className="bio-mono">{l.ip_address ?? "—"}</td>
-                      <td style={{ maxWidth:160, fontSize:11 }}>{l.notes ?? "—"}</td>
+                        : "--"}</td>
+                      <td>{l.similarity_score != null ? `${l.similarity_score}%` : "--"}</td>
+                      <td>{l.quality_score != null ? `${l.quality_score}%` : "--"}</td>
+                      <td className="bio-mono">{l.device_id ?? "--"}</td>
+                      <td>{l.operator?.name ?? "--"}</td>
+                      <td className="bio-mono">{l.ip_address ?? "--"}</td>
+                      <td style={{ maxWidth:160, fontSize:11 }}>{l.notes ?? "--"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -374,12 +373,12 @@ export default function Biometric() {
                 <div className="bio-cfg-row">
                   <label>Minimum Fingerprint Quality (%)</label>
                   <input type="number" min={0} max={100} value={cfgForm.min_quality_score} onChange={e => setCfgForm(p => p ? { ...p, min_quality_score: +e.target.value } : p)} disabled={!isAdmin} />
-                  <span className="bio-cfg-hint">Scans below this quality are rejected. Recommended: 60–75%</span>
+                  <span className="bio-cfg-hint">Scans below this quality are rejected. Recommended: 60-75%</span>
                 </div>
                 <div className="bio-cfg-row">
                   <label>Minimum Similarity Score (%)</label>
                   <input type="number" min={0} max={100} value={cfgForm.min_similarity_score} onChange={e => setCfgForm(p => p ? { ...p, min_similarity_score: +e.target.value } : p)} disabled={!isAdmin} />
-                  <span className="bio-cfg-hint">Match threshold for 1:1 verification. Recommended: 75–85%</span>
+                  <span className="bio-cfg-hint">Match threshold for 1:1 verification. Recommended: 75-85%</span>
                 </div>
                 <div className="bio-cfg-row">
                   <label>Maximum Retry Attempts</label>

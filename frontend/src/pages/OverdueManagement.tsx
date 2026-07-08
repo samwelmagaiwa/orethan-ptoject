@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,8 +9,9 @@ import {
   AlertTriangle, Wallet, Coins, Users, CalendarClock, CalendarDays,
   ShieldAlert, TrendingUp, Gauge, Ban, RefreshCw, Search, Phone, X, ClipboardList, History,
 } from "lucide-react";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmt = (v: any) => `TZS ${Math.round(Number(v) || 0).toLocaleString()}`;
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -71,6 +72,7 @@ const OverdueManagement = () => {
   // Modal ya kurekodi hatua
   const [modalLoan, setModalLoan] = useState<OverdueLoan | null>(null);
   const [activities, setActivities] = useState<any[]>([]);
+  const [smsLogs, setSmsLogs] = useState<any[]>([]);
   const [stage, setStage] = useState("reminder");
   const [method, setMethod] = useState("call");
   const [notes, setNotes] = useState("");
@@ -103,10 +105,15 @@ const OverdueManagement = () => {
   const openModal = async (loan: OverdueLoan) => {
     setModalLoan(loan);
     setStage("reminder"); setMethod("call"); setNotes(""); setPromisedAmount(""); setPromisedDate(""); setNextAction(""); setRecoveryStatus("follow_up");
+    setSmsLogs([]);
     try {
-      const res = await axios.get(`${API_BASE}/overdue/loans/${loan.loan_id}/activities`, { headers: authHeaders() });
-      setActivities(res.data.activities || []);
-    } catch { setActivities([]); }
+      const [actRes, smsRes] = await Promise.all([
+        axios.get(`${API_BASE}/overdue/loans/${loan.loan_id}/activities`, { headers: authHeaders() }),
+        axios.get(`${API_BASE}/sms-logs`, { headers: authHeaders(), params: { loan_id: loan.loan_id, per_page: 30 } }),
+      ]);
+      setActivities(actRes.data.activities || []);
+      setSmsLogs(smsRes.data?.data?.data || []);
+    } catch { setActivities([]); setSmsLogs([]); }
   };
 
   const saveActivity = async () => {
@@ -173,16 +180,29 @@ const OverdueManagement = () => {
   ] : [];
 
   return (
-    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.6rem 1rem 1rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: GAP }}>
-        <AlertTriangle size={22} style={{ color: "#dc2626" }} />
-        <h1 style={{ fontSize: "1.35rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>Usimamizi wa Madeni Yaliyochelewa</h1>
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={load}
-          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1rem", borderRadius: 10, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", color: "#475569" }}>
-          <RefreshCw size={15} className={loading ? "ov-spin" : ""} /> Onyesha Upya
-        </motion.button>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Overdue Management</span>
+          </div>
+        </div>
+        <div className="ph-actions">
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={load}
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "6px 14px", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", color: "#475569" }}>
+            <RefreshCw size={13} className={loading ? "ov-spin" : ""} /> Onyesha Upya
+          </motion.button>
+        </div>
       </div>
+      <div style={{ padding: "0.6rem 1rem 1rem" }}>
 
       {/* DASHIBODI CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: GAP, marginBottom: GAP }}>
@@ -202,7 +222,7 @@ const OverdueManagement = () => {
         {/* Aging bar chart */}
         <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
           <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Uchambuzi wa Umri wa Madeni (Aging)</h2>
-          <div style={{ height: 220, width: "100%" }}>
+          <div style={{ height: 220, width: "100%", minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agingData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -220,7 +240,7 @@ const OverdueManagement = () => {
         {/* Risk distribution pie */}
         <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
           <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.5rem" }}>Mgawanyo wa Hatari</h2>
-          <div style={{ height: 220, width: "100%" }}>
+          <div style={{ height: 220, width: "100%", minWidth: 0 }}>
             {riskData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -238,7 +258,7 @@ const OverdueManagement = () => {
         {/* Status distribution pie */}
         <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", minWidth: 0 }}>
           <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.5rem" }}>Mgawanyo wa Hali</h2>
-          <div style={{ height: 220, width: "100%" }}>
+          <div style={{ height: 220, width: "100%", minWidth: 0 }}>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -257,7 +277,7 @@ const OverdueManagement = () => {
       {/* CHATI YA UFANISI WA UKUSANYAJI */}
       <div style={{ ...CARD_STYLE, padding: "1.25rem 1.5rem", marginBottom: GAP }}>
         <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.75rem" }}>Ufanisi wa Ukusanyaji na Urejeshaji (%)</h2>
-        <div style={{ height: Math.max(160, performanceData.length * 52), width: "100%" }}>
+        <div style={{ height: Math.max(160, performanceData.length * 52), width: "100%", minWidth: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={performanceData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
@@ -334,7 +354,7 @@ const OverdueManagement = () => {
                 );
               })}
               {loans.length === 0 && !loading && (
-                <tr><td colSpan={14} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Hakuna mikopo iliyochelewa 🎉</td></tr>
+                <tr><td colSpan={14} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Hakuna mikopo iliyochelewa ðŸŽ‰</td></tr>
               )}
             </tbody>
           </table>
@@ -346,7 +366,7 @@ const OverdueManagement = () => {
         {modalLoan && (
           <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              style={{ width: "100%", maxWidth: 620, maxHeight: "88vh", borderRadius: 20, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
+              style={{ width: "100%", maxWidth: "min(620px, calc(100vw - 2rem))", maxHeight: "88vh", borderRadius: 20, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
               <div style={{ background: "linear-gradient(135deg,#dc2626,#ef4444)", padding: "1.2rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h2 style={{ fontSize: "1.15rem", fontWeight: 900, margin: 0 }}>Fuatilia Deni</h2>
@@ -355,7 +375,7 @@ const OverdueManagement = () => {
                 <button onClick={() => setModalLoan(null)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
               </div>
               <div style={{ padding: "1.3rem 1.5rem", overflowY: "auto" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.9rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.9rem" }}>
                   <Field label="Hatua (Stage)"><select value={stage} onChange={(e) => setStage(e.target.value)} style={inp}>{STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></Field>
                   <Field label="Njia ya Mawasiliano"><select value={method} onChange={(e) => setMethod(e.target.value)} style={inp}>{METHODS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></Field>
                   <Field label="Kiasi cha Ahadi (TZS)"><input type="number" value={promisedAmount} onChange={(e) => setPromisedAmount(e.target.value)} placeholder="0" style={inp} /></Field>
@@ -393,6 +413,40 @@ const OverdueManagement = () => {
                     </div>
                   )}
                 </div>
+
+                {/* HISTORIA YA SMS */}
+                <div style={{ marginTop: "1.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.6rem", color: "#475569", fontWeight: 800, fontSize: "0.8rem" }}>
+                    <Phone size={15} /> Historia ya SMS ({smsLogs.length})
+                  </div>
+                  {smsLogs.length === 0 ? (
+                    <p style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 600 }}>Bado hakuna SMS zilizotumwa.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                      {smsLogs.map((s: any) => {
+                        const statusStyle: Record<string, { bg: string; color: string; label: string }> = {
+                          sent:      { bg: "#d1fae5", color: "#059669", label: "Imetumwa" },
+                          delivered: { bg: "#dbeafe", color: "#1e5fae", label: "Imefika" },
+                          failed:    { bg: "#fee2e2", color: "#ef4444", label: "Imeshindwa" },
+                          disabled:  { bg: "#f1f5f9", color: "#94a3b8", label: "Imezimwa" },
+                          pending:   { bg: "#fef3c7", color: "#f59e0b", label: "Inasubiri" },
+                        };
+                        const st = statusStyle[s.status] ?? { bg: "#f1f5f9", color: "#64748b", label: s.status };
+                        return (
+                          <div key={s.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "0.65rem 0.9rem", border: "1px solid #eef1f6" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                              <span style={{ fontSize: "0.7rem", fontWeight: 800, background: st.bg, color: st.color, padding: "2px 8px", borderRadius: 20 }}>{st.label}</span>
+                              <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>{fmtDate(s.created_at)}</span>
+                            </div>
+                            <div style={{ fontSize: "0.71rem", color: "#64748b", fontWeight: 700, marginBottom: 3 }}>{s.type?.replace(/_/g, " ").toUpperCase()} · {s.phone}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#334155", lineHeight: 1.45 }}>{s.message}</div>
+                            {s.error && <div style={{ marginTop: 4, fontSize: "0.67rem", color: "#ef4444", fontWeight: 700 }}>Hitilafu: {s.error}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </div>
@@ -408,6 +462,7 @@ const OverdueManagement = () => {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 6px; }
       `}</style>
+      </div>{/* /padding wrapper */}
     </div>
   );
 };
@@ -428,3 +483,4 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 );
 
 export default OverdueManagement;
+

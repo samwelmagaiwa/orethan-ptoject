@@ -27,7 +27,7 @@ export interface ReceiptData {
 export type ReceiptFormat = "a4" | "80mm" | "58mm";
 
 const fmt = (n: any) => "TZS " + Math.round(Number(n) || 0).toLocaleString();
-const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "--");
 const METHOD_LABEL: Record<string, string> = {
   cash: "Cash", bank_transfer: "Bank Transfer", mobile_money: "Mobile Money",
   mpesa: "M-Pesa", airtel_money: "Airtel Money", mixx_by_yas: "Mixx by Yas",
@@ -84,9 +84,9 @@ async function buildA4(r: ReceiptData) {
       block("Receipt No", r.receipt_number),
       block("Transaction No", r.transaction_number),
       block("Payment Date", fmtDate(r.payment_date)),
-      block("Payment Time", r.payment_time || "—"),
+      block("Payment Time", r.payment_time || "--"),
       block("Payment Method", methodLabel(r.payment_method)),
-      block("Received By", r.received_by || "—"),
+      block("Received By", r.received_by || "--"),
     ])}
 
     ${sectionTitle(2, "Customer Information")}
@@ -94,7 +94,7 @@ async function buildA4(r: ReceiptData) {
       block("Customer Name", r.customer_name),
       block("Customer Number", r.customer_number),
       block("Loan Number", r.loan_number),
-      block("Phone Number", r.phone || "—"),
+      block("Phone Number", r.phone || "--"),
     ])}
 
     ${sectionTitle(3, "Loan Summary")}
@@ -103,7 +103,7 @@ async function buildA4(r: ReceiptData) {
       block("Balance Before Payment", fmt(r.balance_before)),
       block("Amount Paid", fmt(r.amount_paid), "#059669"),
       block("New Outstanding Balance", fmt(r.balance_after), r.balance_after <= 0 ? "#059669" : "#b91c1c"),
-      block("Next Due Date", r.fully_paid ? "— (Cleared)" : fmtDate(r.next_due_date)),
+      block("Next Due Date", r.fully_paid ? "-- (Cleared)" : fmtDate(r.next_due_date)),
     ])}
 
     <!-- Amount paid highlight -->
@@ -172,7 +172,7 @@ async function buildThermal(r: ReceiptData, mm: 58 | 80) {
     ${line("Receipt", r.receipt_number)}
     ${line("Txn", r.transaction_number)}
     ${line("Date", fmtDate(r.payment_date))}
-    ${line("Time", r.payment_time || "—")}
+    ${line("Time", r.payment_time || "--")}
     ${line("Method", methodLabel(r.payment_method))}
     ${hr}
     ${line("Customer", r.customer_name)}

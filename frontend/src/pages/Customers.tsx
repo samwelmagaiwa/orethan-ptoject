@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
@@ -7,8 +7,9 @@ import ConfirmModal from "../components/ConfirmModal";
 import LoanDetailsModal from "../components/LoanDetailsModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
-import SmsStatusBadge from "../components/SmsStatusBadge";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { printDocument } from "../utils/printDoc";
+import { API_BASE, fmtLoanId } from "../lib/api";
 
 // INLINE SVG ICONS FOR PREMIUM LOOK
 const IconSearch = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
@@ -95,14 +96,13 @@ const Customers: React.FC = () => {
             const token = localStorage.getItem("token");
             if (!token) return;
 
-            const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
             const userRes = await axios.get(`${API_BASE}/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const userData = userRes.data;
             setUser(userData);
 
-            if (userData.role === "admin") {
+            if (userData.role === "admin" || userData.role === "finance_officer") {
                 await fetchCustomers();
             } else {
                 await fetchManagerLoans(userData.role);
@@ -119,7 +119,6 @@ const Customers: React.FC = () => {
 
     const fetchCustomers = async () => {
         const token = localStorage.getItem("token");
-        const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
         const res = await axios.get(`${API_BASE}/customers`, {
             headers: { Authorization: token ? `Bearer ${token}` : "" }
         });
@@ -134,7 +133,6 @@ const Customers: React.FC = () => {
         if (role === "managing_director") endpoint = "loans/md";
         if (role === "finance_officer") endpoint = "loans/finance";
 
-        const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
         const res = await axios.get(`${API_BASE}/${endpoint}`, {
             headers: { Authorization: token ? `Bearer ${token}` : "" }
         });
@@ -168,7 +166,7 @@ const Customers: React.FC = () => {
         )
     );
 
-    const currentListLength = user?.role === "admin" ? filteredCustomers.length : filteredLoans.length;
+    const currentListLength = (user?.role === "admin" || user?.role === "finance_officer") ? filteredCustomers.length : filteredLoans.length;
     const totalPages = Math.max(1, Math.ceil(currentListLength / entriesPerPage));
     const pagedCustomers = filteredCustomers.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
     const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
@@ -284,7 +282,6 @@ const Customers: React.FC = () => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem("token");
-            const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
             await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, {
                 comments: comments
             }, {
@@ -323,7 +320,6 @@ const Customers: React.FC = () => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem("token");
-            const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
             await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/reject`, {
                 reason: rejectReason
             }, {
@@ -344,6 +340,17 @@ const Customers: React.FC = () => {
         }
     };
 
+    const openDisburseModal = (loan: Loan) => {
+        setSelectedLoan(loan);
+        setDisburseForm({
+            amount: String(loan.amount),
+            method: "cash",
+            disbursement_date: new Date().toISOString().slice(0, 10),
+            transaction_reference: "",
+        });
+        setShowDisburseModal(true);
+        setActiveDropdown(null);
+    };
 
     const submitDisbursement = async () => {
         if (!disburseForm.amount || !disburseForm.disbursement_date) {
@@ -355,7 +362,6 @@ const Customers: React.FC = () => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem("token");
-            const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
             const res = await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/disburse`, {
                 amount: disburseForm.amount,
                 method: disburseForm.method,
@@ -368,10 +374,10 @@ const Customers: React.FC = () => {
             const acct = activated?.loan_account_number;
             const firstDue = activated?.next_payment_date
                 ? new Date(activated.next_payment_date).toLocaleDateString()
-                : "—";
+                : "--";
             setModalMessage(
                 t("alerts.disburseSuccess", {
-                    account: acct || "—",
+                    account: acct || "--",
                     balance: Number(activated?.remaining_balance ?? selectedLoan?.amount ?? 0).toLocaleString(),
                     firstDue,
                 })
@@ -394,18 +400,18 @@ const Customers: React.FC = () => {
         setActiveDropdown(null);
         const bodyHtml = `
             <table>
-                <tr><td>${t("voucher.accountNumber")}</td><td>${loan.loan_account_number || "—"}</td></tr>
-                <tr><td>${t("voucher.loanId")}</td><td>#${loan.id}</td></tr>
+                <tr><td>${t("voucher.accountNumber")}</td><td>${loan.loan_account_number || "--"}</td></tr>
+                <tr><td>${t("voucher.loanId")}</td><td>#${fmtLoanId(loan.id)}</td></tr>
                 <tr><td>${t("voucher.applicant")}</td><td>${loan.name}</td></tr>
                 <tr><td>${t("voucher.phone")}</td><td>${loan.phone || "N/A"}</td></tr>
                 <tr><td>${t("voucher.loanType")}</td><td style="text-transform:capitalize">${loan.type}</td></tr>
                 <tr><td>${t("voucher.amountDisbursed")}</td><td>TZS ${Number(loan.amount).toLocaleString()}</td></tr>
                 <tr><td>${t("voucher.remainingBalance")}</td><td>TZS ${Number(loan.remaining_balance ?? loan.amount).toLocaleString()}</td></tr>
-                <tr><td>${t("voucher.firstPaymentDate")}</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "—"}</td></tr>
+                <tr><td>${t("voucher.firstPaymentDate")}</td><td>${loan.next_payment_date ? new Date(loan.next_payment_date).toLocaleDateString() : "--"}</td></tr>
                 <tr><td>${t("voucher.loanStatus")}</td><td style="color:#16a34a;font-weight:700">${t("status.active")}</td></tr>
             </table>
         `;
-        printDocument(t("voucher.title"), bodyHtml, `#${loan.id}`);
+        printDocument(t("voucher.title"), bodyHtml, `#${fmtLoanId(loan.id)}`);
     };
 
     const deleteLoan = (id: number) => {
@@ -418,7 +424,6 @@ const Customers: React.FC = () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 setSubmitting(true);
                 const token = localStorage.getItem("token");
-                const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
                 axios.delete(`${API_BASE}/loans/${id}`, {
                     headers: { Authorization: token ? `Bearer ${token}` : "" }
                 })
@@ -442,6 +447,21 @@ const Customers: React.FC = () => {
 
     return (
         <div className="customers-page">
+            <style>{`
+              .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+              .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+              .ph-inner::-webkit-scrollbar{display:none}
+              .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+              .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+            `}</style>
+            <div className="ph-bar">
+              <div className="ph-inner">
+                <div className="ph-brand">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>Customers</span>
+                </div>
+              </div>
+            </div>
             <AlertModal
                 isOpen={showModal}
                 message={modalMessage}
@@ -460,7 +480,7 @@ const Customers: React.FC = () => {
 
             {/* STICKY STATS ROW */}
             <div className="stats-row">
-                {user?.role === "admin" ? (
+                {(user?.role === "admin" || user?.role === "finance_officer") ? (
                     <>
                         <div className="stat-box accent-blue">
                             <div className="stat-icon-circle"><IconWallet /></div>
@@ -530,7 +550,7 @@ const Customers: React.FC = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder={user?.role === "admin" ? t("filters.searchPlaceholderAdmin") : t("filters.searchPlaceholderManager")}
+                            placeholder={(user?.role === "admin" || user?.role === "finance_officer") ? t("filters.searchPlaceholderAdmin") : t("filters.searchPlaceholderManager")}
                             title={t("filters.searchTitle")}
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
@@ -541,7 +561,7 @@ const Customers: React.FC = () => {
                 <div className="table-wrapper">
                     <table>
                         <thead>
-                            {user?.role === "admin" ? (
+                            {(user?.role === "admin" || user?.role === "finance_officer") ? (
                                 <tr>
                                     <th>{t("table.customer")}</th>
                                     <th>{t("table.phoneNumber")}</th>
@@ -581,7 +601,7 @@ const Customers: React.FC = () => {
                                         <td style={{ textAlign: 'right' }}><div className="skeleton-bar" style={{ width: '40px', marginLeft: 'auto' }}></div></td>
                                     </tr>
                                 ))
-                            ) : user?.role === "admin" ? (
+                            ) : (user?.role === "admin" || user?.role === "finance_officer") ? (
                                 filteredCustomers.length === 0 ? (
                                     <tr><td colSpan={6} className="table-empty">{t("empty.noCustomers")}</td></tr>
                                 ) : (
@@ -632,13 +652,6 @@ const Customers: React.FC = () => {
                                                         }}
                                                     >
                                                         <IconCreditCard /> {t("actions.repay")}
-                                                    </button>
-                                                    <button
-                                                        className="btn-repay"
-                                                        style={{ background: '#ede9fe', color: '#6366f1', borderColor: '#c4b5fd' }}
-                                                        onClick={(e) => { e.stopPropagation(); window.open(`/api/v1/customers/${customer.id}/statement?to=${new Date().toISOString().slice(0,10)}`, '_blank'); }}
-                                                    >
-                                                        📄 Taarifa
                                                     </button>
                                                 </div>
                                             </td>
@@ -1102,6 +1115,11 @@ const Customers: React.FC = () => {
                         width: 100% !important;
                         margin-left: 0 !important;
                     }
+                    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+                }
+                @media (max-width: 480px) {
+                    .stats-row { grid-template-columns: 1fr; gap: 10px; }
+                    .stat-box { padding: 14px 16px; }
                 }
 
                 .search-wrapper {
@@ -1397,7 +1415,11 @@ const Customers: React.FC = () => {
                     border-radius: 20px;
                     padding: 32px;
                     width: 400px;
+                    max-width: calc(100vw - 32px);
                     box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+                }
+                @media (max-width: 480px) {
+                    .modal-content { padding: 20px; border-radius: 14px; }
                 }
 
                 .modal-info {
@@ -1542,3 +1564,4 @@ const Customers: React.FC = () => {
 };
 
 export default Customers;
+

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
 import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
+import { API_BASE } from "../lib/api";
 
 function EmployeeLoan() {
   const [form, setForm] = useState({
@@ -89,14 +90,13 @@ function EmployeeLoan() {
     }
 
     if (!checklistResolved) {
-      showAlert("Please complete the documentation checklist — tick the documents you have or use 'Proceed without' for missing items.", "warning", scrollToFirstError);
+      showAlert("Please complete the documentation checklist -- tick the documents you have or use 'Proceed without' for missing items.", "warning", scrollToFirstError);
       return;
     }
 
     try {
       setLoading(true);
 
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.post(
         `${API_BASE}/loans`,
         {
@@ -222,6 +222,7 @@ function EmployeeLoan() {
 
         .card {
           width: 420px;
+          max-width: calc(100vw - 32px);
           background: rgba(255,255,255,0.08);
           backdrop-filter: blur(18px);
           border-radius: 18px;

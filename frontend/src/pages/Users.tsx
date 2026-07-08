@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
+import { API_BASE } from "../lib/api";
 
 interface User {
   id: number;
@@ -14,7 +15,7 @@ interface User {
   full_sidebar_access?: boolean;
 }
 
-// Mirrors User::SIDEBAR_KEYS on the backend — keep both lists in sync.
+// Mirrors User::SIDEBAR_KEYS on the backend -- keep both lists in sync.
 const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "finance_collections", label: "Finance & Collections" },
@@ -32,7 +33,7 @@ const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "disburse_payments", label: "Disburse & Payments" },
   { key: "cash_till", label: "Cashier Till" },
   { key: "profile", label: "My Signature" },
-  { key: "logout", label: "Log Out", hint: "Sidebar link only — the top user-menu logout always stays available" },
+  { key: "logout", label: "Log Out", hint: "Sidebar link only -- the top user-menu logout always stays available" },
 ];
 
 // Mirrors the role-based defaults in Sidebar.tsx, so an unchecked-vs-checked
@@ -140,7 +141,6 @@ const Users = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/users`, {
         headers: getAuthHeaders()
       });
@@ -176,7 +176,6 @@ const Users = () => {
           full_sidebar_access: newUser.full_sidebar_access,
         };
         if (newUser.password) payload.password = newUser.password;
-        const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
         const res = await axios.put(`${API_BASE}/users/${editUser.id}`, payload, {
           headers: getAuthHeaders()
         });
@@ -188,7 +187,6 @@ const Users = () => {
           return;
         }
 
-        const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
         const res = await axios.post(`${API_BASE}/users`, {
           name: newUser.name,
           email: newUser.email,
@@ -221,7 +219,6 @@ const Users = () => {
       onConfirm: async () => {
         setConfirm(prev => ({ ...prev, isOpen: false }));
         try {
-          const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
           await axios.delete(`${API_BASE}/users/${id}`, {
             headers: getAuthHeaders()
           });
@@ -247,7 +244,6 @@ const Users = () => {
       onConfirm: async () => {
         setConfirm(prev => ({ ...prev, isOpen: false }));
         try {
-          const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
           const res = await axios.post(`${API_BASE}/users/${user.id}/${locking ? "lock" : "unlock"}`, {}, { headers: getAuthHeaders() });
           setUsers(users.map(u => u.id === user.id ? { ...u, ...res.data.user } : u));
           setModal({ isOpen: true, title: locking ? "Locked" : "Unlocked", message: res.data.message || "Done", type: 'success' });
@@ -321,16 +317,21 @@ const Users = () => {
         onConfirm={confirm.onConfirm}
         onCancel={() => setConfirm({ ...confirm, isOpen: false })}
       />
-      <div className="users-card">
-        <div className="users-header">
-          <div>
-            <h1>Users Management</h1>
-            <p>Manage system users and their roles</p>
+      <div className="ph-bar" style={{ marginBottom: 0 }}>
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Users Management</span>
           </div>
+        </div>
+        <div className="ph-actions">
           <button className="add-user-btn" onClick={() => { setEditUser(null); setNewUser(emptyUserForm()); setShowModal(true); }}>
-            Add User
+            + Add User
           </button>
         </div>
+      </div>
+      <div className="users-card">
+        <div className="users-header" style={{ display: 'none' }}></div>
 
         <div className="search-bar">
           <input
@@ -367,10 +368,10 @@ const Users = () => {
                     <tr key={user.id}>
                       <td className="user-number">{index + 1}</td>
                       <td className="user-name">
-                        <span className="user-name-text">{user.name || "—"}</span>
+                        <span className="user-name-text">{user.name || "--"}</span>
                       </td>
-                      <td className="user-email">{user.email || "—"}</td>
-                      <td className="user-phone">{user.phone || "—"}</td>
+                      <td className="user-email">{user.email || "--"}</td>
+                      <td className="user-phone">{user.phone || "--"}</td>
                       <td className="user-role">
                         <span className={`role-badge role-${user.role}`}>
                           {getRoleLabel(user.role)}
@@ -483,14 +484,14 @@ const Users = () => {
                       checked={newUser.full_sidebar_access}
                       onChange={(e) => {
                         const checked = e.target.checked;
-                        // Full access and per-item denies are mutually exclusive — clear the
+                        // Full access and per-item denies are mutually exclusive -- clear the
                         // per-item overrides so the saved data can never contradict itself
                         // (this was the exact bug: full access ON + everything denied,
                         // and full access silently won every time).
                         setNewUser({ ...newUser, full_sidebar_access: checked, sidebar_permissions: checked ? {} : newUser.sidebar_permissions });
                       }}
                     />
-                    Grant Full Sidebar Access (sees every menu item — turning this on clears the boxes below)
+                    Grant Full Sidebar Access (sees every menu item -- turning this on clears the boxes below)
                   </label>
 
                   <div className="permissions-grid" style={{ opacity: newUser.full_sidebar_access ? 0.5 : 1 }}>
@@ -538,14 +539,12 @@ const Users = () => {
           border: 1px solid #e2e8f0;
         }
 
-        .users-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
-          gap: 16px;
-        }
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+        .users-header { display: none; }
 
         .users-header h1 {
           font-size: 24px;

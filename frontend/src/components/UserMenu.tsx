@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, PenLine, LogOut, ChevronDown, User as UserIcon } from "lucide-react";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 /** Downscale + compress an image file to a small JPEG data URL. */
 const fileToAvatar = (file: File): Promise<string> =>
@@ -80,7 +80,7 @@ const UserMenu = () => {
         <Avatar avatar={user?.avatar} initial={initial} size={34} />
         <div style={{ textAlign: "left", lineHeight: 1.1 }}>
           <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name || t("userMenu.user")}</div>
-          <div style={{ fontSize: "0.62rem", color: "#94a3b8", fontWeight: 700, textTransform: "capitalize" }}>{roleLabel || "—"}</div>
+          <div style={{ fontSize: "0.62rem", color: "#94a3b8", fontWeight: 700, textTransform: "capitalize" }}>{roleLabel || "--"}</div>
         </div>
         <ChevronDown size={15} style={{ color: "#94a3b8" }} />
       </button>

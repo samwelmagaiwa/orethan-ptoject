@@ -10,9 +10,7 @@ interface Props {
   icon?: string;
   title: string;
   subtitle?: string;
-  /** Right-side controls: buttons, date pickers, export buttons, etc. */
   children?: ReactNode;
-  /** Optional sub-tab row below the title bar */
   tabs?: Tab[];
   activeTab?: string;
   onTabChange?: (key: string) => void;
@@ -21,92 +19,102 @@ interface Props {
 const PageHeader: FC<Props> = ({ icon, title, subtitle, children, tabs, activeTab, onTabChange }) => (
   <>
     <div className="phd-bar">
-      <div className="phd-title-block">
-        {icon && <span className="phd-icon">{icon}</span>}
-        <div>
-          <h1 className="phd-title">{title}</h1>
-          {subtitle && <p className="phd-sub">{subtitle}</p>}
+      <div className="phd-scroll">
+        {/* Brand pill */}
+        <div className="phd-brand">
+          {icon && <span className="phd-icon">{icon}</span>}
+          <div>
+            <div className="phd-title">{title}</div>
+            {subtitle && <div className="phd-sub">{subtitle}</div>}
+          </div>
         </div>
+        {/* Tabs inline in same bar */}
+        {tabs && tabs.length > 0 && (
+          <>
+            <div className="phd-sep" />
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                className={`phd-tab ${activeTab === tab.key ? "phd-tab--active" : ""}`}
+                onClick={() => onTabChange?.(tab.key)}
+              >
+                {tab.icon && <span>{tab.icon}</span>} {tab.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
       {children && <div className="phd-actions">{children}</div>}
     </div>
-    {tabs && tabs.length > 0 && (
-      <div className="phd-tab-row">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            className={`phd-tab ${activeTab === tab.key ? "phd-tab--active" : ""}`}
-            onClick={() => onTabChange?.(tab.key)}
-          >
-            {tab.icon && <span>{tab.icon}</span>} {tab.label}
-          </button>
-        ))}
-      </div>
-    )}
     <style>{`
       .phd-bar {
         display: flex;
-        align-items: center;
-        gap: 12px;
+        align-items: stretch;
         background: #f1f5f9;
         border-bottom: 2px solid #e2e8f0;
-        padding: 10px 18px;
         position: sticky;
         top: 0;
         z-index: 10;
-        min-height: 56px;
-        flex-wrap: wrap;
+        min-height: 50px;
       }
-      .phd-title-block {
+      .phd-scroll {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        padding: 10px 14px 0;
+        overflow-x: auto;
+        flex: 1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .phd-scroll::-webkit-scrollbar { display: none; }
+      .phd-brand {
         display: flex;
         align-items: center;
-        gap: 10px;
-        flex: 1;
-        min-width: 0;
-      }
-      .phd-icon {
-        font-size: 22px;
+        gap: 8px;
+        padding-bottom: 10px;
         flex-shrink: 0;
       }
+      .phd-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+        line-height: 1;
+      }
       .phd-title {
-        margin: 0;
-        font-size: 1.1rem;
+        font-size: 13px;
         font-weight: 800;
-        color: #0f172a;
+        color: #102a43;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.2;
       }
       .phd-sub {
-        margin: 0;
-        font-size: 11px;
+        font-size: 10px;
         color: #64748b;
         font-weight: 500;
         margin-top: 1px;
+        white-space: nowrap;
+      }
+      .phd-sep {
+        width: 1px;
+        height: 24px;
+        background: #cbd5e1;
+        margin: 0 8px 10px;
+        flex-shrink: 0;
       }
       .phd-actions {
         display: flex;
         align-items: center;
         gap: 8px;
+        padding: 6px 14px;
         flex-shrink: 0;
+        border-left: 1px solid #e2e8f0;
+        background: #f1f5f9;
         flex-wrap: wrap;
       }
-      .phd-tab-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 4px;
-        background: #f1f5f9;
-        border-bottom: 2px solid #e2e8f0;
-        padding: 8px 14px 0;
-        position: sticky;
-        top: 56px;
-        z-index: 9;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-      }
-      .phd-tab-row::-webkit-scrollbar { display: none; }
       .phd-tab {
+        display: flex;
+        align-items: center;
+        gap: 5px;
         white-space: nowrap;
         padding: 8px 16px;
         border: none;
@@ -118,6 +126,7 @@ const PageHeader: FC<Props> = ({ icon, title, subtitle, children, tabs, activeTa
         color: #64748b;
         transition: all .15s;
         flex-shrink: 0;
+        font-family: inherit;
       }
       .phd-tab--active {
         background: white;
@@ -127,6 +136,9 @@ const PageHeader: FC<Props> = ({ icon, title, subtitle, children, tabs, activeTa
       .phd-tab:hover:not(.phd-tab--active) {
         background: #e2e8f0;
         color: #334155;
+      }
+      @media (max-width: 640px) {
+        .phd-actions { flex-basis: 100%; border-left: none; border-top: 1px solid #e2e8f0; justify-content: flex-start; }
       }
     `}</style>
   </>

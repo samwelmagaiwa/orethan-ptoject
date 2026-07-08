@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
 import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
+import { API_BASE, BASE_URL } from "../lib/api";
 
 const PersonalLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -13,12 +14,16 @@ const PersonalLoan: React.FC = () => {
   const isInitialized = useRef(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [checklistResolved, setChecklistResolved] = useState(false);
   const [checklistState, setChecklistState] = useState<any>({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [draftData, setDraftData] = useState<{ form: any; step: number } | null>(null);
+  // Replace every null in a loaded object with "" so <input value> never receives null
+  const sanitize = (obj: Record<string, any>) =>
+    Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v === null ? "" : v]));
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
   const [alertOnAck, setAlertOnAck] = useState<(() => void) | null>(null);
@@ -183,7 +188,6 @@ const PersonalLoan: React.FC = () => {
     if (!url) return "";
     if (url.startsWith('http')) return url;
     if (url.startsWith('blob:')) return url;
-    const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://127.0.0.1:8000';
     return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
@@ -228,7 +232,6 @@ const PersonalLoan: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const DRAFT_TYPE = 'personal';
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
   // Persistence: Load draft from BACKEND on mount
   useEffect(() => {
@@ -247,7 +250,7 @@ const PersonalLoan: React.FC = () => {
           if (loan && loan.details) {
             setForm(prev => ({
               ...prev,
-              ...loan.details,
+              ...sanitize(loan.details),
               jinaKamiliLaMwombaji: loan.name,
               nambaYaSimu: loan.phone,
               kiasiMkopo: loan.amount.toString(),
@@ -280,18 +283,18 @@ const PersonalLoan: React.FC = () => {
                 });
                 if (res.data.draft) {
                   const merged = { ...res.data.draft.form, ...parsed.form };
-                  setForm(prev => ({ ...prev, ...merged }));
+                  setForm(prev => ({ ...prev, ...sanitize(merged) }));
                   setCurrentStep(parsed.step ?? res.data.draft.step ?? 0);
                 } else {
-                  setForm(prev => ({ ...prev, ...parsed.form }));
+                  setForm(prev => ({ ...prev, ...sanitize(parsed.form) }));
                   setCurrentStep(parsed.step ?? 0);
                 }
               } catch {
-                setForm(prev => ({ ...prev, ...parsed.form }));
+                setForm(prev => ({ ...prev, ...sanitize(parsed.form) }));
                 setCurrentStep(parsed.step ?? 0);
               }
             } else {
-              setForm(prev => ({ ...prev, ...parsed.form }));
+              setForm(prev => ({ ...prev, ...sanitize(parsed.form) }));
               setCurrentStep(parsed.step ?? 0);
             }
             localStorage.removeItem('personal_loan_draft');
@@ -403,7 +406,7 @@ const PersonalLoan: React.FC = () => {
 
   const handleRestoreDraft = () => {
     if (draftData) {
-      setForm(prev => ({ ...prev, ...draftData.form }));
+      setForm(prev => ({ ...prev, ...sanitize(draftData.form) }));
       setCurrentStep(draftData.step);
       isInitialized.current = true;
       setShowDraftModal(false);
@@ -665,7 +668,7 @@ const PersonalLoan: React.FC = () => {
       }
     });
 
-    // Step 2: Validate dhamanaList — only critical fields
+    // Step 2: Validate dhamanaList -- only critical fields
     if (step === 2) {
       form.dhamanaList.forEach((dhamana, index) => {
         if (!dhamana.aina) {
@@ -735,7 +738,7 @@ const PersonalLoan: React.FC = () => {
 
     if (currentStep < steps.length - 1) return;
 
-    // Full validation sweep across every step — catches anything missed or
+    // Full validation sweep across every step -- catches anything missed or
     // changed after the officer moved past that step, and returns them to
     // the exact step with the problem instead of failing silently.
     for (let step = 0; step <= 5; step++) {
@@ -817,6 +820,7 @@ const PersonalLoan: React.FC = () => {
       });
 
       localStorage.removeItem("personal_loan_draft");
+      setSubmitted(true);
       showAlert(successMessage, "success");
       setTimeout(() => {
         navigate("/my-applications");
@@ -832,7 +836,7 @@ const PersonalLoan: React.FC = () => {
     <div className="page-container">
       {showDraftModal && (
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}>
-          <div className="modal-content" style={{ background: '#fffcf8', padding: '30px', borderRadius: '15px', maxWidth: '450px', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: '2px solid #e2bc8a', textAlign: 'center' }}>
+          <div className="modal-content" style={{ background: '#fffcf8', padding: '30px', borderRadius: '15px', maxWidth: 'min(450px, calc(100vw - 2rem))', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: '2px solid #e2bc8a', textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📝</div>
             <h3 style={{ color: '#5c4033', marginBottom: '15px', fontSize: '1.5rem' }}>Draft Imepatikana!</h3>
             <p style={{ color: '#8b735b', marginBottom: '25px', lineHeight: '1.6' }}>
@@ -1699,7 +1703,7 @@ const PersonalLoan: React.FC = () => {
               <div className="form-section">
                 <div className="section-divider">TAMKO NA PASSPORT</div>
 
-                <div className="tamko-content" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                <div className="tamko-content" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '15px' }}>
                   {/* Triple Photo Upload Row */}
                   <div className="tamko-card" style={{ borderLeftColor: '#10b981', padding: '12px' }}>
                     <p style={{ fontSize: '0.8rem', marginBottom: '8px' }}><strong>PAKIA PICHA YA MUOMBAJI</strong></p>
@@ -1820,7 +1824,7 @@ const PersonalLoan: React.FC = () => {
               <div className="form-section">
                 <div className="section-divider">ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</div>
                 <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 18px' }}>
-                  Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>–Proceed without</strong>.
+                  Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>"Proceed without"</strong>.
                 </p>
                 <LoanChecklist
                   category={form.umeajiriwa === 'Ndio' ? 'employee' : 'business'}
@@ -1863,8 +1867,8 @@ const PersonalLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
-                {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
+              <button type="submit" className="btn-submit" disabled={loading || submitted} style={{ opacity: (loading || submitted) ? 0.6 : 1 }}>
+                {submitted ? "IMEWASILISHWA ✓" : loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}
           </div>

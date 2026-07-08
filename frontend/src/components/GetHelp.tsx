@@ -12,31 +12,30 @@ interface GetHelpProps {
   steps: HelpStep[];
   tip?: string;
   children?: ReactNode;
+  actions?: ReactNode;
 }
 
-/**
- * Collapsible "Get Help" panel: a single button that expands into a numbered
- * step-by-step walkthrough (with optional worked examples) for the page it's
- * placed on. Closed by default so it never crowds the page.
- */
-const GetHelp = ({ title = "How to use this page", intro, steps, tip, children }: GetHelpProps) => {
+const GetHelp = ({ title = "How to use this page", intro, steps, tip, children, actions }: GetHelpProps) => {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="gh-wrap">
-      <button className="gh-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <span className="gh-toggle__icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-        </span>
-        <span>Get Help</span>
-        <span className={`gh-toggle__chevron ${open ? "gh-toggle__chevron--open" : ""}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-        </span>
-      </button>
+      <div className="gh-row">
+        <button className="gh-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          <span className="gh-toggle__icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </span>
+          <span>Get Help</span>
+          <span className={`gh-toggle__chevron ${open ? "gh-toggle__chevron--open" : ""}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+          </span>
+        </button>
+        {actions && <div className="gh-actions">{actions}</div>}
+      </div>
 
       {open && (
         <div className="gh-panel">
@@ -58,7 +57,10 @@ const GetHelp = ({ title = "How to use this page", intro, steps, tip, children }
 
       <style>{`
         .gh-wrap { margin-bottom: 16px; }
-        .gh-toggle { display: inline-flex; align-items: center; gap: 8px; background: #eef4ff; color: #1e5fae; border: 1px solid #c9dcfb; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .gh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .gh-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 0; }
+        @media (max-width: 520px) { .gh-row { gap: 8px; } .gh-actions { justify-content: flex-start; width: 100%; } }
+        .gh-toggle { display: inline-flex; align-items: center; gap: 8px; background: #eef4ff; color: #1e5fae; border: 1px solid #c9dcfb; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
         .gh-toggle:hover { background: #e0ecff; }
         .gh-toggle__icon { display: flex; }
         .gh-toggle__chevron { display: flex; transition: transform .15s ease; }

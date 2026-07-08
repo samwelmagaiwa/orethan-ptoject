@@ -4,12 +4,12 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp"
-import type { HelpStep } from "../components/GetHelp";
+import GetHelp, { type HelpStep } from "../components/GetHelp";
+import AccountingNav from "../components/AccountingNav";
 import { printDocument } from "../utils/printDoc";
-import AccountingTabBar from "../components/AccountingTabBar";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmt = (v: any) => Number(v || 0).toLocaleString();
 
 interface Account { id: number; code: string; name: string; }
@@ -137,13 +137,13 @@ const BankReconciliation = () => {
   };
 
   const exportRows = () => list.map(r => ({
-    Account: `${r.account.code} " ${r.account.name}`, "Statement Date": r.statement_date,
+    Account: `${r.account.code} — ${r.account.name}`, "Statement Date": r.statement_date,
     "Statement Balance": r.statement_balance, "Book Balance": r.book_balance,
     "Adjusted Balance": r.adjusted_balance, Difference: r.difference, Status: r.status,
   }));
 
   const handlePrint = () => {
-    const rowsHtml = list.map(r => `<tr><td>${r.account.code} " ${r.account.name}</td><td>${r.statement_date}</td><td style="text-align:right">${fmt(r.statement_balance)}</td><td style="text-align:right">${fmt(r.book_balance)}</td><td style="text-align:right">${fmt(r.adjusted_balance)}</td><td style="text-align:right">${fmt(r.difference)}</td><td style="text-transform:capitalize">${r.status}</td></tr>`).join("");
+    const rowsHtml = list.map(r => `<tr><td>${r.account.code} — ${r.account.name}</td><td>${r.statement_date}</td><td style="text-align:right">${fmt(r.statement_balance)}</td><td style="text-align:right">${fmt(r.book_balance)}</td><td style="text-align:right">${fmt(r.adjusted_balance)}</td><td style="text-align:right">${fmt(r.difference)}</td><td style="text-transform:capitalize">${r.status}</td></tr>`).join("");
     const body = `<table><thead><tr><th>Account</th><th>Statement Date</th><th style="text-align:right">Statement Balance</th><th style="text-align:right">Book Balance</th><th style="text-align:right">Adjusted Balance</th><th style="text-align:right">Difference</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
     printDocument("Bank Reconciliations", body);
   };
@@ -175,18 +175,24 @@ const BankReconciliation = () => {
         onCancel={() => setConfirmDeleteId(null)}
       />
 
-      <AccountingTabBar>
-        <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
-        <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("bank.newReconciliation")}</button>
-      </AccountingTabBar>
+      <AccountingNav />
 
       <div className="br-card">
-        <GetHelp
-          title={t("bank.help.title")}
-          intro={t("bank.help.intro")}
-          steps={t("bank.help.steps", { returnObjects: true }) as HelpStep[]}
-          tip={t("bank.help.tip")}
-        />
+        <div className="br-accent-bar" />
+        <div className="br-sticky-top" style={{ top: 44 }}>
+          <GetHelp
+            title={t("bank.help.title")}
+            intro={t("bank.help.intro")}
+            steps={t("bank.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("bank.help.tip")}
+            actions={
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <ExportButtons getRows={exportRows} filename="bank-reconciliations" sheetName="Bank Reconciliations" onPrint={handlePrint} disabled={!list.length} />
+                <button className="br-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("bank.newReconciliation")}</button>
+              </div>
+            }
+          />
+        </div>
 
         {loading ? (
           <div className="br-empty">{t("common.loading")}</div>
@@ -199,7 +205,7 @@ const BankReconciliation = () => {
                   <tr><td colSpan={8} className="br-empty">{t("bank.noReconciliations")}</td></tr>
                 ) : list.map(r => (
                   <tr key={r.id}>
-                    <td>{r.account.code} " {r.account.name}</td>
+                    <td>{r.account.code} — {r.account.name}</td>
                     <td>{r.statement_date}</td>
                     <td>{fmt(r.statement_balance)}</td>
                     <td>{fmt(r.book_balance)}</td>
@@ -238,7 +244,7 @@ const BankReconciliation = () => {
                       <strong>{t("bank.cashBankAccount")}</strong>
                       <select value={accountId} onChange={e => setAccountId(Number(e.target.value))}>
                         <option value="">{t("bank.selectAccount")}</option>
-                        {accounts.map(a => <option key={a.id} value={a.id}>{a.code} " {a.name}</option>)}
+                        {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                       </select>
                     </td>
                     <td><strong>{t("bank.statementDate")}</strong><input type="date" value={statementDate} onChange={e => setStatementDate(e.target.value)} /></td>
@@ -264,9 +270,9 @@ const BankReconciliation = () => {
                 </button>
                 {matchSummary && (
                   <div className="br-match-summary">
-                    <span>âœ– {matchSummary.matchedCount} statement line(s) matched a book transaction.</span>
+                    <span>“" {matchSummary.matchedCount} statement line(s) matched a book transaction.</span>
                     {matchSummary.unmatchedStatementLines.length > 0 && (
-                      <span className="br-match-warning">âš  {matchSummary.unmatchedStatementLines.length} statement line(s) had no matching book transaction " these may need a manual journal entry.</span>
+                      <span className="br-match-warning">⚠ {matchSummary.unmatchedStatementLines.length} statement line(s) had no matching book transaction — these may need a manual journal entry.</span>
                     )}
                   </div>
                 )}
@@ -286,7 +292,7 @@ const BankReconciliation = () => {
                     <input type="text" placeholder={t("common.description")} value={item.description} onChange={e => updateItem(i, "description", e.target.value)} />
                     <input type="number" placeholder={t("common.amount")} value={item.amount} onChange={e => updateItem(i, "amount", e.target.value)} />
                     <input type="date" value={item.date} onChange={e => updateItem(i, "date", e.target.value)} />
-                    <button type="button" className="br-remove-btn" onClick={() => removeItem(i)}>Ã—</button>
+                    <button type="button" className="br-remove-btn" onClick={() => removeItem(i)}>Ã--</button>
                   </div>
                 ))}
               </div>
@@ -302,9 +308,14 @@ const BankReconciliation = () => {
       )}
 
       <style>{`
-        .br-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .br-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .br-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .br-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .br-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .br-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
         .br-table-scroll { overflow-x: auto; }
+        .br-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
+        .br-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
+        .br-header p { font-size: 13px; color: #64748b; margin: 0; }
         .br-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .br-add-btn:hover { background: #1e5fae; }
         table { width: 100%; border-collapse: collapse; }

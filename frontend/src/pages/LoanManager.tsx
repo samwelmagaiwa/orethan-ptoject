@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import LoanDetailsModal from "../components/LoanDetailsModal";
@@ -8,6 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
 import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
+import { API_BASE } from "../lib/api";
 
 interface Loan {
   id: number;
@@ -44,6 +45,10 @@ const LoanManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const _filteredLoans = loans.filter(l =>
+    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    l.phone?.includes(searchQuery)
+  );
 
   useEffect(() => {
     fetchLoans();
@@ -67,7 +72,6 @@ const LoanManager = () => {
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
     setLoading(true);
     axios
       .get(`${API_BASE}/loans/manager`, { headers })
@@ -78,6 +82,18 @@ const LoanManager = () => {
       .finally(() => setLoading(false));
   };
 
+  const _getStatusStep = (status: string) => {
+    switch (status) {
+      case 'loan_officer': return 0;
+      case 'manager_review': return 1;
+      case 'gm_review': return 2;
+      case 'md_review': return 3;
+      case 'approved': return 4;
+      case 'disbursed':
+      case 'completed': return 5;
+      default: return 0;
+    }
+  };
 
   const toggleDropdown = (id: number, event: React.MouseEvent, buttonCount: number) => {
     if (activeDropdown === id) {
@@ -107,7 +123,6 @@ const LoanManager = () => {
     setSubmitting(true);
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
     axios
       .post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, { comments }, { headers })
@@ -139,7 +154,6 @@ const LoanManager = () => {
 
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
     setSubmitting(true);
     axios
@@ -169,7 +183,6 @@ const LoanManager = () => {
         setSubmitting(true);
         const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
         axios
           .delete(`${API_BASE}/loans/${id}`, { headers })
@@ -201,6 +214,17 @@ const LoanManager = () => {
 
   return (
     <div className="loan-manager-page">
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-sep{width:1px;height:24px;background:#cbd5e1;margin:0 8px 10px;flex-shrink:0}
+        .ph-tab{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 16px;border:none;border-radius:8px 8px 0 0;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;transition:all .15s;flex-shrink:0;font-family:inherit}
+        .ph-tab--active{background:white;color:#102a43;box-shadow:0 -2px 0 #1e5fae inset}
+        .ph-tab:hover:not(.ph-tab--active){background:#e2e8f0;color:#334155}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
       <AlertModal
         isOpen={modal.isOpen}
         title={modal.title}
@@ -216,6 +240,14 @@ const LoanManager = () => {
         onConfirm={confirm.onConfirm}
         onCancel={() => setConfirm({ ...confirm, isOpen: false })}
       />
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Loan Manager Review</span>
+          </div>
+        </div>
+      </div>
       <div className="stats-row">
         <div className="stat-box">
           <div className="stat-label">{t("stats.totalHandled")}</div>
@@ -906,6 +938,19 @@ const LoanManager = () => {
 
         .animate-pop-premium {
           animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @media (max-width: 900px) {
+          .stats-row { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+          .search-wrapper { width: 100%; }
+          .table-wrapper { overflow-x: auto; }
+        }
+        @media (max-width: 640px) {
+          .stats-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .stats-row { gap: 8px; }
+          .stat-box { padding: 14px; }
         }
       `}</style>
     </div >

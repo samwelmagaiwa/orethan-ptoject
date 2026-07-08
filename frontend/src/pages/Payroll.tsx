@@ -3,15 +3,16 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
-
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+import { API_BASE as API } from "../lib/api";
+import { useOrgSettings } from "../utils/orgSettings";
+import staticLogo from "../assets/logo.png";
 const fmt = (v: any) => `TZS ${Number(v || 0).toLocaleString()}`;
 const fmtNum = (v: any) => Number(v || 0).toLocaleString();
 
 
 // --- Types ------------------------------------------------------------
 interface SalaryComponent { id: number; code: string; name: string; type: "earning" | "deduction"; taxable: boolean; statutory: boolean; active: boolean; default_amount: number; sort_order: number; }
-interface Employee { id: number; employee_id: string; full_name: string; department: string; designation: string; branch: string; employment_type: string; basic_salary: number; bank_name: string; bank_account: string; tin_number: string; nssf_number: string; nhif_number: string; phone: string; email: string; hire_date: string; active: boolean; }
+interface Employee { id: number; employee_id: string; full_name: string; department: string; designation: string; branch: string; employment_type: string; basic_salary: number; bank_name: string; bank_account: string; tin_number: string; nssf_number: string; nhif_number: string; phone: string; email: string; hire_date: string; active: boolean; date_of_joining?: string; tin?: string; work_station?: string; }
 interface PayrollRun { id: number; payroll_no: string; month: number; year: number; pay_date: string; status: string; notes: string; created_by: any; approved_by: any; approved_at: string; gl_post_journal_id: number | null; gl_pay_journal_id: number | null; }
 interface ItemDetail { id: number; component: SalaryComponent; amount: number; }
 interface PayrollItem { id: number; employee: Employee; gross_salary: number; total_earnings: number; total_deductions: number; net_salary: number; payment_status: string; payment_method: string; payment_reference: string; payment_date: string | null; email_sent_at: string | null; email_status: string | null; details: ItemDetail[]; }
@@ -19,7 +20,7 @@ interface PayrollFull extends PayrollRun { items: PayrollItem[]; }
 interface BreakdownRow { department: string; headcount: number; gross: number; deductions: number; net: number; paye: number; nssf: number; nhif: number; paid_count: number; emailed_count: number; }
 interface AnalyticsRow { id: number; payroll_no: string; month: number; year: number; status: string; headcount: number; total_gross: number; total_deductions: number; total_net: number; paid_count: number; }
 
-type Tab = "runs" | "components" | "employees" | "myslips";
+type Tab = "runs" | "components" | "employees" | "myslips" | "breakdown";
 
 // --- Status helpers ----------------------------------------------------
 const statusColor: Record<string, string> = {
@@ -44,9 +45,17 @@ function numberToWords(n: number): string {
   return convert(Math.floor(n)) + " Tanzanian Shillings Only";
 }
 
-// â€â€â€ Component â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Payroll() {
   const { t } = useTranslation("payroll");
+  const org = useOrgSettings();
+  const orgLogo = org.company_logo_url || staticLogo;
+  const orgName = org.company_name || "Microfinance Institution";
+  const orgTagline = org.company_tagline || "";
+  const orgPhone = org.company_phone || "";
+  const orgEmail = org.company_email || "";
+  const orgWebsite = org.company_website || "";
+  const orgAddress = org.company_address || "";
   const auth = () => { const tok = localStorage.getItem("token"); return tok ? { Authorization: `Bearer ${tok}` } : {}; };
 
   const getMonthName = (m: number): string => {
@@ -124,6 +133,9 @@ export default function Payroll() {
     }
     if (hasEmpRecord) {
       list.push("myslips");
+    }
+    if (isPayrollAdmin) {
+      list.push("breakdown");
     }
     return list;
   })();
@@ -456,7 +468,7 @@ export default function Payroll() {
         await loadPayrolls();
         setModal({ isOpen: true, title: "Payment Posted", message: `${item.employee.full_name} marked as paid. GL journal posted to ${pmAccountCode}.${updated.email_status === "sent" ? " Email sent." : updated.email_status === "no_email" ? " No email on record." : ""}`, type: "success" });
       } else {
-        // bulk — mark whole payroll paid
+        // bulk -- mark whole payroll paid
         await axios.put(`${API}/payroll/${payroll.id}/status`, {
           status: "paid",
           payment_method: pmMethod,
@@ -487,7 +499,21 @@ export default function Payroll() {
   };
 
   const printSlip = () => { setPrintMode("slip"); setTimeout(() => { window.print(); setTimeout(() => setPrintMode(null), 500); }, 100); };
-  const printStmt = () => { setPrintMode("stmt"); setTimeout(() => { window.print(); setTimeout(() => setPrintMode(null), 500); }, 100); };
+  const printStmt = () => {
+    setPrintMode("stmt");
+    setTimeout(() => {
+      // Inject landscape @page for statement only; removed after print
+      const s = document.createElement("style");
+      s.id = "pay-landscape";
+      s.textContent = "@page { size:A4 landscape; margin:12mm; }";
+      document.head.appendChild(s);
+      window.print();
+      setTimeout(() => {
+        document.getElementById("pay-landscape")?.remove();
+        setPrintMode(null);
+      }, 500);
+    }, 100);
+  };
   const printMySlip = () => {
     if (!mySelSlip) return;
     setSelItem(mySelSlip as PayrollItem);
@@ -495,7 +521,7 @@ export default function Payroll() {
     setTimeout(() => { setPrintMode("slip"); setTimeout(() => { window.print(); setTimeout(() => { setPrintMode(null); setSelItem(null); setPayroll(null); }, 500); }, 100); }, 50);
   };
 
-  // â€â€ Compute totals for payroll statement â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+  // ── Compute totals for payroll statement ───────────────────────────────────
   const totals = payroll ? {
     count: payroll.items.length,
     gross: payroll.items.reduce((s, i) => s + i.gross_salary, 0),
@@ -503,9 +529,19 @@ export default function Payroll() {
     net: payroll.items.reduce((s, i) => s + i.net_salary, 0),
   } : null;
 
-  // â€â€ Payroll runs tab â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+  // ── Payroll runs tab ───────────────────────────────────────────────────────
   const earnings = selItem?.details.filter(d => d.component.type === "earning") ?? [];
   const deductions = selItem?.details.filter(d => d.component.type === "deduction") ?? [];
+
+  if (!settingsLoaded) {
+    return (
+      <div className="pay-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", flexDirection: "column", gap: 18 }}>
+        <div style={{ width: 48, height: 48, border: "4px solid #e2e8f0", borderTop: "4px solid #1e5fae", borderRadius: "50%", animation: "pay-spin 0.8s linear infinite" }} />
+        <div style={{ fontSize: 14, color: "#627d98", fontWeight: 500 }}>Loading salary information...</div>
+        <style>{`@keyframes pay-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   if (settingsLoaded && allowedTabs.length === 0) {
     return (
@@ -537,7 +573,7 @@ export default function Payroll() {
             <div className="ppm-hd">
               <div>
                 <div className="ppm-title">💳 Confirm Salary Payment</div>
-                <div className="ppm-sub">{payModal.mode === "bulk" ? `${payroll.payroll_no} — all employees` : payModal.item?.employee.full_name}</div>
+                <div className="ppm-sub">{payModal.mode === "bulk" ? `${payroll.payroll_no} -- all employees` : payModal.item?.employee.full_name}</div>
               </div>
               <button className="ppm-close" onClick={() => setPayModal({ open: false, mode: "single" })}>✕</button>
             </div>
@@ -579,10 +615,10 @@ export default function Payroll() {
                 <label>Payment Account <span className="ppm-label-hint">(GL account to credit)</span></label>
                 <select value={pmAccountCode} onChange={e => setPmAccountCode(e.target.value)}>
                   {pmAccounts.length > 0
-                    ? pmAccounts.map(a => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)
+                    ? pmAccounts.map(a => <option key={a.code} value={a.code}>{a.code} -- {a.name}</option>)
                     : <>
-                      <option value="1020">1020 — NMB / Bank Account</option>
-                      <option value="1010">1010 — Cash in Hand</option>
+                      <option value="1020">1020 -- NMB / Bank Account</option>
+                      <option value="1010">1010 -- Cash in Hand</option>
                     </>
                   }
                 </select>
@@ -602,17 +638,17 @@ export default function Payroll() {
                 <thead><tr><th>Account</th><th>Dr</th><th>Cr</th></tr></thead>
                 <tbody>
                   <tr>
-                    <td>2200 — Accrued Salaries Payable</td>
+                    <td>2200 -- Accrued Salaries Payable</td>
                     <td className="ppm-dr">{fmt(
                       payModal.mode === "single" && payModal.item
                         ? payModal.item.net_salary
                         : payroll.items.filter(i => i.payment_status !== "paid").reduce((s, i) => s + Number(i.net_salary), 0)
                     )}</td>
-                    <td>—</td>
+                    <td>--</td>
                   </tr>
                   <tr>
-                    <td>{pmAccountCode} — {pmAccounts.find(a => a.code === pmAccountCode)?.name ?? "Selected Account"}</td>
-                    <td>—</td>
+                    <td>{pmAccountCode} -- {pmAccounts.find(a => a.code === pmAccountCode)?.name ?? "Selected Account"}</td>
+                    <td>--</td>
                     <td className="ppm-cr">{fmt(
                       payModal.mode === "single" && payModal.item
                         ? payModal.item.net_salary
@@ -634,230 +670,322 @@ export default function Payroll() {
         </div>
       )}
 
-      {/* --- Employee-only slip view: clean dedicated layout when user has NO management access --- */}
+      {/* --- Employee-only slip view: premium redesign --- */}
       {settingsLoaded && !isPayrollAdmin && hasEmpRecord && tab === "myslips" && (() => {
         const filteredSlips = mySlips.filter((s: any) => s.payroll?.year === myYearFilter);
         const slip = mySelSlip;
         const earnings_my = slip?.details?.filter((d: any) => d.component?.type === "earning") ?? [];
         const deductions_my = slip?.details?.filter((d: any) => d.component?.type === "deduction") ?? [];
+        const isPaidSlip = slip?.payment_status === "paid" || slip?.payroll?.status === "paid";
         return (
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f8f7f4", fontFamily: "Inter, sans-serif" }}>
-            {/* Page header */}
-            <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "18px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1e293b" }}>🧾 {t("my_salary_slips", { defaultValue: "My Salary Slips" })}</div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>{t("my_slips_subtitle", { defaultValue: "View and print your monthly salary details and payment status" })}</div>
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#eef2f7", fontFamily: "'Inter',system-ui,sans-serif" }}>
+
+            {/* ── Hero header bar ── */}
+            <div style={{ background: "linear-gradient(135deg,#0d1f33 0%,#1a3a5c 60%,#1e5fae 100%)", padding: "0 32px", display: "flex", alignItems: "center", gap: 20, flexShrink: 0, minHeight: 76, position: "relative", overflow: "hidden" }}>
+              {/* Decorative circles */}
+              <div style={{ position: "absolute", right: -40, top: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", right: 60, bottom: -50, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
+              {myEmployee && (
+                <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg,#059669,#10b981)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 20, flexShrink: 0, boxShadow: "0 0 0 3px rgba(255,255,255,0.15)" }}>
+                  {myEmployee.full_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 16, letterSpacing: "0.2px" }}>{myEmployee?.full_name || "My Salary Slips"}</div>
+                {myEmployee && (
+                  <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <span>{myEmployee.employee_id}</span>
+                    {myEmployee.designation && <><span style={{ opacity: 0.4 }}>·</span><span>{myEmployee.designation}</span></>}
+                    {myEmployee.department && <><span style={{ opacity: 0.4 }}>·</span><span>{myEmployee.department}</span></>}
+                  </div>
+                )}
+              </div>
+              {/* Year selector */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Year</span>
+                <select
+                  value={myYearFilter}
+                  onChange={e => { const yr = Number(e.target.value); setMyYearFilter(yr); const first = mySlips.find((s: any) => s.payroll?.year === yr); if (first) setMySelSlip(first); }}
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}
+                >
+                  {[...new Set(mySlips.map((s: any) => s.payroll?.year).filter(Boolean))].sort((a: any, b: any) => b - a).map((yr: any) => (
+                    <option key={yr} value={yr} style={{ color: "#000", background: "#fff" }}>{yr}</option>
+                  ))}
+                </select>
               </div>
               {slip && (
-                <button onClick={printMySlip} style={{ background: "#102a43", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                  🖨️ Print Slip
+                <button onClick={printMySlip} style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "8px 18px", fontWeight: 700, cursor: "pointer", fontSize: 13, backdropFilter: "blur(4px)", transition: "all .15s", flexShrink: 0 }}>
+                  🖨 Print Slip
                 </button>
               )}
             </div>
 
-            {/* Employee info strip */}
-            {myEmployee && (
-              <div style={{ background: "#102a43", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#4f7c3f", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
-                  {myEmployee.full_name.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{myEmployee.full_name}</div>
-                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>
-                    {myEmployee.employee_id}
-                    {myEmployee.designation ? ` · ${myEmployee.designation}` : ""}
-                    {myEmployee.department ? ` · ${myEmployee.department}` : ""}
-                    {myEmployee.employment_type ? ` · ${myEmployee.employment_type.replace(/_/g, " ")}` : ""}
-                  </div>
-                </div>
-                {/* Year filter */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <label style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>Year</label>
-                  <select
-                    value={myYearFilter}
-                    onChange={e => {
-                      const yr = Number(e.target.value);
-                      setMyYearFilter(yr);
-                      const first = mySlips.find((s: any) => s.payroll?.year === yr);
-                      if (first) setMySelSlip(first);
-                    }}
-                    style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, cursor: "pointer" }}
-                  >
-                    {[...new Set(mySlips.map((s: any) => s.payroll?.year).filter(Boolean))].sort((a: any, b: any) => b - a).map((yr: any) => (
-                      <option key={yr} value={yr} style={{ color: "#000" }}>{yr}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* No employee record */}
+            {/* ── No employee record ── */}
             {!myEmployee && (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#64748b" }}>
-                <div style={{ fontSize: 40 }}>🔍</div>
-                <div style={{ fontWeight: 600 }}>No employee record linked to your account</div>
-                <div style={{ fontSize: 13 }}>Ask your administrator to link your user profile.</div>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+                <div style={{ fontSize: 56, opacity: 0.3 }}>🔍</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#334155" }}>No employee record linked to your account</div>
+                <div style={{ fontSize: 13, color: "#94a3b8" }}>Ask your administrator to link your user profile.</div>
               </div>
             )}
 
-            {/* Content area */}
+            {/* ── Content area ── */}
             {myEmployee && (
               <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-                {/* Left: slip list (month pills) */}
-                <div style={{ width: 220, borderRight: "1px solid #e5e7eb", background: "#fff", overflow: "auto", flexShrink: 0 }}>
+
+                {/* Left: slip list */}
+                <div style={{ width: 280, background: "#fff", borderRight: "1px solid #e2e8f0", overflow: "auto", flexShrink: 0 }}>
+                  <div style={{ padding: "14px 16px 8px", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.8px", borderBottom: "1px solid #f1f5f9" }}>
+                    {filteredSlips.length} Slip{filteredSlips.length !== 1 ? "s" : ""} · {myYearFilter}
+                  </div>
                   {filteredSlips.length === 0 ? (
-                    <div style={{ padding: 24, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
-                      No slips for {myYearFilter}
-                    </div>
-                  ) : (
-                    filteredSlips.map((s: any) => {
-                      const isActive = mySelSlip?.id === s.id;
-                      const isPaid = s.payment_status === "paid" || s.payroll?.status === "paid";
-                      return (
-                        <div
-                          key={s.id}
-                          onClick={() => setMySelSlip(s)}
-                          style={{
-                            padding: "14px 16px",
-                            borderBottom: "1px solid #f1f5f9",
-                            cursor: "pointer",
-                            background: isActive ? "#f0fdf4" : "#fff",
-                            borderLeft: isActive ? "3px solid #4f7c3f" : "3px solid transparent",
-                            transition: "all .15s",
-                          }}
-                        >
-                          <div style={{ fontWeight: 700, fontSize: 13, color: isActive ? "#4f7c3f" : "#1e293b" }}>
-                            {getMonthName((s.payroll?.month || 1) - 1)} {s.payroll?.year}
+                    <div style={{ padding: "32px 16px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No slips for {myYearFilter}</div>
+                  ) : filteredSlips.map((s: any) => {
+                    const isActive = mySelSlip?.id === s.id;
+                    const sIsPaid = s.payment_status === "paid" || s.payroll?.status === "paid";
+                    return (
+                      <div key={s.id} onClick={() => setMySelSlip(s)} style={{ padding: "13px 16px", borderBottom: "1px solid #f8fafc", cursor: "pointer", background: isActive ? "#f0f9ff" : "#fff", borderLeft: `3px solid ${isActive ? "#1e5fae" : "transparent"}`, transition: "all .12s" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: isActive ? "#1e5fae" : "#0f172a" }}>
+                            {getMonthName((s.payroll?.month || 1) - 1)}
                           </div>
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{s.payroll?.payroll_no}</div>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{fmt(s.net_salary)}</span>
-                            {isPaid ? (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: "#d1fae5", color: "#059669", padding: "2px 7px", borderRadius: 10 }}>PAID</span>
-                            ) : (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: "#fef9c3", color: "#a16207", padding: "2px 7px", borderRadius: 10 }}>
-                                {(s.payroll?.status || "draft").toUpperCase()}
-                              </span>
-                            )}
-                          </div>
+                          {sIsPaid
+                            ? <span style={{ fontSize: 9, fontWeight: 800, background: "#d1fae5", color: "#065f46", padding: "2px 7px", borderRadius: 20, letterSpacing: "0.3px" }}>PAID</span>
+                            : <span style={{ fontSize: 9, fontWeight: 800, background: "#fef3c7", color: "#92400e", padding: "2px 7px", borderRadius: 20, letterSpacing: "0.3px" }}>{(s.payroll?.status || "draft").toUpperCase()}</span>
+                          }
                         </div>
-                      );
-                    })
-                  )}
+                        <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 5 }}>{s.payroll?.payroll_no}</div>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: isActive ? "#1e5fae" : "#1e293b" }}>{fmt(s.net_salary)}</div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Right: slip detail */}
-                <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
+                <div style={{ flex: 1, overflow: "auto", padding: "20px 16px" }}>
                   {!slip ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 8, color: "#9ca3af" }}>
-                      <div style={{ fontSize: 40 }}>👈</div>
-                      <div style={{ fontSize: 14 }}>Select a month to view your slip</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 12, color: "#94a3b8" }}>
+                      <div style={{ fontSize: 64, opacity: 0.2 }}>🧾</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Select a month from the left to view your slip</div>
                     </div>
                   ) : (
-                    <div style={{ maxWidth: 700, margin: "0 auto" }}>
-                      {/* Slip card */}
-                      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                        {/* Slip header */}
-                        <div style={{ background: "#102a43", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div>
-                            <div style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>
-                              {getMonthName((slip.payroll?.month || 1) - 1)} {slip.payroll?.year} — Salary Slip
+                    <div style={{ minWidth: 680, maxWidth: 860, margin: "0 auto", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+                      <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(11,31,58,0.18)", border: "1px solid #dde3ed" }}>
+
+                        {/* ══ HEADER ══ */}
+                        <div style={{ background: "linear-gradient(135deg,#0B1F3A 0%,#0d2847 55%,#112240 100%)", padding: "22px 30px", position: "relative", overflow: "hidden" }}>
+                          <div style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(212,175,55,0.06)", pointerEvents: "none" }} />
+                          <div style={{ position: "absolute", right: 90, bottom: -70, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
+                            {/* Left — logo + company */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                              <div style={{ width: 52, height: 52, borderRadius: 12, background: "linear-gradient(135deg,#D4AF37,#f0d060)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(212,175,55,0.45)", flexShrink: 0 }}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="#0B1F3A"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                              </div>
+                              <div>
+                                <div style={{ color: "#D4AF37", fontWeight: 900, fontSize: 17, letterSpacing: "1.5px", textTransform: "uppercase", lineHeight: 1 }}>Orethan</div>
+                                <div style={{ color: "rgba(255,255,255,0.85)", fontWeight: 700, fontSize: 10, letterSpacing: "0.6px", marginTop: 3 }}>MICROFINANCE LTD</div>
+                                <div style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 9, marginTop: 2, fontStyle: "italic" }}>Empowering Financial Growth</div>
+                              </div>
                             </div>
-                            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 4 }}>
-                              {slip.payroll?.payroll_no} · Pay Date: {slip.payroll?.pay_date}
+                            {/* Right — title + badge */}
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ color: "#fff", fontWeight: 900, fontSize: 26, letterSpacing: "5px", textTransform: "uppercase", lineHeight: 1 }}>SALARY SLIP</div>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 7, margin: "6px 0" }}>
+                                <div style={{ height: 1, width: 36, background: "linear-gradient(to right,transparent,#D4AF37)" }} />
+                                <span style={{ color: "#D4AF37", fontSize: 9, fontWeight: 700, letterSpacing: "2.5px" }}>CONFIDENTIAL</span>
+                                <div style={{ height: 1, width: 36, background: "linear-gradient(to left,transparent,#D4AF37)" }} />
+                              </div>
+                              <div style={{ display: "inline-block", background: "#D4AF37", color: "#0B1F3A", fontWeight: 900, fontSize: 10, letterSpacing: "1.5px", padding: "5px 14px", borderRadius: 4 }}>
+                                {getMonthName((slip.payroll?.month || 1) - 1).toUpperCase()} {slip.payroll?.year}
+                              </div>
                             </div>
                           </div>
-                          {slip.payment_status === "paid" ? (
-                            <span style={{ background: "#d1fae5", color: "#059669", fontWeight: 800, fontSize: 12, padding: "5px 14px", borderRadius: 20 }}>✅ PAID</span>
-                          ) : (
-                            <span style={{ background: "#fef9c3", color: "#a16207", fontWeight: 800, fontSize: 12, padding: "5px 14px", borderRadius: 20 }}>
-                              {(slip.payroll?.status || "draft").toUpperCase()}
-                            </span>
-                          )}
                         </div>
 
-                        {/* Net salary highlight */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: "1px solid #f1f5f9" }}>
+                        {/* Gold line */}
+                        <div style={{ height: 3, background: "linear-gradient(to right,#D4AF37,#f0d060,#D4AF37)" }} />
+
+                        {/* ══ SECTION 1: Employee Info + Pay Period ══ */}
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 0, background: "#fff" }}>
+                          {/* Employee */}
+                          <div style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "20px 20px 20px 28px", borderRight: "1px solid #e9ecef" }}>
+                            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#0B1F3A,#1a3a5c)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 28, flexShrink: 0, border: "3px solid #D4AF37", boxShadow: "0 4px 14px rgba(212,175,55,0.28)" }}>
+                              {(myEmployee?.full_name || "?").charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 900, fontSize: 15, color: "#0B1F3A", marginBottom: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{myEmployee?.full_name}</div>
+                              <div style={{ color: "#D4AF37", fontWeight: 700, fontSize: 11, marginBottom: 8 }}>{myEmployee?.designation || "Staff"}</div>
+                              {[
+                                { label: "Employee ID", val: myEmployee?.employee_id },
+                                { label: "Department",  val: myEmployee?.department },
+                                { label: "Date Joined", val: myEmployee?.date_of_joining },
+                                { label: "Bank",        val: myEmployee?.bank_name },
+                                { label: "TIN",         val: myEmployee?.tin },
+                                { label: "Work Station",val: myEmployee?.work_station },
+                              ].filter(f => f.val).map((f, i) => (
+                                <div key={i} style={{ display: "flex", gap: 4, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 10, color: "#64748b", minWidth: 72, fontWeight: 600, flexShrink: 0 }}>{f.label}</span>
+                                  <span style={{ fontSize: 10, color: "#1e293b", minWidth: 0, wordBreak: "break-word" }}>: {f.val}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Pay period + Net Pay — unified card */}
+                          <div style={{ padding: "20px 28px 20px 20px" }}>
+                            <div style={{ border: "1px solid #dde3ed", borderRadius: 10, overflow: "hidden" }}>
+                              {/* Pay period header */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", background: "#F5F7FA", borderBottom: "1px solid #e2e8f0" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0B1F3A" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <span style={{ fontSize: 9, fontWeight: 800, color: "#0B1F3A", textTransform: "uppercase", letterSpacing: "0.8px" }}>Pay Period</span>
+                              </div>
+                              {/* Pay period rows */}
+                              {[
+                                { label: "Pay Period",   val: `${getMonthName((slip.payroll?.month || 1) - 1)} ${slip.payroll?.year}` },
+                                { label: "Pay Cycle",    val: "Monthly" },
+                                { label: "Payment Date", val: slip.payroll?.pay_date || "--" },
+                                { label: "Slip No.",     val: slip.payroll?.payroll_no || "--" },
+                              ].map((r, i) => (
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 14px", borderBottom: "1px solid #f1f5f9", gap: 8, background: "#fff" }}>
+                                  <span style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>{r.label}</span>
+                                  <span style={{ fontSize: 11, color: "#0B1F3A", fontWeight: 700, textAlign: "right" }}>{r.val}</span>
+                                </div>
+                              ))}
+                              {/* Net Pay — fused bottom of same card */}
+                              <div style={{ background: "#0B1F3A", padding: "12px 14px", position: "relative", overflow: "hidden" }}>
+                                <div style={{ position: "absolute", right: -14, bottom: -14, width: 60, height: 60, borderRadius: "50%", background: "rgba(212,175,55,0.12)", pointerEvents: "none" }} />
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
+                                  <div>
+                                    <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 3 }}>Net Pay</div>
+                                    {isPaidSlip && (
+                                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.4)", borderRadius: 20, padding: "2px 8px" }}>
+                                        <span style={{ color: "#4ade80", fontSize: 9, fontWeight: 700 }}>✓ PAID</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ textAlign: "right" }}>
+                                    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, marginBottom: 1 }}>TZS</div>
+                                    <div style={{ color: "#D4AF37", fontWeight: 900, fontSize: 22, letterSpacing: "-0.5px", lineHeight: 1 }}>{fmtNum(slip.net_salary)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Thin gold rule */}
+                        <div style={{ height: 1, background: "linear-gradient(to right,transparent,#D4AF37 30%,#D4AF37 70%,transparent)", margin: "0 30px" }} />
+
+                        {/* ══ SECTION 2: Earnings & Deductions ══ */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+                          {/* Earnings */}
+                          <div style={{ padding: "18px 22px 16px 30px", borderRight: "1px solid #e2e8f0" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, background: "#0B1F3A", borderRadius: 7, padding: "9px 12px" }}>
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(212,175,55,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>💰</div>
+                              <span style={{ color: "#fff", fontWeight: 800, fontSize: 11, letterSpacing: "1px", textTransform: "uppercase" }}>Earnings</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "0 0 5px", borderBottom: "2px solid #e2e8f0", marginBottom: 6 }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Description</span>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Amount (TZS)</span>
+                            </div>
+                            {earnings_my.filter((d: any) => d.amount > 0).map((d: any) => (
+                              <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px dashed #f1f5f9" }}>
+                                <span style={{ fontSize: 12, color: "#374151" }}>{d.component?.name}</span>
+                                <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{fmtNum(d.amount)}</span>
+                              </div>
+                            ))}
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0 0", borderTop: "2px solid #0B1F3A", marginTop: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "#0B1F3A", textTransform: "uppercase" }}>Total Earnings</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: "#0B1F3A" }}>{fmtNum(slip.gross_salary)}</span>
+                            </div>
+                          </div>
+
+                          {/* Deductions */}
+                          <div style={{ padding: "18px 30px 16px 22px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, background: "#0B1F3A", borderRadius: 7, padding: "9px 12px" }}>
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(220,38,38,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>📉</div>
+                              <span style={{ color: "#fff", fontWeight: 800, fontSize: 11, letterSpacing: "1px", textTransform: "uppercase" }}>Deductions</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "0 0 5px", borderBottom: "2px solid #e2e8f0", marginBottom: 6 }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.5px" }}>Description</span>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.5px" }}>Amount (TZS)</span>
+                            </div>
+                            {deductions_my.filter((d: any) => d.amount > 0).map((d: any) => (
+                              <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px dashed #f1f5f9" }}>
+                                <span style={{ fontSize: 12, color: "#374151" }}>{d.component?.name}</span>
+                                <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>{fmtNum(d.amount)}</span>
+                              </div>
+                            ))}
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0 0", borderTop: "2px solid #dc2626", marginTop: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Deductions</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: "#dc2626" }}>{fmtNum(slip.total_deductions)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ══ SECTION 3: 4-stat summary cards ══ */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: "#F5F7FA", borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0" }}>
                           {[
-                            { label: "Gross Salary", val: slip.gross_salary, color: "#059669" },
-                            { label: "Deductions", val: slip.total_deductions, color: "#ef4444" },
-                            { label: "Net Salary", val: slip.net_salary, color: "#102a43" },
+                            { icon: "💼", label: "GROSS PAY",        val: slip.gross_salary,       color: "#0B1F3A" },
+                            { icon: "➖", label: "TOTAL DEDUCTIONS",  val: slip.total_deductions,   color: "#dc2626" },
+                            { icon: "💳", label: "NET PAY",           val: slip.net_salary,         color: "#059669" },
+                            { icon: "📊", label: "TAXABLE PAY",       val: Math.max(0, Number(slip.gross_salary) - deductions_my.filter((d: any) => d.component?.taxable === false).reduce((s: number, d: any) => s + Number(d.amount), 0)), color: "#b45309" },
                           ].map((item, i) => (
-                            <div key={i} style={{ padding: "18px 20px", textAlign: "center", borderRight: i < 2 ? "1px solid #f1f5f9" : "none", background: i === 2 ? "#f0fdf4" : "#fff" }}>
-                              <div style={{ fontWeight: 800, fontSize: 22, color: item.color }}>{fmtNum(item.val)}</div>
-                              <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 3 }}>{item.label}</div>
+                            <div key={i} style={{ padding: "14px 12px", textAlign: "center", borderRight: i < 3 ? "1px solid #e2e8f0" : "none" }}>
+                              <div style={{ fontSize: 18, marginBottom: 5 }}>{item.icon}</div>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>{item.label}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", marginBottom: 1 }}>TZS</div>
+                              <div style={{ fontWeight: 900, fontSize: 14, color: item.color }}>{fmtNum(item.val)}</div>
                             </div>
                           ))}
                         </div>
 
-                        {/* Breakdown table */}
-                        <div style={{ padding: "0 0 20px" }}>
-                          {earnings_my.length > 0 && (
-                            <>
-                              <div style={{ padding: "12px 20px 6px", fontSize: 11, fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "1px", borderBottom: "1px solid #f1f5f9" }}>Earnings</div>
-                              {earnings_my.map((d: any) => d.amount > 0 && (
-                                <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #f9fafb", fontSize: 13 }}>
-                                  <span style={{ color: "#374151", fontWeight: 500 }}>{d.component?.name}</span>
-                                  <span style={{ fontWeight: 600, color: "#1e293b" }}>TZS {fmtNum(d.amount)}</span>
-                                </div>
-                              ))}
-                            </>
-                          )}
-                          {deductions_my.length > 0 && (
-                            <>
-                              <div style={{ padding: "12px 20px 6px", fontSize: 11, fontWeight: 800, color: "#ef4444", textTransform: "uppercase", letterSpacing: "1px", borderBottom: "1px solid #f1f5f9" }}>Deductions</div>
-                              {deductions_my.map((d: any) => d.amount > 0 && (
-                                <div key={d.component?.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #f9fafb", fontSize: 13 }}>
-                                  <span style={{ color: "#374151", fontWeight: 500 }}>{d.component?.name}</span>
-                                  <span style={{ fontWeight: 600, color: "#ef4444" }}>− TZS {fmtNum(d.amount)}</span>
-                                </div>
-                              ))}
-                            </>
-                          )}
-                          {/* Net total row */}
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 20px", background: "#f0fdf4", marginTop: 4, borderTop: "2px solid #bbf7d0" }}>
-                            <span style={{ fontWeight: 800, fontSize: 14, color: "#102a43" }}>NET SALARY</span>
-                            <span style={{ fontWeight: 800, fontSize: 14, color: "#059669" }}>TZS {fmtNum(slip.net_salary)}</span>
+                        {/* ══ SECTION 4: Message + Authorization ══ */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "18px 30px", background: "#fff", borderBottom: "1px solid #e2e8f0", gap: 24 }}>
+                          {/* Message */}
+                          <div style={{ paddingRight: 20, borderRight: "1px solid #e2e8f0" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#0B1F3A", textTransform: "uppercase", letterSpacing: "0.8px" }}>Message</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.7, marginBottom: 10 }}>Thank you for your dedication and commitment. Your hard work makes a difference to our mission and values.</div>
+                            <div style={{ fontFamily: "Georgia,serif", fontSize: 15, color: "#D4AF37", fontStyle: "italic" }}>We value you!</div>
                           </div>
-                          <div style={{ padding: "4px 20px 10px", fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>
-                            {numberToWords(Number(slip.net_salary))}
+                          {/* Authorization */}
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#0B1F3A", textTransform: "uppercase", letterSpacing: "0.8px" }}>Authorized By</span>
+                            </div>
+                            {slip.payroll?.approved_by?.name
+                              ? <div style={{ fontSize: 14, fontWeight: 700, color: "#0B1F3A", fontFamily: "Georgia,serif", fontStyle: "italic", marginBottom: 4 }}>{slip.payroll.approved_by.name}</div>
+                              : <div style={{ height: 24, borderBottom: "1px solid #94a3b8", width: 130, marginBottom: 6 }} />
+                            }
+                            <div style={{ height: 1, background: "#d1d5db", width: 130, marginBottom: 6 }} />
+                            <div style={{ fontSize: 10, color: "#64748b" }}>Finance Manager — Orethan Microfinance Ltd</div>
+                            <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 6 }}>Generated: {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</div>
                           </div>
                         </div>
 
-                        {/* Payment + email footer */}
-                        <div style={{ borderTop: "1px solid #f1f5f9", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafafa" }}>
-                          <div>
-                            {slip.payment_status === "paid" ? (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ fontSize: 20 }}>✅</span>
-                                <div>
-                                  <div style={{ fontWeight: 700, fontSize: 13, color: "#059669" }}>Salary Paid</div>
-                                  <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                                    {slip.payment_date || slip.payroll?.pay_date}
-                                    {slip.payment_method ? ` · ${slip.payment_method.replace(/_/g, " ")}` : ""}
-                                    {slip.payment_reference ? ` · Ref: ${slip.payment_reference}` : ""}
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ fontSize: 20 }}>⏳</span>
-                                <div style={{ fontWeight: 700, fontSize: 13, color: "#f59e0b" }}>Payment Pending</div>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            {slip.email_status === "sent" ? (
-                              <span style={{ fontSize: 12, color: "#059669", background: "#d1fae5", padding: "3px 10px", borderRadius: 12 }}>
-                                ✉ Slip emailed {slip.email_sent_at ? new Date(slip.email_sent_at).toLocaleDateString() : ""}
-                              </span>
-                            ) : slip.email_status === "failed" ? (
-                              <span style={{ fontSize: 12, color: "#ef4444", background: "#fee2e2", padding: "3px 10px", borderRadius: 12 }}>✕ Email failed</span>
-                            ) : (
-                              <span style={{ fontSize: 12, color: "#9ca3af" }}>Email not sent</span>
-                            )}
-                          </div>
+                        {/* ══ FOOTER ══ */}
+                        <div style={{ background: "#0B1F3A", padding: "12px 30px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                          {[
+                            { icon: "📞", text: "+255 123 456 789" },
+                            { icon: "✉",  text: "info@orethan.co.tz" },
+                            { icon: "🌐", text: "www.orethan.co.tz" },
+                            { icon: "📍", text: "P.O. Box 123, Tanzania" },
+                          ].map((f, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <span style={{ fontSize: 10 }}>{f.icon}</span>
+                              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.5)" }}>{f.text}</span>
+                            </div>
+                          ))}
                         </div>
+                        <div style={{ background: "#0B1F3A", padding: "6px 30px 12px", textAlign: "center", borderTop: "1px solid rgba(212,175,55,0.2)" }}>
+                          <span style={{ fontSize: 8, color: "#D4AF37", fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase" }}>This is a computer generated document and does not require a signature.</span>
+                        </div>
+
                       </div>
                     </div>
                   )}
@@ -882,7 +1010,7 @@ export default function Payroll() {
         <div className="pay-tab-bar">
           {allowedTabs.map(tKey => (
             <button key={tKey} className={`pay-tab ${tab === tKey ? "pay-tab--active" : ""}`} onClick={() => setTab(tKey)}>
-              {tKey === "runs" ? `📋 ${t("payroll_runs")}` : tKey === "components" ? `⚙️ ${t("salary_components")}` : tKey === "employees" ? `👥 ${t("employees")}` : `🧾 ${t("my_slips")}`}
+              {tKey === "runs" ? `📋 ${t("payroll_runs")}` : tKey === "components" ? `⚙️ ${t("salary_components")}` : tKey === "employees" ? `👥 ${t("employees")}` : tKey === "myslips" ? `🧾 ${t("my_slips")}` : `🏢 Department Breakdown`}
             </button>
           ))}
           <div className="pay-tab-space" />
@@ -903,10 +1031,10 @@ export default function Payroll() {
         </div>
       )}
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││
           TAB: RUNS " 3-column layout
-          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      {tab === "runs" && (
+          ││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││ */}
+      {tab === "runs" && isPayrollAdmin && (
         <>
           {/* Filters bar */}
           <div className="pay-filters">
@@ -922,35 +1050,35 @@ export default function Payroll() {
                 <option key={s} value={s}>{t(`status_actions.${s}`)}</option>
               ))}
             </select>
+            {payrolls.length > 0 && (
+              <>
+                <div className="pay-filter-sep" />
+                <div className="pay-filter-run-scroll">
+                  {payrolls.map(p => (
+                    <button
+                      key={p.id}
+                      className={`pay-filter-run-btn ${payroll?.id === p.id ? "pay-filter-run-btn--active" : ""}`}
+                      onClick={() => loadPayroll(p.id)}
+                    >
+                      <span className="pay-filter-run-no">{p.payroll_no}</span>
+                      <span className="pay-filter-run-period">{getMonthName(p.month - 1)} {p.year}</span>
+                      <span className="pay-badge" style={{ background: (statusColor[p.status] || "#059669") + "22", color: statusColor[p.status] || "#059669", border: `1px solid ${(statusColor[p.status] || "#059669")}44`, fontSize: 10 }}>
+                        {t(`status_actions.${p.status}`).toUpperCase()}
+                      </span>
+                      <span className="pay-filter-run-date">{t("pay_date")}: {p.pay_date}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="pay-3col">
-            {/* â€â€ LEFT: Payroll runs list â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€ */}
-            <div className="pay-col-left">
-              <div className="pay-col-hd">{t("payroll_runs")}</div>
-              {payrolls.length === 0 && <div className="pay-empty">{t("no_payrolls", { defaultValue: "No payrolls found" })}</div>}
-              {payrolls.map(p => (
-                <div key={p.id}
-                  className={`pay-run-card ${payroll?.id === p.id ? "pay-run-card--active" : ""}`}
-                  onClick={() => loadPayroll(p.id)}
-                >
-                  <div className="pay-run-no">{p.payroll_no}</div>
-                  <div className="pay-run-period">{getMonthName(p.month - 1)} {p.year}</div>
-                  <div className="pay-run-row">
-                    <span className="pay-badge" style={{ background: statusColor[p.status] + "22", color: statusColor[p.status], border: `1px solid ${statusColor[p.status]}44` }}>
-                      {t(`status_actions.${p.status}`).toUpperCase()}
-                    </span>
-                    <span className="pay-run-date">{t("pay_date")}: {p.pay_date}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* â€â€ CENTER: Employee table â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€ */}
+            {/* ── CENTER: Employee table ─────────────────────────────── */}
             <div className="pay-col-center">
               {!payroll ? (
                 <div className="pay-analytics-panel">
-                  <div className="pay-analytics-title">📊 Payroll Analytics — Last 12 Months</div>
+                  <div className="pay-analytics-title">📊 Payroll Analytics -- Last 12 Months</div>
                   {analytics.length === 0 ? (
                     <div className="pay-empty pay-empty--big" style={{ marginTop: 24 }}>
                       <div className="pay-empty-icon">📊</div>
@@ -995,13 +1123,20 @@ export default function Payroll() {
                 </div>
               ) : (
                 <>
-                  {/* Payroll header */}
+                  {/* Payroll header — single compact bar */}
                   <div className="pay-payroll-hd">
-                    <div>
-                      <div className="pay-payroll-title">{payroll.payroll_no}</div>
-                      <div className="pay-payroll-sub">{getMonthName(payroll.month - 1)} {payroll.year} · {t("pay_date")}: {payroll.pay_date}</div>
+                    <div className="pay-payroll-meta">
+                      <span className="pay-payroll-title">{payroll.payroll_no}</span>
+                      <span className="pay-payroll-dot">·</span>
+                      <span className="pay-payroll-sub">{getMonthName(payroll.month - 1)} {payroll.year}</span>
+                      <span className="pay-payroll-dot">·</span>
+                      <span className="pay-payroll-sub">{t("pay_date")}: {payroll.pay_date}</span>
                       {payroll.gl_post_journal_id && (
-                        <div className="pay-gl-ref">📒 GL Expense JE#{payroll.gl_post_journal_id} · {payroll.gl_pay_journal_id ? `💳 Payment JE#${payroll.gl_pay_journal_id}` : "Payment pending"}</div>
+                        <>
+                          <span className="pay-payroll-dot">·</span>
+                          <span className="pay-gl-ref">📒 JE#{payroll.gl_post_journal_id}</span>
+                          {payroll.gl_pay_journal_id && <><span className="pay-payroll-dot">·</span><span className="pay-gl-ref">💳 JE#{payroll.gl_pay_journal_id}</span></>}
+                        </>
                       )}
                     </div>
                     <div className="pay-payroll-actions">
@@ -1028,32 +1163,6 @@ export default function Payroll() {
                       <div className="pay-stat pay-stat--earn"><span>{fmt(totals.gross)}</span><label>{t("financials.gross_salary")}</label></div>
                       <div className="pay-stat pay-stat--ded"><span>{fmt(totals.ded)}</span><label>{t("financials.total_deductions")}</label></div>
                       <div className="pay-stat pay-stat--net"><span>{fmt(totals.net)}</span><label>{t("financials.net_salary")}</label></div>
-                    </div>
-                  )}
-
-                  {/* Department breakdown */}
-                  {breakdown.length > 0 && (
-                    <div className="pay-breakdown">
-                      <div className="pay-breakdown-title">Department Breakdown</div>
-                      <div className="pay-table-wrap">
-                        <table className="pay-table">
-                          <thead>
-                            <tr><th>Department</th><th className="pay-r">Staff</th><th className="pay-r">Gross</th><th className="pay-r">Net</th><th className="pay-r">Paid</th><th className="pay-r">Emailed</th></tr>
-                          </thead>
-                          <tbody>
-                            {breakdown.map((b, i) => (
-                              <tr key={i}>
-                                <td>{b.department}</td>
-                                <td className="pay-r">{b.headcount}</td>
-                                <td className="pay-r pay-bold">{fmtNum(b.gross)}</td>
-                                <td className="pay-r pay-net">{fmtNum(b.net)}</td>
-                                <td className="pay-r">{b.paid_count}/{b.headcount}</td>
-                                <td className="pay-r">{b.emailed_count}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
                     </div>
                   )}
 
@@ -1099,7 +1208,7 @@ export default function Payroll() {
                               ) : item.employee.email ? (
                                 <span className="pay-email-badge pay-email-badge--pending">⏳ Pending</span>
                               ) : (
-                                <span className="pay-email-badge pay-email-badge--none">—</span>
+                                <span className="pay-email-badge pay-email-badge--none">--</span>
                               )}
                             </td>
                           </tr>
@@ -1112,13 +1221,8 @@ export default function Payroll() {
             </div>
 
             {/* --- RIGHT: Salary slip preview --------------------------------------- */}
-            <div className="pay-col-right">
-              {!selItem ? (
-                <div className="pay-empty pay-empty--big">
-                  <div className="pay-empty-icon">🧾</div>
-                  <div>{t("click_employee_preview")}</div>
-                </div>
-              ) : (
+            {selItem && <div className="pay-col-right">
+              {(
                 <>
                   <div className="pay-slip-hd">
                     <div>
@@ -1184,10 +1288,10 @@ export default function Payroll() {
                         </button>
                       )}
                       {selItem.email_sent_at && (
-                        <div className="pay-email-info">Last emailed: {new Date(selItem.email_sent_at).toLocaleString()} — <span style={{ color: selItem.email_status === "sent" ? "#059669" : "#ef4444" }}>{selItem.email_status}</span></div>
+                        <div className="pay-email-info">Last emailed: {new Date(selItem.email_sent_at).toLocaleString()} -- <span style={{ color: selItem.email_status === "sent" ? "#059669" : "#ef4444" }}>{selItem.email_status}</span></div>
                       )}
                       {!selItem.employee.email && ["posted", "paid"].includes(payroll.status) && (
-                        <div className="pay-email-info pay-email-info--warn">⚠ No work email — slip cannot be emailed</div>
+                        <div className="pay-email-info pay-email-info--warn">⚠ No work email -- slip cannot be emailed</div>
                       )}
                     </div>
                   )}
@@ -1215,7 +1319,7 @@ export default function Payroll() {
                   )}
                 </>
               )}
-            </div>
+            </div>}
           </div>
         </>
       )}
@@ -1283,7 +1387,7 @@ export default function Payroll() {
                 {/* Left: slip list filtered by year */}
                 <div className="pay-col-left">
                   <div className="pay-col-hd">
-                    {myYearFilter} — {filteredSlips.length} slip{filteredSlips.length !== 1 ? "s" : ""}
+                    {myYearFilter} -- {filteredSlips.length} slip{filteredSlips.length !== 1 ? "s" : ""}
                   </div>
                   {filteredSlips.length === 0 && (
                     <div className="pay-empty" style={{ padding: "24px 16px" }}>
@@ -1319,7 +1423,7 @@ export default function Payroll() {
                     <>
                       <div className="pay-payroll-hd">
                         <div>
-                          <div className="pay-payroll-title">{mySelSlip.payroll?.payroll_no} — {getMonthName((mySelSlip.payroll?.month || 1) - 1)} {mySelSlip.payroll?.year}</div>
+                          <div className="pay-payroll-title">{mySelSlip.payroll?.payroll_no} -- {getMonthName((mySelSlip.payroll?.month || 1) - 1)} {mySelSlip.payroll?.year}</div>
                           <div className="pay-payroll-sub">Pay Date: {mySelSlip.payroll?.pay_date}</div>
                         </div>
                         <button className="pay-btn pay-btn--primary" onClick={printMySlip}>🖨️ Print</button>
@@ -1363,7 +1467,7 @@ export default function Payroll() {
                         </div>
                       </div>
 
-                      {/* Payment status panel — clean, no clutter */}
+                      {/* Payment status panel -- clean, no clutter */}
                       <div className="pay-slip-status-panel">
                         {mySelSlip.payment_status === "paid" ? (
                           <div className="pay-slip-paid-block">
@@ -1385,7 +1489,7 @@ export default function Payroll() {
                           </div>
                         )}
 
-                        {/* Email status — clean single line */}
+                        {/* Email status -- clean single line */}
                         <div className="pay-slip-email-row">
                           {mySelSlip.email_status === "sent" ? (
                             <span className="pay-slip-email-badge pay-slip-email-badge--sent">✉ Slip emailed {mySelSlip.email_sent_at ? new Date(mySelSlip.email_sent_at).toLocaleDateString() : ""}</span>
@@ -1415,6 +1519,71 @@ export default function Payroll() {
         </div>
       )}
 
+      {/* --- Tab: Department Breakdown ---------------------------------------- */}
+      {tab === "breakdown" && (
+        <div style={{ padding: "10px 16px 24px", width: "100%" }}>
+          {!payroll ? (
+            <div className="pay-empty pay-empty--big">
+              <div className="pay-empty-icon">🏢</div>
+              <div>Select a payroll run from the <strong>Payroll Runs</strong> tab first</div>
+            </div>
+          ) : breakdown.length === 0 ? (
+            <div className="pay-empty pay-empty--big">
+              <div className="pay-empty-icon">📊</div>
+              <div>No department breakdown available for this payroll run</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#102a43" }}>Department Breakdown</div>
+                  <div style={{ fontSize: 12, color: "#8a7338", marginTop: 2 }}>{payroll.payroll_no} · {payroll.pay_date}</div>
+                </div>
+                <span className="pay-badge" style={{ background: (statusColor[payroll.status] || "#059669") + "22", color: statusColor[payroll.status] || "#059669", border: `1px solid ${(statusColor[payroll.status] || "#059669")}44`, fontSize: 12, padding: "5px 14px" }}>
+                  {payroll.status.toUpperCase()}
+                </span>
+              </div>
+              <div style={{ background: "white", borderRadius: 14, border: "1px solid #e8d5b0", overflow: "hidden", boxShadow: "0 4px 16px rgba(74,60,26,0.08)" }}>
+                <table className="pay-table">
+                  <thead>
+                    <tr>
+                      <th>Department</th>
+                      <th className="pay-r">Staff</th>
+                      <th className="pay-r">Gross</th>
+                      <th className="pay-r">Net</th>
+                      <th className="pay-r">Paid</th>
+                      <th className="pay-r">Emailed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdown.map((b, i) => (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 600, color: "#102a43" }}>{b.department || "Unassigned"}</td>
+                        <td className="pay-r">{b.headcount}</td>
+                        <td className="pay-r pay-bold">{fmtNum(b.gross)}</td>
+                        <td className="pay-r pay-net">{fmtNum(b.net)}</td>
+                        <td className="pay-r">{b.paid_count}/{b.headcount}</td>
+                        <td className="pay-r">{b.emailed_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)" }}>
+                      <td style={{ fontWeight: 800, color: "#e2bc8a", padding: "10px 14px", fontSize: 12 }}>TOTALS</td>
+                      <td className="pay-r" style={{ color: "#e2bc8a", padding: "10px 14px", fontWeight: 700 }}>{breakdown.reduce((s, b) => s + b.headcount, 0)}</td>
+                      <td className="pay-r" style={{ color: "#e2bc8a", padding: "10px 14px", fontWeight: 700 }}>{fmtNum(breakdown.reduce((s, b) => s + Number(b.gross), 0))}</td>
+                      <td className="pay-r" style={{ color: "#10b981", padding: "10px 14px", fontWeight: 800 }}>{fmtNum(breakdown.reduce((s, b) => s + Number(b.net), 0))}</td>
+                      <td className="pay-r" style={{ color: "#e2bc8a", padding: "10px 14px", fontWeight: 700 }}>{breakdown.reduce((s, b) => s + b.paid_count, 0)}/{breakdown.reduce((s, b) => s + b.headcount, 0)}</td>
+                      <td className="pay-r" style={{ color: "#e2bc8a", padding: "10px 14px", fontWeight: 700 }}>{breakdown.reduce((s, b) => s + b.emailed_count, 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* --- Tab: Salary Components ------------------------------------------- */}
       {tab === "components" && (
         <div className="pay-card">
@@ -1437,8 +1606,8 @@ export default function Payroll() {
                         {c.type}
                       </span>
                     </td>
-                    <td>{c.taxable ? "✅" : "—"}</td>
-                    <td>{c.statutory ? "⚖️" : "—"}</td>
+                    <td>{c.taxable ? "✅" : "--"}</td>
+                    <td>{c.statutory ? "⚖️" : "--"}</td>
                     <td className="pay-r">{fmtNum(c.default_amount)}</td>
                     <td>
                       <span style={{ color: c.active ? "#10b981" : "#94a3b8", fontWeight: 700 }}>{c.active ? t("columns.active") : t("inactive", { defaultValue: "Inactive" })}</span>
@@ -1469,17 +1638,17 @@ export default function Payroll() {
                 <tr><th>{t("columns.emp_id")}</th><th>{t("columns.name")}</th><th>{t("columns.department")}</th><th>{t("columns.designation")}</th><th>{t("columns.branch")}</th><th>{t("columns.type")}</th><th className="pay-r">{t("columns.basic_salary")}</th><th>{t("columns.bank")}</th><th>{t("columns.status")}</th><th>{t("columns.actions")}</th></tr>
               </thead>
               <tbody>
-                {employees.length === 0 && <tr><td colSpan={10} className="pay-tc pay-empty-sm">No employees yet — click "Add Employee"</td></tr>}
+                {employees.length === 0 && <tr><td colSpan={10} className="pay-tc pay-empty-sm">No employees yet -- click "Add Employee"</td></tr>}
                 {employees.map(e => (
                   <tr key={e.id}>
                     <td><code className="pay-code">{e.employee_id}</code></td>
                     <td className="pay-bold">{e.full_name}</td>
-                    <td>{e.department || "—"}</td>
-                    <td>{e.designation || "—"}</td>
-                    <td>{e.branch || "—"}</td>
+                    <td>{e.department || "--"}</td>
+                    <td>{e.designation || "--"}</td>
+                    <td>{e.branch || "--"}</td>
                     <td style={{ textTransform: "capitalize" }}>{e.employment_type}</td>
                     <td className="pay-r pay-bold">{fmtNum(e.basic_salary)}</td>
-                    <td>{e.bank_name ? `${e.bank_name} ···${(e.bank_account || "").slice(-4)}` : "—"}</td>
+                    <td>{e.bank_name ? `${e.bank_name} ···${(e.bank_account || "").slice(-4)}` : "--"}</td>
                     <td><span style={{ color: e.active ? "#10b981" : "#94a3b8", fontWeight: 700 }}>{e.active ? t("columns.active") : t("inactive", { defaultValue: "Inactive" })}</span></td>
                     <td>
                       <button className="pay-act-btn" onClick={() => openEmpForm(e)}>{t("actions.edit")}</button>
@@ -1493,9 +1662,9 @@ export default function Payroll() {
         </div>
       )}
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││
           MODAL: Create Payroll
-          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          ││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││││ */}
       {showCreate && (
         <div className="pay-overlay" onClick={() => setShowCreate(false)}>
           <div className="pay-modal" onClick={e => e.stopPropagation()}>
@@ -1636,116 +1805,217 @@ export default function Payroll() {
       {/* --- PRINT: Salary Slip (A4 portrait, hidden on screen) ---------------- */}
       {selItem && payroll && (
         <div className={`pay-print-slip ${printMode === "slip" ? "pay-print--active" : ""}`} ref={slipRef}>
-          <div className="psl-company">
-            <div className="psl-logo-wrap">
-              <div className="psl-logo-box">MF</div>
+
+          {/* Watermark — logo image, faint diagonal, shown in print CSS */}
+          <div className="psl-watermark">
+            <img src={orgLogo} alt="" />
+          </div>
+
+          {/* ══ LETTERHEAD HEADER (white, matches Financial Reports style) ══ */}
+          <div className="psl-lh">
+            <div className="psl-lh-left">
+              <img src={orgLogo} alt={orgName} className="psl-lh-logo" />
+              <div className="psl-lh-name">{orgName}</div>
+              {orgTagline && <div className="psl-lh-tag">{orgTagline}</div>}
             </div>
-            <div className="psl-company-info">
-              <div className="psl-company-name">MICROFINANCE INSTITUTION</div>
-              <div className="psl-company-detail">P.O. Box 12345, Dar es Salaam, Tanzania</div>
-              <div className="psl-company-detail">Tel: +255 22 000 0000 | Email: info@mfi.co.tz | TIN: 100-000-000</div>
+            <div className="psl-lh-contacts">
+              {orgAddress && (
+                <div className="psl-lh-row">
+                  <span className="psl-lh-ic">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+                  </span>
+                  <span>{orgAddress}</span>
+                </div>
+              )}
+              {orgEmail && (
+                <div className="psl-lh-row">
+                  <span className="psl-lh-ic">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>
+                  </span>
+                  <span>{orgEmail}</span>
+                </div>
+              )}
+              {orgPhone && (
+                <div className="psl-lh-row">
+                  <span className="psl-lh-ic">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  </span>
+                  <span><strong>Mobile:</strong> {orgPhone}</span>
+                </div>
+              )}
+              {!orgAddress && !orgEmail && !orgPhone && orgWebsite && (
+                <div className="psl-lh-row">
+                  <span className="psl-lh-ic">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  </span>
+                  <span>{orgWebsite}</span>
+                </div>
+              )}
             </div>
           </div>
-          <div className="psl-title-bar">
-            <div className="psl-title">SALARY SLIP</div>
-            <div className="psl-title-meta">
-              <span>Payroll: {payroll.payroll_no}</span>
-              <span>Period: {getMonthName(payroll.month)} {payroll.year}</span>
-              <span>Pay Date: {payroll.pay_date}</span>
+          {/* Colour bars (green + brand) */}
+          <div className="psl-lh-bars">
+            <div className="psl-lh-bar-green" />
+            <div className="psl-lh-bar-blue" style={{ background: `linear-gradient(90deg,${org.brand_color || "#1565c0"},#1d8ad1)` }} />
+          </div>
+
+          {/* ══ DOCUMENT TITLE BAND ══ */}
+          <div className="psl-hdr">
+            <div className="psl-hdr-title-txt">SALARY SLIP</div>
+            <div className="psl-hdr-conf">
+              <div className="psl-gold-line" />
+              <span>CONFIDENTIAL</span>
+              <div className="psl-gold-line" />
+            </div>
+            <div className="psl-month-badge">{getMonthName((payroll.month || 1) - 1).toUpperCase()} {payroll.year}</div>
+          </div>
+          <div className="psl-gold-bar" />
+
+          {/* ══ EMPLOYEE + PAY PERIOD ══ */}
+          <div className="psl-info-row">
+            {/* Employee */}
+            <div className="psl-emp-block">
+              <div className="psl-avatar">{selItem.employee.full_name.charAt(0).toUpperCase()}</div>
+              <div className="psl-emp-detail">
+                <div className="psl-emp-name">{selItem.employee.full_name}</div>
+                <div className="psl-emp-desig">{selItem.employee.designation || "Staff"}</div>
+                {[
+                  ["Employee ID", selItem.employee.employee_id],
+                  ["Department",  selItem.employee.department],
+                  ["Date Joined", selItem.employee.date_of_joining],
+                  ["Bank",        selItem.employee.bank_name],
+                  ["TIN",         selItem.employee.tin_number],
+                  ["Work Station",selItem.employee.branch],
+                ].filter(([,v]) => v).map(([l, v], i) => (
+                  <div key={i} className="psl-emp-row">
+                    <span className="psl-emp-lbl">{l}</span>
+                    <span className="psl-emp-val">: {v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pay period unified card */}
+            <div className="psl-pay-card">
+              <div className="psl-pay-card-hd">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0B1F3A" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                PAY PERIOD
+              </div>
+              {[
+                ["Pay Period",   `${getMonthName((payroll.month || 1) - 1)} ${payroll.year}`],
+                ["Pay Cycle",   "Monthly"],
+                ["Payment Date", payroll.pay_date || "--"],
+                ["Slip No.",    payroll.payroll_no || "--"],
+              ].map(([l, v], i) => (
+                <div key={i} className="psl-pay-row">
+                  <span className="psl-pay-lbl">{l}</span>
+                  <span className="psl-pay-val">{v}</span>
+                </div>
+              ))}
+              <div className="psl-net-box">
+                <div className="psl-net-left">
+                  <div className="psl-net-label">NET PAY</div>
+                  {(payroll.status === "paid" || payroll.status === "posted") && (
+                    <div className="psl-paid-pill">✓ PAID</div>
+                  )}
+                </div>
+                <div className="psl-net-right">
+                  <div className="psl-net-cur">TZS</div>
+                  <div className="psl-net-amt">{fmtNum(selItem.net_salary)}</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Status watermark for non-paid */}
-          {payroll.status !== "paid" && payroll.status !== "posted" && (
-            <div className="psl-watermark">{payroll.status.toUpperCase()}</div>
-          )}
+          <div className="psl-gold-rule" />
 
-          {/* Employee info */}
-          <div className="psl-emp-grid">
-            <div className="psl-emp-row"><span>Employee ID</span><strong>{selItem.employee.employee_id}</strong></div>
-            <div className="psl-emp-row"><span>Full Name</span><strong>{selItem.employee.full_name}</strong></div>
-            <div className="psl-emp-row"><span>Department</span><strong>{selItem.employee.department || "—"}</strong></div>
-            <div className="psl-emp-row"><span>Designation</span><strong>{selItem.employee.designation || "—"}</strong></div>
-            <div className="psl-emp-row"><span>Branch</span><strong>{selItem.employee.branch || "—"}</strong></div>
-            <div className="psl-emp-row"><span>Employment Type</span><strong style={{ textTransform: "capitalize" }}>{selItem.employee.employment_type}</strong></div>
-            {selItem.employee.nssf_number && <div className="psl-emp-row"><span>NSSF No.</span><strong>{selItem.employee.nssf_number}</strong></div>}
-            {selItem.employee.nhif_number && <div className="psl-emp-row"><span>NHIF No.</span><strong>{selItem.employee.nhif_number}</strong></div>}
-            {selItem.employee.tin_number && <div className="psl-emp-row"><span>TIN</span><strong>{selItem.employee.tin_number}</strong></div>}
-            {selItem.employee.bank_name && <div className="psl-emp-row"><span>Bank</span><strong>{selItem.employee.bank_name}</strong></div>}
-            {selItem.employee.bank_account && <div className="psl-emp-row"><span>Account No.</span><strong>{selItem.employee.bank_account}</strong></div>}
-          </div>
-
-          {/* Earnings & Deductions side-by-side */}
+          {/* ══ EARNINGS & DEDUCTIONS ══ */}
           <div className="psl-columns">
             <div className="psl-col">
               <div className="psl-col-hd psl-earn-hd">EARNINGS</div>
               <table className="psl-table">
-                <thead><tr><th>Description</th><th>Amount (TZS)</th></tr></thead>
+                <thead><tr><th>Description</th><th className="psl-r">Amount (TZS)</th></tr></thead>
                 <tbody>
                   {earnings.filter(d => d.amount > 0).map(d => (
                     <tr key={d.component.id}><td>{d.component.name}</td><td className="psl-r">{fmtNum(d.amount)}</td></tr>
                   ))}
+                  {earnings.filter(d => d.amount > 0).length === 0 && (
+                    <tr><td colSpan={2} className="psl-empty-row">No earnings components</td></tr>
+                  )}
                 </tbody>
                 <tfoot>
-                  <tr className="psl-subtotal"><td><strong>Gross Salary</strong></td><td className="psl-r"><strong>{fmtNum(selItem.gross_salary)}</strong></td></tr>
+                  <tr className="psl-subtotal psl-earn-foot"><td>Total Earnings</td><td className="psl-r">{fmtNum(selItem.gross_salary)}</td></tr>
                 </tfoot>
               </table>
             </div>
             <div className="psl-col">
               <div className="psl-col-hd psl-ded-hd">DEDUCTIONS</div>
               <table className="psl-table">
-                <thead><tr><th>Description</th><th>Amount (TZS)</th></tr></thead>
+                <thead><tr><th>Description</th><th className="psl-r" style={{color:"#b91c1c"}}>Amount (TZS)</th></tr></thead>
                 <tbody>
                   {deductions.filter(d => d.amount > 0).map(d => (
                     <tr key={d.component.id}><td>{d.component.name}</td><td className="psl-r">{fmtNum(d.amount)}</td></tr>
                   ))}
+                  {deductions.filter(d => d.amount > 0).length === 0 && (
+                    <tr><td colSpan={2} className="psl-empty-row">No deductions</td></tr>
+                  )}
                 </tbody>
                 <tfoot>
-                  <tr className="psl-subtotal"><td><strong>Total Deductions</strong></td><td className="psl-r"><strong>{fmtNum(selItem.total_deductions)}</strong></td></tr>
+                  <tr className="psl-subtotal psl-ded-foot"><td>Total Deductions</td><td className="psl-r">{fmtNum(selItem.total_deductions)}</td></tr>
                 </tfoot>
               </table>
             </div>
           </div>
 
-          {/* Net salary box */}
-          <div className="psl-net-section">
-            <div className="psl-net-row"><span>Gross Salary</span><span>{fmtNum(selItem.gross_salary)}</span></div>
-            <div className="psl-net-row psl-net-row--ded"><span>Less: Total Deductions</span><span>({fmtNum(selItem.total_deductions)})</span></div>
-            <div className="psl-net-divider" />
-            <div className="psl-net-row psl-net-row--total"><span>NET SALARY</span><span>{fmt(selItem.net_salary)}</span></div>
-            <div className="psl-net-divider" />
-            <div className="psl-in-words">In Words: <strong>{numberToWords(selItem.net_salary)}</strong></div>
+          {/* ══ 4-STAT SUMMARY ══ */}
+          <div className="psl-stats">
+            {[
+              { label: "GROSS PAY",       val: selItem.gross_salary,       color: "#0B1F3A" },
+              { label: "TOTAL DEDUCTIONS",val: selItem.total_deductions,   color: "#b91c1c" },
+              { label: "NET PAY",         val: selItem.net_salary,         color: "#065f46" },
+              { label: "IN WORDS",        val: numberToWords(selItem.net_salary), color: "#92400e", isText: true },
+            ].map((s, i) => (
+              <div key={i} className="psl-stat-cell" style={{ borderRight: i < 3 ? "1px solid #e2e8f0" : "none" }}>
+                <div className="psl-stat-label">{s.label}</div>
+                {s.isText
+                  ? <div className="psl-stat-words" style={{ color: s.color }}>{s.val}</div>
+                  : <><div className="psl-stat-cur">TZS</div><div className="psl-stat-val" style={{ color: s.color }}>{fmtNum(s.val as number)}</div></>
+                }
+              </div>
+            ))}
           </div>
 
-          {/* Payment info */}
-          <div className="psl-payment">
-            <div className="psl-payment-hd">PAYMENT INFORMATION</div>
-            <div className="psl-payment-row">
-              <span>Payment Method:</span>
-              <strong>{selItem.payment_method?.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase()) || "Bank Transfer"}</strong>
+          {/* ══ MESSAGE + AUTHORIZATION ══ */}
+          <div className="psl-bottom">
+            <div className="psl-msg">
+              <div className="psl-section-hd">MESSAGE</div>
+              <div className="psl-msg-body">Thank you for your dedication and commitment. Your hard work makes a difference to our mission and values.</div>
+              <div className="psl-msg-quote">We value you!</div>
             </div>
-            {selItem.employee.bank_name && (
-              <div className="psl-payment-row"><span>Bank:</span><strong>{selItem.employee.bank_name}</strong></div>
-            )}
-            {selItem.employee.bank_account && (
-              <div className="psl-payment-row"><span>Account No:</span><strong>{selItem.employee.bank_account}</strong></div>
-            )}
-            {selItem.payment_reference && (
-              <div className="psl-payment-row"><span>Transaction Ref:</span><strong>{selItem.payment_reference}</strong></div>
-            )}
+            <div className="psl-auth">
+              <div className="psl-section-hd">AUTHORIZED BY</div>
+              {payroll.approved_by?.name
+                ? <div className="psl-auth-name">{payroll.approved_by.name}</div>
+                : <div className="psl-auth-blank" />
+              }
+              <div className="psl-auth-line" />
+              <div className="psl-auth-role">Finance Manager — {orgName}</div>
+              <div className="psl-auth-date">Generated: {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</div>
+            </div>
           </div>
 
-          {/* Signature block */}
-          <div className="psl-sig-grid">
-            <div className="psl-sig-box"><div className="psl-sig-line" /><div>Prepared By</div><div className="psl-sig-name">Payroll Officer</div></div>
-            <div className="psl-sig-box"><div className="psl-sig-line" /><div>Approved By</div><div className="psl-sig-name">{payroll.approved_by?.name || "General Manager"}</div></div>
-            <div className="psl-sig-box"><div className="psl-sig-line" /><div>Received By</div><div className="psl-sig-name">{selItem.employee.full_name}</div></div>
+          {/* ══ FOOTER ══ */}
+          <div className="psl-footer-bar">
+            {orgPhone   && <span>{orgPhone}</span>}
+            {orgEmail   && <span>{orgEmail}</span>}
+            {orgWebsite && <span>{orgWebsite}</span>}
+            {orgAddress && <span>{orgAddress}</span>}
+            {!orgPhone && !orgEmail && !orgWebsite && !orgAddress && (
+              <span>{orgName} · Confidential Payroll Document</span>
+            )}
           </div>
-
-          <div className="psl-footer">
-            <div>Generated: {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
-            <div>⚡ This is a computer-generated salary slip. No signature is required if paid via bank transfer.</div>
-            <div className="psl-verify">Verify: {payroll.payroll_no}-{selItem.employee.employee_id}</div>
+          <div className="psl-footer-disc">
+            THIS IS A COMPUTER GENERATED DOCUMENT AND DOES NOT REQUIRE A SIGNATURE.
           </div>
         </div>
       )}
@@ -1754,7 +2024,13 @@ export default function Payroll() {
       {payroll && (
         <div className={`pay-print-stmt ${printMode === "stmt" ? "pay-print--active" : ""}`}>
           <div className="pst-header">
-            <div className="pst-company">MICROFINANCE INSTITUTION — PAYROLL STATEMENT</div>
+            <div className="pst-hdr-top">
+              <img src={orgLogo} alt={orgName} className="pst-logo" />
+              <div>
+                <div className="pst-company">{orgName.toUpperCase()} — PAYROLL STATEMENT</div>
+                {orgTagline && <div className="pst-tagline">{orgTagline}</div>}
+              </div>
+            </div>
             <div className="pst-meta">
               <span>{payroll.payroll_no}</span>
               <span>Period: {getMonthName(payroll.month)} {payroll.year}</span>
@@ -1784,15 +2060,15 @@ export default function Payroll() {
                   <td className="pst-r">{fmtNum(item.gross_salary)}</td>
                   <td className="pst-r">{fmtNum(item.total_deductions)}</td>
                   <td className="pst-r" style={{ fontWeight: 700 }}>{fmtNum(item.net_salary)}</td>
-                  <td>{item.employee.bank_name || "—"}</td>
-                  <td>{item.employee.bank_account || "—"}</td>
+                  <td>{item.employee.bank_name || "--"}</td>
+                  <td>{item.employee.bank_account || "--"}</td>
                   <td>{item.payment_status.replace("_", " ")}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="pst-total">
-                <td colSpan={5}><strong>TOTALS — {payroll.items.length} Employee(s)</strong></td>
+                <td colSpan={5}><strong>TOTALS -- {payroll.items.length} Employee(s)</strong></td>
                 <td className="pst-r"><strong>{totals ? fmtNum(totals.gross) : "0"}</strong></td>
                 <td className="pst-r"><strong>{totals ? fmtNum(totals.ded) : "0"}</strong></td>
                 <td className="pst-r"><strong>{totals ? fmtNum(totals.net) : "0"}</strong></td>
@@ -1805,7 +2081,7 @@ export default function Payroll() {
             <div className="pst-sig"><div className="pst-sig-line" /><div>Approved By / {payroll.approved_by?.name || "General Manager"}</div></div>
             <div className="pst-sig"><div className="pst-sig-line" /><div>Finance Director</div></div>
           </div>
-          <div className="pst-footer">Generated: {new Date().toLocaleString()} · {payroll.payroll_no} · Confidential — For Internal Use Only</div>
+          <div className="pst-footer">Generated: {new Date().toLocaleString()} · {payroll.payroll_no} · Confidential -- For Internal Use Only</div>
         </div>
       )}
 
@@ -1816,69 +2092,90 @@ export default function Payroll() {
 
 const CSS = `
 /* --- Page wrapper ---------------------------------------------------- */
-.pay-page { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; background:#f1f5f9; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; display:flex; flex-direction:column; }
+.pay-page { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; background:#fffcf6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; display:flex; flex-direction:column; }
 
 /* --- Tab bar --------------------------------------------------------- */
-.pay-tab-bar { display:flex; align-items:center; gap:6px; padding:14px 18px 0; background:#f1f5f9; position:sticky; top:0; z-index:10; border-bottom:2px solid #e2e8f0; }
-.pay-tab { padding:9px 20px; border:none; border-radius:10px 10px 0 0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:#64748b; transition:all .15s; }
-.pay-tab--active { background:white; color:#102a43; box-shadow:0 -2px 0 #1e5fae inset; }
-.pay-tab:hover:not(.pay-tab--active) { background:#e2e8f0; }
+.pay-tab-bar { display:flex; align-items:center; gap:0; padding:0 18px; background:linear-gradient(135deg,#102a43,#1d3a5f); position:sticky; top:0; z-index:10; border-bottom:2px solid #0d2137; overflow-x:auto; flex-shrink:0; }
+.pay-tab { white-space:nowrap; }
+.pay-tab { padding:13px 22px; border:none; border-radius:0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:rgba(255,255,255,.6); transition:all .15s; letter-spacing:.2px; }
+.pay-tab--active { background:rgba(255,255,255,.1); color:#e2bc8a; box-shadow:0 -3px 0 #e2bc8a inset; }
+.pay-tab:hover:not(.pay-tab--active) { background:rgba(255,255,255,.07); color:rgba(255,255,255,.9); }
 .pay-tab-space { flex:1; }
 
 /* --- Buttons --------------------------------------------------------- */
 .pay-btn { padding:8px 16px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }
-.pay-btn--primary  { background:#102a43; color:white; } .pay-btn--primary:hover  { background:#1e5fae; }
+.pay-btn--primary  { background:linear-gradient(135deg,#102a43,#1d3a5f); color:#e2bc8a; } .pay-btn--primary:hover  { background:linear-gradient(135deg,#0d2137,#102a43); }
 .pay-btn--blue     { background:#1e5fae; color:white; } .pay-btn--blue:hover     { background:#1d4ed8; }
 .pay-btn--purple   { background:#7c3aed; color:white; } .pay-btn--purple:hover   { background:#6d28d9; }
 .pay-btn--green    { background:#059669; color:white; } .pay-btn--green:hover    { background:#047857; }
 .pay-btn--danger   { background:#ef4444; color:white; } .pay-btn--danger:hover   { background:#dc2626; }
-.pay-btn--outline  { background:white; color:#102a43; border:1.5px solid #e2e8f0; } .pay-btn--outline:hover { border-color:#94a3b8; }
+.pay-btn--outline  { background:#fffcf6; color:#102a43; border:1.5px solid #c19a6b; } .pay-btn--outline:hover { background:#fdf3e3; border-color:#8a7338; }
 .pay-btn:disabled  { opacity:.5; cursor:not-allowed; }
 
 /* --- Filters bar ----------------------------------------------------- */
-.pay-filters { display:flex; gap:10px; padding:10px 18px; background:white; border-bottom:1px solid #e2e8f0; }
-.pay-filters select { padding:7px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; font-weight:600; color:#334155; background:white; cursor:pointer; }
+.pay-filters { display:flex; align-items:center; gap:10px; padding:8px 18px; background:#fffcf6; border-bottom:1px solid #e8d5b0; flex-shrink:0; }
+.pay-filters select { padding:7px 12px; border:1.5px solid #c19a6b; border-radius:8px; font-size:13px; font-weight:600; color:#102a43; background:#fffcf6; cursor:pointer; }
+.pay-filter-sep { width:1px; height:28px; background:#c19a6b; opacity:.4; flex-shrink:0; }
+.pay-filter-run-scroll { display:flex; align-items:center; gap:6px; overflow-x:auto; flex:1; scrollbar-width:none; }
+.pay-filter-run-scroll::-webkit-scrollbar { display:none; }
+.pay-filter-run-btn { display:inline-flex; align-items:center; gap:7px; padding:5px 12px; border-radius:20px; border:1.5px solid #e8d5b0; background:#fffcf6; cursor:pointer; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+.pay-filter-run-btn:hover { background:#fdf3e3; border-color:#c19a6b; }
+.pay-filter-run-btn--active { background:#102a43; border-color:#102a43; }
+.pay-filter-run-btn--active .pay-filter-run-no { color:#e2bc8a; }
+.pay-filter-run-btn--active .pay-filter-run-period { color:rgba(255,255,255,.65); }
+.pay-filter-run-btn--active .pay-filter-run-date { color:rgba(226,188,138,.7); }
+.pay-filter-run-no { font-size:12px; font-weight:800; color:#102a43; font-family:monospace; letter-spacing:.3px; }
+.pay-filter-run-period { font-size:11px; color:#64748b; font-weight:600; }
+.pay-filter-run-date { font-size:11px; color:#8a7338; font-weight:600; }
 
 /* --- 3-column body --------------------------------------------------- */
 .pay-3col { display:flex; flex:1; min-height:0; overflow:hidden; gap:0; }
 
 /* Left column - payroll runs */
-.pay-col-left { width:260px; min-width:220px; background:white; border-right:1px solid #e2e8f0; overflow-y:auto; display:flex; flex-direction:column; }
-.pay-col-hd { padding:14px 16px 10px; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid #f1f5f9; }
+.pay-col-left { width:260px; min-width:220px; background:#fffcf6; border-right:1px solid #e8d5b0; overflow-y:auto; display:flex; flex-direction:column; }
 
-.pay-run-card { padding:12px 16px; border-bottom:1px solid #f8fafc; cursor:pointer; transition:background .1s; }
-.pay-run-card:hover { background:#f8fafc; }
-.pay-run-card--active { background:#eff6ff; border-left:3px solid #1e5fae; }
+/* Responsive: hide side panels on small screens, allow horizontal scroll */
+@media (max-width: 900px) {
+  .pay-3col { overflow-x: auto; }
+  .pay-col-right { width: 280px; min-width: 240px; }
+}
+@media (max-width: 640px) {
+  .pay-col-left { display: none !important; }
+  .pay-col-right { display: none !important; }
+  .pay-summary-row { grid-template-columns: repeat(2, 1fr); }
+  .pay-filters { flex-wrap: wrap; }
+}
+/* Left column header */
+.pay-col-hd { padding:14px 16px 10px; font-size:11px; font-weight:800; color:#8a7338; text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid #e8d5b0; background:#fdf3e3; }
+
+.pay-run-card { display:block; width:100%; padding:12px 16px; border:none; border-bottom:1px solid #f0e4cc; border-left:3px solid transparent; background:transparent; cursor:pointer; text-align:left; transition:background .15s, border-left-color .15s; }
+.pay-run-card:hover { background:#fdf3e3; border-left-color:#e2bc8a; }
+.pay-run-card--active { background:#fdf3e3; border-left-color:#c19a6b; box-shadow:inset 2px 0 0 #c19a6b; }
 .pay-run-no { font-size:12px; font-weight:800; color:#102a43; font-family:monospace; }
 .pay-run-period { font-size:13px; color:#334155; font-weight:600; margin:2px 0; }
 .pay-run-row { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
-.pay-run-date { font-size:11px; color:#94a3b8; }
+.pay-run-date { font-size:11px; color:#8a7338; }
 
 /* Center column - employee table */
-.pay-col-center { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:#f8fafc; }
-.pay-payroll-hd { display:flex; justify-content:space-between; align-items:flex-start; padding:14px 18px 10px; background:white; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; gap:10px; }
-.pay-payroll-title { font-size:16px; font-weight:800; color:#102a43; font-family:monospace; }
-.pay-payroll-sub { font-size:12px; color:#64748b; margin-top:2px; }
+.pay-col-center { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:#fffcf6; }
+.pay-payroll-hd { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; background:linear-gradient(135deg,#102a43,#1d3a5f); border-bottom:1px solid #0d2137; flex-wrap:wrap; gap:8px; flex-shrink:0; }
+.pay-payroll-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
+.pay-payroll-title { font-size:13px; font-weight:800; color:#e2bc8a; font-family:monospace; white-space:nowrap; }
+.pay-payroll-sub { font-size:12px; color:rgba(255,255,255,.65); white-space:nowrap; }
+.pay-payroll-dot { font-size:12px; color:rgba(255,255,255,.3); flex-shrink:0; }
 .pay-payroll-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
-.pay-summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:10px 18px; background:white; border-bottom:1px solid #e2e8f0; }
-.pay-stat { background:#f8fafc; border-radius:10px; padding:10px 14px; text-align:center; }
-.pay-stat span { display:block; font-size:15px; font-weight:800; color:#102a43; }
-.pay-stat label { display:block; font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; margin-top:2px; }
-.pay-stat--earn span { color:#059669; }
-.pay-stat--ded span  { color:#ef4444; }
-.pay-stat--net  { background:linear-gradient(135deg,#102a43 0%,#1e5fae 100%); }
-.pay-stat--net span, .pay-stat--net label { color:white; }
+/* pay-summary-row and pay-stat defined below near pay-emp-card */
 
-.pay-table-wrap { flex:1; overflow:auto; }
+.pay-table-wrap { flex:1; overflow:auto; min-height:220px; }
 .pay-table { width:100%; border-collapse:collapse; font-size:13px; }
-.pay-table thead th { position:sticky; top:0; background:#f8fafc; padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
-.pay-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.pay-table thead th { position:sticky; top:0; background:linear-gradient(135deg,#102a43,#1d3a5f); padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:#e2bc8a; border-bottom:2px solid #0d2137; white-space:nowrap; }
+.pay-table td { padding:10px 14px; border-bottom:1px solid #f0e4cc; vertical-align:middle; background:#fffcf6; }
 .pay-tr { cursor:pointer; transition:background .1s; }
-.pay-tr:hover { background:#f0f9ff; }
-.pay-tr--active { background:#eff6ff !important; }
+.pay-tr:hover td { background:#fdf3e3 !important; }
+.pay-tr--active td { background:#fdf3e3 !important; }
 .pay-emp-name { font-weight:700; color:#102a43; }
-.pay-emp-sub  { font-size:11px; color:#94a3b8; margin-top:1px; }
+.pay-emp-sub  { font-size:11px; color:#8a7338; margin-top:1px; }
 .pay-r { text-align:right !important; }
 .pay-tc { text-align:center !important; }
 .pay-bold { font-weight:700; color:#102a43; }
@@ -1886,90 +2183,89 @@ const CSS = `
 .pay-net { color:#059669; font-weight:800; }
 
 /* Right column - slip preview */
-.pay-col-right { width:320px; min-width:280px; background:white; border-left:1px solid #e2e8f0; overflow-y:auto; display:flex; flex-direction:column; gap:0; padding:0; }
-.pay-slip-hd { display:flex; justify-content:space-between; align-items:flex-start; padding:14px 16px; border-bottom:1px solid #f1f5f9; gap:8px; position:sticky; top:0; background:white; z-index:2; }
-.pay-slip-name { font-size:14px; font-weight:800; color:#102a43; }
-.pay-slip-role { font-size:11px; color:#64748b; margin-top:2px; }
-.pay-slip-section-title { padding:8px 16px 4px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; background:#f8fafc; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; }
-.pay-slip-line { display:flex; justify-content:space-between; align-items:center; padding:6px 16px; border-bottom:1px solid #f8fafc; }
+.pay-col-right { width:320px; min-width:280px; background:#fffcf6; border-left:1px solid #e8d5b0; overflow-y:auto; display:flex; flex-direction:column; gap:0; padding:0; }
+.pay-slip-hd { display:flex; justify-content:space-between; align-items:flex-start; padding:14px 16px; border-bottom:1px solid #e8d5b0; gap:8px; position:sticky; top:0; background:linear-gradient(135deg,#102a43,#1d3a5f); z-index:2; }
+.pay-slip-name { font-size:14px; font-weight:800; color:#e2bc8a; }
+.pay-slip-role { font-size:11px; color:rgba(255,255,255,.6); margin-top:2px; }
+.pay-slip-section-title { padding:8px 16px 4px; font-size:10px; font-weight:800; color:#8a7338; text-transform:uppercase; letter-spacing:.5px; background:#fdf3e3; border-top:1px solid #e8d5b0; border-bottom:1px solid #e8d5b0; }
+.pay-slip-line { display:flex; justify-content:space-between; align-items:center; padding:6px 16px; border-bottom:1px solid #f0e4cc; }
 .pay-slip-line span { font-size:12px; color:#475569; }
 .pay-slip-line--ded span { color:#94a3b8; }
-.pay-slip-amt { font-size:12px; font-weight:700; color:#334155; }
-.pay-amt-input { width:90px; padding:4px 8px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:12px; font-weight:700; text-align:right; color:#102a43; }
-.pay-amt-input:focus { outline:none; border-color:#1e5fae; }
+.pay-slip-amt { font-size:12px; font-weight:700; color:#102a43; }
+.pay-amt-input { width:90px; padding:4px 8px; border:1.5px solid #c19a6b; border-radius:6px; font-size:12px; font-weight:700; text-align:right; color:#102a43; background:#fffcf6; }
+.pay-amt-input:focus { outline:none; border-color:#8a7338; }
 .pay-amt-input--ded { border-color:#fee2e2; color:#ef4444; }
-.pay-slip-subtotal { display:flex; justify-content:space-between; padding:8px 16px; background:#f8fafc; font-size:12px; border-top:1px solid #e2e8f0; }
+.pay-slip-subtotal { display:flex; justify-content:space-between; padding:8px 16px; background:#fdf3e3; font-size:12px; border-top:1px solid #e8d5b0; }
 .pay-slip-subtotal strong { color:#102a43; }
 .pay-slip-subtotal--ded strong { color:#ef4444; }
 
-.pay-gl-ref { font-size:11px; color:#6366f1; font-weight:600; margin-top:4px; }
+.pay-gl-ref { font-size:11px; color:rgba(226,188,138,.7); font-weight:600; white-space:nowrap; }
 .pay-analytics-panel { padding:16px; height:100%; overflow-y:auto; }
-.pay-analytics-title { font-size:14px; font-weight:700; color:#1e293b; margin-bottom:8px; }
-.pay-breakdown { padding:12px 0 0; border-top:1px solid #f1f5f9; margin:0 0 4px; }
-.pay-breakdown-title { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; padding:0 16px; }
-.pay-item-actions { display:flex; flex-direction:column; gap:8px; padding:10px 16px; border-top:1px solid #f1f5f9; }
+.pay-analytics-title { font-size:14px; font-weight:700; color:#102a43; margin-bottom:8px; }
+/* pay-breakdown and pay-breakdown-title defined below near pay-emp-card */
+.pay-item-actions { display:flex; flex-direction:column; gap:8px; padding:10px 16px; border-top:1px solid #e8d5b0; }
 .pay-btn--full { width:100%; justify-content:center; }
 .pay-paid-badge { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; border-radius:8px; padding:8px 12px; font-size:12px; font-weight:700; text-align:center; }
 .pay-email-badge { font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; white-space:nowrap; }
 .pay-email-badge--sent { background:#d1fae5; color:#065f46; border:1px solid #6ee7b744; }
 .pay-email-badge--pending { background:#fef3c7; color:#92400e; border:1px solid #fcd34d44; }
-.pay-email-badge--none { background:#f1f5f9; color:#94a3b8; }
+.pay-email-badge--none { background:#fdf3e3; color:#8a7338; }
 .pay-email-info { font-size:11px; color:#64748b; padding:0 2px; }
 .pay-email-info--warn { color:#b45309; background:#fef3c7; border-radius:6px; padding:6px 8px; }
 
 /* ── Payment Modal ────────────────────────────────────────────────────────── */
 .ppm-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-.ppm-box { background:white; border-radius:20px; width:100%; max-width:540px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.22); display:flex; flex-direction:column; }
-.ppm-hd { display:flex; align-items:flex-start; justify-content:space-between; padding:20px 22px 16px; border-bottom:1px solid #f1f5f9; }
-.ppm-title { font-size:16px; font-weight:900; color:#0f172a; }
-.ppm-sub { font-size:12px; color:#64748b; margin-top:2px; font-weight:600; }
-.ppm-close { border:none; background:none; font-size:18px; color:#94a3b8; cursor:pointer; padding:2px 6px; border-radius:6px; }
-.ppm-close:hover { background:#f1f5f9; color:#334155; }
+.ppm-box { background:#fffcf6; border-radius:20px; width:100%; max-width:540px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.22); display:flex; flex-direction:column; }
+.ppm-hd { display:flex; align-items:flex-start; justify-content:space-between; padding:20px 22px 16px; border-bottom:1px solid #e8d5b0; background:linear-gradient(135deg,#102a43,#1d3a5f); border-radius:20px 20px 0 0; }
+.ppm-title { font-size:16px; font-weight:900; color:#e2bc8a; }
+.ppm-sub { font-size:12px; color:rgba(255,255,255,.6); margin-top:2px; font-weight:600; }
+.ppm-close { border:none; background:rgba(255,255,255,.1); font-size:18px; color:rgba(255,255,255,.7); cursor:pointer; padding:2px 8px; border-radius:6px; }
+.ppm-close:hover { background:rgba(255,255,255,.2); color:white; }
 
-.ppm-amounts { margin:16px 22px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
-.ppm-amt-row { display:flex; justify-content:space-between; padding:9px 14px; font-size:13px; color:#334155; border-bottom:1px solid #f1f5f9; }
+.ppm-amounts { margin:16px 22px; background:#fdf3e3; border:1px solid #e8d5b0; border-radius:12px; overflow:hidden; }
+.ppm-amt-row { display:flex; justify-content:space-between; padding:9px 14px; font-size:13px; color:#334155; border-bottom:1px solid #e8d5b0; }
 .ppm-amt-row:last-child { border-bottom:none; }
 .ppm-amt-row--ded { color:#dc2626; }
-.ppm-amt-row--net { background:#102a43; color:white; font-weight:900; font-size:14px; }
+.ppm-amt-row--net { background:linear-gradient(135deg,#102a43,#1d3a5f); color:#e2bc8a; font-weight:900; font-size:14px; }
 
 .ppm-form { padding:0 22px 4px; display:flex; flex-direction:column; gap:14px; }
 .ppm-field { display:flex; flex-direction:column; gap:6px; }
 .ppm-field label { font-size:12px; font-weight:800; color:#475569; }
 .ppm-label-hint { font-weight:500; color:#94a3b8; }
-.ppm-field select,.ppm-field input { padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; color:#0f172a; }
-.ppm-field select:focus,.ppm-field input:focus { outline:none; border-color:#1e5fae; box-shadow:0 0 0 3px #1e5fae22; }
+.ppm-field select,.ppm-field input { padding:9px 12px; border:1.5px solid #c19a6b; border-radius:10px; font-size:13px; color:#102a43; background:#fffcf6; }
+.ppm-field select:focus,.ppm-field input:focus { outline:none; border-color:#8a7338; box-shadow:0 0 0 3px rgba(193,154,107,.2); }
 .ppm-method-btns { display:flex; gap:8px; }
-.ppm-method-btn { flex:1; padding:9px 6px; border:1.5px solid #e2e8f0; border-radius:10px; background:white; font-size:12px; font-weight:700; color:#64748b; cursor:pointer; transition:all .15s; }
-.ppm-method-btn--active { border-color:#1e5fae; background:#eff6ff; color:#1e5fae; box-shadow:0 0 0 2px #1e5fae33; }
+.ppm-method-btn { flex:1; padding:9px 6px; border:1.5px solid #c19a6b; border-radius:10px; background:#fffcf6; font-size:12px; font-weight:700; color:#8a7338; cursor:pointer; transition:all .15s; }
+.ppm-method-btn--active { border-color:#102a43; background:#fdf3e3; color:#102a43; box-shadow:0 0 0 2px rgba(16,42,67,.15); }
 
 .ppm-journal { margin:16px 22px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px; }
 .ppm-journal-title { font-size:12px; font-weight:800; color:#065f46; margin-bottom:10px; }
 .ppm-je-table { width:100%; border-collapse:collapse; font-size:12px; }
 .ppm-je-table th { text-align:left; padding:6px 8px; background:#dcfce7; color:#065f46; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
 .ppm-je-table td { padding:7px 8px; border-top:1px solid #bbf7d0; color:#166534; }
-.ppm-dr { color:#1e5fae; font-weight:800; }
+.ppm-dr { color:#102a43; font-weight:800; }
 .ppm-cr { color:#059669; font-weight:800; }
 .ppm-journal-note { font-size:10px; color:#6b7280; margin-top:8px; font-style:italic; }
 
-.ppm-footer { display:flex; gap:10px; padding:16px 22px 20px; border-top:1px solid #f1f5f9; }
+.ppm-footer { display:flex; gap:10px; padding:16px 22px 20px; border-top:1px solid #e8d5b0; }
 .ppm-btn { flex:1; padding:11px 16px; border:none; border-radius:10px; font-weight:800; font-size:13px; cursor:pointer; }
-.ppm-btn--cancel { background:#f1f5f9; color:#475569; }
-.ppm-btn--confirm { background:#059669; color:white; }
+.ppm-btn--cancel { background:#fdf3e3; color:#8a7338; border:1px solid #c19a6b; }
+.ppm-btn--confirm { background:linear-gradient(135deg,#102a43,#1d3a5f); color:#e2bc8a; }
 .ppm-btn--confirm:disabled,.ppm-btn--cancel:disabled { opacity:.5; cursor:not-allowed; }
-.pay-net-box { margin:12px 16px; background:linear-gradient(135deg,#102a43 0%,#1e5fae 100%); border-radius:12px; padding:16px; color:white; text-align:center; }
+.pay-net-box { margin:12px 16px; background:linear-gradient(135deg,#102a43,#1d3a5f); border-radius:12px; padding:16px; color:white; text-align:center; }
 .pay-net-label { font-size:10px; font-weight:800; letter-spacing:1px; opacity:.7; }
-.pay-net-amount { font-size:20px; font-weight:900; margin:4px 0; }
+.pay-net-amount { font-size:20px; font-weight:900; margin:4px 0; color:#e2bc8a; }
 .pay-net-words { font-size:9px; opacity:.8; line-height:1.4; }
 /* Year filter in emp-card header */
 .pay-year-filter { display:flex; align-items:center; gap:6px; margin-left:auto; margin-right:8px; }
-.pay-year-filter-label { font-size:11px; font-weight:700; color:#64748b; }
-.pay-year-sel { font-size:12px; font-weight:700; border:1.5px solid #e2e8f0; border-radius:6px; padding:4px 8px; background:#f8fafc; color:#1e293b; cursor:pointer; }
-.pay-year-sel:focus { outline:none; border-color:#3b82f6; }
+.pay-year-filter-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.6); }
+.pay-year-sel { font-size:12px; font-weight:700; border:1.5px solid #c19a6b; border-radius:6px; padding:4px 8px; background:#fffcf6; color:#102a43; cursor:pointer; }
+.pay-year-sel:focus { outline:none; border-color:#8a7338; }
 /* Slip list enhancements */
 .pay-run-net { margin-top:6px; font-weight:800; color:#059669; font-size:14px; }
 .pay-run-paid-pill { display:inline-block; margin-top:5px; font-size:10px; font-weight:700; background:#d1fae5; color:#065f46; border-radius:20px; padding:2px 8px; }
 /* Payment status panel in My Slips right column */
-.pay-slip-status-panel { margin:0 16px 12px; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+.pay-slip-status-panel { margin:0 16px 12px; border:1.5px solid #e8d5b0; border-radius:10px; overflow:hidden; }
 .pay-slip-paid-block { padding:14px 16px; text-align:center; background:#f0fdf4; border-bottom:1px solid #d1fae5; }
 .pay-slip-pending-block { padding:14px 16px; text-align:center; background:#fffbeb; border-bottom:1px solid #fde68a; }
 .pay-slip-paid-icon { font-size:22px; margin-bottom:4px; }
@@ -1983,11 +2279,11 @@ const CSS = `
 .pay-slip-email-badge--sent { background:#dbeafe; color:#1e40af; }
 .pay-slip-email-badge--none { background:#fef3c7; color:#92400e; }
 .pay-slip-email-badge--fail { background:#fee2e2; color:#991b1b; }
-.pay-slip-email-badge--pending { background:#f1f5f9; color:#64748b; }
+.pay-slip-email-badge--pending { background:#fdf3e3; color:#8a7338; }
 
-.pay-payment-edit { padding:10px 16px; display:flex; flex-direction:column; gap:8px; border-top:1px solid #f1f5f9; }
+.pay-payment-edit { padding:10px 16px; display:flex; flex-direction:column; gap:8px; border-top:1px solid #e8d5b0; }
 .pay-payment-edit label { font-size:11px; font-weight:700; color:#475569; display:flex; flex-direction:column; gap:4px; }
-.pay-payment-edit select, .pay-payment-edit input { padding:6px 10px; border:1.5px solid #e2e8f0; border-radius:7px; font-size:12px; }
+.pay-payment-edit select, .pay-payment-edit input { padding:6px 10px; border:1.5px solid #c19a6b; border-radius:7px; font-size:12px; background:#fffcf6; }
 .pay-save-btn { margin:12px 16px; width:calc(100% - 32px); padding:10px; }
 
 /* --- Badges ---------------------------------------------------------- */
@@ -1995,98 +2291,216 @@ const CSS = `
 .pay-badge--lg { padding:5px 12px; font-size:11px; }
 
 /* --- Empty states ---------------------------------------------------- */
-.pay-empty { padding:16px; text-align:center; color:#94a3b8; font-size:13px; }
-.pay-empty--big { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:12px; color:#94a3b8; font-size:13px; padding:40px; }
+.pay-empty { padding:16px; text-align:center; color:#8a7338; font-size:13px; }
+.pay-empty--big { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:12px; color:#8a7338; font-size:13px; padding:40px; }
 .pay-empty-icon { font-size:40px; opacity:.3; }
-.pay-empty-sm { padding:20px; color:#94a3b8; font-size:13px; }
+.pay-empty-sm { padding:20px; color:#8a7338; font-size:13px; }
+
+/* --- My Slips admin header (pay-emp-card) ---------------------------- */
+.pay-myslips { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.pay-emp-card { display:flex; align-items:center; gap:16px; padding:0 24px; background:linear-gradient(135deg,#102a43,#1d3a5f); flex-shrink:0; min-height:72px; position:relative; overflow:hidden; }
+.pay-emp-card::after { content:""; position:absolute; right:-30px; top:-30px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.04); pointer-events:none; }
+.pay-emp-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#c19a6b,#e2bc8a); color:#102a43; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:19px; flex-shrink:0; border:2px solid rgba(226,188,138,.4); }
+.pay-emp-details { flex:1; min-width:0; }
+.pay-emp-card-name { font-size:15px; font-weight:800; color:#e2bc8a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pay-emp-card-meta { font-size:11px; color:rgba(255,255,255,.55); margin-top:2px; }
+
+/* --- Summary row — compact ------------------------------------------- */
+.pay-summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:8px 16px; background:#fdf3e3; border-bottom:1px solid #e8d5b0; flex-shrink:0; }
+.pay-stat { background:#fffcf6; border-radius:8px; padding:8px 12px; text-align:center; border:1px solid #e8d5b0; }
+.pay-stat span { display:block; font-size:14px; font-weight:800; color:#102a43; }
+.pay-stat label { display:block; font-size:9px; color:#8a7338; font-weight:700; text-transform:uppercase; margin-top:1px; letter-spacing:.3px; }
+.pay-stat--earn span { color:#059669; }
+.pay-stat--ded span  { color:#ef4444; }
+.pay-stat--net  { background:linear-gradient(135deg,#102a43,#1d3a5f); border-color:#0d2137; }
+.pay-stat--net span { color:#e2bc8a; }
+.pay-stat--net label { color:rgba(255,255,255,.6); }
+
+/* --- Department breakdown — compact with max-height ------------------- */
+.pay-breakdown { padding:0; border-top:1px solid #e8d5b0; margin:0; flex-shrink:0; max-height:180px; overflow:hidden; display:flex; flex-direction:column; }
+.pay-breakdown-title { font-size:10px; font-weight:800; color:#8a7338; text-transform:uppercase; letter-spacing:.6px; padding:6px 16px; background:#fdf3e3; border-bottom:1px solid #e8d5b0; flex-shrink:0; }
 
 /* --- Card (for components/employees tabs) ---------------------------- */
-.pay-card { margin:18px; background:white; border-radius:16px; border:1px solid #e2e8f0; overflow:clip; }
-.pay-card-hd { padding:18px 20px 14px; border-bottom:1px solid #e2e8f0; }
-.pay-card-hd h2 { font-size:18px; font-weight:800; color:#102a43; margin:0 0 4px; }
-.pay-card-hd p  { font-size:13px; color:#64748b; margin:0; }
-.pay-code { background:#f1f5f9; padding:2px 7px; border-radius:5px; font-size:12px; color:#1e5fae; font-weight:700; }
-.pay-act-btn { padding:4px 10px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; background:white; color:#334155; margin-right:4px; }
-.pay-act-btn:hover { background:#f8fafc; }
+.pay-card { margin:18px; background:#fffcf6; border-radius:16px; border:1px solid #e8d5b0; overflow:clip; }
+.pay-card-hd { padding:18px 20px 14px; border-bottom:1px solid #e8d5b0; background:linear-gradient(135deg,#102a43,#1d3a5f); }
+.pay-card-hd h2 { font-size:18px; font-weight:800; color:#e2bc8a; margin:0 0 4px; }
+.pay-card-hd p  { font-size:13px; color:rgba(255,255,255,.6); margin:0; }
+.pay-code { background:#fdf3e3; padding:2px 7px; border-radius:5px; font-size:12px; color:#8a7338; font-weight:700; }
+.pay-act-btn { padding:4px 10px; border:1.5px solid #c19a6b; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; background:#fffcf6; color:#102a43; margin-right:4px; }
+.pay-act-btn:hover { background:#fdf3e3; }
 .pay-act-btn--del { color:#ef4444; border-color:#fee2e2; }
 .pay-act-btn--del:hover { background:#fef2f2; }
 .pay-check-group { display:flex; flex-direction:column; gap:6px; padding-top:20px; }
-.pay-check { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; }
+.pay-check { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#102a43; cursor:pointer; }
 .pay-check input { width:15px; height:15px; cursor:pointer; }
 
 /* --- Overlays / Modals ----------------------------------------------- */
 .pay-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
-.pay-modal { background:white; border-radius:16px; width:520px; max-width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.pay-modal { background:#fffcf6; border-radius:16px; width:520px; max-width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); }
 .pay-modal--wide { width:720px; }
-.pay-modal-hd { padding:18px 22px 14px; font-size:18px; font-weight:800; color:#102a43; border-bottom:1px solid #e2e8f0; }
+.pay-modal-hd { padding:18px 22px 14px; font-size:18px; font-weight:800; color:#e2bc8a; border-bottom:1px solid #e8d5b0; background:linear-gradient(135deg,#102a43,#1d3a5f); border-radius:16px 16px 0 0; }
 .pay-modal-body { padding:18px 22px; display:flex; flex-direction:column; gap:14px; }
 .pay-modal-body label { display:flex; flex-direction:column; gap:5px; font-size:12px; font-weight:700; color:#475569; }
-.pay-modal-body input, .pay-modal-body select, .pay-modal-body textarea { padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:9px; font-size:14px; font-family:inherit; }
-.pay-modal-body input:focus, .pay-modal-body select:focus, .pay-modal-body textarea:focus { outline:none; border-color:#1e5fae; }
-.pay-modal-hint { font-size:11px; color:#94a3b8; background:#f8fafc; padding:10px 12px; border-radius:8px; margin:0; }
-.pay-modal-ft { padding:14px 22px 18px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #e2e8f0; }
+.pay-modal-body input, .pay-modal-body select, .pay-modal-body textarea { padding:9px 12px; border:1.5px solid #c19a6b; border-radius:9px; font-size:14px; font-family:inherit; background:#fffcf6; color:#102a43; }
+.pay-modal-body input:focus, .pay-modal-body select:focus, .pay-modal-body textarea:focus { outline:none; border-color:#8a7338; box-shadow:0 0 0 3px rgba(193,154,107,.2); }
+.pay-modal-hint { font-size:11px; color:#8a7338; background:#fdf3e3; padding:10px 12px; border-radius:8px; margin:0; border:1px solid #e8d5b0; }
+.pay-modal-ft { padding:14px 22px 18px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #e8d5b0; }
 .pay-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .pay-full { grid-column:1/-1; }
 
 /* --- PRINT: Salary Slip ---------------------------------------------- */
 .pay-print-slip { display:none; }
 .pay-print-stmt { display:none; }
+.psl-watermark { display:none; }
 
 @media print {
-  .pay-page > *:not(.pay-print--active) { display:none !important; }
-  .pay-print--active { display:block !important; position:relative; }
+  /* ── Visibility isolation ── */
+  body * { visibility:hidden !important; }
+  .pay-print-slip.pay-print--active,
+  .pay-print-slip.pay-print--active * { visibility:visible !important; }
+  .pay-print-slip.pay-print--active {
+    display:block !important;
+    position:fixed !important;
+    left:0 !important; top:0 !important;
+    width:100vw !important;
+    min-height:100vh !important;
+    margin:0 !important; padding:0 !important;
+    background:white !important;
+    box-sizing:border-box !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    z-index:99999 !important;
+  }
+  .pay-print-slip:not(.pay-print--active) { display:none !important; }
 
-  /* Slip styles */
-  .psl-company { display:flex; align-items:center; gap:16px; margin-bottom:14px; padding-bottom:12px; border-bottom:3px solid #102a43; }
-  .psl-logo-box { width:52px; height:52px; background:linear-gradient(135deg,#102a43,#1e5fae); border-radius:10px; color:white; font-weight:900; font-size:18px; display:flex; align-items:center; justify-content:center; }
-  .psl-company-name { font-size:16px; font-weight:900; color:#102a43; }
-  .psl-company-detail { font-size:9px; color:#64748b; margin-top:2px; }
+  /* ── Statement print ── */
+  .pay-print-stmt.pay-print--active,
+  .pay-print-stmt.pay-print--active * { visibility:visible !important; }
+  .pay-print-stmt.pay-print--active {
+    display:block !important;
+    position:fixed !important;
+    left:0 !important; top:0 !important;
+    width:100vw !important;
+    min-height:100vh !important;
+    margin:0 !important; padding:20px !important;
+    background:white !important;
+    box-sizing:border-box !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    z-index:99999 !important;
+  }
+  .pay-print-stmt:not(.pay-print--active) { display:none !important; }
 
-  .psl-title-bar { background:linear-gradient(90deg,#102a43 0%,#1e5fae 55%,#e2bc8a 100%); color:white; padding:10px 16px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .psl-title { font-size:18px; font-weight:900; letter-spacing:1px; }
-  .psl-title-meta { display:flex; gap:16px; font-size:10px; opacity:.9; }
+  /* Force background colors on all children */
+  .pay-print-slip.pay-print--active * {
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    box-sizing:border-box !important;
+  }
 
-  .psl-watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-35deg); font-size:80px; font-weight:900; color:rgba(239,68,68,.12); pointer-events:none; z-index:0; letter-spacing:4px; }
+  .pay-print-slip strong::after, .pay-print-slip *::after { content:none !important; }
 
-  .psl-emp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px 14px; margin-bottom:14px; padding:12px 16px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; }
-  .psl-emp-row { display:flex; flex-direction:column; gap:2px; }
-  .psl-emp-row span { font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:.3px; }
-  .psl-emp-row strong { font-size:12px; color:#102a43; font-weight:700; }
+  /* ── Watermark ── */
+  .psl-watermark { display:block !important; visibility:visible !important; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-28deg); pointer-events:none; z-index:0; opacity:0.07; }
+  .psl-watermark img { width:520px; max-width:80vw; display:block; }
 
-  .psl-columns { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px; }
-  .psl-col-hd { padding:6px 10px; font-size:11px; font-weight:800; color:white; border-radius:6px 6px 0 0; }
-  .psl-earn-hd { background:#059669; }
-  .psl-ded-hd  { background:#ef4444; }
-  .psl-table { width:100%; border-collapse:collapse; font-size:11px; }
-  .psl-table th { background:#f8fafc; padding:6px 8px; text-align:left; font-weight:700; color:#475569; border-bottom:1px solid #e2e8f0; }
-  .psl-table td { padding:5px 8px; border-bottom:1px solid #f1f5f9; }
+  @page { size:A4 portrait; margin:8mm 12mm; }
+
+  /* ══ LETTERHEAD (white, matches Financial Reports style) ══ */
+  .psl-lh { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:18px 20px 14px; background:#fff; flex-wrap:wrap; }
+  .psl-lh-left { display:flex; flex-direction:column; align-items:flex-start; }
+  .psl-lh-logo { height:80px; width:auto; object-fit:contain; margin-bottom:6px; }
+  .psl-lh-name { font-size:18px; font-weight:900; color:#102a43; margin-top:2px; letter-spacing:-0.3px; }
+  .psl-lh-tag { font-size:11px; color:#64748b; margin-top:2px; }
+  .psl-lh-contacts { display:flex; flex-direction:column; gap:9px; }
+  .psl-lh-row { display:flex; align-items:center; gap:10px; font-size:13.5px; color:#0f172a; }
+  .psl-lh-ic { width:26px; height:26px; border-radius:50%; background:#1d8ad1; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .psl-lh-bars { display:flex; height:7px; border-radius:0; overflow:hidden; }
+  .psl-lh-bar-green { flex:1; background:linear-gradient(90deg,#7cb342,#aed581); }
+  .psl-lh-bar-blue { flex:1; }
+
+  /* ══ DOCUMENT TITLE BAND ══ */
+  .psl-hdr { background:#0B1F3A; padding:14px 20px; display:flex; align-items:center; justify-content:flex-end; gap:16px; }
+  .psl-hdr-title-txt { color:white; font-weight:900; font-size:22px; letter-spacing:4px; text-transform:uppercase; line-height:1; margin-right:auto; }
+  .psl-hdr-conf { display:flex; align-items:center; gap:6px; }
+  .psl-hdr-conf span { color:#D4AF37; font-size:8px; font-weight:700; letter-spacing:2px; }
+  .psl-gold-line { height:1px; width:28px; background:#D4AF37; }
+  .psl-month-badge { display:inline-block; background:#D4AF37; color:#0B1F3A; font-weight:900; font-size:9px; letter-spacing:1.5px; padding:4px 12px; border-radius:3px; }
+  .psl-gold-bar { height:3px; background:#D4AF37; }
+
+  /* ══ EMPLOYEE + PAY PERIOD ══ */
+  .psl-info-row { display:grid; grid-template-columns:1fr 1fr; gap:0; border-bottom:1px solid #e2e8f0; }
+  .psl-emp-block { display:flex; gap:12px; align-items:flex-start; padding:14px 16px 14px 20px; border-right:1px solid #e2e8f0; }
+  .psl-avatar { width:60px; height:60px; border-radius:50%; background:#0B1F3A; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:24px; flex-shrink:0; border:2px solid #D4AF37; }
+  .psl-emp-detail { flex:1; min-width:0; }
+  .psl-emp-name { font-weight:900; font-size:13px; color:#0B1F3A; margin-bottom:1px; }
+  .psl-emp-desig { color:#D4AF37; font-weight:700; font-size:9px; margin-bottom:7px; }
+  .psl-emp-row { display:flex; gap:4px; margin-bottom:3px; }
+  .psl-emp-lbl { font-size:9px; color:#64748b; font-weight:600; min-width:66px; flex-shrink:0; }
+  .psl-emp-val { font-size:9px; color:#1e293b; word-break:break-word; }
+
+  /* Pay period unified card */
+  .psl-pay-card { border-left:none; }
+  .psl-pay-card-hd { display:flex; align-items:center; gap:5px; padding:7px 14px; background:#F5F7FA; border-bottom:1px solid #e2e8f0; font-size:8px; font-weight:800; color:#0B1F3A; text-transform:uppercase; letter-spacing:0.8px; }
+  .psl-pay-row { display:flex; justify-content:space-between; align-items:center; padding:5px 14px; border-bottom:1px solid #f1f5f9; gap:8px; background:white; }
+  .psl-pay-lbl { font-size:10px; color:#64748b; }
+  .psl-pay-val { font-size:10px; color:#0B1F3A; font-weight:700; text-align:right; }
+  .psl-net-box { background:#0B1F3A; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+  .psl-net-label { color:rgba(255,255,255,.5); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:3px; }
+  .psl-paid-pill { display:inline-flex; align-items:center; background:rgba(16,185,129,.2); border:1px solid rgba(16,185,129,.4); border-radius:20px; padding:1px 8px; font-size:8px; color:#4ade80; font-weight:700; }
+  .psl-net-cur { color:rgba(255,255,255,.45); font-size:8px; text-align:right; margin-bottom:1px; }
+  .psl-net-amt { color:#D4AF37; font-weight:900; font-size:18px; letter-spacing:-0.5px; line-height:1; }
+
+  .psl-gold-rule { height:1px; background:#D4AF37; margin:0 20px; opacity:0.5; }
+
+  /* ══ EARNINGS / DEDUCTIONS ══ */
+  .psl-columns { display:grid; grid-template-columns:1fr 1fr; gap:0; margin:12px 0; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+  .psl-col { }
+  .psl-col:first-child { border-right:1px solid #e2e8f0; }
+  .psl-col-hd { padding:7px 10px; font-size:9px; font-weight:800; color:white; letter-spacing:1px; text-transform:uppercase; }
+  .psl-earn-hd { background:#0B1F3A; }
+  .psl-ded-hd  { background:#0B1F3A; }
+  .psl-table { width:100%; border-collapse:collapse; font-size:10px; }
+  .psl-table th { background:#F5F7FA; padding:5px 8px; text-align:left; font-weight:700; color:#64748b; border-bottom:1px solid #e2e8f0; font-size:8px; text-transform:uppercase; letter-spacing:0.4px; }
+  .psl-table td { padding:5px 8px; border-bottom:1px dashed #f1f5f9; color:#374151; }
   .psl-r { text-align:right !important; }
-  .psl-subtotal td { background:#f1f5f9; font-weight:700; border-top:2px solid #e2e8f0; }
+  .psl-empty-row { color:#9ca3af; font-style:italic; text-align:center; padding:10px 8px !important; }
+  .psl-subtotal td { padding:6px 8px; font-weight:800; font-size:10px; border-top:2px solid #0B1F3A; }
+  .psl-earn-foot td { color:#0B1F3A; background:#f8fafc; }
+  .psl-ded-foot  td { color:#b91c1c; background:#fff5f5; }
 
-  .psl-net-section { background:linear-gradient(135deg,#102a43 0%,#1e5fae 100%); color:white; border-radius:10px; padding:14px 20px; margin-bottom:14px; }
-  .psl-net-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
-  .psl-net-row--ded { color:rgba(255,255,255,.8); }
-  .psl-net-row--total { font-size:17px; font-weight:900; padding:6px 0; }
-  .psl-net-divider { border-top:1.5px solid rgba(255,255,255,.3); margin:6px 0; }
-  .psl-in-words { font-size:10px; color:rgba(255,255,255,.85); margin-top:6px; }
+  /* ══ 4-STAT SUMMARY ══ */
+  .psl-stats { display:grid; grid-template-columns:repeat(4,1fr); background:#F5F7FA; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:12px; }
+  .psl-stat-cell { padding:10px 8px; text-align:center; }
+  .psl-stat-label { font-size:7px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
+  .psl-stat-cur { font-size:8px; color:#94a3b8; }
+  .psl-stat-val { font-weight:900; font-size:13px; }
+  .psl-stat-words { font-size:8px; font-weight:600; font-style:italic; line-height:1.4; }
 
-  .psl-payment { margin-bottom:14px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; }
-  .psl-payment-hd { font-size:10px; font-weight:800; color:#102a43; text-transform:uppercase; margin-bottom:6px; }
-  .psl-payment-row { display:flex; gap:10px; font-size:11px; color:#334155; padding:2px 0; }
-  .psl-payment-row span { color:#94a3b8; min-width:110px; }
+  /* ══ BOTTOM: MESSAGE + AUTH ══ */
+  .psl-bottom { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:12px; }
+  .psl-section-hd { display:flex; align-items:center; gap:5px; font-size:8px; font-weight:800; color:#0B1F3A; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:7px; }
+  .psl-msg { padding:12px 14px; border-right:1px solid #e2e8f0; }
+  .psl-msg-body { font-size:10px; color:#475569; line-height:1.7; margin-bottom:8px; }
+  .psl-msg-quote { font-family:Georgia,serif; font-size:13px; color:#D4AF37; font-style:italic; }
+  .psl-auth { padding:12px 14px; }
+  .psl-auth-name { font-size:13px; font-weight:700; color:#0B1F3A; font-family:Georgia,serif; font-style:italic; margin-bottom:4px; }
+  .psl-auth-blank { height:20px; border-bottom:1px solid #94a3b8; width:110px; margin-bottom:4px; }
+  .psl-auth-line { height:1px; background:#d1d5db; width:110px; margin-bottom:5px; }
+  .psl-auth-role { font-size:9px; color:#64748b; }
+  .psl-auth-date { font-size:8px; color:#94a3b8; margin-top:5px; }
 
-  .psl-sig-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:14px; }
-  .psl-sig-box { text-align:center; font-size:10px; color:#64748b; }
-  .psl-sig-line { border-top:1.5px solid #334155; margin-bottom:6px; }
-  .psl-sig-name { font-weight:700; color:#102a43; }
-
-  .psl-footer { display:flex; justify-content:space-between; font-size:9px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
-  .psl-verify { font-family:monospace; color:#102a43; }
-
-  /* Statement styles */
-  @page { size:A4 landscape; margin:12mm; }
+  /* ══ FOOTER ══ */
+  .psl-footer-bar { background:#0B1F3A; padding:8px 20px; display:flex; justify-content:space-between; font-size:8px; color:rgba(255,255,255,.5); }
+  .psl-footer-disc { background:#0B1F3A; padding:5px 20px 8px; text-align:center; font-size:7px; color:#D4AF37; font-weight:700; letter-spacing:1px; text-transform:uppercase; border-top:1px solid rgba(212,175,55,.2); }
+  /* Statement styles -- JS injects a <style id="pay-landscape"> before window.print() */
+  .pay-print-stmt + style, /* noop selector just for clarity */
+  .pay-print-stmt { /* landscape injected dynamically */ }
   .pst-header { margin-bottom:10px; }
+  .pst-hdr-top { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .pst-logo { height:44px; width:auto; object-fit:contain; border-radius:6px; }
   .pst-company { font-size:14px; font-weight:900; color:#102a43; }
+  .pst-tagline { font-size:9px; color:#64748b; margin-top:1px; font-style:italic; }
   .pst-meta { display:flex; gap:20px; font-size:10px; color:#64748b; margin-top:4px; }
   .pst-watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-30deg); font-size:100px; font-weight:900; color:rgba(239,68,68,.08); pointer-events:none; z-index:0; }
   .pst-table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:16px; }

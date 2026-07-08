@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Check, ShieldCheck, AlertTriangle, RotateCcw, Paperclip, Eye, Loader2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export type LoanCategory = "business" | "group" | "employee";
 type ItemState = { checked: boolean; skip: boolean; attachmentUrl?: string; attachmentName?: string; attachmentType?: string };
@@ -18,7 +18,7 @@ interface Props {
 }
 
 // NOTE: `title`/`label` below are i18next keys (namespace "historyModals"), not display
-// text. Render with t(section.title) / t(item.label) — see LoanChecklist and
+// text. Render with t(section.title) / t(item.label) -- see LoanChecklist and
 // LoanChecklistView, which both consume this shared map.
 export const SECTIONS: Record<string, { title: string; items: { key: string; label: string; noUpload?: boolean }[] }> = {
   identification: {
@@ -68,7 +68,7 @@ export const SECTIONS: Record<string, { title: string; items: { key: string; lab
   loan_forms: {
     title: "checklist.sections.loanForms.title",
     items: [
-      // These are in-form declarations/checkboxes, not scannable documents —
+      // These are in-form declarations/checkboxes, not scannable documents --
       // verification-only, no upload affordance (matches original behaviour).
       { key: "application_form", label: "checklist.items.applicationForm", noUpload: true },
       { key: "two_guarantors_signed", label: "checklist.items.twoGuarantorsSigned", noUpload: true },

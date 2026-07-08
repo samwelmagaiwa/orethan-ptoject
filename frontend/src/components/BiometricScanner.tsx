@@ -1,14 +1,14 @@
 /**
- * BiometricScanner – core capture widget
+ * BiometricScanner - core capture widget
  *
  * Works in two modes:
- *   1. SIMULATION (default) – generates a mock template and random quality/similarity
+ *   1. SIMULATION (default) - generates a mock template and random quality/similarity
  *      scores so the UI can be exercised without physical hardware.
- *   2. AGENT (WebSocket) – connects to a local biometric agent running on the
+ *   2. AGENT (WebSocket) - connects to a local biometric agent running on the
  *      operator's PC (ws://localhost:9000) that drives the actual USB scanner.
  *      The agent must emit JSON messages:
- *        { type:"quality", score:87 }          – live quality as user places finger
- *        { type:"capture", template:"<b64>", quality:92 }  – final capture
+ *        { type:"quality", score:87 }          - live quality as user places finger
+ *        { type:"capture", template:"<b64>", quality:92 }  - final capture
  *        { type:"status",  text:"Place finger" }
  */
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -30,7 +30,7 @@ interface Props {
   onError?: (msg: string) => void;
   disabled?: boolean;
   label?: string;
-  role?: string;       // "borrower" | "guarantor1" | "guarantor2" — sent to agent for duplicate check
+  role?: string;       // "borrower" | "guarantor1" | "guarantor2" -- sent to agent for duplicate check
   personName?: string; // display name sent to agent for error messages
   sessionId?: string;  // shared UUID across all scanners on the same disbursement page
 }
@@ -85,7 +85,7 @@ export const BiometricScanner = ({ finger, minQuality, agentUrl: agentUrlProp, o
         clearInterval(simTimer.current!);
         if (q >= minQuality) {
           setPhase("success");
-          setStatusText(`Captured — quality ${q}%`);
+          setStatusText(`Captured -- quality ${q}%`);
           onCapture({ template: mockTemplate(), image: "", quality_score: q, finger_name: finger, device_serial: "SIM-0001", simulated: true });
         } else {
           setPhase("rejected");
@@ -107,7 +107,7 @@ export const BiometricScanner = ({ finger, minQuality, agentUrl: agentUrlProp, o
 
     ws.onopen = () => {
       agentConnected.current = true;
-      setStatusText("Scanner ready — place finger");
+      setStatusText("Scanner ready -- place finger");
       ws.send(JSON.stringify({ cmd: "status" }));
     };
 
@@ -122,7 +122,7 @@ export const BiometricScanner = ({ finger, minQuality, agentUrl: agentUrlProp, o
           const q = msg.quality as number;
           if (q >= minQuality) {
             setPhase("success");
-            setStatusText(`Captured — quality ${q}%`);
+            setStatusText(`Captured -- quality ${q}%`);
             onCapture({ template: msg.template ?? "", image: msg.image ?? "", quality_score: q, finger_name: finger, device_serial: msg.device_serial ?? "UNKNOWN", simulated: msg.simulated ?? false });
           } else {
             setPhase("rejected");
@@ -262,7 +262,7 @@ export const BiometricScanner = ({ finger, minQuality, agentUrl: agentUrlProp, o
         <div className="bscan-mode-badge">⚡ Simulation Mode</div>
       ) : null}
 
-      {/* Controls */}
+      {/* Controls -- FINGERPRINT CAPTURE commented out for future hardware integration
       {(phase === "idle" || phase === "rejected" || phase === "error") && (
         <button className="bscan-btn" style={{ background: col }} onClick={capture} disabled={!!disabled}>
           {phase === "idle" ? "📷 Capture Fingerprint" : "↻ Retry Scan"}
@@ -274,6 +274,10 @@ export const BiometricScanner = ({ finger, minQuality, agentUrl: agentUrlProp, o
       {phase === "success" && (
         <button className="bscan-btn bscan-btn--rescan" onClick={reset}>↻ Rescan</button>
       )}
+      END FINGERPRINT CAPTURE */}
+      <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textAlign: "center", marginTop: 4 }}>
+        Hardware capture pending -- integration coming soon
+      </div>
 
       <style>{`
         .bscan-root { display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px; }

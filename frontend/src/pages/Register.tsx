@@ -1,6 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
+import { API_BASE } from "../lib/api";
 
 function Register() {
   const [name, setName] = useState("");
@@ -11,7 +12,6 @@ function Register() {
   const handleRegister = (e: any) => {
     e.preventDefault();
 
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
     axios.post(`${API_BASE}/register`, {
       name,
       email,

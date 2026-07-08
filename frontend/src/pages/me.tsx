@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { BASE_URL } from "../lib/api";
 
 import Login from "./Login";
 import Register from "./Register";
@@ -18,7 +19,7 @@ function Home() {
 
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:8000/api/test")
+      .get(`${BASE_URL}/api/test`)
       .then((res) => {
         setMessage(res.data.message);
         setLoading(false);

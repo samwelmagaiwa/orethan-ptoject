@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Branch Weekly/Daily/Monthly Report
  * - Loan Officers & Branch Managers submit reports
  * - GM, MD, Admin view all reports with branch/period filters
@@ -12,10 +12,10 @@ import {
   ClipboardList, DollarSign, Building2, X, SlidersHorizontal,
 } from "lucide-react";
 import { letterheadBlock, watermarkBlock, triggerPrint } from "../utils/printDoc";
+import { API_BASE as API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const fmtTZS = (n: any) => Number(n || 0).toLocaleString();
-const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString("en-GB") : "—";
+const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString("en-GB") : "--";
 
 // Role → section label resolved at render time via t("roles.xxx")
 const ROLE_KEYS = ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"] as const;
@@ -51,7 +51,7 @@ interface ReportData {
 }
 
 // ─── config arrays for looping ────────────────────────────────────────────────
-// Operation column keys — labels resolved via t("ops.fields.xxx") at render time
+// Operation column keys -- labels resolved via t("ops.fields.xxx") at render time
 const OPS_COL1 = [
   { key: "new_customers_inquired", icon: "👥" },
   { key: "customers_called",       icon: "📞" },
@@ -67,6 +67,14 @@ const OPS_COL3 = [
   { key: "site_visits",     icon: "🏠" },
   { key: "phone_reminders", icon: "📲" },
   { key: "sms_sent",        icon: "💬" },
+] as const;
+// Financial column keys -- labels resolved via t("fin.colXxx") at render time
+const FIN_COLS = [
+  { key: "mapato",       color: "#059669", hasNote: true  },
+  { key: "matumizi",     color: "#dc2626", hasNote: true  },
+  { key: "mkopo",        color: "#7c3aed", hasNote: true  },
+  { key: "kutoka_benki", color: "#0ea5e9", hasNote: false },
+  { key: "kwenda_benki", color: "#f59e0b", hasNote: false },
 ] as const;
 
 const blankOps = (): Operations => ({
@@ -142,7 +150,7 @@ export default function BranchReport() {
   const [user]   = useState<any>(() => { try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; } });
   const userRole = user?.role || "";
 
-  // Dynamic permissions — read from localStorage (set by Sidebar on login)
+  // Dynamic permissions -- read from localStorage (set by Sidebar on login)
   const brPerms = useMemo(() => {
     try {
       const raw = JSON.parse(localStorage.getItem("branch_report_permissions") || "null");
@@ -159,11 +167,11 @@ export default function BranchReport() {
   const canPrint   = hasPermission("print");
   const canApprove = hasPermission("approve");
   const canDelete  = hasPermission("delete");
-  // Only loan_manager sees pending reports and can action them —
+  // Only loan_manager sees pending reports and can action them --
   // Admin/GM/MD only see already-approved reports (backend enforces same rule).
   const isLoanManager = userRole === "loan_manager";
 
-  // Localised type labels — re-computed when language changes
+  // Localised type labels -- re-computed when language changes
   const typeLabels = useMemo(() => ({
     daily:   t("period.badgeLabels.daily"),
     weekly:  t("period.badgeLabels.weekly"),
@@ -508,7 +516,7 @@ export default function BranchReport() {
       setReports(rs => rs.map(r => r.id === approveTarget.id ? res.data.data : r));
       if (detail?.id === approveTarget.id) setDetail(res.data.data);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Hitilafu — jaribu tena";
+      const msg = err?.response?.data?.message || "Hitilafu -- jaribu tena";
       setSigError(msg);
     } finally { setSigLoading(false); }
   };
@@ -615,14 +623,14 @@ export default function BranchReport() {
           ${fins.map(row => `
             <tr>
               <td style="padding:6px 8px;border:1px solid #f1f5f9;font-weight:700;color:#0f172a;white-space:nowrap">${fmtDate(row.date)}</td>
-              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#059669">${row.mapato ? fmtTZS(row.mapato) : "—"}</td>
+              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#059669">${row.mapato ? fmtTZS(row.mapato) : "--"}</td>
               <td style="padding:6px 8px;border:1px solid #f1f5f9;font-size:10px;color:#64748b">${row.mapato_maelezo||""}</td>
-              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#dc2626">${row.matumizi ? fmtTZS(row.matumizi) : "—"}</td>
+              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#dc2626">${row.matumizi ? fmtTZS(row.matumizi) : "--"}</td>
               <td style="padding:6px 8px;border:1px solid #f1f5f9;font-size:10px;color:#64748b">${row.matumizi_maelezo||""}</td>
-              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#7c3aed">${row.mkopo ? fmtTZS(row.mkopo) : "—"}</td>
+              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#7c3aed">${row.mkopo ? fmtTZS(row.mkopo) : "--"}</td>
               <td style="padding:6px 8px;border:1px solid #f1f5f9;font-size:10px;color:#64748b">${row.mkopo_maelezo||""}</td>
-              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#0ea5e9">${row.kutoka_benki ? fmtTZS(row.kutoka_benki) : "—"}</td>
-              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#f59e0b">${row.kwenda_benki ? fmtTZS(row.kwenda_benki) : "—"}</td>
+              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#0ea5e9">${row.kutoka_benki ? fmtTZS(row.kutoka_benki) : "--"}</td>
+              <td style="padding:6px 8px;border:1px solid #f1f5f9;text-align:right;font-weight:600;color:#f59e0b">${row.kwenda_benki ? fmtTZS(row.kwenda_benki) : "--"}</td>
             </tr>`).join("")}
           <tr style="background:#f0fdf4;font-weight:900">
             <td style="padding:8px;border:1px solid #e2e8f0;font-size:12px;color:#059669;font-weight:900">JUMLA</td>
@@ -663,8 +671,8 @@ export default function BranchReport() {
           <tr>
             <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:700">${i+1}</td>
             <td style="padding:7px 8px;border:1px solid #f1f5f9;font-weight:700;color:#0f172a">${o.name}</td>
-            <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:800;color:#059669">${o.hadi_sasa||"—"}</td>
-            <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:800;color:#7c3aed">${o.tegemeo||"—"}</td>
+            <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:800;color:#059669">${o.hadi_sasa||"--"}</td>
+            <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:800;color:#7c3aed">${o.tegemeo||"--"}</td>
           </tr>`).join("")}
         </tbody>
       </table>` : "";
@@ -681,7 +689,7 @@ export default function BranchReport() {
           <tr>
             <td style="padding:7px 8px;border:1px solid #f1f5f9;text-align:center;font-weight:700">${i+1}</td>
             <td style="padding:7px 8px;border:1px solid #f1f5f9;font-weight:700;color:#0f172a">${e.customer_name}</td>
-            <td style="padding:7px 8px;border:1px solid #f1f5f9;font-weight:600;color:#b45309">${e.hatua||"—"}</td>
+            <td style="padding:7px 8px;border:1px solid #f1f5f9;font-weight:600;color:#b45309">${e.hatua||"--"}</td>
           </tr>`).join("")}
         </tbody>
       </table>` : "";
@@ -692,11 +700,11 @@ export default function BranchReport() {
           <div>
             <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;font-weight:700">IDARA: ${r.department} &nbsp;|&nbsp; SEHEMU: ${r.section}</div>
             <div style="font-size:22px;font-weight:800;color:#102a43;margin-top:4px">Ripoti ya ${typeLabel}</div>
-            <div style="font-size:12px;color:#475569;font-weight:600;margin-top:2px">${fmtDate(r.period_start)} — ${fmtDate(r.period_end)}</div>
+            <div style="font-size:12px;color:#475569;font-weight:600;margin-top:2px">${fmtDate(r.period_start)} -- ${fmtDate(r.period_end)}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:10px;color:#94a3b8;font-weight:700">Tawi: ${r.branch || "—"}</div>
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">Imeandikwa na: ${r.submitted_by_name || "—"}</div>
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">Tawi: ${r.branch || "--"}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">Imeandikwa na: ${r.submitted_by_name || "--"}</div>
           </div>
         </div>
         ${secTitle(1,"Utendaji (Shughuli za Kipindi)")}
@@ -744,7 +752,7 @@ export default function BranchReport() {
   const typeLabel = typeLabels[form.report_type];
   const hasDateRange = form.period_start && form.period_end;
   const filterBadge = hasDateRange
-    ? `${typeLabel} · ${fmtDate(form.period_start)}${form.report_type !== "daily" ? ` – ${fmtDate(form.period_end)}` : ""}`
+    ? `${typeLabel} · ${fmtDate(form.period_start)}${form.report_type !== "daily" ? ` - ${fmtDate(form.period_end)}` : ""}`
     : typeLabel;
 
   // ── error message helper ───────────────────────────────────────────────────
@@ -799,7 +807,7 @@ export default function BranchReport() {
     return (
       <div style={{ maxWidth: 1380, margin: "0 auto", display: "flex", flexDirection: "column", gap: 0 }}>
 
-        {/* AUTO-AGGREGATE BANNER — visible for weekly/monthly when daily reports exist */}
+        {/* AUTO-AGGREGATE BANNER -- visible for weekly/monthly when daily reports exist */}
         {form.report_type !== "daily" && form.period_start && form.period_end && (
           <div style={{
             marginBottom: "16px",
@@ -859,10 +867,10 @@ export default function BranchReport() {
           </div>
         )}
 
-        {/* UNIFIED FORM CARD — all sections connected */}
+        {/* UNIFIED FORM CARD -- all sections connected */}
         <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}>
 
-          {/* META — auto-filled Tawi & Sehemu, editable Idara */}
+          {/* META -- auto-filled Tawi & Sehemu, editable Idara */}
           <div style={S.secPanel()}>
             <p style={S.sectionTitle("#102a43")}><FileText size={14} /> {t("meta.sectionTitle")}</p>
             {/* period error shown at top of card */}
@@ -872,7 +880,7 @@ export default function BranchReport() {
               </div>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-              {/* Tawi — read-only for loan_officer (auto from config), editable for LM/Admin */}
+              {/* Tawi -- read-only for loan_officer (auto from config), editable for LM/Admin */}
               <div style={S.field}>
                 <label style={S.label}>
                   <Building2 size={10} style={{display:"inline"}}/> {t("meta.branchLabel")}
@@ -897,7 +905,7 @@ export default function BranchReport() {
                 )}
                 <Err k="branch" />
               </div>
-              {/* Idara — editable */}
+              {/* Idara -- editable */}
               <div style={S.field}>
                 <label style={S.label}>{t("meta.departmentLabel")} <span style={{ color:"#dc2626" }}>*</span></label>
                 <input type="text" style={{...S.input, ...errBorder("department")}}
@@ -905,11 +913,11 @@ export default function BranchReport() {
                   onChange={e => { setForm(f => ({...f, department: e.target.value})); clearErr("department"); }} />
                 <Err k="department" />
               </div>
-              {/* Sehemu — read-only, from logged-in role */}
+              {/* Sehemu -- read-only, from logged-in role */}
               <div style={S.field}>
                 <label style={S.label}>{t("meta.sectionLabel")}</label>
                 <div style={{ ...S.input, background:"#f8fafc", color:"#0f172a", fontWeight:700, display:"flex", alignItems:"center", minHeight:36 } as React.CSSProperties}>
-                  {form.section || userRole}
+                  {form.section || (ROLE_KEYS.includes(userRole as any) ? t(`roles.${userRole}`) : userRole)}
                 </div>
               </div>
             </div>
@@ -956,7 +964,7 @@ export default function BranchReport() {
               </div>
             </div>
 
-            {/* SECTION 3 — placed directly below utendaji cols */}
+            {/* SECTION 3 -- placed directly below utendaji cols */}
             <div style={{ marginTop:"22px", borderTop:"2px solid #f1f5f9", paddingTop:"22px" }}>
               <p style={{ ...S.sectionTitle("#3b82f6"), margin:"0 0 12px 0" }}><Users size={14} /> 3. {t(`sec3.${form.report_type}`)}</p>
               <div style={{ borderRadius:"10px", border:"1px solid #e2e8f0", overflow:"hidden" }}>
@@ -998,7 +1006,7 @@ export default function BranchReport() {
               </button>
             </div>
 
-            {/* SECTION 4 — placed directly below section 3 */}
+            {/* SECTION 4 -- placed directly below section 3 */}
             <div style={{ marginTop:"20px", borderTop:"2px solid #f1f5f9", paddingTop:"20px" }}>
               <p style={{ ...S.sectionTitle("#f59e0b"), margin:"0 0 12px 0" }}><TrendingUp size={14} /> {t("sec4.sectionTitle")}</p>
               <div style={{ borderRadius:"10px", border:"1px solid #e2e8f0", overflow:"hidden" }}>
@@ -1111,7 +1119,7 @@ export default function BranchReport() {
                             const gl = glSnapshot.daily?.[row.date];
                             if (!gl) return (
                               <td style={{ padding:"4px 6px", border:"1px solid #f1f5f9", textAlign:"center" }}>
-                                <span title="Hakuna data ya GL kwa siku hii" style={{ fontSize:"13px", color:"#cbd5e1" }}>—</span>
+                                <span title="Hakuna data ya GL kwa siku hii" style={{ fontSize:"13px", color:"#cbd5e1" }}>--</span>
                               </td>
                             );
                             const matches =
@@ -1185,7 +1193,7 @@ export default function BranchReport() {
                   </table>
                 </div>
 
-                {/* Balance — compact single row */}
+                {/* Balance -- compact single row */}
                 <div style={{ marginTop:"14px", display:"flex", alignItems:"center", gap:"0", border:"1px solid #e2e8f0", borderRadius:"10px", overflow:"hidden" }}>
                   <div style={{ padding:"10px 16px", background:"#f0f9ff", borderRight:"1px solid #e2e8f0", whiteSpace:"nowrap" }}>
                     <span style={{ fontSize:"10px", fontWeight:800, color:"#0ea5e9", textTransform:"uppercase", letterSpacing:"1px" }}>{t("fin.balanceTitle")}</span>
@@ -1262,7 +1270,7 @@ export default function BranchReport() {
         {/* Scope indicator for non-view-all users */}
         {!canViewAll && (
           <div style={{ marginBottom:12, padding:"8px 16px", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:"8px", fontSize:"12px", fontWeight:600, color:"#1d4ed8", display:"flex", alignItems:"center", gap:8 }}>
-            👤 Unaona ripoti zako tu — wasiliana na Meneja ili uone ripoti zote
+            👤 Unaona ripoti zako tu -- wasiliana na Meneja ili uone ripoti zote
           </div>
         )}
         {/* Filters */}
@@ -1318,7 +1326,7 @@ export default function BranchReport() {
                       ? <span style={{ background:"#dcfce7", color:"#15803d", fontSize:"10px", fontWeight:800, padding:"3px 9px", borderRadius:"20px", display:"flex", alignItems:"center", gap:"4px" }}>✅ Imeidhinishwa</span>
                       : <span style={{ background:"#fef9c3", color:"#854d0e", fontSize:"10px", fontWeight:800, padding:"3px 9px", borderRadius:"20px", display:"flex", alignItems:"center", gap:"4px" }}>⏳ Inasubiri LM</span>
                     }
-                    <span style={{ fontWeight:800, color:"#0f172a", fontSize:"13px" }}>{fmtDate(r.period_start)} — {fmtDate(r.period_end)}</span>
+                    <span style={{ fontWeight:800, color:"#0f172a", fontSize:"13px" }}>{fmtDate(r.period_start)} -- {fmtDate(r.period_end)}</span>
                     <span style={{ fontSize:"12px", color:"#64748b", fontWeight:600 }}>{r.branch || t("view.branchMissing")}</span>
                     <span style={{ marginLeft:"auto", fontSize:"11px", color:"#94a3b8" }}>{t("view.submittedBy")} {r.submitted_by_name}</span>
                     <div style={{ display:"flex", gap:"8px" }}>
@@ -1377,6 +1385,7 @@ export default function BranchReport() {
     const expected: ExpectedLoan[] = r.expected_loans || [];
     const tot = finTotals(fins);
     const totalBal = Number(bal.cash||0)+Number(bal.mobile||0)+Number(bal.safe||0);
+    const tLabel = typeLabels[r.report_type as keyof typeof typeLabels] || r.report_type;
     const opGroups = [
       { title:t("detail.col1Title"), color:"#7c3aed", bg:"#faf5ff", items: [
         { label:t("detail.opLabels.new_customers"), val: ops.new_customers_inquired },
@@ -1403,8 +1412,8 @@ export default function BranchReport() {
           <div style={{ background:"#102a43", padding:"14px 24px", display:"flex", gap:"36px", alignItems:"center" }}>
             <div><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaDept")}</div><div style={{ color:"#fff", fontWeight:800, fontSize:"13px", marginTop:"2px" }}>{r.department}</div></div>
             <div><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaSection")}</div><div style={{ color:"#fff", fontWeight:800, fontSize:"13px", marginTop:"2px" }}>{r.section}</div></div>
-            <div><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaBranch")}</div><div style={{ color:"#fff", fontWeight:800, fontSize:"13px", marginTop:"2px" }}>{r.branch||"—"}</div></div>
-            <div style={{ marginLeft:"auto" }}><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaBy")}</div><div style={{ color:"#fff", fontWeight:700, fontSize:"12px", marginTop:"2px" }}>{r.submitted_by_name||"—"}</div></div>
+            <div><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaBranch")}</div><div style={{ color:"#fff", fontWeight:800, fontSize:"13px", marginTop:"2px" }}>{r.branch||"--"}</div></div>
+            <div style={{ marginLeft:"auto" }}><div style={{ fontSize:"9px", color:"rgba(255,255,255,0.55)", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>{t("detail.metaBy")}</div><div style={{ color:"#fff", fontWeight:700, fontSize:"12px", marginTop:"2px" }}>{r.submitted_by_name||"--"}</div></div>
           </div>
 
           {/* SECTION 1: UTENDAJI */}
@@ -1438,7 +1447,7 @@ export default function BranchReport() {
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize:"12px", color:"#94a3b8", fontStyle:"italic" }}>—</div>
+                    <div style={{ fontSize:"12px", color:"#94a3b8", fontStyle:"italic" }}>--</div>
                   )}
                 </div>
                 {/* Right: notes */}
@@ -1447,7 +1456,7 @@ export default function BranchReport() {
                   {ops.notes ? (
                     <div style={{ fontSize:"12.5px", color:"#475569", fontStyle:"italic", lineHeight:1.6 }}>{ops.notes}</div>
                   ) : (
-                    <div style={{ fontSize:"12px", color:"#94a3b8", fontStyle:"italic" }}>—</div>
+                    <div style={{ fontSize:"12px", color:"#94a3b8", fontStyle:"italic" }}>--</div>
                   )}
                 </div>
               </div>
@@ -1476,14 +1485,14 @@ export default function BranchReport() {
                   {fins.map((row,i) => (
                     <tr key={i} style={{ background: i%2===0?"#fff":"#fafafa" }}>
                       <td style={{ padding:"8px 12px", border:"1px solid #f1f5f9", fontWeight:700, color:"#334155", whiteSpace:"nowrap" }}>{fmtDate(row.date)}</td>
-                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#059669" }}>{row.mapato ? fmtTZS(row.mapato) : "—"}</td>
+                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#059669" }}>{row.mapato ? fmtTZS(row.mapato) : "--"}</td>
                       <td style={{ padding:"8px", border:"1px solid #f1f5f9", fontSize:"11px", color:"#64748b" }}>{row.mapato_maelezo||""}</td>
-                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#dc2626" }}>{row.matumizi ? fmtTZS(row.matumizi) : "—"}</td>
+                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#dc2626" }}>{row.matumizi ? fmtTZS(row.matumizi) : "--"}</td>
                       <td style={{ padding:"8px", border:"1px solid #f1f5f9", fontSize:"11px", color:"#64748b" }}>{row.matumizi_maelezo||""}</td>
-                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#7c3aed" }}>{row.mkopo ? fmtTZS(row.mkopo) : "—"}</td>
+                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#7c3aed" }}>{row.mkopo ? fmtTZS(row.mkopo) : "--"}</td>
                       <td style={{ padding:"8px", border:"1px solid #f1f5f9", fontSize:"11px", color:"#64748b" }}>{row.mkopo_maelezo||""}</td>
-                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#0ea5e9" }}>{row.kutoka_benki ? fmtTZS(row.kutoka_benki) : "—"}</td>
-                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{row.kwenda_benki ? fmtTZS(row.kwenda_benki) : "—"}</td>
+                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#0ea5e9" }}>{row.kutoka_benki ? fmtTZS(row.kutoka_benki) : "--"}</td>
+                      <td style={{ padding:"8px", border:"1px solid #f1f5f9", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{row.kwenda_benki ? fmtTZS(row.kwenda_benki) : "--"}</td>
                     </tr>
                   ))}
                   <tr style={{ background:"#f0fdf4" }}>
@@ -1528,8 +1537,8 @@ export default function BranchReport() {
                     <tr key={i} style={{ background:i%2===0?"#fff":"#f8faff" }}>
                       <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:700, color:"#94a3b8", fontSize:"11px" }}>{i+1}</td>
                       <td style={{ padding:"7px 10px", border:"1px solid #f1f5f9", fontWeight:700, color:"#0f172a" }}>{o.name}</td>
-                      <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:900, color:"#059669", fontSize:"14px" }}>{o.hadi_sasa||"—"}</td>
-                      <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:900, color:"#7c3aed", fontSize:"14px" }}>{o.tegemeo||"—"}</td>
+                      <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:900, color:"#059669", fontSize:"14px" }}>{o.hadi_sasa||"--"}</td>
+                      <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:900, color:"#7c3aed", fontSize:"14px" }}>{o.tegemeo||"--"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1546,7 +1555,7 @@ export default function BranchReport() {
                     <tr key={i} style={{ background:i%2===0?"#fff":"#fffdf5" }}>
                       <td style={{ padding:"7px 8px", border:"1px solid #f1f5f9", textAlign:"center", fontWeight:700, color:"#94a3b8", fontSize:"11px" }}>{i+1}</td>
                       <td style={{ padding:"7px 10px", border:"1px solid #f1f5f9", fontWeight:700, color:"#0f172a" }}>{e.customer_name}</td>
-                      <td style={{ padding:"7px 10px", border:"1px solid #f1f5f9", fontWeight:600, color:"#b45309" }}>{e.hatua||"—"}</td>
+                      <td style={{ padding:"7px 10px", border:"1px solid #f1f5f9", fontWeight:600, color:"#b45309" }}>{e.hatua||"--"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1554,11 +1563,11 @@ export default function BranchReport() {
             </div>
           </div>
 
-          {/* SIGNATURE SECTION — all in one row */}
+          {/* SIGNATURE SECTION -- all in one row */}
           <div style={{ padding:"18px 28px", borderTop:"2px solid #f1f5f9", background:"#fafbfc" }}>
             <div style={{ display:"grid", gridTemplateColumns: canApprove && isLoanManager && r.approval_status === "pending" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap:"14px", alignItems:"stretch" }}>
 
-              {/* LO Signature card — always shows submitter; indicates if digitally signed */}
+              {/* LO Signature card -- always shows submitter; indicates if digitally signed */}
               <div style={{ border:`2px solid ${r.lo_signed ? "#86efac" : r.submitted_by_name ? "#bfdbfe" : "#e2e8f0"}`, borderRadius:"12px", padding:"14px 18px", background: r.lo_signed ? "#f0fdf4" : r.submitted_by_name ? "#eff6ff" : "#fff" }}>
                 <div style={{ fontSize:"9px", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>{t("detail.signedBy")}</div>
                 {r.submitted_by_name ? (
@@ -1566,7 +1575,7 @@ export default function BranchReport() {
                     <div style={{ fontSize:"13px", fontWeight:900, color: r.lo_signed ? "#15803d" : "#1d4ed8" }}>
                       {r.lo_signed ? "✅" : "📝"} {r.submitted_by_name}
                     </div>
-                    <div style={{ fontSize:"10px", color:"#64748b" }}>{r.section || "—"}</div>
+                    <div style={{ fontSize:"10px", color:"#64748b" }}>{r.section || "--"}</div>
                     <div style={{ fontSize:"10px", marginTop:2, fontWeight:700, color: r.lo_signed ? "#059669" : "#3b82f6" }}>
                       {r.lo_signed ? "Amesaini kidijitali" : "Amewasilisha (bila saini)"}
                     </div>
@@ -1584,7 +1593,7 @@ export default function BranchReport() {
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                     <div style={{ fontSize:"13px", fontWeight:900, color:"#15803d" }}>✅ {r.approved_by_name}</div>
                     <div style={{ fontSize:"10px", color:"#64748b" }}>Meneja wa Mikopo</div>
-                    <div style={{ fontSize:"10px", color:"#94a3b8", marginTop:2 }}>{r.approved_at ? new Date(r.approved_at).toLocaleDateString("en-GB") : "—"}</div>
+                    <div style={{ fontSize:"10px", color:"#94a3b8", marginTop:2 }}>{r.approved_at ? new Date(r.approved_at).toLocaleDateString("en-GB") : "--"}</div>
                   </div>
                 ) : isLoanManager ? (
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
@@ -1613,7 +1622,7 @@ export default function BranchReport() {
                 )}
               </div>
 
-              {/* Approve action card — only shown to LM when pending (4th column) */}
+              {/* Approve action card -- only shown to LM when pending (4th column) */}
               {canApprove && isLoanManager && r.approval_status === "pending" && (
                 <div style={{ border:"2px solid #fde68a", borderRadius:"12px", padding:"14px 18px", background:"#fef9c3", display:"flex", flexDirection:"column", justifyContent:"space-between", gap:"10px" }}>
                   <div>
@@ -1644,7 +1653,7 @@ export default function BranchReport() {
         </div>
       )}
 
-      {/* ── Sticky tab bar — matches AccountingTabBar design ── */}
+      {/* ── Sticky tab bar -- matches AccountingTabBar design ── */}
       <div className="br-tab-bar">
         <div className="br-tab-scroll">
           {/* Page identity pill */}
@@ -1668,7 +1677,7 @@ export default function BranchReport() {
           )}
         </div>
 
-        {/* Right-side actions (period filter — submit tab only) */}
+        {/* Right-side actions (period filter -- submit tab only) */}
         <div className="br-tab-actions">
           {tab === "submit" && (
             <div ref={filterRef} style={{ position:"relative" }}>
@@ -1710,7 +1719,7 @@ export default function BranchReport() {
                   </div>
                   {hasDateRange && (
                     <div className="br-date-confirm">
-                      <span>✓ {fmtDate(form.period_start)}{form.report_type!=="daily" ? ` — ${fmtDate(form.period_end)}` : ""}</span>
+                      <span>✓ {fmtDate(form.period_start)}{form.report_type!=="daily" ? ` -- ${fmtDate(form.period_end)}` : ""}</span>
                       <button onClick={() => setShowFilterDrop(false)} className="br-confirm-ok">{t("period.ok")}</button>
                     </div>
                   )}
@@ -1721,7 +1730,7 @@ export default function BranchReport() {
         </div>
       </div>
 
-      {/* Detail sub-bar — shown when a report is open in the view tab */}
+      {/* Detail sub-bar -- shown when a report is open in the view tab */}
       {tab === "view" && detail && (
         <div className="br-sub-bar">
           <button className="br-back-btn" onClick={() => setDetail(null)}>
@@ -1729,9 +1738,9 @@ export default function BranchReport() {
           </button>
           <div className="br-sub-title">
             {t("detail.titlePrefix")} {typeLabels[detail.report_type as keyof typeof typeLabels] || detail.report_type}
-            {" — "}
+            {" -- "}
             {fmtDate(detail.period_start)}
-            {detail.report_type !== "daily" ? ` — ${fmtDate(detail.period_end)}` : ""}
+            {detail.report_type !== "daily" ? ` -- ${fmtDate(detail.period_end)}` : ""}
           </div>
           {canPrint && (
             <button className="br-print-btn" onClick={() => printReport(detail)}>
@@ -2051,7 +2060,7 @@ export default function BranchReport() {
               <>
                 <div className="br-sig-title">✅ Idhinisha Ripoti</div>
                 <div className="br-sig-sub">
-                  Ingiza nywila yako ili kuthibitisha idhini — ripoti itaonekana kwa GM, MD, na Admin.
+                  Ingiza nywila yako ili kuthibitisha idhini -- ripoti itaonekana kwa GM, MD, na Admin.
                 </div>
               </>
             )}

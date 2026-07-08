@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Link, useSearchParams, useNavigate } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route, Navigate, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import LoadingScreen from "./components/LoadingScreen";
@@ -12,8 +12,7 @@ import Footer from "./components/Footer";
 
 import GroupLoan from "./pages/GroupLoan";
 import PersonalLoan from "./pages/PersonalLoan";
-import staticLogo from "./assets/logo.png";
-import { useOrgSettings, setOrgSettings, dispatchOrgUpdate } from "./utils/orgSettings";
+import logo from "./assets/logo.png";
 
 import Users from "./pages/Users";
 
@@ -32,7 +31,7 @@ import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import LoanRepayments from "./pages/LoanRepayments";
 import DisburseLoan from "./pages/DisburseLoan";
-import Configurations from "./pages/Configurations";
+import LoanSettings from "./pages/LoanSettings";
 
 import ChartOfAccounts from "./pages/ChartOfAccounts";
 import JournalEntries from "./pages/JournalEntries";
@@ -48,11 +47,12 @@ import RegulatorReports from "./pages/RegulatorReports";
 import LoanLifecycle from "./pages/LoanLifecycle";
 import CashTill from "./pages/CashTill";
 import Payroll from "./pages/Payroll";
-import Biometric from "./pages/Biometric";
 import BranchReport from "./pages/BranchReport";
-import Guarantors from "./pages/Guarantors";
-import GroupManagement from "./pages/GroupManagement";
-import StaffPerformance from "./pages/StaffPerformance";
+import Configurations from "./pages/Configurations";
+import Biometric from "./pages/Biometric";
+import EmployeeLoan from "./pages/EmployeeLoan";
+import { API_BASE } from "./lib/api";
+import { setOrgSettings, dispatchOrgUpdate } from "./utils/orgSettings";
 
 // =========================
 // AXIOS INTERCEPTORS
@@ -93,9 +93,14 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const fromLoan = searchParams.get("fromLoan") === "true";
-  // Which loan form launched the calculator (defaults to personal for back-compat)
+  // Which loan form launched the calculator (employee loans use the personal calculator)
   const loanType = searchParams.get("type") === "group" ? "group" : "personal";
-  const returnRoute = loanType === "group" ? "/group-loan" : "/personal-loan";
+  // GM/MD adjustment mode
+  const fromApproval = searchParams.get("fromApproval"); // "gm" | "md" | null
+  const approvalLoanId = searchParams.get("loanId");
+  const returnRoute = fromApproval === "gm" ? "/gm-review"
+    : fromApproval === "md" ? "/md-authorization"
+    : loanType === "group" ? "/group-loan" : "/personal-loan";
   const bridgeKey = `${loanType}_loan_draft`;
   // Calculator outputs map to different field names on each form
   const fieldMap = loanType === "group"
@@ -122,7 +127,6 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
     // (admin-configurable) instead of a hardcoded guess. Runs once on mount,
     // before the user has touched either field, so it never overwrites a
     // value they've already typed.
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
     axios.get(`${API_BASE}/loan-settings`)
       .then(res => {
         const settings = res.data?.data;
@@ -139,6 +143,15 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   useEffect(() => {
     // Pre-populate from draft if exists
     if (fromLoan) {
+      // For GM/MD adjustment, pre-fill from the adjustment context
+      if (fromApproval) {
+        try {
+          const ctx = JSON.parse(localStorage.getItem('approval_adjustment_context') || '{}');
+          if (ctx.amount) setLoanAmount(Number(ctx.amount));
+          if (ctx.period) setLoanPeriod(Number(ctx.period));
+        } catch (e) { /* ignore */ }
+        return;
+      }
       const draft = localStorage.getItem(bridgeKey);
       if (draft) {
         try {
@@ -225,13 +238,27 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   };
 
   const handleApply = async () => {
+    // In GM/MD adjustment mode: skip DTI block, save to approval_adjustment key
+    if (fromApproval) {
+      const loanId = approvalLoanId ? Number(approvalLoanId) : null;
+      // group → group fields; personal + employee (no separate calculator) → personal fields
+      const adjustedFields = loanType === "group"
+        ? { kiasiChaMkopo: loanAmount.toString(), mudaWaLipaMkopo: `Miezi ${loanPeriod}`, kiasiGaniChaRejesho: Math.round(monthlyPayment).toString() }
+        : { kiasiMkopo: loanAmount.toString(), mudaKulipaMkopo: `Miezi ${loanPeriod}`, kwaTarakimu: loanPeriod.toString(), kiasiRejeshoBilaMatatizo: Math.round(monthlyPayment).toString(), repaymentFrequency, kiwakocha_Riba: interestRate.toString(), ainaYaRiba: interestType, adaYaUchakataji: processingFee.toString() };
+      localStorage.setItem('approval_adjustment', JSON.stringify({ loanId, returnTo: fromApproval, loanType, amount: loanAmount, period: loanPeriod, installment: Math.round(monthlyPayment), fields: adjustedFields }));
+      localStorage.removeItem('approval_adjustment_context');
+      setSyncMessages(["Inatunza marekebisho...", "Inarudi kwenye ukaguzi...", "Karibu ORETHAN!"]);
+      setLoading(true);
+      setTimeout(() => navigate(returnRoute), 2400);
+      return;
+    }
+
     if (sustainability && sustainability.dti > 60) {
       alert("Samahani, mkopo huu hauwezi kuendelea kwa sasa kwa kuwa unazidi uwezo wako wa kulipa (DTI > 60%). Tafadhali rekebisha kiasi cha mkopo.");
       return;
     }
 
     const token = localStorage.getItem("token");
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
     const calculatorFields: Record<string, string> = loanType === "group"
       ? {
@@ -540,9 +567,6 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 // HOME PAGE (LANDING PAGE)
 // =========================
 function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => void, setSyncMessages: (m: string[]) => void }) {
-  const _org = useOrgSettings();
-  const logoSrc = _org.company_logo_url || staticLogo;
-  const companyName = _org.company_name || "Orethan Microfinance";
   return (
     <div className="landing-page">
       {/* Top Navigation */}
@@ -551,8 +575,8 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
         {/* Badilisha class hizi hapa kama unataka kubadilisha style ya logo */}
         <div className="custom-logo-wrapper">
           <img
-            src={logoSrc}
-            alt={companyName}
+            src={logo}
+            alt="Company Logo"
             className="custom-logo-image"
           />
         </div>
@@ -570,7 +594,7 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
 
       {/* Footer */}
       <div className="footer">
-        <p>© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
+        <p>© 2026 Orethan Microfinance. All rights reserved.</p>
       </div>
 
       <style>{`
@@ -953,6 +977,19 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Sync org settings from API into localStorage on every session so print
+  // documents always reflect the live configuration, not stale defaults.
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    axios.get(`${API_BASE}/loan-settings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(res => {
+      const d = res.data?.data;
+      if (d) { setOrgSettings(d); dispatchOrgUpdate(); }
+    }).catch(() => { /* non-fatal — localStorage keeps its last-known value */ });
+  }, []);
+
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
@@ -983,36 +1020,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function App() {
   const [loading, setLoading] = useState(true);
   const [syncMessages, setSyncMessages] = useState<string[]>([]);
-
-  // Bootstrap org settings from API on every cold start so logo/name are
-  // always fresh even on first visit or after localStorage was cleared.
-  useEffect(() => {
-    const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
-    fetch(`${API}/loan-settings`)
-      .then(r => r.json())
-      .then(json => {
-        const d = json?.data;
-        if (!d) return;
-        setOrgSettings({
-          company_name:            d.company_name,
-          company_tagline:         d.company_tagline,
-          company_address:         d.company_address,
-          company_phone:           d.company_phone,
-          company_email:           d.company_email,
-          company_website:         d.company_website,
-          company_logo_url:        d.company_logo_url,
-          company_registration_no: d.company_registration_no,
-          company_tin:             d.company_tin,
-          currency_code:           d.currency_code,
-          date_format:             d.date_format,
-          timezone:                d.timezone,
-          fiscal_year_start_month: d.fiscal_year_start_month,
-          brand_color:             d.brand_color,
-        });
-        dispatchOrgUpdate();
-      })
-      .catch(() => { /* non-critical — falls back to localStorage */ });
-  }, []);
 
   return (
     <>
@@ -1051,7 +1058,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <GroupLoan />
+                  <EmployeeLoan />
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -1080,17 +1087,15 @@ function App() {
           />
 
           <Route
-            path="/configurations"
+            path="/loan-settings"
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <Configurations />
+                  <LoanSettings />
                 </MainLayout>
               </ProtectedRoute>
             }
           />
-          {/* legacy redirect so any saved /loan-settings bookmark still works */}
-          <Route path="/loan-settings" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
 
           <Route
             path="/loan-manager"
@@ -1172,12 +1177,6 @@ function App() {
           <Route path="/reports/regulator" element={<ProtectedRoute><MainLayout><RegulatorReports /></MainLayout></ProtectedRoute>} />
           <Route path="/loan-lifecycle" element={<ProtectedRoute><MainLayout><LoanLifecycle /></MainLayout></ProtectedRoute>} />
           <Route path="/cash-till" element={<ProtectedRoute><MainLayout><CashTill /></MainLayout></ProtectedRoute>} />
-          <Route path="/payroll" element={<ProtectedRoute><MainLayout><Payroll /></MainLayout></ProtectedRoute>} />
-          <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
-          <Route path="/branch-report" element={<ProtectedRoute><MainLayout><BranchReport /></MainLayout></ProtectedRoute>} />
-          <Route path="/guarantors" element={<ProtectedRoute><MainLayout><Guarantors /></MainLayout></ProtectedRoute>} />
-          <Route path="/groups" element={<ProtectedRoute><MainLayout><GroupManagement /></MainLayout></ProtectedRoute>} />
-          <Route path="/staff-performance" element={<ProtectedRoute><MainLayout><StaffPerformance /></MainLayout></ProtectedRoute>} />
 
           <Route
             path="/payment-requests"
@@ -1376,16 +1375,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/finance/customers/:id/repayments"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <LoanRepayments />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/finance/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+          <Route path="/lm/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+          <Route path="/gm/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+          <Route path="/md/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+          <Route path="/officer/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+          <Route path="/admin/customers/:id/repayments" element={<ProtectedRoute><MainLayout><LoanRepayments /></MainLayout></ProtectedRoute>} />
+
+          {/* ========== PAYROLL ========== */}
+          <Route path="/payroll" element={<ProtectedRoute><MainLayout><Payroll /></MainLayout></ProtectedRoute>} />
+
+          {/* ========== BRANCH REPORT ========== */}
+          <Route path="/branch-report" element={<ProtectedRoute><MainLayout><BranchReport /></MainLayout></ProtectedRoute>} />
+
+          {/* ========== CONFIGURATIONS & BIOMETRIC ========== */}
+          <Route path="/configurations" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
+          <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
 
           {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />

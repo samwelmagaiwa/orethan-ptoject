@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
 import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
+import { API_BASE, BASE_URL } from "../lib/api";
 
 const GroupLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const GroupLoan: React.FC = () => {
   const DRAFT_TYPE = 'group';
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [checklistResolved, setChecklistResolved] = useState(false);
   const [checklistState, setChecklistState] = useState<any>({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -93,7 +95,7 @@ const GroupLoan: React.FC = () => {
     mdhamini2JinaLaKampuni: "",
     mdhamini2Simu: "",
 
-    // SEHEMU 6: TAARIFA ZA DHAMANA (repeatable — ONGEZA DHAMANA)
+    // SEHEMU 6: TAARIFA ZA DHAMANA (repeatable -- ONGEZA DHAMANA)
     dhamanaList: [{ aina: "", namba: "", umiliki: "", thamaniYaDhamana: "", thamaniYaSasa: "", umri: "", mmilikiWamiliki: "", muonekano: "", mahaliIlipo: "" }] as { aina: string; namba: string; umiliki: string; thamaniYaDhamana: string; thamaniYaSasa: string; umri: string; mmilikiWamiliki: string; muonekano: string; mahaliIlipo: string }[],
     tamkoLaMwombaji: false,
     mwombajiAmesainiFomuNgumu: false,
@@ -177,7 +179,6 @@ const GroupLoan: React.FC = () => {
     if (!url) return "";
     if (url.startsWith('http')) return url;
     if (url.startsWith('blob:')) return url;
-    const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://127.0.0.1:8000';
     return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
@@ -194,7 +195,6 @@ const GroupLoan: React.FC = () => {
     // Immediate upload for draft persistence
     try {
       const token = localStorage.getItem("token");
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const formData = new FormData();
       formData.append("photo", file, file.name);
       formData.append("applicant_name", `${form.jinaKamiliLaMwombaji || 'Applicant'}_${type}`);
@@ -220,7 +220,6 @@ const GroupLoan: React.FC = () => {
   // Persistence: Load draft from BACKEND on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
     const loadDraft = async () => {
       // Priority 0: Edit Mode (load a submitted loan)
@@ -337,7 +336,6 @@ const GroupLoan: React.FC = () => {
     if (!isInitialized.current) return;
     const token = localStorage.getItem('token');
     if (!token) return;
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
     const timer = setTimeout(() => {
       axios.post(`${API_BASE}/drafts`, {
@@ -363,7 +361,6 @@ const GroupLoan: React.FC = () => {
 
   const handleDiscardDraft = () => {
     const token = localStorage.getItem('token');
-    const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
     if (token) {
       axios.delete(`${API_BASE}/drafts/${DRAFT_TYPE}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -442,7 +439,6 @@ const GroupLoan: React.FC = () => {
 
   const fetchRegions = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/locations/regions`);
       setRegions(res.data);
     } catch (e) {
@@ -452,7 +448,6 @@ const GroupLoan: React.FC = () => {
 
   const fetchDistricts = async (regionId: string) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/locations/districts/${regionId}`);
       setDistricts(res.data);
       setWards([]);
@@ -464,7 +459,6 @@ const GroupLoan: React.FC = () => {
 
   const fetchWards = async (districtId: string) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/locations/wards/${districtId}`);
       setWards(res.data);
       setStreets([]);
@@ -475,7 +469,6 @@ const GroupLoan: React.FC = () => {
 
   const fetchStreets = async (wardId: string) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/locations/streets/${wardId}`);
       setStreets(res.data);
     } catch (e) {
@@ -550,7 +543,7 @@ const GroupLoan: React.FC = () => {
       }
     });
 
-    // Step 3: Validate dhamanaList — only critical fields, across all entries
+    // Step 3: Validate dhamanaList -- only critical fields, across all entries
     if (step === 3) {
       form.dhamanaList.forEach((dhamana, index) => {
         if (!dhamana.aina) {
@@ -606,7 +599,7 @@ const GroupLoan: React.FC = () => {
 
     if (currentStep < steps.length - 1) return;
 
-    // Full validation sweep across every step — catches anything missed or
+    // Full validation sweep across every step -- catches anything missed or
     // changed after the officer moved past that step, and returns them to
     // the exact step with the problem instead of failing silently.
     for (let step = 0; step <= 5; step++) {
@@ -627,7 +620,6 @@ const GroupLoan: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const successMessage = isEditMode ? "OMBI LA MKOPO WA KIKUNDI LIMEREKEBISHWA KWA MAFANIKIO!" : "OMBI LA MKOPO WA KIKUNDI LIMEWASILISHWA KWA MAFANIKIO!";
       const method = isEditMode ? "put" : "post";
       const url = isEditMode ? `${API_BASE}/loans/${editId}` : `${API_BASE}/loans`;
@@ -676,6 +668,7 @@ const GroupLoan: React.FC = () => {
         }).catch(() => { /* non-blocking */ });
       }
 
+      setSubmitted(true);
       showAlert(successMessage, "success");
       setTimeout(() => {
         navigate("/my-applications");
@@ -692,7 +685,7 @@ const GroupLoan: React.FC = () => {
     <div className="page-container">
       {showDraftModal && (
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}>
-          <div className="modal-content" style={{ background: '#fffcf8', padding: '30px', borderRadius: '15px', maxWidth: '450px', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: '2px solid #e2bc8a', textAlign: 'center' }}>
+          <div className="modal-content" style={{ background: '#fffcf8', padding: '30px', borderRadius: '15px', maxWidth: 'min(450px, calc(100vw - 2rem))', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: '2px solid #e2bc8a', textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📦</div>
             <h3 style={{ color: '#5c4033', marginBottom: '15px', fontSize: '1.5rem' }}>Draft Imepatikana!</h3>
             <p style={{ color: '#8b735b', marginBottom: '25px', lineHeight: '1.6' }}>
@@ -1144,11 +1137,11 @@ const GroupLoan: React.FC = () => {
             {/* SEHEMU 5: TAMKO NA WASILISHA */}
             {currentStep === 4 && (
               <div className="tamko-container">
-                {/* Triple Photo Upload Row — applicant + both guarantors (mirrors personal loan) */}
+                {/* Triple Photo Upload Row -- applicant + both guarantors (mirrors personal loan) */}
                 <div className="tamko-card">
                   <p style={{ marginBottom: '4px' }}><strong>PAKIA PICHA ZA PASSPORT *</strong></p>
                   <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 14px' }}>Picha ya mwombaji na za wadhamini wawili zinahitajika kwa ajili ya utambulisho kwenye mfumo.</p>
-                  <div className="group-photo-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                  <div className="group-photo-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '15px' }}>
                     {[
                       { type: 'passport', url: form.passportPhotoUrl, file: passportPhoto, title: 'PICHA YA MWOMBAJI', color: '#102a43' },
                       { type: 'guarantor1', url: form.guarantor1PhotoUrl, file: guarantor1Photo, title: 'MDHAMINI (MUME/MKE/NDUGU)', color: '#f59e0b' },
@@ -1219,7 +1212,7 @@ const GroupLoan: React.FC = () => {
                 <div className="tamko-card" style={{ borderLeft: 'none' }}>
                   <p><strong>ORODHA YA UHAKIKI WA NYARAKA (DOCUMENTATION CHECKLIST)</strong></p>
                   <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 14px' }}>
-                    Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>–Proceed without</strong>.
+                    Hakiki nyaraka zote kabla ya kuwasilisha ombi kwa Meneja wa Mikopo. Vipengele vilivyojazwa tayari vimethibitishwa moja kwa moja; kwa nyaraka zinazokosekana tumia kitufe cha <strong>"Proceed without"</strong>.
                   </p>
                   <LoanChecklist
                     category="group"
@@ -1262,8 +1255,8 @@ const GroupLoan: React.FC = () => {
             {currentStep < steps.length - 1 ? (
               <button type="button" className="btn-next" onClick={(e) => nextStep(e)}>ENDELEA ►</button>
             ) : (
-              <button type="submit" className="btn-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
-                {loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
+              <button type="submit" className="btn-submit" disabled={loading || submitted} style={{ opacity: (loading || submitted) ? 0.6 : 1 }}>
+                {submitted ? "IMEWASILISHWA ✓" : loading ? "INAWASILISHA..." : "WASILISHA OMBI"}
               </button>
             )}
           </div>

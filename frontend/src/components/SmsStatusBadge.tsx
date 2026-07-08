@@ -12,14 +12,14 @@ const SMS_TYPE_LABELS: Record<string, string> = {
   guarantor_overdue: "Guarantor Notice",
 };
 
-/** Shows the most recent automated SMS attempt for a loan — sent, failed, or none yet. */
+/** Shows the most recent automated SMS attempt for a loan -- sent, failed, or none yet. */
 const SmsStatusBadge = ({ status, type }: Props) => {
   const label = type ? (SMS_TYPE_LABELS[type] || type) : "";
 
   if (!status) {
     return (
       <span className="smsb smsb--none" title="No SMS has been sent for this loan yet">
-        — No SMS
+        -- No SMS
       </span>
     );
   }

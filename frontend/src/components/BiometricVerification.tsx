@@ -1,18 +1,17 @@
 /**
- * BiometricVerification – full disbursement gate modal
+ * BiometricVerification - full disbursement gate modal
  *
  * Steps:
  *   1. Verify Borrower  (scan → 1:1 match OR enroll if first time)
  *   2. Verify Guarantor (scan → 1:1 match OR enroll if first time)
  *   3. Both cleared → call onComplete(true)
  *
- * Exception path: supervisor can bypass with reason + PIN — logged immutably.
+ * Exception path: supervisor can bypass with reason + PIN -- logged immutably.
  */
 import { useState, useEffect } from "react";
 import axios from "axios";
 import BiometricScanner, { type ScanResult } from "./BiometricScanner";
-
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+import { API_BASE as API } from "../lib/api";
 
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` });
 
@@ -32,7 +31,7 @@ interface Props {
   guarantor: PersonInfo | null;
   onComplete: (verified: boolean) => void;
   onClose: () => void;
-  agentUrl?: string;          // ws://localhost:9000 — absent = simulation mode
+  agentUrl?: string;          // ws://localhost:9000 -- absent = simulation mode
 }
 
 type StepId = "borrower" | "guarantor";
@@ -348,6 +347,7 @@ export default function BiometricVerification({
               </div>
             ) : (
               <div className="bv-scanner-area">
+                {/* ── FINGERPRINT CAPTURE -- commented out for future hardware integration ──
                 {busy && <div className="bv-busy-overlay"><div className="bv-spinner" /> Verifying…</div>}
                 <BiometricScanner
                   finger={selectedFinger}
@@ -356,13 +356,19 @@ export default function BiometricVerification({
                   onCapture={handleCapture}
                   onError={() => {}}
                   disabled={busy || currentCleared}
-                  label={`${FINGER_LABELS[selectedFinger]} — ${st.enrolled ? "Verify" : "Enroll (first time)"}`}
+                  label={`${FINGER_LABELS[selectedFinger]} -- ${st.enrolled ? "Verify" : "Enroll (first time)"}`}
                 />
                 {st.verifyResult === "failure" && (
                   <div className="bv-failure-banner">
                     ❌ No match (score {st.similarityScore ?? 0}% &lt; {cfg.min_similarity_score}%). Try again or switch finger.
                   </div>
                 )}
+                ── END FINGERPRINT CAPTURE ── */}
+                <div style={{ padding: "32px 24px", textAlign: "center", color: "#94a3b8" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.4 }}>🔏</div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: "#64748b", marginBottom: 6 }}>Fingerprint Capture -- Coming Soon</div>
+                  <div style={{ fontSize: 12 }}>Hardware integration is pending. This section will be activated once the biometric agent is connected.</div>
+                </div>
               </div>
             )}
           </div>
@@ -383,7 +389,7 @@ export default function BiometricVerification({
 
             {allCleared && (
               <button className="bv-btn bv-btn--green bv-btn--lg" onClick={() => onComplete(true)}>
-                ✅ All Cleared — Proceed to Disbursement
+                ✅ All Cleared -- Proceed to Disbursement
               </button>
             )}
 

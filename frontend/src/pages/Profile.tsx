@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Camera, Save, ShieldCheck, Mail, Phone, BadgeCheck, PenLine, User as UserIcon } from "lucide-react";
 import SignaturePad from "../components/SignaturePad";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 
 /** Downscale + compress an image to a compact JPEG data URL. */
 const fileToAvatar = (file: File): Promise<string> =>
@@ -75,8 +76,23 @@ const Profile = () => {
   const roleLabel = String(user?.role || "").replace(/_/g, " ");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fdfbf7", padding: "1.2rem 1.5rem 2rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+    <div style={{ minHeight: "100vh", background: "#fdfbf7", padding: "0", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>My Profile</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "1.2rem 1.5rem 2rem" }}>
 
         {/* COMPACT HEADER */}
         <div style={{ ...CARD, display: "flex", alignItems: "center", gap: "1.2rem", marginBottom: "1.3rem" }}>
@@ -162,3 +178,4 @@ const Detail = ({ icon, label, value, last, capitalize }: any) => (
 );
 
 export default Profile;
+

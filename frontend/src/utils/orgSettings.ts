@@ -64,7 +64,7 @@ export function dispatchOrgUpdate(): void {
 }
 
 /**
- * React hook — returns live org settings and re-renders whenever
+ * React hook -- returns live org settings and re-renders whenever
  * dispatchOrgUpdate() is called anywhere in the app.
  */
 export function useOrgSettings(): OrgSettings {
@@ -77,17 +77,17 @@ export function useOrgSettings(): OrgSettings {
   return settings;
 }
 
-/** Convenience — just the company name, used in many places. */
+/** Convenience -- just the company name, used in many places. */
 export function getCompanyName(): string {
   return getOrgSettings().company_name || DEFAULTS.company_name;
 }
 
-/** Convenience — logo URL or null if not set. */
+/** Convenience -- logo URL or null if not set. */
 export function getLogoUrl(): string | null {
   return getOrgSettings().company_logo_url || null;
 }
 
-/** Print-header HTML block — call inside window.print() open-document sections. */
+/** Print-header HTML block -- call inside window.print() open-document sections. */
 export function orgPrintHeader(): string {
   const s = getOrgSettings();
   const logo = s.company_logo_url

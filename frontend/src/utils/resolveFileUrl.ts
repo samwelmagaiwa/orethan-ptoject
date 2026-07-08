@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+import { API_BASE } from "../lib/api";
 
 /** Turn a backend-relative storage path (e.g. "/storage/documents/x.pdf") into an absolute URL. */
 export const resolveFileUrl = (url: string | undefined | null): string => {

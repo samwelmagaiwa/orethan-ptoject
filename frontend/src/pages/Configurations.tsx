@@ -1,20 +1,20 @@
-/**
- * Configurations — unified global admin settings page.
+﻿/**
+ * Configurations -- unified global admin settings page.
  *
  * Sections (tab-bar, matching accounting page design):
- *   1. Loan Policy      — rates, fees, PAYE/NSSF bands
- *   2. Access Control   — role gates for compliance, payroll, biometric
- *   3. Payroll GL       — default GL accounts for salary payment
- *   4. Biometric        — scanner quality, matching, retry limits
- *   5. System           — app name, currency, fiscal year, date format
+ *   1. Loan Policy      -- rates, fees, PAYE/NSSF bands
+ *   2. Access Control   -- role gates for compliance, payroll, biometric
+ *   3. Payroll GL       -- default GL accounts for salary payment
+ *   4. Biometric        -- scanner quality, matching, retry limits
+ *   5. System           -- app name, currency, fiscal year, date format
  */
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
 import AlertModal from "../components/AlertModal";
 import { setOrgSettings, dispatchOrgUpdate } from "../utils/orgSettings";
+import { API_BASE as API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` });
 
 type Tab = "loan" | "access" | "payroll_gl" | "biometric" | "system";
@@ -188,7 +188,7 @@ const SelectField = ({
   <div className="cfg-field">
     <label className="cfg-field-label">{label}</label>
     <select className="cfg-field-sel" value={value} onChange={e => onChange(e.target.value)} disabled={disabled}>
-      {options.map(o => <option key={o.code} value={o.code}>{o.code} — {o.name}</option>)}
+      {options.map(o => <option key={o.code} value={o.code}>{o.code} -- {o.name}</option>)}
       {options.length === 0 && <option value={value}>{value}</option>}
     </select>
     {hint && <p className="cfg-field-hint">{hint}</p>}
@@ -240,6 +240,9 @@ export default function Configurations() {
           setLoanCfg({ ...DEFAULT_LOAN, ...d });
           setOrgCfg({ ...DEFAULT_ORG, ...d });
           if (d.company_logo_url) setLogoPreview(d.company_logo_url);
+          // Sync localStorage so print/receipts always reflect latest API data
+          setOrgSettings({ ...DEFAULT_ORG, ...d });
+          dispatchOrgUpdate();
         }
         if (bioRes.status  === "fulfilled") {
           const bioData = { ...DEFAULT_BIO, ...bioRes.value.data.data };
@@ -282,7 +285,7 @@ export default function Configurations() {
         setLogoPreview(newLogoUrl);
       }
 
-      // 2. All scalar settings — loan policy + access + payroll GL + org
+      // 2. All scalar settings -- loan policy + access + payroll GL + org
       if (dirty.loan || dirty.access || dirty.payroll_gl || dirty.system) {
         await axios.put(`${API}/loan-settings`, {
           // Loan policy
@@ -361,7 +364,7 @@ export default function Configurations() {
       <PageHeader
         icon="⚙️"
         title="Configurations"
-        subtitle="Global system settings — loan policy, access control, payroll GL, biometric & system"
+        subtitle="Global system settings -- loan policy, access control, payroll GL, biometric & system"
         tabs={TABS}
         activeTab={tab}
         onTabChange={t => setTab(t as Tab)}
@@ -408,12 +411,12 @@ export default function Configurations() {
                   { label: "NSSF Employee Contribution", value: "10% of gross salary" },
                   { label: "NSSF Employer Contribution", value: "10% of gross salary" },
                   { label: "PAYE Band 1 (≤ 270,000)",    value: "0%" },
-                  { label: "PAYE Band 2 (270k – 520k)",  value: "9%" },
-                  { label: "PAYE Band 3 (520k – 760k)",  value: "20%" },
-                  { label: "PAYE Band 4 (760k – 1M)",    value: "25%" },
+                  { label: "PAYE Band 2 (270k - 520k)",  value: "9%" },
+                  { label: "PAYE Band 3 (520k - 760k)",  value: "20%" },
+                  { label: "PAYE Band 4 (760k - 1M)",    value: "25%" },
                   { label: "PAYE Band 5 (> 1,000,000)",  value: "30%" },
                   { label: "NHIF (≤ 100,000)",            value: "TZS 1,500" },
-                  { label: "NHIF (100k – 200k)",          value: "TZS 2,500" },
+                  { label: "NHIF (100k - 200k)",          value: "TZS 2,500" },
                   { label: "NHIF (> 500k)",               value: "TZS 7,000+" },
                 ].map(r => (
                   <div key={r.label} className="cfg-info-row">
@@ -516,12 +519,12 @@ export default function Configurations() {
             <SectionCard icon="📒" title="Journal Posting Preview">
               <div className="cfg-je-preview">
                 <div className="cfg-je-row cfg-je-row--hd"><span>Account</span><span>Debit</span><span>Credit</span></div>
-                <div className="cfg-je-row cfg-je-row--event"><span style={{ gridColumn: "1/-1" }}>📋 EVENT 1 — Post Payroll (approve → posted)</span></div>
-                <div className="cfg-je-row"><span>5010 — Salaries Expense</span><span className="cfg-je-dr">Gross Salary</span><span>—</span></div>
-                <div className="cfg-je-row"><span>2200 — Accrued Salaries Payable</span><span>—</span><span className="cfg-je-cr">Gross Salary</span></div>
-                <div className="cfg-je-row cfg-je-row--event"><span>💳 EVENT 2 — Pay Salaries (posted → paid)</span></div>
-                <div className="cfg-je-row"><span>2200 — Accrued Salaries Payable</span><span className="cfg-je-dr">Net Salary</span><span>—</span></div>
-                <div className="cfg-je-row"><span>{loanCfg.salary_bank_account_code} — {glAccounts.find(a => a.code === loanCfg.salary_bank_account_code)?.name ?? "Bank Account"}</span><span>—</span><span className="cfg-je-cr">Net Salary</span></div>
+                <div className="cfg-je-row cfg-je-row--event"><span style={{ gridColumn: "1/-1" }}>📋 EVENT 1 -- Post Payroll (approve → posted)</span></div>
+                <div className="cfg-je-row"><span>5010 -- Salaries Expense</span><span className="cfg-je-dr">Gross Salary</span><span>--</span></div>
+                <div className="cfg-je-row"><span>2200 -- Accrued Salaries Payable</span><span>--</span><span className="cfg-je-cr">Gross Salary</span></div>
+                <div className="cfg-je-row cfg-je-row--event"><span>💳 EVENT 2 -- Pay Salaries (posted → paid)</span></div>
+                <div className="cfg-je-row"><span>2200 -- Accrued Salaries Payable</span><span className="cfg-je-dr">Net Salary</span><span>--</span></div>
+                <div className="cfg-je-row"><span>{loanCfg.salary_bank_account_code} -- {glAccounts.find(a => a.code === loanCfg.salary_bank_account_code)?.name ?? "Bank Account"}</span><span>--</span><span className="cfg-je-cr">Net Salary</span></div>
               </div>
             </SectionCard>
           </div>
@@ -534,13 +537,13 @@ export default function Configurations() {
               <div className="cfg-field-grid cfg-field-grid--3">
                 <NumField
                   label="Minimum Fingerprint Quality" suffix="%"
-                  hint="Scans scoring below this are rejected immediately. Recommended: 60–75%."
+                  hint="Scans scoring below this are rejected immediately. Recommended: 60-75%."
                   value={bioCfg.min_quality_score} min={0} max={100}
                   onChange={v => setB({ min_quality_score: +v })}
                 />
                 <NumField
                   label="Minimum Similarity Score" suffix="%"
-                  hint="Match threshold for 1:1 identity verification. Recommended: 75–85%."
+                  hint="Match threshold for 1:1 identity verification. Recommended: 75-85%."
                   value={bioCfg.min_similarity_score} min={0} max={100}
                   onChange={v => setB({ min_similarity_score: +v })}
                 />
@@ -588,7 +591,7 @@ export default function Configurations() {
                   <p className="cfg-field-hint">
                     WebSocket address of the biometric agent running on the cashier's local PC.
                     Change only the port if your agent uses a non-default port (e.g. <code>ws://localhost:9001</code>).
-                    Leave the host as <code>localhost</code> — the agent always runs on the operator's machine, not the server.
+                    Leave the host as <code>localhost</code> -- the agent always runs on the operator's machine, not the server.
                   </p>
                 </div>
               </div>
@@ -598,7 +601,7 @@ export default function Configurations() {
                   { label: "Fallback",              value: "Simulation mode (no hardware)" },
                   { label: "Encryption (template)", value: "AES-256-CBC, stored encrypted" },
                   { label: "Template exposure",     value: "Never in API responses (hidden field)" },
-                  { label: "Audit log",             value: "Immutable — no edit/delete" },
+                  { label: "Audit log",             value: "Immutable -- no edit/delete" },
                 ].map(r => (
                   <div key={r.label} className="cfg-info-row">
                     <span className="cfg-info-label">{r.label}</span>
@@ -649,7 +652,7 @@ export default function Configurations() {
                   <div className="cfg-logo-dz-icon">📤</div>
                   <div className="cfg-logo-dz-text">
                     <strong>Click to browse</strong> or drag & drop<br />
-                    <span>PNG, JPG, SVG, WebP — max 2 MB</span>
+                    <span>PNG, JPG, SVG, WebP -- max 2 MB</span>
                   </div>
                   <input
                     ref={logoInputRef}
@@ -750,7 +753,7 @@ export default function Configurations() {
                       <input className="cfg-field-inp" value={orgCfg.company_registration_no}
                         onChange={e => setO({ company_registration_no: e.target.value })}
                         placeholder="e.g. 00000000-A" />
-                      <p className="cfg-field-hint">BRELA number — printed on official documents.</p>
+                      <p className="cfg-field-hint">BRELA number -- printed on official documents.</p>
                     </div>
                     <div className="cfg-field">
                       <label className="cfg-field-label">TIN Number</label>
@@ -776,12 +779,12 @@ export default function Configurations() {
                   <div className="cfg-field">
                     <label className="cfg-field-label">Currency</label>
                     <select className="cfg-field-sel" value={orgCfg.currency_code} onChange={e => setO({ currency_code: e.target.value })}>
-                      <option value="TZS">TZS — Tanzanian Shilling</option>
-                      <option value="USD">USD — US Dollar</option>
-                      <option value="KES">KES — Kenyan Shilling</option>
-                      <option value="UGX">UGX — Ugandan Shilling</option>
-                      <option value="RWF">RWF — Rwandan Franc</option>
-                      <option value="ZAR">ZAR — South African Rand</option>
+                      <option value="TZS">TZS -- Tanzanian Shilling</option>
+                      <option value="USD">USD -- US Dollar</option>
+                      <option value="KES">KES -- Kenyan Shilling</option>
+                      <option value="UGX">UGX -- Ugandan Shilling</option>
+                      <option value="RWF">RWF -- Rwandan Franc</option>
+                      <option value="ZAR">ZAR -- South African Rand</option>
                     </select>
                     <p className="cfg-field-hint">Used on all financial displays and receipts.</p>
                   </div>
@@ -850,7 +853,7 @@ export default function Configurations() {
                     </div>
                   ))}
                 </div>
-                <p className="cfg-info-note">ℹ️ SMTP credentials live in <code>.env</code> — not editable here.</p>
+                <p className="cfg-info-note">ℹ️ SMTP credentials live in <code>.env</code> -- not editable here.</p>
               </div>
 
               <div className="cfg-section-card">
@@ -861,7 +864,7 @@ export default function Configurations() {
                 <div className="cfg-info-grid">
                   {[
                     { label: "Cache key",       value: "loan_settings.current" },
-                    { label: "Cleared on save", value: "Yes — automatically" },
+                    { label: "Cleared on save", value: "Yes -- automatically" },
                     { label: "Logo storage",    value: "public/logos/" },
                     { label: "Client cache",    value: "org_settings (localStorage)" },
                   ].map(r => (

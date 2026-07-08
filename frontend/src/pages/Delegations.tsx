@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Inbox, PlusCircle, X, CheckCircle2, XCircle, Clock, Lock, UserCheck } from "lucide-react";
 import SuccessModal from "../components/SuccessModal";
 import DelegationForm from "../components/DelegationForm";
 import SignatureReuse from "../components/SignatureReuse";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
@@ -82,19 +83,37 @@ const Delegations = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#fdfbf7", padding: "0.7rem 1rem 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#f1f5f9", padding: "0 0 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <UserCheck size={22} style={{ color: "#4f46e5" }} />
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>Office Delegation / Kukaimisha Ofisi na Madaraka</h1>
-        <div style={{ marginLeft: "auto", display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 10, gap: 3 }}>
-          {([["list", "Delegations", Inbox], ...(canDelegate ? [["new", "New Delegation", PlusCircle]] : [])] as const).map(([k, l, Icon]: any) => (
-            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", borderRadius: 8, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "white" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: tab === k ? "0 1px 4px rgba(15,23,42,0.1)" : "none" }}>
-              <Icon size={15} /> {l}
+      {/* ── Sticky tab bar ── */}
+      <div className="rq-tab-bar">
+        <div className="rq-tab-scroll">
+          <div className="rq-brand">
+            <UserCheck size={14} />
+            <span>Office Delegation</span>
+          </div>
+          <div className="rq-divider" />
+          <button className={`rq-tab ${tab === "list" ? "rq-tab--active" : ""}`} onClick={() => setTab("list")}>
+            <Inbox size={13} /> Delegations
+          </button>
+          {canDelegate && (
+            <button className={`rq-tab ${tab === "new" ? "rq-tab--active" : ""}`} onClick={() => setTab("new")}>
+              <PlusCircle size={13} /> New Delegation
             </button>
-          ))}
+          )}
         </div>
       </div>
+      <style>{`
+        .rq-tab-bar { display:flex; align-items:stretch; background:#f1f5f9; position:sticky; top:0; z-index:100; border-bottom:2px solid #e2e8f0; min-height:50px; }
+        .rq-tab-scroll { display:flex; align-items:flex-end; gap:4px; padding:10px 14px 0; overflow-x:auto; flex:1; scrollbar-width:none; -ms-overflow-style:none; }
+        .rq-tab-scroll::-webkit-scrollbar { display:none; }
+        .rq-brand { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:800; color:#102a43; white-space:nowrap; padding-bottom:10px; flex-shrink:0; }
+        .rq-divider { width:1px; height:24px; background:#cbd5e1; margin:0 8px 10px; flex-shrink:0; }
+        .rq-tab { display:flex; align-items:center; gap:6px; white-space:nowrap; padding:8px 16px; border:none; border-radius:8px 8px 0 0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:#64748b; transition:all .15s; flex-shrink:0; font-family:inherit; }
+        .rq-tab--active { background:white; color:#102a43; box-shadow:0 -2px 0 #1e5fae inset; }
+        .rq-tab:hover:not(.rq-tab--active) { background:#e2e8f0; color:#334155; }
+      `}</style>
+      <div style={{ padding: "1.2rem 1rem 0" }}>
 
       {tab === "new" && canDelegate ? (
         <div style={{ background: "#e8f0fe", borderRadius: 14, padding: "0.5rem" }}>
@@ -123,7 +142,7 @@ const Delegations = () => {
                         <td style={{ padding: "0.85rem 0.7rem", fontWeight: 700, color: "#1e293b", fontSize: "0.84rem" }}>{d.delegator_name}<div style={{ fontSize: "0.66rem", color: "#94a3b8", fontWeight: 600 }}>{d.delegator_title}</div></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.82rem", color: "#475569" }}>{d.delegate_name}</td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.8rem", color: "#64748b" }}>{d.acting_title}</td>
-                        <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(d.from_date)} – {fmtDate(d.to_date)}</td>
+                        <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(d.from_date)} — {fmtDate(d.to_date)}</td>
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.64rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
                           <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
@@ -149,7 +168,7 @@ const Delegations = () => {
         {selected && (
           <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              style={{ width: "100%", maxWidth: 620, maxHeight: "90vh", borderRadius: 18, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
+              style={{ width: "100%", maxWidth: "min(620px, calc(100vw - 2rem))", maxHeight: "90vh", borderRadius: 18, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
               <div style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)", padding: "1.3rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h2 style={{ fontSize: "1.05rem", fontWeight: 900, margin: 0 }}>Delegation of Office &amp; Authority</h2>
@@ -166,7 +185,7 @@ const Delegations = () => {
                 {selected.limitations && <Field label="Limitations / Mipaka" value={selected.limitations} />}
                 {selected.handover_notes && <Field label="Handover Notes / Makabidhiano" value={selected.handover_notes} />}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
                   <SigBox label={`${selected.delegator_title} (Delegator)`} name={selected.delegator_name} date={selected.delegator_date} img={selected.delegator_signature_img} />
                   <SigBox label={`${selected.acting_title} (Delegate)`} name={selected.delegate_name} date={selected.delegate_date} img={selected.delegate_signature_img} pending={selected.status === "pending"} />
                 </div>
@@ -201,6 +220,7 @@ const Delegations = () => {
       </AnimatePresence>
 
       <SuccessModal open={success.open} title={success.title} message={success.message} onClose={() => setSuccess({ ...success, open: false })} />
+      </div>{/* /padding wrapper */}
     </div>
   );
 };
@@ -218,8 +238,9 @@ const SigBox = ({ label, name, date, img, pending }: any) => (
       {img ? <img src={img} alt="signature" style={{ height: 40, maxWidth: 140, objectFit: "contain" }} /> : pending ? <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#94a3b8", fontSize: "0.66rem", fontWeight: 700 }}><Clock size={11} /> Pending</span> : null}
     </div>
     <div style={{ borderTop: "1.5px solid #0f172a", paddingTop: "8px", marginTop: "4px", fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</div>
-    {name && <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "3px" }}>{name}{date ? " · " + fmtDate(date) : ""}</div>}
+    {name && <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "3px" }}>{name}{date ? " Â· " + fmtDate(date) : ""}</div>}
   </div>
 );
 
 export default Delegations;
+

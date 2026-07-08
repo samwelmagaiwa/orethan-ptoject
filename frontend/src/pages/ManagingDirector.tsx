@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
 import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
+import { API_BASE } from "../lib/api";
 
 interface Loan {
   id: number;
@@ -28,8 +30,11 @@ interface Loan {
 
 const ManagingDirector = () => {
   const { t } = useTranslation("managingDirector");
+  const navigate = useNavigate();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingAdjustment, setPendingAdjustment] = useState<{ loanId: number; amount: number; period: number; installment: number; fields: any } | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -59,6 +64,17 @@ const ManagingDirector = () => {
   };
 
   useEffect(() => {
+    // Check if returning from calculator after adjustment
+    const raw = localStorage.getItem('approval_adjustment');
+    if (raw) {
+      try {
+        const adj = JSON.parse(raw);
+        if (adj.returnTo === 'md') {
+          setPendingAdjustment(adj);
+          localStorage.removeItem('approval_adjustment');
+        }
+      } catch (e) { /* ignore */ }
+    }
     fetchLoans();
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -84,7 +100,6 @@ const ManagingDirector = () => {
   const fetchLoans = async () => {
     setLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(
         `${API_BASE}/loans/md`,
         { headers: getAuthHeaders() }
@@ -115,6 +130,33 @@ const ManagingDirector = () => {
     event.stopPropagation();
   };
 
+  const adjustLoan = (loan: Loan) => {
+    // employee loans use the personal calculator (no separate employee calculator)
+    const loanType = loan.type === 'group' ? 'group' : 'personal';
+    const currentAmount = loan.amount;
+    const currentPeriod = loanType === 'group'
+      ? (Number(String(loan.details?.mudaWaLipaMkopo ?? '').replace(/[^0-9]/g, '')) || 12)
+      : (Number(loan.details?.kwaTarakimu ?? String(loan.details?.mudaKulipaMkopo ?? '').replace(/[^0-9]/g, '')) || 12);
+    localStorage.setItem('approval_adjustment_context', JSON.stringify({ loanId: loan.id, returnTo: 'md', loanType, amount: currentAmount, period: currentPeriod }));
+    setActiveDropdown(null);
+    navigate(`/?fromLoan=true&fromApproval=md&loanId=${loan.id}&type=${loanType}`);
+  };
+
+  const confirmAdjustment = async () => {
+    if (!pendingAdjustment) return;
+    setAdjusting(true);
+    try {
+      await axios.patch(`${API_BASE}/loans/${pendingAdjustment.loanId}/adjust`, { amount: pendingAdjustment.amount, details: pendingAdjustment.fields, adjusted_by: 'MD' }, { headers: getAuthHeaders() });
+      setModal({ isOpen: true, title: 'Imefanikiwa', message: `Mkopo umebadilishwa na MD hadi TZS ${pendingAdjustment.amount.toLocaleString()}`, type: 'success' });
+      setPendingAdjustment(null);
+      fetchLoans();
+    } catch (e) {
+      setModal({ isOpen: true, title: 'Hitilafu', message: 'Imeshindwa kubadilisha mkopo. Jaribu tena.', type: 'error' });
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
   const approveLoan = (loan: Loan) => {
     setSelectedLoan(loan);
     setShowApproveModal(true);
@@ -124,7 +166,6 @@ const ManagingDirector = () => {
   const submitApproval = async (comments: string) => {
     setSubmitting(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       await axios.post(
         `${API_BASE}/loans/${selectedLoan?.id}/approve`,
         { comments: comments },
@@ -156,7 +197,6 @@ const ManagingDirector = () => {
     }
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       setSubmitting(true);
       await axios.post(
         `${API_BASE}/loans/${selectedLoan?.id}/reject`,
@@ -187,6 +227,13 @@ const ManagingDirector = () => {
 
   return (
     <div className="md-page">
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
       <AlertModal
         isOpen={modal.isOpen}
         title={modal.title}
@@ -202,6 +249,38 @@ const ManagingDirector = () => {
         onConfirm={confirm.onConfirm}
         onCancel={() => setConfirm({ ...confirm, isOpen: false })}
       />
+      {pendingAdjustment && (
+        <div style={{ background:'#fffbeb', border:'1.5px solid #f59e0b', borderLeft:'4px solid #d97706', borderRadius:'10px', margin:'10px 16px 0', padding:'12px 16px', display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap', boxShadow:'0 2px 8px rgba(217,119,6,0.12)' }}>
+          <div style={{ flex:1, minWidth:'220px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'5px' }}>
+              <span style={{ fontWeight:800, color:'#92400e', fontSize:'13px' }}>📐 Marekebisho ya Mkopo — Imekusudiwa</span>
+              <span style={{ background:'#fef3c7', color:'#92400e', border:'1px solid #fcd34d', borderRadius:'20px', padding:'1px 8px', fontSize:'10px', fontWeight:700 }}>HIARI</span>
+            </div>
+            <div style={{ color:'#78350f', fontSize:'12px', display:'flex', gap:'12px', flexWrap:'wrap' }}>
+              <span>Kiasi: <strong>TZS {pendingAdjustment.amount.toLocaleString()}</strong></span>
+              <span style={{ color:'#d97706' }}>·</span>
+              <span>Muda: <strong>Miezi {pendingAdjustment.period}</strong></span>
+              <span style={{ color:'#d97706' }}>·</span>
+              <span>Rejesho: <strong>TZS {pendingAdjustment.installment.toLocaleString()}/mwezi</strong></span>
+            </div>
+            <div style={{ fontSize:'11px', color:'#a16207', marginTop:'4px', fontStyle:'italic' }}>Unaweza kuidhinisha mkopo bila kuthibitisha marekebisho haya.</div>
+          </div>
+          <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
+            <button onClick={confirmAdjustment} disabled={adjusting} style={{ background:'linear-gradient(135deg,#d97706,#b45309)', color:'#fff', border:'none', borderRadius:'8px', padding:'8px 18px', fontWeight:700, fontSize:'13px', cursor:adjusting?'not-allowed':'pointer', opacity:adjusting?0.7:1 }}>
+              {adjusting ? 'Inabadilisha...' : '✓ Thibitisha'}
+            </button>
+            <button onClick={() => setPendingAdjustment(null)} style={{ background:'#fff', border:'1.5px solid #f59e0b', color:'#92400e', borderRadius:'8px', padding:'8px 14px', fontWeight:600, fontSize:'13px', cursor:'pointer' }}>✕ Acha</button>
+          </div>
+        </div>
+      )}
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
+            <span>MD Authorization</span>
+          </div>
+        </div>
+      </div>
       <div className="stats-row">
         <div className="stat-box">
           <div className="stat-label">{t("stats.totalHandled")}</div>
@@ -303,7 +382,14 @@ const ManagingDirector = () => {
                     <td>
                       <div className="client-info">
                         <div className="avatar">{loan.name.charAt(0)}</div>
-                        <span className="client-name">{loan.name}</span>
+                        <div>
+                          <span className="client-name">{loan.name}</span>
+                          {loan.details?.adjusted_by && (
+                            <div style={{ fontSize:'10px', color:'#b45309', fontWeight:700, marginTop:'2px' }}>
+                              📐 Adjusted by {loan.details.adjusted_by}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td>{loan.phone || t("table.notAvailable")}</td>
@@ -350,7 +436,7 @@ const ManagingDirector = () => {
                     </td>
                     <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
                     <td style={{ textAlign: 'right', position: 'relative' }}>
-                      <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'md_review' ? 3 : 2)}>
+                      <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'md_review' ? 4 : 2)}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                       </button>
 
@@ -358,6 +444,17 @@ const ManagingDirector = () => {
                         <div ref={dropdownRef} className="action-dropdown" style={{ top: menuPos.top, left: menuPos.left }}>
                           {loan.status === 'md_review' ? (
                             <>
+                              <button
+                                onClick={() => adjustLoan(loan)}
+                                disabled={submitting}
+                                style={{ color: '#b45309', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'6px' }}
+                              >
+                                <span style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                  Rekebisha Kiasi
+                                </span>
+                                <span style={{ fontSize:'9px', background:'#fef3c7', color:'#92400e', border:'1px solid #fcd34d', borderRadius:'10px', padding:'1px 5px', fontWeight:700, letterSpacing:'0.3px', flexShrink:0 }}>HIARI</span>
+                              </button>
                               <button
                                 onClick={() => approveLoan(loan)}
                                 className={`approve-action ${submitting ? 'muted' : ''}`}
@@ -1021,6 +1118,19 @@ const ManagingDirector = () => {
 
         .animate-pop-premium {
           animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @media (max-width: 900px) {
+          .stats-row { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+          .search-wrapper { width: 100%; }
+          .table-wrapper { overflow-x: auto; }
+        }
+        @media (max-width: 640px) {
+          .stats-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .stats-row { gap: 8px; }
+          .stat-box { padding: 14px; }
         }
       `}</style>
     </div>

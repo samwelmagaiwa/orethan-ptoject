@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,7 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import { API_BASE } from "../lib/api";
 
 ChartJS.register(
   CategoryScale,
@@ -62,7 +63,6 @@ const Dashboard: FC = () => {
     try {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       
       const usersRes = await axios.get(`${API_BASE}/users/count`, { headers });
       const loansRes = await axios.get(`${API_BASE}/loans/stats`, { headers });
@@ -188,16 +188,21 @@ const Dashboard: FC = () => {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
-        <div>
-          <h1>{t("header.title")}</h1>
-          <p>{t("header.subtitle")}</p>
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>{t("header.title")}</span>
+          </div>
         </div>
-        <button className="refresh-button" onClick={fetchDashboardData} disabled={data.isLoading}>
-          {data.isLoading ? t("header.loading") : t("header.refresh")}
-        </button>
+        <div className="ph-actions">
+          <button className="refresh-button" onClick={fetchDashboardData} disabled={data.isLoading}>
+            {data.isLoading ? t("header.loading") : t("header.refresh")}
+          </button>
+        </div>
       </div>
 
+      <div className="dashboard-inner">
       {data.error && (
         <div className="error-message">
           {data.error}
@@ -253,22 +258,28 @@ const Dashboard: FC = () => {
           <div className="quick-stat-label">{t("quickStats.mdReview")}</div>
         </div>
       </div>
+      </div>{/* /dashboard-inner */}
 
       <style>{`
         .dashboard {
-          padding: 80px 28px 28px 28px;
+          padding: 0 0 28px;
           min-height: 100vh;
           background: #f1f5f9;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+        .ph-bar { display:flex; align-items:stretch; background:#f1f5f9; position:sticky; top:0; z-index:100; border-bottom:2px solid #e2e8f0; min-height:50px; }
+        .ph-inner { display:flex; align-items:flex-end; gap:4px; padding:10px 14px 0; flex:1; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+        .ph-inner::-webkit-scrollbar { display:none; }
+        .ph-brand { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:800; color:#102a43; white-space:nowrap; padding-bottom:10px; flex-shrink:0; }
+        .ph-sep { width:1px; height:24px; background:#cbd5e1; margin:0 8px 10px; flex-shrink:0; }
+        .ph-tab { display:flex; align-items:center; gap:6px; white-space:nowrap; padding:8px 16px; border:none; border-radius:8px 8px 0 0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:#64748b; transition:all .15s; flex-shrink:0; font-family:inherit; }
+        .ph-tab--active { background:white; color:#102a43; box-shadow:0 -2px 0 #1e5fae inset; }
+        .ph-tab:hover:not(.ph-tab--active) { background:#e2e8f0; color:#334155; }
+        .ph-actions { display:flex; align-items:center; gap:8px; padding:6px 14px; flex-shrink:0; border-left:1px solid #e2e8f0; background:#f1f5f9; }
+        .dashboard-inner { padding: 24px 28px; }
 
         .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 28px;
-          flex-wrap: wrap;
-          gap: 16px;
+          display: none;
         }
 
         .dashboard-header h1 {

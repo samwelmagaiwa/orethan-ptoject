@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { FC } from "react";
 import staticLogo from "../assets/logo.png";
 import { useOrgSettings } from "../utils/orgSettings";
+import { API_BASE } from "../lib/api";
 
 interface User {
   id: number;
@@ -36,6 +37,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [showAccounting, setShowAccounting] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [showConfigs, setShowConfigs] = useState(false);
+  const [showApprovalsMenu, setShowApprovalsMenu] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [complianceRoles, setComplianceRoles] = useState<string[]>(() => {
@@ -60,7 +62,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
   const fetchSettings = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/loan-settings`);
       const data = res.data.data || {};
       const compRoles: string[] = data.compliance_roles || ["admin", "general_manager", "managing_director"];
@@ -87,7 +88,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -103,7 +103,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     setShowUsers(!showUsers);
     const token = localStorage.getItem("token");
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       const res = await axios.get(`${API_BASE}/users/count`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -116,7 +115,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
     if (token) {
-      const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
       await axios.post(`${API_BASE}/logout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -159,9 +157,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessPayrollMgmt = !!userRole && (userRole === "admin" || payrollRoles.includes(userRole));
   const canSeePayroll = canAccessPayrollMgmt || hasEmployeeRecord;
   const canAccessBranchReport = isAllowed("branch_report", !!userRole && branchReportRoles.includes(userRole));
-  const canAccessGuarantors = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'loan_officer';
-  const canAccessGroupMgmt = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'general_manager' || userRole === 'managing_director';
-  const canAccessStaffPerf = userRole === 'admin' || userRole === 'loan_manager' || userRole === 'general_manager' || userRole === 'managing_director';
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -172,7 +167,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <>
-      {/* ── Mobile-only hamburger trigger — hidden while the drawer is open
+      {/* ── Mobile-only hamburger trigger -- hidden while the drawer is open
           since the drawer's own logo-area button closes it instead. ── */}
       {!mobileOpen && (
         <button className="sd-mobile-toggle" onClick={() => setMobileOpen(true)} title={t("sidebar.openMenu")} aria-label={t("sidebar.openMenu")}>
@@ -217,7 +212,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         {/* ── Navigation ── */}
         <nav className="sd-nav">
-          {/* Internal — visibility now follows per-user sidebar overrides too */}
+          {/* Internal -- visibility now follows per-user sidebar overrides too */}
           <>
               {(canAccessDashboard || canAccessFinanceCollections || canAccessRequests || canAccessUsers || canAccessLoanSettings) && (
                 <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.internal") : "─"}</div>
@@ -268,17 +263,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </>
               )}
               {canAccessUsers && (
-                <>
-                  <div className="sd-item" onClick={handleUsersClick} title={t("sidebar.users")}>
-                    <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                    {!isCollapsed && <span className="sd-item__text">{t("sidebar.users")}</span>}
-                    {!isCollapsed && userCount !== null && <span className="sd-badge">{userCount}</span>}
-                    {!isCollapsed && <span className={`sd-item__arrow ${showUsers ? "sd-item__arrow--open" : ""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span>}
-                  </div>
-                  {showUsers && !isCollapsed && (
-                    <div className="sd-sub"><div className="sd-sub__link" onClick={() => navigate("/users")}>{t("sidebar.viewUsers")}</div></div>
-                  )}
-                </>
+                <div className={`sd-item ${isActive("/users") ? "sd-item--active" : ""}`} onClick={() => navigate("/users")} title={t("sidebar.users")}>
+                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
+                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.users")}</span>}
+                  {!isCollapsed && userCount !== null && <span className="sd-badge">{userCount}</span>}
+                </div>
               )}
             </>
 
@@ -306,27 +295,66 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.approvals") : "─"}</div>
               {canAccessManagerReview ? (
-                <div className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`} onClick={() => navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers")} title={t("sidebar.managerReview")}>
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.managerReview")}</span>}
-                </div>
-              ) : null}
-              {canAccessGmReview ? (
-                <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title={t("sidebar.gmReview")}>
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.gmReview")}</span>}
-                </div>
-              ) : null}
-              {canAccessMdAuth ? (
-                <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title={t("sidebar.mdAuth")}>
-                  <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.mdAuth")}</span>}
-                </div>
-              ) : null}
+                <>
+                  <div
+                    className={`sd-item ${(isActive("/lm/customers") || isActive("/customers") || location.pathname.includes("/customers")) ? "sd-item--active" : ""}`}
+                    onClick={() => {
+                      if (!isCollapsed && (canAccessGmReview || canAccessMdAuth)) {
+                        setShowApprovalsMenu(v => !v);
+                      } else {
+                        navigate(userRole === "loan_manager" ? "/lm/customers" : "/customers");
+                      }
+                    }}
+                    title={t("sidebar.managerReview")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
+                    {!isCollapsed && (
+                      <>
+                        <span className="sd-item__text">{t("sidebar.managerReview")}</span>
+                        {(canAccessGmReview || canAccessMdAuth) && (
+                          <svg style={{ marginLeft: "auto", transition: "transform 0.2s", transform: showApprovalsMenu ? "rotate(180deg)" : "rotate(0deg)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {!isCollapsed && showApprovalsMenu && (
+                    <div style={{ paddingLeft: "1rem" }}>
+                      {canAccessGmReview && (
+                        <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title={t("sidebar.gmReview")}>
+                          <span className="sd-item__icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
+                          <span className="sd-item__text">{t("sidebar.gmReview")}</span>
+                        </div>
+                      )}
+                      {canAccessMdAuth && (
+                        <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title={t("sidebar.mdAuth")}>
+                          <span className="sd-item__icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
+                          <span className="sd-item__text">{t("sidebar.mdAuth")}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {canAccessGmReview && (
+                    <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title={t("sidebar.gmReview")}>
+                      <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
+                      {!isCollapsed && <span className="sd-item__text">{t("sidebar.gmReview")}</span>}
+                    </div>
+                  )}
+                  {canAccessMdAuth && (
+                    <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title={t("sidebar.mdAuth")}>
+                      <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
+                      {!isCollapsed && <span className="sd-item__text">{t("sidebar.mdAuth")}</span>}
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
 
-          {/* Management — skip for any role that already has a dedicated approval page (LM/GM/MD/admin) */}
+          {/* Management -- skip for any role that already has a dedicated approval page (LM/GM/MD/admin) */}
           {canAccessManagement && !canAccessApprovals && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.management") : "─"}</div>
@@ -344,7 +372,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Compliance — Regulator reporting & loan restructuring (LM / GM / MD / Admin) */}
+          {/* Compliance -- Regulator reporting & loan restructuring (LM / GM / MD / Admin) */}
           {(canAccessRegulatorReports || canManageLoanLifecycle) && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.compliance") : "─"}</div>
@@ -363,25 +391,25 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Payroll / HR — dynamic via admin-configured payroll_access_roles, plus any user with an employee record */}
+          {/* Payroll / HR -- dynamic via admin-configured payroll_access_roles, plus any user with an employee record */}
           {canSeePayroll && (
             <>
-              <div className="sd-sec">{!isCollapsed ? t("sidebar.payrollMgmt") : "─"}</div>
-              <div className={`sd-item ${isActive("/payroll") ? "sd-item--active" : ""}`} onClick={() => navigate("/payroll")} title={canAccessPayrollMgmt ? t("sidebar.payrollMgmt") : t("sidebar.mySalarySlip")}>
+              <div className="sd-sec">{!isCollapsed ? "PAYROLL" : "─"}</div>
+              <div className={`sd-item ${isActive("/payroll") ? "sd-item--active" : ""}`} onClick={() => navigate("/payroll")} title={canAccessPayrollMgmt ? "Payroll Management" : "My Salary Slip"}>
                 <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>
-                {!isCollapsed && <span className="sd-item__text">{canAccessPayrollMgmt ? t("sidebar.payrollMgmt") : t("sidebar.mySalarySlip")}</span>}
+                {!isCollapsed && <span className="sd-item__text">{canAccessPayrollMgmt ? "Payroll Management" : "My Salary Slip"}</span>}
               </div>
             </>
           )}
 
-          {/* ── Configurations dropdown — Settings + Biometric ────────── */}
+          {/* ── Configurations dropdown -- Settings + Biometric ────────── */}
           {(canAccessLoanSettings || userRole === "admin" || userRole === "finance_officer") && (
             <>
-              <div className="sd-sec">{!isCollapsed ? t("sidebar.configurations") : "─"}</div>
+              <div className="sd-sec">{!isCollapsed ? "CONFIGURATIONS" : "─"}</div>
               <div
                 className={`sd-item ${(isActive("/configurations") || isActive("/biometric")) ? "sd-item--active" : ""}`}
                 onClick={() => { if (isCollapsed) navigate("/configurations"); else setShowConfigs(s => !s); }}
-                title={t("sidebar.configurations")}
+                title="Configurations"
               >
                 <span className="sd-item__icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -389,7 +417,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                   </svg>
                 </span>
-                {!isCollapsed && <span className="sd-item__text">{t("sidebar.configurations")}</span>}
+                {!isCollapsed && <span className="sd-item__text">Configurations</span>}
                 {!isCollapsed && (
                   <span className={`sd-item__arrow ${showConfigs || isActive("/configurations") || isActive("/biometric") ? "sd-item__arrow--open" : ""}`}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -400,20 +428,22 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 <div className="sd-sub">
                   {canAccessLoanSettings && (
                     <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
-                      ⚙️ {t("sidebar.globalSettings")}
+                      ⚙️ Global Settings
                     </div>
                   )}
+                  {/* 🔏 Biometric -- commented out until hardware agent is ready
                   {(userRole === "admin" || userRole === "finance_officer") && (
                     <div className={`sd-sub__link ${isActive("/biometric") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/biometric")}>
-                      🔏 {t("sidebar.biometric")}
+                      🔏 Biometric
                     </div>
                   )}
+                  */}
                 </div>
               )}
             </>
           )}
 
-          {/* Accounting Module — Admin / Finance Officer / Managing Director */}
+          {/* Accounting Module -- Admin / Finance Officer / Managing Director */}
           {canAccessAccounting && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.accounting") : "─"}</div>
@@ -437,7 +467,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* Reports — visible to accounting users AND anyone with branch report access */}
+          {/* Reports -- visible to accounting users AND anyone with branch report access */}
           {(canAccessAccounting || canAccessBranchReport) && (
             <>
               <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.reports") : "─"}</div>
@@ -459,44 +489,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       📋 {t("sidebar.branchReport")}
                     </div>
                   )}
-                </div>
-              )}
-            </>
-          )}
-          {/* ── TOOLS SECTION: Guarantors, Groups, Staff Performance ── */}
-          {(canAccessGuarantors || canAccessGroupMgmt || canAccessStaffPerf) && (
-            <>
-              <div className="sd-sec">{!isCollapsed ? t("sidebar.sections.tools") : "─"}</div>
-              {canAccessGuarantors && (
-                <div className={`sd-item ${isActive("/guarantors") ? "sd-item--active" : ""}`} onClick={() => navigate("/guarantors")} title={t("sidebar.guarantors")}>
-                  <span className="sd-item__icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  </span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.guarantors")}</span>}
-                </div>
-              )}
-              {canAccessGroupMgmt && (
-                <div className={`sd-item ${isActive("/groups") ? "sd-item--active" : ""}`} onClick={() => navigate("/groups")} title={t("sidebar.groupLoans")}>
-                  <span className="sd-item__icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-                      <circle cx="19" cy="7" r="2"/><path d="M23 21v-1.5a2 2 0 0 0-2-2h-2"/>
-                    </svg>
-                  </span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.groupLoans")}</span>}
-                </div>
-              )}
-              {canAccessStaffPerf && (
-                <div className={`sd-item ${isActive("/staff-performance") ? "sd-item--active" : ""}`} onClick={() => navigate("/staff-performance")} title={t("sidebar.staffPerformance")}>
-                  <span className="sd-item__icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                  </span>
-                  {!isCollapsed && <span className="sd-item__text">{t("sidebar.staffPerformance")}</span>}
                 </div>
               )}
             </>

@@ -24,8 +24,8 @@ interface OfficerDetail {
   monthly_trend: { month: string; count: number; amount: number }[];
 }
 
-const SCORE_COLOR: Record<string, string> = { A: '#059669', B: '#0ea5e9', C: '#f59e0b', D: '#ef4444', E: '#7c3aed', '—': '#9ca3af' };
-const SCORE_BG: Record<string, string> = { A: '#d1fae5', B: '#e0f2fe', C: '#fef9c3', D: '#fee2e2', E: '#f5f3ff', '—': '#f1f5f9' };
+const SCORE_COLOR: Record<string, string> = { A: '#059669', B: '#0ea5e9', C: '#f59e0b', D: '#ef4444', E: '#7c3aed', '--': '#9ca3af' };
+const SCORE_BG: Record<string, string> = { A: '#d1fae5', B: '#e0f2fe', C: '#fef9c3', D: '#fee2e2', E: '#f5f3ff', '--': '#f1f5f9' };
 const ROLE_LABEL: Record<string, string> = {
   loan_officer: 'Afisa Mkopo', loan_manager: 'Meneja Mkopo',
   finance_officer: 'Afisa Fedha', general_manager: 'Mkurugenzi Mkuu', managing_director: 'Mkurugenzi', admin: 'Admin',
@@ -111,23 +111,31 @@ export default function StaffPerformance() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8f7f4', fontFamily: 'Inter, sans-serif' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>📊 Utendaji wa Wafanyakazi</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Viashiria vya Utendaji (KPIs) kwa Maafisa wa Mikopo</div>
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Staff Performance</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={{ padding: '7px 12px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13 }} />
-          <span style={{ color: '#64748b' }}>—</span>
-          <input type="date" value={to} onChange={e => setTo(e.target.value)} style={{ padding: '7px 12px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13 }} />
-          <button onClick={fetchData} style={{ padding: '7px 16px', background: '#4f7c3f', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Tafuta</button>
+        <div className="ph-actions">
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 12, fontFamily: 'inherit' }} />
+          <span style={{ color: '#94a3b8', fontSize: 12 }}>—</span>
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 12, fontFamily: 'inherit' }} />
+          <button onClick={fetchData} style={{ padding: '6px 14px', background: '#1e5fae', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 700, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Search</button>
         </div>
       </div>
 
       {/* Summary cards */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, padding: '18px 28px 0', flexShrink: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, padding: '18px 28px 0', flexShrink: 0 }}>
           {summaryCards.map((s, i) => (
             <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px 18px', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -228,7 +236,7 @@ export default function StaffPerformance() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 18, color: '#1e293b' }}>{detail.user.name}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{ROLE_LABEL[detail.user.role] ?? detail.user.role} · {detail.period.from} — {detail.period.to}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{ROLE_LABEL[detail.user.role] ?? detail.user.role} · {detail.period.from} -- {detail.period.to}</div>
                   </div>
                   <button onClick={() => setDetail(null)} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: '#64748b' }}>×</button>
                 </div>

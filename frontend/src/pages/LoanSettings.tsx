@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
 import GetHelp from "../components/GetHelp"
 import type { HelpStep } from "../components/GetHelp";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 
 interface BranchPerms {
   submit:        string[];
@@ -125,7 +126,7 @@ const LoanSettings = () => {
           step="0.01"
           min="0"
           max="100"
-          value={form[key] as string | number}
+          value={form[key] as string | number | readonly string[]}
           onChange={e => setForm({ ...form, [key]: e.target.value })}
         />
         <span className="ls-percent">%</span>
@@ -239,7 +240,7 @@ const LoanSettings = () => {
                       { key: "skip_approval", label: "⚡ Ruka Idhini ya LM",           desc: "Ripoti ya jukumu hili inaidhinishwa moja kwa moja bila kupitia LM",        color: "#7c3aed", field: "skip_approval" as const },
                       { key: "view_all",      label: "👁 Kuona Ripoti Zote",            desc: "Kuona ripoti za matawi yote (si za kwake tu)",                            color: "#0ea5e9", field: "view_all"      as const },
                       { key: "print",         label: "🖨 Kuchapisha",                   desc: "Kuchapisha au kupakua ripoti",                                             color: "#f59e0b", field: "print"         as const },
-                      { key: "approve",       label: "✅ Kuidhinisha (Saini ya LM)",    desc: "Kuidhinisha ripoti zilizo pending — LM hutumia nywila kama saini",         color: "#16a34a", field: "approve"       as const },
+                      { key: "approve",       label: "✅ Kuidhinisha (Saini ya LM)",    desc: "Kuidhinisha ripoti zilizo pending -- LM hutumia nywila kama saini",         color: "#16a34a", field: "approve"       as const },
                       { key: "delete",        label: "🗑 Kufuta",                       desc: "Kufuta ripoti zilizopo kabisa kutoka mfumo",                               color: "#dc2626", field: "delete"        as const },
                     ] as const).map((row, ri) => (
                       <tr key={row.key} className={`ls-perm-row ${ri % 2 === 0 ? "ls-perm-row--even" : ""}`}>
@@ -280,7 +281,7 @@ const LoanSettings = () => {
 
               {(form.branch_report_roles || []).length === 0 && (
                 <p style={{ fontSize: "11.5px", color: "#dc2626", marginTop: "12px", fontWeight: 600 }}>
-                  ⚠ Hakuna jukumu lililochaguliwa kwa Upatikanaji wa Menyu — hakuna mtumiaji atakayeweza kufikia Ripoti ya Tawi.
+                  ⚠ Hakuna jukumu lililochaguliwa kwa Upatikanaji wa Menyu -- hakuna mtumiaji atakayeweza kufikia Ripoti ya Tawi.
                 </p>
               )}
             </div>
@@ -343,4 +344,5 @@ const LoanSettings = () => {
 };
 
 export default LoanSettings;
+
 

@@ -1,12 +1,12 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { Camera, Trash2, Eye, Loader2, Image as ImageIcon, X } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmModal from "./ConfirmModal";
 import { resolveFileUrl } from "../utils/resolveFileUrl";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export interface CollateralAssetLink {
   id: string;
@@ -154,7 +154,7 @@ const CollateralDirectory = ({ photos, onChange, clientName, readOnly = false, c
     <div className="cdir">
       <div className="cdir-header">
         <div>
-          <p className="cdir-title">{t("collateral.directoryTitle")}{clientName ? ` — ${clientName.toUpperCase()}` : ""}</p>
+          <p className="cdir-title">{t("collateral.directoryTitle")}{clientName ? ` -- ${clientName.toUpperCase()}` : ""}</p>
           <p className="cdir-hint">{t("collateral.directoryHint")}</p>
         </div>
         {!readOnly && (

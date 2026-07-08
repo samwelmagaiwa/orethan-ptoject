@@ -5,18 +5,18 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ExportButtons from "../components/ExportButtons";
-import GetHelp from "../components/GetHelp"
-import type { HelpStep } from "../components/GetHelp";
+import GetHelp, { type HelpStep } from "../components/GetHelp";
+import AccountingNav from "../components/AccountingNav";
 import { printDocument } from "../utils/printDoc";
-import AccountingTabBar from "../components/AccountingTabBar";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmt = (v: any) => Number(v || 0).toLocaleString();
 
 // Quick-entry templates for the most common MANUAL journal entries. Each picks
 // two accounts by their Chart-of-Accounts code and the side each sits on;
 // applying one fills the line editor so the operator only types the amount.
-// (Loan disbursements/repayments are auto-posted elsewhere " these are for the
+// (Loan disbursements/repayments are auto-posted elsewhere — these are for the
 // day-to-day non-loan transactions: capital, rent, salaries, transfers, etc.)
 const JE_TEMPLATES: { label: string; description: string; lines: { code: string; side: "debit" | "credit" }[] }[] = [
   { label: "Capital Injection", description: "Owner/shareholder capital deposited to bank", lines: [{ code: "1020", side: "debit" }, { code: "3010", side: "credit" }] },
@@ -24,8 +24,8 @@ const JE_TEMPLATES: { label: string; description: string; lines: { code: string;
   { label: "Pay Salaries", description: "Staff salaries paid from bank", lines: [{ code: "5010", side: "debit" }, { code: "1020", side: "credit" }] },
   { label: "Pay Utilities", description: "Electricity / water / internet paid from bank", lines: [{ code: "5030", side: "debit" }, { code: "1020", side: "credit" }] },
   { label: "Bank Charges", description: "Bank fees deducted by the bank", lines: [{ code: "5060", side: "debit" }, { code: "1020", side: "credit" }] },
-  { label: "Cash â†’ Bank", description: "Deposit cash on hand into the bank", lines: [{ code: "1020", side: "debit" }, { code: "1010", side: "credit" }] },
-  { label: "Bank â†’ Cash", description: "Withdraw cash from the bank", lines: [{ code: "1010", side: "debit" }, { code: "1020", side: "credit" }] },
+  { label: "Cash → Bank", description: "Deposit cash on hand into the bank", lines: [{ code: "1020", side: "debit" }, { code: "1010", side: "credit" }] },
+  { label: "Bank → Cash", description: "Withdraw cash from the bank", lines: [{ code: "1010", side: "debit" }, { code: "1020", side: "credit" }] },
   { label: "Record Other Income", description: "Miscellaneous income received in cash", lines: [{ code: "1010", side: "debit" }, { code: "4040", side: "credit" }] },
 ];
 
@@ -92,7 +92,7 @@ const JournalEntries = () => {
     const rows: Record<string, unknown>[] = [];
     entries.forEach(e => e.lines.forEach(l => rows.push({
       "Entry No.": e.entry_number, Date: e.entry_date, Status: e.status,
-      "Entry Description": e.description, Account: `${l.account.code} " ${l.account.name}`,
+      "Entry Description": e.description, Account: `${l.account.code} — ${l.account.name}`,
       "Line Description": l.description || "", Debit: l.debit, Credit: l.credit,
     })));
     return rows;
@@ -100,15 +100,15 @@ const JournalEntries = () => {
 
   const handlePrint = () => {
     const rowsHtml = entries.map(e => `
-      <tr><td colspan="4" style="background:#f8fafc;font-weight:700">${e.entry_number} " ${e.entry_date} " ${e.description} (${e.status})</td></tr>
-      ${e.lines.map(l => `<tr><td></td><td>${l.account.code} " ${l.account.name}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "–"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "–"}</td></tr>`).join("")}
+      <tr><td colspan="4" style="background:#f8fafc;font-weight:700">${e.entry_number} — ${e.entry_date} — ${e.description} (${e.status})</td></tr>
+      ${e.lines.map(l => `<tr><td></td><td>${l.account.code} — ${l.account.name}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td></tr>`).join("")}
     `).join("");
     const body = `<table><thead><tr><th></th><th>Account</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
     printDocument("Journal Entries", body);
   };
 
   // A line counts only when it has an account AND exactly one side filled
-  // (a debit OR a credit " never both, never neither). The XOR below excludes
+  // (a debit OR a credit — never both, never neither). The XOR below excludes
   // both the "both sides on one line" mistake and empty rows.
   const validLines = lines.filter(l => l.chart_of_account_id && ((Number(l.debit) > 0) !== (Number(l.credit) > 0)));
   // Lines the operator wrongly put a debit AND a credit on (the common mistake).
@@ -198,7 +198,7 @@ const JournalEntries = () => {
       const res = await axios.get(`${API_BASE}/accounting/provisioning/preview`, { headers: authHeaders() });
       const p = res.data.data;
       if (Math.abs(p.adjustment) < 0.01) {
-        setModal({ isOpen: true, title: "Provisioning Up To Date", message: `Required provision (${fmt(p.required_provision)}) already matches the allowance " nothing to post.`, type: "info" });
+        setModal({ isOpen: true, title: "Provisioning Up To Date", message: `Required provision (${fmt(p.required_provision)}) already matches the allowance — nothing to post.`, type: "info" });
         return;
       }
       const verb = p.adjustment > 0 ? "charge" : "release";
@@ -287,20 +287,26 @@ const JournalEntries = () => {
       <AlertModal isOpen={modal.isOpen} title={modal.title} message={modal.message} type={modal.type} onClose={() => setModal({ ...modal, isOpen: false })} />
       <ConfirmModal isOpen={confirm.isOpen} title={confirm.title} message={confirm.message} type={confirm.type} onConfirm={confirm.onConfirm} onCancel={() => setConfirm({ ...confirm, isOpen: false })} />
 
-      <AccountingTabBar>
-        <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
-        <button className="je-prov-btn" onClick={runAccrual} title="Post today's interest accrual (Dr Interest Receivable / Cr Interest Income)">Accrue Interest</button>
-        <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision adjustment to the ledger">Run Provisioning</button>
-        <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
-      </AccountingTabBar>
+      <AccountingNav />
 
       <div className="je-card">
-        <GetHelp
-          title={t("journal.help.title")}
-          intro={t("journal.help.intro")}
-          steps={t("journal.help.steps", { returnObjects: true }) as HelpStep[]}
-          tip={t("journal.help.tip")}
-        />
+        <div className="je-accent-bar" />
+        <div className="je-sticky-top" style={{ top: 44 }}>
+          <GetHelp
+            title={t("journal.help.title")}
+            intro={t("journal.help.intro")}
+            steps={t("journal.help.steps", { returnObjects: true }) as HelpStep[]}
+            tip={t("journal.help.tip")}
+            actions={
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <ExportButtons getRows={exportRows} filename="journal-entries" sheetName="Journal Entries" onPrint={handlePrint} disabled={!entries.length} />
+                <button className="je-prov-btn" onClick={runAccrual} title="Post today's interest accrual">Accrue</button>
+                <button className="je-prov-btn" onClick={runProvisioning} title="Post the loan-loss provision">Provision</button>
+                <button className="je-add-btn" onClick={() => { resetForm(); setShowModal(true); }}>{t("journal.newEntry")}</button>
+              </div>
+            }
+          />
+        </div>
 
         {loading ? (
           <div className="je-empty">{t("common.loading")}</div>
@@ -342,10 +348,10 @@ const JournalEntries = () => {
                               <tbody>
                                 {entry.lines.map(line => (
                                   <tr key={line.id}>
-                                    <td className="je-account-link" onClick={() => navigate(`/accounting/general-ledger?account_id=${line.account.id}`)}>{line.account.code} " {line.account.name}</td>
-                                    <td>{line.description || "–"}</td>
-                                    <td>{Number(line.debit) > 0 ? fmt(line.debit) : "–"}</td>
-                                    <td>{Number(line.credit) > 0 ? fmt(line.credit) : "–"}</td>
+                                    <td className="je-account-link" onClick={() => navigate(`/accounting/general-ledger?account_id=${line.account.id}`)}>{line.account.code} — {line.account.name}</td>
+                                    <td>{line.description || "—"}</td>
+                                    <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
+                                    <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -404,14 +410,14 @@ const JournalEntries = () => {
                       <td>
                         <select value={line.chart_of_account_id} onChange={e => updateLine(i, "chart_of_account_id", Number(e.target.value))}>
                           <option value="">{t("bank.selectAccount")}</option>
-                          {accounts.map(a => <option key={a.id} value={a.id}>{a.code} " {a.name}</option>)}
+                          {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
                         </select>
                       </td>
                       <td><input type="number" value={line.debit} onChange={e => updateLine(i, "debit", e.target.value)} /></td>
                       <td><input type="number" value={line.credit} onChange={e => updateLine(i, "credit", e.target.value)} /></td>
                       <td><input type="text" value={line.description} onChange={e => updateLine(i, "description", e.target.value)} /></td>
                       <td>
-                        {lines.length > 2 && <button className="je-remove-line-btn" onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))}>Ã—</button>}
+                        {lines.length > 2 && <button className="je-remove-line-btn" onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))}>Ã--</button>}
                       </td>
                     </tr>
                   ))}
@@ -437,9 +443,14 @@ const JournalEntries = () => {
       )}
 
       <style>{`
-        .je-page { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .je-card { max-width: 1900px; width: 100%; margin: 12px auto 40px; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .je-page { flex: 1; min-height: 0; overflow-x: hidden; background: #f1f5f9; padding: 14px 18px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .je-card { max-width: 1900px; margin: 0 auto; background: white; border-radius: 20px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: clip; }
+        .je-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #102a43 0%, #1e5fae 45%, #22c55e 100%); }
+        .je-sticky-top { position: sticky; top: 0; z-index: 5; background: white; padding-bottom: 4px; }
         .je-table-scroll { overflow-x: auto; }
+        .je-header { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 20px; flex-wrap: wrap; gap: 16px; }
+        .je-header h1 { font-size: 22px; font-weight: 700; color: #102a43; margin: 0 0 4px; }
+        .je-header p { font-size: 13px; color: #64748b; margin: 0; }
         .je-add-btn { background: #102a43; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .je-add-btn:hover { background: #1e5fae; }
         .je-prov-btn { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }

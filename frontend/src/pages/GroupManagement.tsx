@@ -60,7 +60,7 @@ const KYC_COLOR: Record<string, string> = { pending: '#f59e0b', verified: '#0596
 const ROLE_COLOR: Record<string, string> = { chairman: '#6366f1', secretary: '#0ea5e9', treasurer: '#059669', member: '#64748b' };
 
 const fmt = (n: number) => 'TZS ' + n.toLocaleString();
-const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('sw-TZ') : '—';
+const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('sw-TZ') : '--';
 
 export default function GroupManagement() {
   const [groups, setGroups] = useState<GroupLoan[]>([]);
@@ -154,15 +154,25 @@ export default function GroupManagement() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8f7f4', fontFamily: 'Inter, sans-serif' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '18px 28px', flexShrink: 0 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>👥 Usimamizi wa Vikundi</div>
-        <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Orodha ya Vikundi vya Mikopo na Wanachama</div>
+      <style>{`
+        .ph-bar{display:flex;align-items:stretch;background:#f1f5f9;position:sticky;top:0;z-index:100;border-bottom:2px solid #e2e8f0;min-height:50px}
+        .ph-inner{display:flex;align-items:flex-end;gap:4px;padding:10px 14px 0;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+        .ph-inner::-webkit-scrollbar{display:none}
+        .ph-brand{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#102a43;white-space:nowrap;padding-bottom:10px;flex-shrink:0}
+        .ph-actions{display:flex;align-items:center;gap:8px;padding:6px 14px;flex-shrink:0;border-left:1px solid #e2e8f0;background:#f1f5f9}
+      `}</style>
+      <div className="ph-bar">
+        <div className="ph-inner">
+          <div className="ph-brand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Group Management</span>
+          </div>
+        </div>
       </div>
 
       {/* Stats */}
       {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr) 2fr', gap: 14, padding: '18px 28px 0', flexShrink: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, padding: '18px 28px 0', flexShrink: 0 }}>
           {portalCards.map(s => (
             <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: '14px 18px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ background: s.bg, color: s.color, borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{s.value}</div>
@@ -216,7 +226,7 @@ export default function GroupManagement() {
                   <tr key={g.id} onClick={() => openDetail(g.id)} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa', cursor: 'pointer' }}>
                     <td style={{ padding: '11px 14px', fontWeight: 600, color: '#4f7c3f' }}>{g.loan_account_number}</td>
                     <td style={{ padding: '11px 14px', fontWeight: 500, color: '#1e293b' }}>{g.group_name ?? g.name}</td>
-                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.chairman ?? '—'}</td>
+                    <td style={{ padding: '11px 14px', color: '#64748b' }}>{g.chairman ?? '--'}</td>
                     <td style={{ padding: '11px 14px' }}>
                       <span style={{ background: '#ede9fe', color: '#6366f1', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{g.member_count ?? g.groupMembers?.length ?? 0}</span>
                     </td>
@@ -261,7 +271,7 @@ export default function GroupManagement() {
                 {/* Performance */}
                 <div style={{ background: '#f8f7f4', borderRadius: 12, padding: 16, marginBottom: 18 }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#64748b', marginBottom: 10 }}>UTENDAJI WA MALIPO</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
                     {[
                       ['Kilichotarajiwa', fmt(detail.performance.total_expected)],
                       ['Kilicholipwa', fmt(detail.performance.total_paid)],
@@ -289,7 +299,7 @@ export default function GroupManagement() {
                   ].map(([l, v]) => (
                     <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
                       <span style={{ color: '#64748b' }}>{l}</span>
-                      <span style={{ fontWeight: 500, color: '#1e293b' }}>{v || '—'}</span>
+                      <span style={{ fontWeight: 500, color: '#1e293b' }}>{v || '--'}</span>
                     </div>
                   ))}
                 </div>

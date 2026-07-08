@@ -1,12 +1,13 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, ShieldCheck, KeyRound, Phone, Lock } from "lucide-react";
 import logo from "../assets/logo.png";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
-type Step = "login" | "otp" | "forgot" | "change";
+
+type Step = "login" | "otp" | "forgot" | "forgot-otp" | "change";
 
 const browserNotify = (title: string, body: string) => {
   try {
@@ -23,7 +24,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [shownOtp, setShownOtp] = useState("");
+  const [smsSent, setSmsSent] = useState(false);
   const [phone, setPhone] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,8 +50,8 @@ function Login() {
     try {
       const res = await axios.post(`${API_BASE}/login`, { email: email.trim(), password: password.trim() });
       if (res.data.otp_required) {
-        setShownOtp(res.data.otp); setStep("otp"); setOtp("");
-        browserNotify("Orethan — Verification Code", `Your one-time code is ${res.data.otp}`);
+        setSmsSent(res.data.sms_sent ?? false); setStep("otp"); setOtp("");
+        browserNotify("Orethan -- Verification Code", res.data.message ?? "A verification code has been sent to your phone.");
       } else {
         finalize(res.data);
       }
@@ -61,7 +62,7 @@ function Login() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault(); reset();
-    if (otp.trim().length < 4) { setError("Enter the 4-digit code."); return; }
+    if (otp.trim().length < 6) { setError("Enter the 6-digit code sent to your phone."); return; }
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/verify-otp`, { email: email.trim(), otp: otp.trim() });
@@ -71,18 +72,39 @@ function Login() {
     } finally { setLoading(false); }
   };
 
+  // Forgot password -- Step 1: send OTP to phone
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault(); reset();
     if (!phone.trim()) { setError("Enter your registered phone number."); return; }
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/forgot-password`, { phone: phone.trim() });
-      browserNotify("Orethan — Password Reset", `Your password has been reset to: ${res.data.default_password}`);
-      setInfo(`Phone verified. Your password has been reset to the default password "${res.data.default_password}". Sign in with it, then you'll be asked to set a new password.`);
-      if (res.data.email) setEmail(res.data.email);
-      setPassword(""); setStep("login");
+      setSmsSent(true);
+      setInfo(res.data.message ?? "A verification code has been sent to your phone.");
+      setOtp(""); setNewPassword(""); setConfirmPassword("");
+      setStep("forgot-otp");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Reset failed");
+    } finally { setLoading(false); }
+  };
+
+  // Forgot password -- Step 2: verify OTP + set new password
+  const handleForgotOtp = async (e: React.FormEvent) => {
+    e.preventDefault(); reset();
+    if (otp.trim().length < 6) { setError("Enter the 6-digit code sent to your phone."); return; }
+    if (newPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (newPassword !== confirmPassword) { setError("Passwords do not match."); return; }
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/verify-forgot-password-otp`, {
+        phone: phone.trim(),
+        otp: otp.trim(),
+        new_password: newPassword,
+        new_password_confirmation: confirmPassword,
+      });
+      finalize(res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Verification failed");
     } finally { setLoading(false); }
   };
 
@@ -93,14 +115,8 @@ function Login() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.data.otp_required) {
-        setShownOtp(res.data.otp); setOtp(""); setStep("otp");
-        setInfo("Password changed. Enter the verification code below to finish.");
-        browserNotify("Orethan — Verification Code", `Your one-time code is ${res.data.otp}`);
-      } else {
-        navigate("/repayment-tracker");
-      }
+      await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
+      navigate("/repayment-tracker");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Could not change password");
     } finally { setLoading(false); }
@@ -144,35 +160,60 @@ function Login() {
           </form>
         )}
 
-        {/* STEP: OTP */}
+        {/* STEP: OTP (first login -- code sent via SMS) */}
         {step === "otp" && (
           <form onSubmit={handleVerifyOtp}>
             <button type="button" className="lg__back" onClick={() => { reset(); setStep("login"); }}><ArrowLeft size={15} /> Back</button>
             <div className="lg__icon"><ShieldCheck size={26} /></div>
             <h2>Verify it's you</h2>
-            <p className="lg__sub">Enter the one-time verification code to continue.</p>
-            <div className="lg__otpbox">
-              <span>Your verification code</span>
-              <strong>{shownOtp}</strong>
-            </div>
-            <Field label="Enter the 4-digit code">
-              <input inputMode="numeric" maxLength={4} placeholder="••••" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} style={{ textAlign: "center", letterSpacing: "0.6rem", fontSize: "1.3rem", fontWeight: 800 }} required />
+            <p className="lg__sub">
+              {smsSent
+                ? "A 6-digit verification code has been sent to your registered phone number."
+                : "Enter the 6-digit verification code provided by your administrator."}
+            </p>
+            <Field label="6-digit verification code">
+              <input inputMode="numeric" maxLength={6} placeholder="••••••" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} style={{ textAlign: "center", letterSpacing: "0.5rem", fontSize: "1.3rem", fontWeight: 800 }} required />
             </Field>
             <button type="submit" className="lg__btn" disabled={loading}>{loading ? "Verifying…" : "Verify & Continue"}</button>
           </form>
         )}
 
-        {/* STEP: FORGOT */}
+        {/* STEP: FORGOT -- enter phone to receive OTP */}
         {step === "forgot" && (
           <form onSubmit={handleForgot}>
             <button type="button" className="lg__back" onClick={() => { reset(); setStep("login"); }}><ArrowLeft size={15} /> Back</button>
             <div className="lg__icon"><Phone size={24} /></div>
             <h2>Forgot password</h2>
-            <p className="lg__sub">Enter your registered phone number. If it matches our records, your password will be reset to the default.</p>
+            <p className="lg__sub">Enter your registered phone number and we'll send a 6-digit reset code via SMS.</p>
             <Field label="Registered Phone Number">
               <input type="tel" placeholder="e.g. 0769 337 774" value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </Field>
-            <button type="submit" className="lg__btn" disabled={loading}>{loading ? "Verifying…" : "Reset Password"}</button>
+            <button type="submit" className="lg__btn" disabled={loading}>{loading ? "Sending code…" : "Send Reset Code"}</button>
+          </form>
+        )}
+
+        {/* STEP: FORGOT-OTP -- enter code + new password */}
+        {step === "forgot-otp" && (
+          <form onSubmit={handleForgotOtp}>
+            <button type="button" className="lg__back" onClick={() => { reset(); setStep("forgot"); }}><ArrowLeft size={15} /> Back</button>
+            <div className="lg__icon"><ShieldCheck size={26} /></div>
+            <h2>Reset password</h2>
+            <p className="lg__sub">Enter the 6-digit code sent to your phone, then choose a new password.</p>
+            <Field label="Verification code (from SMS)">
+              <input inputMode="numeric" maxLength={6} placeholder="••••••" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} style={{ textAlign: "center", letterSpacing: "0.5rem", fontSize: "1.3rem", fontWeight: 800 }} required />
+            </Field>
+            <Field label="New Password">
+              <div className="lg__pw">
+                <input type={showPassword ? "text" : "password"} placeholder="At least 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                <button type="button" onClick={() => setShowPassword((s) => !s)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
+              </div>
+            </Field>
+            <Field label="Confirm New Password">
+              <div className="lg__pw"><Lock size={15} className="lg__pwic" />
+                <input type={showPassword ? "text" : "password"} placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={{ paddingLeft: "2.4rem" }} />
+              </div>
+            </Field>
+            <button type="submit" className="lg__btn" disabled={loading}>{loading ? "Resetting…" : "Reset & Sign In"}</button>
           </form>
         )}
 
@@ -280,3 +321,4 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 );
 
 export default Login;
+

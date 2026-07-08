@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Send, CheckCircle2, XCircle, Clock, X, Inbox, PlusCircle, Paperclip, ShieldCheck, Wallet, Banknote, CreditCard, ArrowRight, Pencil, Printer, Lock } from "lucide-react";
-import PageHeader from "../components/PageHeader";
 import { printDocument } from "../utils/printDoc";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
 import SignatureReuse from "../components/SignatureReuse";
+import { API_BASE } from "../lib/api";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review", "awaiting_disbursement"];
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
+
 const fmt = (v: any, cur = "TZS") => `${cur} ${Math.round(Number(v) || 0).toLocaleString()}`;
 const fmtDate = (d: any) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -21,7 +21,7 @@ const sigCell = (role: string, name?: string, date?: string, img?: string) => `
       ${img ? `<img src="${img}" style="height:44px;max-width:150px;object-fit:contain" />` : ""}
     </div>
     <div style="border-top:1.5px solid #0f172a;padding-top:8px;font-size:9.5px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px">${role}</div>
-    ${name ? `<div style="font-size:9px;color:#64748b;margin-top:3px">${name}${date ? " · " + new Date(date).toLocaleDateString("en-GB") : ""}</div>` : ""}
+    ${name ? `<div style="font-size:9px;color:#64748b;margin-top:3px">${name}${date ? " Â· " + new Date(date).toLocaleDateString("en-GB") : ""}</div>` : ""}
   </div>`;
 
 const ACTIVITY_TYPES = [
@@ -218,19 +218,35 @@ const PaymentRequests = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#f1f5f9", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
+    <div style={{ minHeight: "100vh", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box", background: "#f1f5f9", padding: "0 0 1.5rem", fontFamily: "'Plus Jakarta Sans','Inter',sans-serif", color: "#1e293b" }}>
 
-      <PageHeader icon="📋" title="Request Form for Payment" subtitle="Submit and track payment requests through the approval chain">
-        <div style={{ display: "flex", background: "white", border: "1.5px solid #e2e8f0", padding: 3, borderRadius: 10, gap: 3 }}>
-          {([["list", "Requests", Inbox], ["new", "New Request", PlusCircle]] as const).map(([k, lbl, Icon]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", borderRadius: 7, border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", background: tab === k ? "#f1f5f9" : "transparent", color: tab === k ? "#4f46e5" : "#64748b", boxShadow: "none" }}>
-              <Icon size={15} /> {lbl}
-            </button>
-          ))}
+      {/* ── Sticky tab bar ── */}
+      <div className="rq-tab-bar">
+        <div className="rq-tab-scroll">
+          <div className="rq-brand">
+            <FileText size={14} />
+            <span>Payment Requests</span>
+          </div>
+          <div className="rq-divider" />
+          <button className={`rq-tab ${tab === "list" ? "rq-tab--active" : ""}`} onClick={() => setTab("list")}>
+            <Inbox size={13} /> Requests
+          </button>
+          <button className={`rq-tab ${tab === "new" ? "rq-tab--active" : ""}`} onClick={() => setTab("new")}>
+            <PlusCircle size={13} /> New Request
+          </button>
         </div>
-      </PageHeader>
-
-      <div style={{ padding: "1rem 1rem 1.5rem" }}>
+      </div>
+      <style>{`
+        .rq-tab-bar { display:flex; align-items:stretch; background:#f1f5f9; position:sticky; top:0; z-index:100; border-bottom:2px solid #e2e8f0; min-height:50px; }
+        .rq-tab-scroll { display:flex; align-items:flex-end; gap:4px; padding:10px 14px 0; overflow-x:auto; flex:1; scrollbar-width:none; -ms-overflow-style:none; }
+        .rq-tab-scroll::-webkit-scrollbar { display:none; }
+        .rq-brand { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:800; color:#102a43; white-space:nowrap; padding-bottom:10px; flex-shrink:0; }
+        .rq-divider { width:1px; height:24px; background:#cbd5e1; margin:0 8px 10px; flex-shrink:0; }
+        .rq-tab { display:flex; align-items:center; gap:6px; white-space:nowrap; padding:8px 16px; border:none; border-radius:8px 8px 0 0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:#64748b; transition:all .15s; flex-shrink:0; font-family:inherit; }
+        .rq-tab--active { background:white; color:#102a43; box-shadow:0 -2px 0 #1e5fae inset; }
+        .rq-tab:hover:not(.rq-tab--active) { background:#e2e8f0; color:#334155; }
+      `}</style>
+      <div style={{ padding: "1.2rem 1rem 0" }}>
 
       {tab === "new" ? (
         <div className="prf-page">
@@ -242,7 +258,7 @@ const PaymentRequests = () => {
             )}
             {blockedByPending && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "0.8rem 1rem", marginBottom: "1rem", fontSize: "0.82rem", fontWeight: 700, color: "#b91c1c" }}>
-                <ShieldCheck size={16} /> You already have a pending request (#{pendingReq?.id} · {STATUS_META[pendingReq?.status]?.label}). You can submit a new one once it is completed or rejected.
+                <ShieldCheck size={16} /> You already have a pending request (#{pendingReq?.id} Â· {STATUS_META[pendingReq?.status]?.label}). You can submit a new one once it is completed or rejected.
               </div>
             )}
             {/* Approval chain strip */}
@@ -413,7 +429,7 @@ const PaymentRequests = () => {
         {selected && (
           <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", backdropFilter: "blur(10px)", background: "rgba(0,0,0,0.6)" }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              style={{ width: "100%", maxWidth: 640, maxHeight: "90vh", borderRadius: 18, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
+              style={{ width: "100%", maxWidth: "min(640px, calc(100vw - 2rem))", maxHeight: "90vh", borderRadius: 18, background: "white", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
               <div style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", padding: "1.2rem 1.5rem", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h2 style={{ fontSize: "1.15rem", fontWeight: 900, margin: 0 }}>Payment Request #{selected.id}</h2>
@@ -422,7 +438,7 @@ const PaymentRequests = () => {
                 <button onClick={() => setSelected(null)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
               </div>
               <div style={{ padding: "1.3rem 1.5rem", overflowY: "auto" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem 1.2rem", fontSize: "0.82rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.7rem 1.2rem", fontSize: "0.82rem" }}>
                   <Info label="Applicant" value={selected.applicant_name} />
                   <Info label="Department" value={selected.department} />
                   <Info label="Section" value={selected.section} />
@@ -515,8 +531,6 @@ const PaymentRequests = () => {
 
       <SuccessModal open={success.open} title={success.title} message={success.message} onClose={() => setSuccess({ ...success, open: false })} />
 
-      </div>{/* /padding wrapper */}
-
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .pr-row { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
@@ -536,6 +550,7 @@ const PaymentRequests = () => {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 6px; }
       `}</style>
+      </div>{/* /padding wrapper */}
     </div>
   );
 };
@@ -592,3 +607,4 @@ const ApprovalRow = ({ title, name, decision, date, comments, signature }: any) 
 };
 
 export default PaymentRequests;
+
