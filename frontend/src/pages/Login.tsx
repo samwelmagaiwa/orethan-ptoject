@@ -125,11 +125,20 @@ function Login() {
   return (
     <div className="lg">
       <div className="lg__mesh" />
-      <div className="lg__wm" aria-hidden="true">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i}>ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN&nbsp;&nbsp;&nbsp;ORETHAN</div>
-        ))}
+
+      {/* ── LEFT PANEL — flyer1.png (top) + flyer2.png (bottom) ── */}
+      <div className="lg-side lg-side--left">
+        <div className="lg-side__img lg-side__img--top">
+          <img src="/flyer1.png" alt="" />
+        </div>
+        <div className="lg-side__img lg-side__img--bottom">
+          <img src="/flyer2.png" alt="" />
+        </div>
+        <div className="lg-side__veil lg-side__veil--right" />
       </div>
+
+      {/* ── CENTER ── */}
+      <div className="lg__center">
       <div className="lg__card">
         <div className="lg__brand">
           <img src={logo} alt="Orethan Microfinance" />
@@ -240,74 +249,171 @@ function Login() {
 
         <div className="lg__foot">© {new Date().getFullYear()} Orethan Microfinance</div>
       </div>
+      </div>{/* end lg__center */}
+
+      {/* ── RIGHT PANEL — flyer 3 (top) + flyer 4 (bottom) ── */}
+      <div className="lg-side lg-side--right">
+        <div className="lg-side__img lg-side__img--top">
+          <img src="/flyer3.png" alt="" />
+        </div>
+        <div className="lg-side__img lg-side__img--bottom">
+          <img src="/flyer4.png" alt="" />
+        </div>
+        <div className="lg-side__veil lg-side__veil--left" />
+      </div>
 
       <style>{`
         * { box-sizing: border-box; }
-        .lg { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden;
-          background: linear-gradient(120deg, #57b33b 0%, #1f9e74 30%, #1e88e5 66%, #0d6efd 100%);
-          font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
-        .lg__mesh { position: absolute; inset: 0; pointer-events: none;
-          background: radial-gradient(640px 640px at 82% 12%, rgba(255,255,255,0.26), transparent 62%), radial-gradient(560px 560px at 12% 86%, rgba(102,187,106,0.5), transparent 64%), radial-gradient(560px 560px at 92% 90%, rgba(13,110,253,0.5), transparent 66%), radial-gradient(440px 440px at 60% 50%, rgba(30,136,229,0.22), transparent 70%); }
-        .lg__wm { position: fixed; inset: -28%; transform: rotate(-26deg); display: flex; flex-direction: column; justify-content: center; gap: 2.4rem; pointer-events: none; z-index: 0; animation: wmFloat 18s ease-in-out infinite; transform-origin: center; }
-        @keyframes wmFloat {
-          0%, 100% { transform: rotate(-26deg) translate(0, 0); }
-          50% { transform: rotate(-26deg) translate(-48px, 30px); }
+
+        /* ── PAGE SHELL ── */
+        .lg {
+          min-height: 100vh; height: 100vh;
+          display: flex; flex-direction: row; align-items: stretch;
+          position: relative; overflow: hidden;
+          background: linear-gradient(120deg, #0a1628 0%, #0d2137 40%, #102a43 100%);
+          font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
         }
-        .lg__wm div {
-          font-family: 'Inter', sans-serif; font-size: clamp(4rem, 8vw, 8.5rem); font-weight: 900;
-          color: rgba(255,255,255,0.18); letter-spacing: 0.4rem; white-space: nowrap; text-align: center; line-height: 1; user-select: none;
-          text-shadow:
-            1px 1px 0 rgba(255,255,255,0.14),
-            2px 2px 0 rgba(255,255,255,0.11),
-            3px 3px 0 rgba(255,255,255,0.08),
-            4px 4px 0 rgba(7,42,67,0.10),
-            5px 5px 1px rgba(7,42,67,0.10),
-            8px 9px 18px rgba(7,42,67,0.28);
-          animation: wmShine 7s ease-in-out infinite;
+        .lg__mesh {
+          position: absolute; inset: 0; pointer-events: none; z-index: 0;
+          background:
+            radial-gradient(900px 900px at 20% 50%, rgba(87,179,59,0.18), transparent 65%),
+            radial-gradient(900px 900px at 80% 50%, rgba(13,110,253,0.18), transparent 65%),
+            radial-gradient(500px 500px at 50% 50%, rgba(30,136,229,0.10), transparent 70%);
         }
-        .lg__wm div:nth-child(even) { animation-delay: 1.4s; }
-        .lg__wm div:nth-child(3n) { animation-delay: 2.8s; }
-        @keyframes wmShine { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .lg__wm, .lg__wm div, .lg__brand img { animation: none !important; } }
-        .lg__card { position: relative; z-index: 1; width: 100%; max-width: 430px;
-          background: rgba(255,255,255,0.14);
-          backdrop-filter: blur(30px) saturate(1.6);
-          -webkit-backdrop-filter: blur(30px) saturate(1.6);
-          border: 1px solid rgba(255,255,255,0.4);
+
+        /* ── SIDE PANELS ── */
+        .lg-side {
+          flex: 1; min-width: 0;
+          position: relative; overflow: hidden;
+          display: flex; flex-direction: column;
+          z-index: 1;
+        }
+        .lg-side__img {
+          flex: 1; position: relative; overflow: hidden;
+        }
+        .lg-side__img img {
+          position: absolute; inset: 0;
+          width: 100%; height: 100%;
+          object-fit: cover; object-position: center top;
+          will-change: transform;
+        }
+        /* Ken Burns — top images zoom in slowly */
+        .lg-side__img--top img {
+          animation: kbZoomIn 18s ease-in-out infinite alternate;
+        }
+        /* Ken Burns — bottom images zoom out + pan */
+        .lg-side__img--bottom img {
+          animation: kbZoomOut 18s ease-in-out infinite alternate;
+          animation-delay: -9s;
+        }
+        @keyframes kbZoomIn {
+          0%   { transform: scale(1.0) translate(0%, 0%); }
+          100% { transform: scale(1.12) translate(-3%, 2%); }
+        }
+        @keyframes kbZoomOut {
+          0%   { transform: scale(1.12) translate(3%, -2%); }
+          100% { transform: scale(1.0) translate(0%, 0%); }
+        }
+        /* Right panel — mirror the Ken Burns directions */
+        .lg-side--right .lg-side__img--top img {
+          animation: kbZoomInR 18s ease-in-out infinite alternate;
+        }
+        .lg-side--right .lg-side__img--bottom img {
+          animation: kbZoomOutR 18s ease-in-out infinite alternate;
+          animation-delay: -9s;
+        }
+        @keyframes kbZoomInR {
+          0%   { transform: scale(1.0) translate(0%, 0%); }
+          100% { transform: scale(1.12) translate(3%, 2%); }
+        }
+        @keyframes kbZoomOutR {
+          0%   { transform: scale(1.12) translate(-3%, -2%); }
+          100% { transform: scale(1.0) translate(0%, 0%); }
+        }
+        /* Divider between top & bottom image */
+        .lg-side__img--top::after {
+          content: '';
+          position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+          background: linear-gradient(90deg, rgba(87,179,59,0.9), rgba(30,136,229,0.9));
+          z-index: 2;
+        }
+        /* Veil — gradient fade on inner edge toward center card */
+        .lg-side__veil {
+          position: absolute; top: 0; bottom: 0; width: 120px; z-index: 3; pointer-events: none;
+        }
+        .lg-side__veil--right {
+          right: 0;
+          background: linear-gradient(to right, transparent, rgba(10,22,40,0.92));
+        }
+        .lg-side__veil--left {
+          left: 0;
+          background: linear-gradient(to left, transparent, rgba(10,22,40,0.92));
+        }
+        /* Subtle dark overlay on whole panel for contrast */
+        .lg-side::after {
+          content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+          background: rgba(5,15,30,0.18);
+        }
+
+        /* ── CENTER ── */
+        .lg__center {
+          flex-shrink: 0;
+          width: 420px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 24px 16px;
+          position: relative; z-index: 10;
+        }
+
+        /* ── CARD ── */
+        .lg__card {
+          width: 100%;
+          background: rgba(255,255,255,0.10);
+          backdrop-filter: blur(32px) saturate(1.7);
+          -webkit-backdrop-filter: blur(32px) saturate(1.7);
+          border: 1px solid rgba(255,255,255,0.22);
           border-radius: 26px;
-          box-shadow: 0 35px 80px rgba(7,42,67,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
-          padding: 2.2rem 2.2rem 1.6rem; }
-        .lg__brand { text-align: center; margin-bottom: 1.4rem; }
-        .lg__brand img { height: 172px; width: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(7,42,67,0.3)); animation: lgLogo 5s ease-in-out infinite; }
-        @keyframes lgLogo { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.02); } }
-        .lg__bars { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 1rem auto 0; max-width: 240px; }
+          box-shadow: 0 40px 80px rgba(5,15,30,0.55), inset 0 1px 0 rgba(255,255,255,0.30);
+          padding: 2rem 2rem 1.4rem;
+        }
+        .lg__brand { text-align: center; margin-bottom: 1.2rem; }
+        .lg__brand img { height: 140px; width: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(7,42,67,0.4)); animation: lgLogo 5s ease-in-out infinite; }
+        @keyframes lgLogo { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.02); } }
+        .lg__bars { display: flex; height: 4px; border-radius: 3px; overflow: hidden; margin: 0.8rem auto 0; max-width: 200px; }
         .lg__bars .g { flex: 1; background: linear-gradient(90deg,#7cb342,#aed581); }
         .lg__bars .b { flex: 1; background: linear-gradient(90deg,#1565c0,#1d8ad1); }
-        .lg__card h2 { font-size: 1.55rem; font-weight: 900; color: #ffffff; margin: 0 0 0.3rem; letter-spacing: -0.02em; text-shadow: 0 2px 8px rgba(7,42,67,0.25); }
-        .lg__sub { font-size: 0.84rem; color: rgba(255,255,255,0.85); margin: 0 0 1.3rem; line-height: 1.5; }
+        .lg__card h2 { font-size: 1.5rem; font-weight: 900; color: #ffffff; margin: 0 0 0.25rem; letter-spacing: -0.02em; text-shadow: 0 2px 8px rgba(7,42,67,0.3); }
+        .lg__sub { font-size: 0.82rem; color: rgba(255,255,255,0.8); margin: 0 0 1.1rem; line-height: 1.5; }
         form { display: flex; flex-direction: column; gap: 0; }
-        .lg__field { margin-bottom: 1rem; }
-        .lg__field label { display: block; font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.92); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .lg__field input { width: 100%; padding: 0.85rem 1rem; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 12px; font-size: 0.92rem; font-weight: 600; color: #ffffff; outline: none; transition: all 0.18s; background: rgba(255,255,255,0.14); }
-        .lg__field input::placeholder { color: rgba(255,255,255,0.6); }
-        .lg__field input:focus { border-color: rgba(255,255,255,0.85); box-shadow: 0 0 0 3px rgba(255,255,255,0.18); background: rgba(255,255,255,0.26); }
+        .lg__field { margin-bottom: 0.9rem; }
+        .lg__field label { display: block; font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.9); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .lg__field input { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid rgba(255,255,255,0.28); border-radius: 12px; font-size: 0.9rem; font-weight: 600; color: #ffffff; outline: none; transition: all 0.18s; background: rgba(255,255,255,0.12); }
+        .lg__field input::placeholder { color: rgba(255,255,255,0.55); }
+        .lg__field input:focus { border-color: rgba(255,255,255,0.75); box-shadow: 0 0 0 3px rgba(255,255,255,0.14); background: rgba(255,255,255,0.22); }
         .lg__pw { position: relative; }
         .lg__pw > button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.8); cursor: pointer; display: flex; }
         .lg__pwic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.8); }
-        .lg__row { display: flex; justify-content: flex-end; margin: -0.3rem 0 1rem; }
-        .lg__link { background: none; border: none; color: #ffffff; font-weight: 800; font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
-        .lg__btn { width: 100%; padding: 0.95rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#57b33b 0%,#1f9e74 42%,#1e88e5 78%,#0d6efd 100%); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 14px 30px rgba(13,80,180,0.4), inset 0 1px 0 rgba(255,255,255,0.28); }
+        .lg__row { display: flex; justify-content: flex-end; margin: -0.2rem 0 0.9rem; }
+        .lg__link { background: none; border: none; color: #ffffff; font-weight: 800; font-size: 0.78rem; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+        .lg__btn { width: 100%; padding: 0.9rem; border: none; border-radius: 12px; background: linear-gradient(135deg,#57b33b 0%,#1f9e74 42%,#1e88e5 78%,#0d6efd 100%); color: #fff; font-size: 0.93rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 12px 28px rgba(13,80,180,0.4), inset 0 1px 0 rgba(255,255,255,0.28); margin-top: 0.2rem; }
         .lg__btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
         .lg__btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .lg__back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.8rem; cursor: pointer; padding: 0; margin-bottom: 1rem; }
-        .lg__icon { width: 52px; height: 52px; border-radius: 15px; background: rgba(255,255,255,0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; border: 1px solid rgba(255,255,255,0.3); }
-        .lg__otpbox { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.35); border-radius: 14px; padding: 1rem; margin-bottom: 1.1rem; }
-        .lg__otpbox span { font-size: 0.68rem; font-weight: 800; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
-        .lg__otpbox strong { font-size: 2.1rem; font-weight: 900; color: #ffffff; letter-spacing: 0.7rem; padding-left: 0.7rem; text-shadow: 0 2px 8px rgba(7,42,67,0.3); }
-        .lg__msg { font-size: 0.82rem; font-weight: 700; padding: 0.75rem 0.9rem; border-radius: 10px; margin-bottom: 1rem; line-height: 1.45; backdrop-filter: blur(6px); }
+        .lg__back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.78rem; cursor: pointer; padding: 0; margin-bottom: 0.8rem; }
+        .lg__icon { width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.18); color: #ffffff; display: flex; align-items: center; justify-content: center; margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.28); }
+        .lg__msg { font-size: 0.8rem; font-weight: 700; padding: 0.7rem 0.85rem; border-radius: 10px; margin-bottom: 0.9rem; line-height: 1.45; backdrop-filter: blur(6px); }
         .lg__msg--err { background: rgba(239,68,68,0.22); border: 1px solid rgba(254,202,202,0.6); color: #fff; }
         .lg__msg--info { background: rgba(16,185,129,0.22); border: 1px solid rgba(167,243,208,0.6); color: #fff; }
-        .lg__foot { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.75); margin-top: 1.4rem; font-weight: 600; }
+        .lg__foot { text-align: center; font-size: 0.68rem; color: rgba(255,255,255,0.65); margin-top: 1.2rem; font-weight: 600; }
+
+        /* ── RESPONSIVE: hide panels on small screens ── */
+        @media (max-width: 1024px) {
+          .lg-side--left { display: none; }
+          .lg-side--right { display: none; }
+          .lg__center { width: 100%; max-width: 440px; margin: 0 auto; }
+          .lg { justify-content: center; background: linear-gradient(120deg, #57b33b 0%, #1f9e74 30%, #1e88e5 66%, #0d6efd 100%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .lg-side__img img, .lg__brand img { animation: none !important; }
+        }
       `}</style>
     </div>
   );
