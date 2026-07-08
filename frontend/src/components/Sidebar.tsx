@@ -32,6 +32,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [user, setUser] = useState<User | null>(null);
   const [showLoans, setShowLoans] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  const [showSideProfile, setShowSideProfile] = useState(false);
+  const [sideProfilePos, setSideProfilePos] = useState({ top: 0, left: 0 });
   const [showFinance, setShowFinance] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [showAccounting, setShowAccounting] = useState(false);
@@ -197,7 +199,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
       <div className="sd-scroll">
         {/* ── User Profile ── */}
-        <div className="sd-user">
+        <div className="sd-user" onClick={(e) => {
+          const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+          setSideProfilePos({ top: r.top, left: r.right + 8 });
+          setShowSideProfile(s => !s);
+        }}>
           <div className="sd-user__avatar">{userInitial}</div>
           {!isCollapsed && user && (
             <div className="sd-user__info">
@@ -205,10 +211,43 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               <span className="sd-user__role">{userDisplayRole}</span>
             </div>
           )}
-          {!isCollapsed && <span className="sd-user__chevron">
+          <span className="sd-user__chevron" style={{ transform: showSideProfile ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-          </span>}
+          </span>
         </div>
+
+        {/* ── Sidebar profile popup (fixed, escapes overflow) ── */}
+        {showSideProfile && (
+          <>
+            <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setShowSideProfile(false)} />
+            <div style={{ position: "fixed", top: sideProfilePos.top, left: sideProfilePos.left, width: 220, background: "white", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 16px 40px rgba(15,23,42,0.18)", zIndex: 9999, overflow: "hidden" }}>
+              <div style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)", padding: "14px 16px", color: "white" }}>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>{user?.name}</div>
+                <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2, textTransform: "capitalize" }}>{userDisplayRole}</div>
+                {user?.email && <div style={{ fontSize: 10, opacity: 0.55, marginTop: 2 }}>{user.email}</div>}
+              </div>
+              <div style={{ padding: "6px" }}>
+                {[
+                  { icon: "👤", label: "My Profile", action: () => { setShowSideProfile(false); navigate("/profile"); } },
+                  { icon: "✏️", label: "My Signature", action: () => { setShowSideProfile(false); navigate("/profile"); } },
+                ].map(item => (
+                  <button key={item.label} onClick={item.action} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#334155", textAlign: "left" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f1f5f9")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <span>{item.icon}</span>{item.label}
+                  </button>
+                ))}
+                <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
+                <button onClick={async () => { setShowSideProfile(false); try { await fetch(`${API_BASE}/logout`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }); } catch {} localStorage.removeItem("token"); localStorage.removeItem("user"); navigate("/login"); }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#dc2626", textAlign: "left" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <span>🚪</span> Logout
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ── Navigation ── */}
         <nav className="sd-nav">
@@ -426,7 +465,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               </div>
               {(showConfigs || isActive("/configurations") || isActive("/biometric")) && !isCollapsed && (
                 <div className="sd-sub">
-                  {canAccessLoanSettings && (
+                  {(canAccessLoanSettings || userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director") && (
                     <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
                       ⚙️ Global Settings
                     </div>

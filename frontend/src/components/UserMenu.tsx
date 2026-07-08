@@ -35,6 +35,7 @@ const UserMenu = () => {
   const [user, setUser] = useState<any>(JSON.parse(localStorage.getItem("user") || "{}"));
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
   const ref = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -76,7 +77,15 @@ const UserMenu = () => {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "5px 10px 5px 5px", cursor: "pointer" }}>
+      <button
+        id="um-trigger"
+        onClick={(e) => {
+          const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+          // Clamp top to always clear the 80px sticky navbar
+          setDropPos({ top: Math.max(r.bottom + 8, 90), right: window.innerWidth - r.right });
+          setOpen((o) => !o);
+        }}
+        style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "5px 10px 5px 5px", cursor: "pointer" }}>
         <Avatar avatar={user?.avatar} initial={initial} size={34} />
         <div style={{ textAlign: "left", lineHeight: 1.1 }}>
           <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name || t("userMenu.user")}</div>
@@ -86,7 +95,7 @@ const UserMenu = () => {
       </button>
 
       {open && (
-        <div style={{ position: "absolute", top: 52, right: 0, width: 280, background: "white", borderRadius: 16, border: "1px solid #e2e8f0", boxShadow: "0 24px 50px rgba(15,23,42,0.2)", zIndex: 200, overflow: "hidden" }}>
+        <div style={{ position: "fixed", top: dropPos.top, right: dropPos.right, width: 280, background: "white", borderRadius: 16, border: "1px solid #e2e8f0", boxShadow: "0 24px 50px rgba(15,23,42,0.2)", zIndex: 9999, overflow: "hidden" }}>
           {/* Header with avatar */}
           <div style={{ background: "linear-gradient(135deg,#102a43,#1d3a5f)", padding: "1.1rem 1.1rem 1rem", color: "white", textAlign: "center", position: "relative" }}>
             <div style={{ position: "relative", width: 72, height: 72, margin: "0 auto 0.6rem" }}>

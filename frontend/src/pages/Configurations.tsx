@@ -364,7 +364,7 @@ export default function Configurations() {
       <PageHeader
         icon="⚙️"
         title="Configurations"
-        subtitle="Global system settings -- loan policy, access control, payroll GL, biometric & system"
+        subtitle="Global system settings"
         tabs={TABS}
         activeTab={tab}
         onTabChange={t => setTab(t as Tab)}
