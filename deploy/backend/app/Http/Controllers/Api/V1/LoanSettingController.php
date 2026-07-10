@@ -80,6 +80,7 @@ class LoanSettingController extends Controller
             'timezone'                     => 'nullable|string|max:60',
             'fiscal_year_start_month'      => 'nullable|integer|min:1|max:12',
             'brand_color'                  => 'nullable|string|max:20',
+            'session_timeout_minutes'      => 'nullable|integer|min:1|max:480',
         ]);
 
         $settings = LoanSetting::current();

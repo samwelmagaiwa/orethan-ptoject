@@ -10,10 +10,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__ . '/../routes/api.php',   // 👈 muhimu
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
-        apiPrefix: '',   // LiteSpeed strips /api from PATH_INFO — routes must register without it
+        apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(append: [
+            \App\Http\Middleware\EnforceSessionTimeout::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

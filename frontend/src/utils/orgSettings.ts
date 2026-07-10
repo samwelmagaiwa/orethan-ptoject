@@ -24,6 +24,7 @@ export interface OrgSettings {
   timezone: string;
   fiscal_year_start_month: number;
   brand_color: string;
+  session_timeout_minutes: number;
 }
 
 const DEFAULTS: OrgSettings = {
@@ -41,6 +42,7 @@ const DEFAULTS: OrgSettings = {
   timezone: "Africa/Dar_es_Salaam",
   fiscal_year_start_month: 1,
   brand_color: "#1e5fae",
+  session_timeout_minutes: 30,
 };
 
 export function getOrgSettings(): OrgSettings {

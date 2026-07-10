@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(append: [
+            \App\Http\Middleware\EnforceSessionTimeout::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

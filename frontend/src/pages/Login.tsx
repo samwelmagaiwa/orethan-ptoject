@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, ShieldCheck, KeyRound, Phone, Lock } from "lucide-react";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../lib/api";
+import { popLastPath } from "../hooks/useSessionTimeout";
 
 
 
@@ -40,7 +41,10 @@ function Login() {
     if (data.token) localStorage.setItem("token", data.token);
     if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
     if (data.must_change_password) { setStep("change"); reset(); }
-    else navigate("/repayment-tracker");
+    else {
+      const lastPath = popLastPath();
+      navigate(lastPath || "/repayment-tracker");
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -116,7 +120,7 @@ function Login() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
-      navigate("/repayment-tracker");
+      navigate(popLastPath() || "/repayment-tracker");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Could not change password");
     } finally { setLoading(false); }

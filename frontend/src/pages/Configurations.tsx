@@ -59,6 +59,7 @@ interface OrgCfg {
   timezone: string;
   fiscal_year_start_month: number;
   brand_color: string;
+  session_timeout_minutes: number;
 }
 
 interface BioCfg {
@@ -102,6 +103,7 @@ const DEFAULT_ORG: OrgCfg = {
   timezone: "Africa/Dar_es_Salaam",
   fiscal_year_start_month: 1,
   brand_color: "#1e5fae",
+  session_timeout_minutes: 30,
 };
 
 const DEFAULT_BIO: BioCfg = {
@@ -316,6 +318,7 @@ export default function Configurations() {
           timezone:                      orgCfg.timezone,
           fiscal_year_start_month:       orgCfg.fiscal_year_start_month,
           brand_color:                   orgCfg.brand_color,
+          session_timeout_minutes:       orgCfg.session_timeout_minutes,
         }, { headers: auth() });
 
         localStorage.setItem("compliance_roles",    JSON.stringify(loanCfg.compliance_roles));
@@ -820,6 +823,20 @@ export default function Configurations() {
                       <option value="UTC">UTC</option>
                     </select>
                   </div>
+                  <div className="cfg-field">
+                    <label className="cfg-field-label">Session Timeout</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <select className="cfg-field-sel" value={orgCfg.session_timeout_minutes}
+                        onChange={e => setO({ session_timeout_minutes: +e.target.value })}>
+                        {[1,2,5,10,15,20,30,45,60,90,120,180,240,480].map(m => (
+                          <option key={m} value={m}>{m < 60 ? `${m} minute${m > 1 ? "s" : ""}` : `${m/60} hour${m/60 > 1 ? "s" : ""}`}</option>
+                        ))}
+                      </select>
+                      <span style={{ fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>of inactivity</span>
+                    </div>
+                    <p className="cfg-field-hint">After this period of no activity the user is warned then logged out automatically.</p>
+                  </div>
+
                   <div className="cfg-field">
                     <label className="cfg-field-label">Brand / Accent Colour</label>
                     <div className="cfg-color-row">

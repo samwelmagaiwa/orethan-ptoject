@@ -53,6 +53,8 @@ import Biometric from "./pages/Biometric";
 import EmployeeLoan from "./pages/EmployeeLoan";
 import { API_BASE } from "./lib/api";
 import { setOrgSettings, dispatchOrgUpdate } from "./utils/orgSettings";
+import { useSessionTimeout, saveLastPath, popLastPath } from "./hooks/useSessionTimeout";
+import SessionWarningModal from "./components/SessionWarningModal";
 
 // =========================
 // AXIOS INTERCEPTORS
@@ -78,6 +80,11 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const msg = error.response?.data?.message;
+      // Save current path on session expiry so login can restore it
+      if (msg === "SESSION_EXPIRED" || msg === "Unauthenticated.") {
+        saveLastPath();
+      }
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
@@ -970,6 +977,27 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const navigate = useNavigate();
+  const [warnSecs, setWarnSecs] = useState<number | null>(null);
+  const [totalWarnSecs, setTotalWarnSecs] = useState(60);
+
+  const doLogout = (expired = false) => {
+    setWarnSecs(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    if (expired) {
+      // Full page reload so all in-memory state is cleared
+      window.location.href = "/login";
+    } else {
+      navigate("/login");
+    }
+  };
+
+  const { reset: stayLoggedIn } = useSessionTimeout({
+    onWarn:   (secs, total) => { setTotalWarnSecs(total); setWarnSecs(secs); },
+    onExpire: () => doLogout(true),
+    onReset:  () => setWarnSecs(null),
+  });
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
@@ -992,6 +1020,14 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      {warnSecs !== null && (
+        <SessionWarningModal
+          secondsLeft={warnSecs}
+          totalWarnSeconds={totalWarnSecs}
+          onStay={stayLoggedIn}
+          onLogout={doLogout}
+        />
+      )}
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div style={{
         flex: 1,

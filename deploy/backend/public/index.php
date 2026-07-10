@@ -5,16 +5,21 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Determine if the application is in maintenance mode...
-if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+// ── Server path resolution ─────────────────────────────────────────────────
+// On the production server this file lives at:
+//   public_html/api/index.php
+// The Laravel backend root is at:
+//   backend/   (sibling of public_html, two levels up from here)
+// So: __DIR__/../../backend = the Laravel root
+$backendPath = __DIR__ . '/../../backend';
+
+if (file_exists($maintenance = $backendPath . '/storage/framework/maintenance.php')) {
     require $maintenance;
 }
 
-// Register the Composer autoloader...
-require __DIR__.'/../vendor/autoload.php';
+require $backendPath . '/vendor/autoload.php';
 
-// Bootstrap Laravel and handle the request...
 /** @var Application $app */
-$app = require_once __DIR__.'/../bootstrap/app.php';
+$app = require_once $backendPath . '/bootstrap/app.php';
 
 $app->handleRequest(Request::capture());

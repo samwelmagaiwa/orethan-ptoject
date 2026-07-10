@@ -43,6 +43,7 @@ class LoanSetting extends Model
         'timezone',
         'fiscal_year_start_month',
         'brand_color',
+        'session_timeout_minutes',
         'updated_by',
     ];
 
