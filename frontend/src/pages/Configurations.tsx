@@ -9,6 +9,7 @@
  *   5. System           -- app name, currency, fiscal year, date format
  */
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
 import AlertModal from "../components/AlertModal";
@@ -209,6 +210,16 @@ const SectionCard = ({ title, icon, children }: { title: string; icon: string; c
 
 // ── main component ────────────────────────────────────────────────────────────
 export default function Configurations() {
+  const navigate = useNavigate();
+
+  // Guard: only admins may access this page
+  useEffect(() => {
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    if (u?.role && u.role !== "admin") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, []);
+
   const [tab, setTab] = useState<Tab>("loan");
   const [loanCfg, setLoanCfg] = useState<LoanCfg>(DEFAULT_LOAN);
   const [bioCfg, setBioCfg]   = useState<BioCfg>(DEFAULT_BIO);
@@ -394,7 +405,7 @@ export default function Configurations() {
                   onChange={v => setL({ default_interest_rate: v }, "loan")}
                 />
                 <NumField
-                  label="Late Payment Penalty Rate" suffix="% / month"
+                  label="Late Payment Penalty Rate" suffix="% / day"
                   hint="Charged on overdue principal balance from day after due date."
                   value={loanCfg.penalty_rate}
                   onChange={v => setL({ penalty_rate: v }, "loan")}

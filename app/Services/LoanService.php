@@ -66,9 +66,11 @@ class LoanService
             return $loan;
         });
 
-        // Notify the borrower that their application was received — sent after
-        // the transaction commits so a gateway hiccup never rolls back the loan.
+        // Notify the borrower that their application was received.
         $this->sms->sendLoanApplicationReceived($loan);
+
+        // Notify all loan managers that a new application is waiting for review.
+        $this->sms->notifyRoleAboutLoan('loan_manager', $loan, 'loanApplicationPendingReview');
 
         return $loan;
     }
@@ -107,11 +109,17 @@ class LoanService
             return $loan;
         });
 
-        // SMS only on final approval (status === 'approved') — the loan is now
-        // fully cleared and just awaiting disbursement. Sent after the DB
-        // transaction commits so a gateway hiccup can never roll back the
-        // approval itself.
-        if ($loan->status === 'approved') {
+        // Escalation notifications — notify the next reviewer in the chain,
+        // or notify the borrower on final approval. All sent after commit so a
+        // gateway hiccup never rolls back the approval record.
+        if ($loan->status === 'gm_review') {
+            // Loan manager approved → notify all General Managers
+            $this->sms->notifyRoleAboutLoan('general_manager', $loan, 'loanPendingGmReview');
+        } elseif ($loan->status === 'md_review') {
+            // GM approved → notify all Managing Directors
+            $this->sms->notifyRoleAboutLoan('managing_director', $loan, 'loanPendingMdReview');
+        } elseif ($loan->status === 'approved') {
+            // MD approved → notify the borrower
             $this->sms->sendLoanApproved($loan);
         }
 

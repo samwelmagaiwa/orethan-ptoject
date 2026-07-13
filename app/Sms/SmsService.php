@@ -262,6 +262,33 @@ class SmsService
         );
     }
 
+    /**
+     * Notify all users of a given role that a loan needs their review.
+     * Sends one SMS per matching user who has a phone number.
+     *
+     * @return SmsResult[]
+     */
+    public function notifyRoleAboutLoan(string $role, Loan $loan, string $templateMethod): array
+    {
+        $loanNo = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $amount = (float) $loan->amount;
+        $applicant = $loan->name;
+
+        $results = [];
+        $users = \App\Models\User::where('role', $role)->whereNotNull('phone')->get();
+        foreach ($users as $user) {
+            $message = SmsTemplates::$templateMethod($user->name, $applicant, $amount, $loanNo);
+            $results[] = $this->dispatch(
+                type: "loan_pending_{$role}",
+                phone: $user->phone,
+                message: $message,
+                customerId: $loan->customer_id,
+                loanId: $loan->id,
+            );
+        }
+        return $results;
+    }
+
     /** SMS to the borrower when their loan application is rejected at any stage. */
     public function sendLoanRejected(Loan $loan, string $reason = ''): SmsResult
     {

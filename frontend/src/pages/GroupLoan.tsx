@@ -5,7 +5,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
 import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
-import { API_BASE, BASE_URL } from "../lib/api";
+import { API_BASE, resolveStorageUrl } from "../lib/api";
 
 const GroupLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -39,6 +39,7 @@ const GroupLoan: React.FC = () => {
     eneoUnaioishi: "",
     umeishiHapoTanguLini: "",
     umilikiWaMakazi: "",
+    hasMumeMke: "",
     jinaKamiliLaMumeMke: "",
     maarufuMtaani: "",
     tareheYaKuzaliwaMumeMke: "",
@@ -175,12 +176,7 @@ const GroupLoan: React.FC = () => {
   const [guarantor1Photo, setGuarantor1Photo] = useState<File | null>(null);
   const [guarantor2Photo, setGuarantor2Photo] = useState<File | null>(null);
 
-  const getPhotoUrl = (url: string | undefined | null) => {
-    if (!url) return "";
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('blob:')) return url;
-    return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getPhotoUrl = (url: string | undefined | null) => resolveStorageUrl(url) || "";
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passport' | 'guarantor1' | 'guarantor2' = 'passport') => {
 
@@ -400,7 +396,14 @@ const GroupLoan: React.FC = () => {
       finalValue = finalValue.replace(/[^0-9]/g, '');
     }
 
-    setForm({ ...form, [name]: finalValue });
+    let updates: any = { [name]: finalValue };
+
+    // Auto-derive hasMumeMke from marital status
+    if (name === "haliYaNdoa") {
+      updates.hasMumeMke = finalValue === "Ameoa/Olewa" ? "Ndio" : "Hapana";
+    }
+
+    setForm({ ...form, ...updates });
     validateField(name, finalValue);
   };
 
@@ -757,7 +760,7 @@ const GroupLoan: React.FC = () => {
                     <tr>
                       <td colSpan={4}><strong>Aina ya Kitambulisho</strong><br />
                         <select name="ainaYaKitambulisho" className={errors.ainaYaKitambulisho ? "input-error" : ""} value={form.ainaYaKitambulisho} onChange={handleChange}>
-                          <option value="">Chagua</option><option>Kitambulisho cha Taifa</option><option>Pasipoti</option><option>Leseni</option>
+                          <option value="">Chagua</option><option>Kitambulisho cha Taifa</option><option>Pasipoti</option><option>Leseni</option><option>Kadi ya Mpiga Kura</option>
                         </select>
                         {errors.ainaYaKitambulisho && <span className="error-text">{errors.ainaYaKitambulisho}</span>}
                       </td>
@@ -785,6 +788,7 @@ const GroupLoan: React.FC = () => {
                       <td colSpan={4}><strong>Idadi ya utegemezi</strong><br /><input type="number" name="idadiYaUtegemezi" placeholder="Mfano: 3" value={form.idadiYaUtegemezi} onChange={handleChange} /></td>
                     </tr>
                     <tr><td colSpan={12} className="sub-header" style={{ background: "#f0f0f0", fontWeight: "bold" }}>TAARIFA ZA MUME/MKE</td></tr>
+                    {form.hasMumeMke === "Ndio" && (<>
                     <tr>
                       <td colSpan={4}><strong>Jina kamili la mume/mke</strong><br /><input type="text" name="jinaKamiliLaMumeMke" placeholder="Mfano: Jane Doe" value={form.jinaKamiliLaMumeMke} onChange={handleChange} /></td>
                       <td colSpan={4}><strong>Maarufu mtaani</strong><br /><input type="text" name="maarufuMtaani" placeholder="Jina la umaarufu" value={form.maarufuMtaani} onChange={handleChange} /></td>
@@ -793,6 +797,7 @@ const GroupLoan: React.FC = () => {
                     <tr>
                       <td colSpan={12}><strong>Tarehe ya kuzaliwa (mume/mke)</strong><br /><input type="date" name="tareheYaKuzaliwaMumeMke" value={form.tareheYaKuzaliwaMumeMke} onChange={handleChange} /></td>
                     </tr>
+                    </>)}
                   </tbody>
                 </table>
               </div>

@@ -905,8 +905,10 @@ class LoanController extends Controller
         $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $request->applicant_name ?? 'applicant') . '.' . $file->getClientOriginalExtension();
         $path = $file->storeAs('passports', $filename, 'public');
 
+        // Return a relative storage path so the frontend resolves it against
+        // the correct STORAGE_BASE for the current environment (local vs live).
         return response()->json([
-            'photo_url' => Storage::url($path)
+            'photo_url' => '/storage/' . $path
         ]);
     }
 
@@ -926,7 +928,7 @@ class LoanController extends Controller
         $path = $file->storeAs('documents', $filename, 'public');
 
         return response()->json([
-            'document_url' => Storage::url($path),
+            'document_url' => '/storage/' . $path,
             'name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
         ]);

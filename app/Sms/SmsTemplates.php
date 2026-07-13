@@ -157,6 +157,30 @@ class SmsTemplates
             . "Tafadhali wasiliana na ofisi yetu kwa maelezo zaidi. Asante - Orethan Microfinance.";
     }
 
+    /** Sent to Loan Manager(s) when a new loan application arrives for their review. */
+    public static function loanApplicationPendingReview(string $managerName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$managerName}, ombi jipya la mkopo wa TZS " . self::money($amount)
+            . " (Namba: {$loanNo}) limewasilishwa na {$applicantName} linasubiri ukaguzi wako. "
+            . "Tafadhali ingia kwenye mfumo kulikagua. Asante - Orethan Microfinance.";
+    }
+
+    /** Sent to General Manager(s) when Loan Manager approves and escalates to GM stage. */
+    public static function loanPendingGmReview(string $gmName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$gmName}, ombi la mkopo wa TZS " . self::money($amount)
+            . " (Namba: {$loanNo}) la {$applicantName} limeidhinishwa na Meneja wa Mikopo na linasubiri idhini yako. "
+            . "Tafadhali ingia kwenye mfumo kukagua. Asante - Orethan Microfinance.";
+    }
+
+    /** Sent to Managing Director(s) when GM approves and escalates to MD stage. */
+    public static function loanPendingMdReview(string $mdName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$mdName}, ombi la mkopo wa TZS " . self::money($amount)
+            . " (Namba: {$loanNo}) la {$applicantName} limeidhinishwa na Mkurugenzi Mkuu na linasubiri idhini yako ya mwisho. "
+            . "Tafadhali ingia kwenye mfumo kukagua. Asante - Orethan Microfinance.";
+    }
+
     /** Sent to the original submitter when the Loan Manager approves their Branch Report. */
     public static function branchReportApproved(
         string $officerName,

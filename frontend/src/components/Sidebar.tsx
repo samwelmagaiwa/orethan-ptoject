@@ -119,9 +119,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     if (token) {
       await axios.post(`${API_BASE}/logout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
-      });
+      }).catch(() => {});
     }
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("session_last_path");
     navigate("/login");
   };
 
@@ -238,7 +240,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   </button>
                 ))}
                 <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
-                <button onClick={async () => { setShowSideProfile(false); try { await fetch(`${API_BASE}/logout`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }); } catch {} localStorage.removeItem("token"); localStorage.removeItem("user"); navigate("/login"); }}
+                <button onClick={async () => { setShowSideProfile(false); try { await fetch(`${API_BASE}/logout`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }); } catch {} localStorage.removeItem("token"); localStorage.removeItem("user"); sessionStorage.removeItem("session_last_path"); navigate("/login"); }}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#dc2626", textAlign: "left" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>

@@ -67,7 +67,9 @@ const UserMenu = () => {
 
   const logout = async () => {
     try { await axios.post(`${API_BASE}/logout`, {}, { headers: headers() }); } catch { /* ignore */ }
-    localStorage.removeItem("token"); localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("session_last_path");
     navigate("/login");
   };
 

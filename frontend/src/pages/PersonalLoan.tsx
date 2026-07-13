@@ -5,7 +5,7 @@ import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import LoanChecklist from "../components/LoanChecklist";
 import CollateralDirectory, { type CollateralPhoto } from "../components/CollateralDirectory";
-import { API_BASE, BASE_URL } from "../lib/api";
+import { API_BASE, resolveStorageUrl } from "../lib/api";
 
 const PersonalLoan: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +48,7 @@ const PersonalLoan: React.FC = () => {
     umilikiWaMakaziMengine: "",
     nambaYaNyumba: "",
     umeishiHapoTanguMiezi: "",
+    hasMumeMke: "",
     jinaKamiliLaMumeMke: "",
     simuYaMumeMke: "",
     jinaMaarufuMtaani: "",
@@ -184,12 +185,7 @@ const PersonalLoan: React.FC = () => {
   const [guarantor1Photo, setGuarantor1Photo] = useState<File | null>(null);
   const [guarantor2Photo, setGuarantor2Photo] = useState<File | null>(null);
 
-  const getPhotoUrl = (url: string | undefined | null) => {
-    if (!url) return "";
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('blob:')) return url;
-    return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getPhotoUrl = (url: string | undefined | null) => resolveStorageUrl(url) || "";
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passport' | 'guarantor1' | 'guarantor2') => {
 
@@ -428,7 +424,11 @@ const PersonalLoan: React.FC = () => {
     let error = "";
     const optionalFields = [
       "jinaMaarufu",
+      "baruaPepe",
+      "hasMumeMke",
+      "jinaKamiliLaMumeMke",
       "simuYaMumeMke",
+      "jinaMaarufuMtaani",
       "ainaYaKitambulishoMumeMke",
       "nambaYaKitambulishoMumeMke",
       "kaziYaMumeMke",
@@ -439,6 +439,12 @@ const PersonalLoan: React.FC = () => {
       "umilikiWaMakaziMengine",
       "uraia"
     ];
+
+    // Spouse fields required only when hasMumeMke === "Ndio"
+    const spouseRequired = ["jinaKamiliLaMumeMke", "simuYaMumeMke"];
+    if (spouseRequired.includes(name) && form.hasMumeMke === "Ndio" && !value) {
+      return "Sehemu hii inahitajika";
+    }
 
     if (!value && !optionalFields.includes(name) && !name.startsWith("historia")) {
       error = "Sehemu hii inahitajika";
@@ -466,7 +472,14 @@ const PersonalLoan: React.FC = () => {
       finalValue = finalValue.replace(/[^0-9]/g, '');
     }
 
-    setForm({ ...form, [name]: finalValue });
+    let updates: any = { [name]: finalValue };
+
+    // Auto-derive hasMumeMke from marital status
+    if (name === "haliYaNdoa") {
+      updates.hasMumeMke = finalValue === "Nimeoa/Olewa" ? "Ndio" : "Hapana";
+    }
+
+    setForm({ ...form, ...updates });
     validateField(name, finalValue);
   };
 
@@ -949,6 +962,7 @@ const PersonalLoan: React.FC = () => {
                           <option value="Kitambulisho cha Taifa">Kitambulisho cha Taifa</option>
                           <option value="Pasipoti">Pasipoti</option>
                           <option value="Leseni ya kuendesha">Leseni ya kuendesha</option>
+                          <option value="Kadi ya Mpiga Kura (Vote ID)">Kadi ya Mpiga Kura (Vote ID)</option>
                         </select>
                         {errors.ainaYaKitambulisho && <span className="error-text">{errors.ainaYaKitambulisho}</span>}
                       </td>
@@ -962,7 +976,7 @@ const PersonalLoan: React.FC = () => {
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={4}><strong>Barua pepe (Email)</strong><br />
+                      <td colSpan={4}><strong className="optional">Barua pepe (Email) <span style={{fontWeight:400,color:"#64748b",fontSize:"0.85em"}}>(Hiari)</span></strong><br />
                         <input type="email" name="baruaPepe" placeholder="Mfano: jina@mfano.com" className={errors.baruaPepe ? "input-error" : ""} value={form.baruaPepe} onChange={handleChange} />
                         {errors.baruaPepe && <span className="error-text">{errors.baruaPepe}</span>}
                       </td>
@@ -1059,13 +1073,14 @@ const PersonalLoan: React.FC = () => {
                       <td colSpan={3}><strong>Umeishi hapo tangu (miezi)</strong><br /><input type="text" name="umeishiHapoTanguMiezi" placeholder="Mfano: 24" value={form.umeishiHapoTanguMiezi} onChange={handleChange} /></td>
                     </tr>
                     <tr><td colSpan={12} className="sub-header" style={{ background: "#f0f0f0", fontWeight: "bold" }}>TAARIFA ZA MUME/MKE</td></tr>
+                    {form.hasMumeMke === "Ndio" && (<>
                     <tr>
-                      <td colSpan={4}><strong>Jina kamili la mume/mke</strong><br /><input type="text" name="jinaKamiliLaMumeMke" placeholder="Mfano: Jane John Doe" value={form.jinaKamiliLaMumeMke} onChange={handleChange} /></td>
-                      <td colSpan={4}><strong>Simu</strong><br /><input type="tel" name="simuYaMumeMke" placeholder="Mfano: 07XXXXXXXX" value={form.simuYaMumeMke} onChange={handleChange} /></td>
+                      <td colSpan={4}><strong>Jina kamili la mume/mke *</strong><br /><input type="text" name="jinaKamiliLaMumeMke" placeholder="Mfano: Jane John Doe" className={errors.jinaKamiliLaMumeMke?"input-error":""} value={form.jinaKamiliLaMumeMke} onChange={handleChange} />{errors.jinaKamiliLaMumeMke&&<span className="error-text">{errors.jinaKamiliLaMumeMke}</span>}</td>
+                      <td colSpan={4}><strong>Simu *</strong><br /><input type="tel" name="simuYaMumeMke" placeholder="Mfano: 07XXXXXXXX" className={errors.simuYaMumeMke?"input-error":""} value={form.simuYaMumeMke} onChange={handleChange} />{errors.simuYaMumeMke&&<span className="error-text">{errors.simuYaMumeMke}</span>}</td>
                       <td colSpan={4}><strong>Jina maarufu mtaani</strong><br /><input type="text" name="jinaMaarufuMtaani" placeholder="Jina la umaarufu" value={form.jinaMaarufuMtaani} onChange={handleChange} /></td>
                     </tr>
                     <tr>
-                      <td colSpan={4}><strong>Aina ya kitambulisho</strong><br /><select name="ainaYaKitambulishoMumeMke" value={form.ainaYaKitambulishoMumeMke} onChange={handleChange}><option value="">Chagua</option><option value="Kitambulisho cha Taifa">Kitambulisho cha Taifa</option><option value="Pasipoti">Pasipoti</option></select></td>
+                      <td colSpan={4}><strong>Aina ya kitambulisho</strong><br /><select name="ainaYaKitambulishoMumeMke" value={form.ainaYaKitambulishoMumeMke} onChange={handleChange}><option value="">Chagua</option><option value="Kitambulisho cha Taifa">Kitambulisho cha Taifa</option><option value="Pasipoti">Pasipoti</option><option value="Leseni ya kuendesha">Leseni ya kuendesha</option><option value="Kadi ya Mpiga Kura (Vote ID)">Kadi ya Mpiga Kura (Vote ID)</option></select></td>
                       <td colSpan={4}><strong>Namba ya kitambulisho</strong><br /><input type="text" name="nambaYaKitambulishoMumeMke" value={form.nambaYaKitambulishoMumeMke} onChange={handleChange} /></td>
                       <td colSpan={4}><strong>Kazi anayofanya</strong><br /><input type="text" name="kaziYaMumeMke" value={form.kaziYaMumeMke} onChange={handleChange} /></td>
                     </tr>
@@ -1077,6 +1092,7 @@ const PersonalLoan: React.FC = () => {
                       <td colSpan={6}><strong>Anuani ya eneo la kazi</strong><br /><input type="text" name="anuaniYaEneoLaKaziMumeMke" placeholder="Mfano: Posta mpya" value={form.anuaniYaEneoLaKaziMumeMke} onChange={handleChange} /></td>
                       <td colSpan={6}><strong>Idadi ya utegemezi</strong><br /><input type="number" name="idadiYaUtegemezi" placeholder="Mfano: 3" value={form.idadiYaUtegemezi} onChange={handleChange} /></td>
                     </tr>
+                    </>)}
                   </tbody>
                 </table>
               </div>

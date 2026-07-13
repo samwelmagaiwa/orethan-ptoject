@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import logo from '../assets/logo.png';
 import LoanChecklistView from './LoanChecklistView';
 import CollateralDirectory from './CollateralDirectory';
-import { BASE_URL } from '../lib/api';
+import { resolveStorageUrl } from '../lib/api';
 
 // Common Loan interface that should match your types
 interface User {
@@ -60,7 +60,43 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
   };
 
   const handlePrint = () => {
-    window.print();
+    const el = document.querySelector('.pdf-document-paper') as HTMLElement | null;
+    if (!el) { window.print(); return; }
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) { window.print(); return; }
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((s) => s.outerHTML)
+      .join('\n');
+
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Loan Application</title>
+${styles}
+<style>
+  @page { margin: 8mm; size: A4 portrait; }
+  html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+  .pdf-document-paper { max-width: 100% !important; width: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; border: 1px solid #000 !important; }
+  /* Cancel the parent page's print-hide rule that was copied with the styles */
+  @media print {
+    html, body { height: auto !important; overflow: visible !important; }
+    body * { visibility: visible !important; }
+    .modal-overlay, .modal-content, .pdf-form-body { position: static !important; height: auto !important; overflow: visible !important; display: block !important; }
+  }
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+</style>
+</head>
+<body>
+${el.outerHTML}
+</body>
+</html>`);
+    win.document.close();
+    win.focus();
+    win.addEventListener('afterprint', () => win.close());
+    setTimeout(() => win.print(), 800);
   };
 
   const renderVal = (val: any) => {
@@ -114,8 +150,7 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                     const photoUrl = loan.passport_photo || loan.details?.passportPhotoUrl;
                     if (!photoUrl) return <div className="photo-placeholder">{t('loanDetails.photo.photoHere')}</div>;
 
-                    const finalUrl = photoUrl.startsWith('http') ? photoUrl : `${BASE_URL}${photoUrl}`;
-                    return <img src={finalUrl} alt={t('loanDetails.photo.passportAlt')} className="pdf-passport-img" />;
+                    return <img src={resolveStorageUrl(photoUrl)} alt={t('loanDetails.photo.passportAlt')} className="pdf-passport-img" />;
                   })()}
                 </div>
                 <div className="pdf-cell col-10">
@@ -280,8 +315,7 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
                                 {t('loanDetails.photo.photoHere')}
                               </div>
                             );
-                            const finalUrl = photoUrl.startsWith('http') ? photoUrl : `${BASE_URL}${photoUrl}`;
-                            return <img src={finalUrl} alt={t('loanDetails.photo.guarantorAlt', { number: i })} style={{ width: '100%', aspectRatio: '1.2', objectFit: 'cover', border: '1px solid #ddd' }} />;
+                            return <img src={resolveStorageUrl(photoUrl)} alt={t('loanDetails.photo.guarantorAlt', { number: i })} style={{ width: '100%', aspectRatio: '1.2', objectFit: 'cover', border: '1px solid #ddd' }} />;
                           })()}
                         </div>
                         <div className="pdf-item col-6"><span>{t('loanDetails.section4.phoneNumber')}</span><strong>{renderVal(loan.details?.[`${p}Simu`])}</strong></div>
@@ -372,64 +406,106 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
 
           <style>{`
         @media print {
-          @page { margin: 2mm; size: auto; }
+          @page { margin: 8mm; size: A4 portrait; }
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+
+          /* Reset body and html so fixed/flex containers don't trap content */
+          html, body { height: auto !important; overflow: visible !important; }
+
+          /* Hide everything then show only the print container */
           body * { visibility: hidden !important; }
-          .modal-overlay { 
-            visibility: visible !important; 
-            background: white !important; 
-            backdrop-filter: none !important; 
-            position: absolute !important; 
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            display: block !important; 
-          }
-          .modal-content.modal-large.print-container { 
+          .modal-overlay {
             visibility: visible !important;
-            position: static !important; 
-            width: 100% !important; 
+            background: white !important;
+            backdrop-filter: none !important;
+            /* MUST be static — fixed elements don't paginate across pages */
+            position: static !important;
+            width: 100% !important;
             height: auto !important;
-            margin: 0 !important; 
+            display: block !important;
+          }
+          .modal-content.modal-large.print-container {
+            visibility: visible !important;
+            position: static !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
             display: block !important;
             box-shadow: none !important;
+            border-radius: 0 !important;
           }
           .modal-content.modal-large.print-container * { visibility: visible !important; }
           .no-print { display: none !important; }
-          .pdf-form-body { 
-            padding: 0 !important; 
-            background: white !important; 
-            overflow: visible !important; 
+
+          /* Scrolling wrapper must be static and auto-height for pagination */
+          .pdf-form-body {
+            padding: 0 !important;
+            background: white !important;
+            overflow: visible !important;
             height: auto !important;
+            min-height: 0 !important;
+            flex: none !important;
             display: block !important;
             width: 100% !important;
           }
-          .pdf-document-paper { 
-            max-width: none !important; width: 100% !important; 
-            box-shadow: none !important; padding: 0 !important; 
+          .pdf-document-paper {
+            max-width: 100% !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            padding: 0 !important;
             margin: 0 !important;
-            border: none !important;
-          }
-          .pdf-section { page-break-inside: avoid; border-top: 2px solid #000 !important; }
-          .pdf-section:first-child { border-top: none !important; }
-          
-          .pdf-section-title, .pdf-section-title * {
-             color: #000 !important;
-             background: #f1f1f1 !important;
-             font-weight: 900 !important;
-             font-size: 18px !important;
-             border-bottom: 2px solid #000 !important;
-             -webkit-print-color-adjust: exact;
-             print-color-adjust: exact;
+            border: 1px solid #000 !important;
           }
 
-          /* Shrink the header so it doesn't eat up most of page 1 and push
-             SEHEMU 1 (and everything after it) onto a near-blank page 2. */
-          .pdf-page-header { padding: 6px 30px !important; }
-          .logo-image-main { height: 70px !important; max-width: 130px !important; }
-          .form-title { font-size: 18px !important; padding-bottom: 2px !important; }
-          .form-code { font-size: 11px !important; }
+          .pdf-section { page-break-inside: avoid; border-top: 2px solid #000 !important; }
+          .pdf-section:first-child { border-top: none !important; }
+          .pdf-section-title, .pdf-section-title * {
+            color: #000 !important; background: #e8e8e8 !important;
+            font-weight: 900 !important; font-size: 10px !important;
+            border-bottom: 1px solid #000 !important;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+          }
+
+          /* Header */
+          .pdf-page-header { padding: 4px 8px !important; }
+          .logo-image-main { height: 50px !important; max-width: 90px !important; }
+          .form-title { font-size: 12px !important; padding-bottom: 2px !important; }
+          .form-code { font-size: 8px !important; }
+
+          /* Section titles / sub-titles */
+          .pdf-section-title { padding: 4px 8px !important; font-size: 10px !important; }
+          .pdf-sub-title { padding: 3px 8px !important; font-size: 8px !important; }
+
+          /* Passport photo column */
+          .photo-cell { width: 100px !important; padding: 4px !important; flex-shrink: 0 !important; }
+          .pdf-passport-img { width: 100% !important; }
+          .photo-placeholder { height: 130px !important; font-size: 10px !important; }
+
+          /* Grid cells */
+          .pdf-inner-grid { display: grid !important; grid-template-columns: repeat(12, 1fr) !important; }
+          .pdf-item { padding: 3px 5px !important; overflow: hidden !important; word-break: break-word !important; }
+          .pdf-item:first-child { padding-left: 10px !important; }
+          .pdf-item.col-12 { padding-left: 10px !important; }
+          .pdf-item span { font-size: 7px !important; }
+          .pdf-item strong { font-size: 9px !important; min-height: 14px !important; }
+
+          /* Tables */
+          .pdf-table-container { padding: 0 10px !important; margin: 8px 0 !important; }
+          .pdf-table th { font-size: 7px !important; padding: 2px 4px !important; }
+          .pdf-table td { font-size: 8px !important; padding: 2px 4px !important; }
+
+          /* Guarantors */
+          .pdf-guarantors-row { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+
+          /* Declarations & signatures */
+          .declaration-text { padding: 8px 10px !important; font-size: 8px !important; }
+          .pdf-document-paper .signature-grid { padding: 0 10px 15px !important; }
+          .signature-line { height: 18px !important; margin-top: 6px !important; }
+          .thumbprint-box { width: 35px !important; height: 50px !important; }
         }
 
         .modal-overlay {
@@ -457,17 +533,18 @@ const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ show, loan, onClose
         .pdf-meta { display: flex; align-items: center; gap: 15px; margin-top: 8px; }
         .meta-id, .meta-date { font-size: 11px; font-weight: 600; color: #64748b; }
 
-        .header-action-row { margin-bottom: 15px; display: flex; justify-content: flex-end; }
+        .header-action-row { margin-bottom: 10px; display: flex; justify-content: flex-end; }
         .btn-print-mini {
-          background: #2563eb; color: white; border: none; padding: 8px 16px;
-          border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; gap: 8px; align-items: center;
-          font-size: 13px; transition: background 0.2s;
+          background: #2563eb; color: white; border: none; padding: 12px 24px;
+          border-radius: 10px; font-weight: 800; cursor: pointer; display: flex; gap: 10px; align-items: center;
+          font-size: 15px; transition: background 0.2s; white-space: nowrap; min-width: 150px; justify-content: center;
+          box-shadow: 0 4px 12px rgba(37,99,235,0.3);
         }
-        .btn-print-mini:hover { background: #1d4ed8; }
+        .btn-print-mini:hover { background: #1d4ed8; box-shadow: 0 6px 16px rgba(37,99,235,0.4); transform: translateY(-1px); }
 
         .pdf-form-body {
-          padding: 60px 10%; overflow-y: auto; background: #f8fafc; color: #1a1a1a;
-          flex-grow: 1; display: flex; flex-direction: column; align-items: center;
+          padding: 60px 10%; overflow-y: scroll; background: #f8fafc; color: #1a1a1a;
+          flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center;
         }
         
         .pdf-document-paper {
