@@ -31,6 +31,44 @@ const ALL_ROLES = [
   { value: "cashier",          label: "Cashier",          icon: "🏦" },
 ];
 
+// ── access-control matrix ─────────────────────────────────────────────────────
+type MatrixCol = { key: string; label: string; icon: string; roles: string[]; locked?: boolean };
+const MATRIX_COLS: MatrixCol[] = [
+  { key: "admin",            label: "Admin",            icon: "🛡️", roles: ["admin"],                        locked: true },
+  { key: "loan_officer",     label: "Loan Officer",     icon: "📝", roles: ["loan_officer"] },
+  { key: "loan_manager",     label: "Loan Manager",     icon: "📋", roles: ["loan_manager"] },
+  { key: "general_manager",  label: "General Manager",  icon: "🏢", roles: ["general_manager"] },
+  { key: "managing_director",label: "Managing Director",icon: "👔", roles: ["managing_director"] },
+  { key: "finance_cashier",  label: "Finance / Cashier",icon: "💰", roles: ["finance_officer", "cashier"] },
+];
+
+const MATRIX_ROWS = [
+  { key: "compliance", label: "Compliance & Regulator Reports",   desc: "View BOT reports, loan lifecycle & write-off records.", field: "compliance_roles", src: "loan" },
+  { key: "payroll",    label: "Payroll Management",               desc: "Create, approve, post and pay salary runs. Employees outside this list see only their own salary slip.", field: "payroll_access_roles", src: "loan" },
+  { key: "bio_op",     label: "Biometric Scanner Operators",      desc: "Operate the fingerprint scanner during loan disbursement.", field: "allowed_roles", src: "bio" },
+  { key: "bio_ex",     label: "Biometric Exception Authorizers",  desc: "Authorize a biometric exception when scanner fails.", field: "exception_roles", src: "bio" },
+];
+
+const SIDEBAR_KEYS = [
+  { key: "dashboard",           label: "Dashboard" },
+  { key: "finance_collections", label: "Finance & Collections" },
+  { key: "requests",            label: "Requests / Maombi" },
+  { key: "loans_form",          label: "Loans Form",             sub: "Personal Loan, Group Loan, My Applications" },
+  { key: "users",               label: "Users Management" },
+  { key: "global_settings",      label: "⚙️ Global Settings",     sub: "Configurations page — penalty rate, interest rate, access control" },
+  { key: "manager_review",      label: "Manager Review" },
+  { key: "gm_review",           label: "GM Review" },
+  { key: "md_auth",             label: "MD Auth" },
+  { key: "wateja",              label: "Wateja (Customers)" },
+  { key: "accounting",          label: "Accounting & Reports" },
+  { key: "regulator_reports",   label: "Regulator Reports (BOT)" },
+  { key: "loan_lifecycle",      label: "Loan Restructuring" },
+  { key: "disburse_payments",   label: "Disburse & Payments" },
+  { key: "cash_till",           label: "Cashier Till" },
+  { key: "profile",             label: "My Signature" },
+  { key: "logout",              label: "Log Out",                sub: "Sidebar link only — the top user-menu logout always stays available" },
+];
+
 // ── types ─────────────────────────────────────────────────────────────────────
 interface LoanCfg {
   penalty_rate: string | number;
@@ -212,10 +250,16 @@ const SectionCard = ({ title, icon, children }: { title: string; icon: string; c
 export default function Configurations() {
   const navigate = useNavigate();
 
-  // Guard: only admins may access this page
+  // Guard: mirrors canAccessLoanSettings in Sidebar — admin by default, or explicit permission grant
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem("user") || "{}");
-    if (u?.role && u.role !== "admin") {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      const isAdmin = u?.role === "admin";
+      const hasPermission = u?.sidebar_permissions?.global_settings === true;
+      if (!isAdmin && !hasPermission) {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch {
       navigate("/dashboard", { replace: true });
     }
   }, []);
@@ -234,6 +278,13 @@ export default function Configurations() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoDragging, setLogoDragging] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Sidebar permissions per-user state
+  type SidebarUser = { id: number; name: string; role: string; full_sidebar_access: boolean; sidebar_permissions: Record<string, boolean> };
+  const [sidebarUsers, setSidebarUsers]     = useState<SidebarUser[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userPerms, setUserPerms]           = useState<{ full_sidebar_access: boolean; sidebar_permissions: Record<string, boolean> }>({ full_sidebar_access: false, sidebar_permissions: {} });
+  const [savingPerms, setSavingPerms]       = useState(false);
 
   const toast = (msg: string, type: "success" | "error" = "success") =>
     setAlert({ isOpen: true, title: type === "success" ? "Saved" : "Error", message: msg, type });
@@ -266,6 +317,52 @@ export default function Configurations() {
       } finally { setLoading(false); }
     })();
   }, []);
+
+  // Load non-admin users for sidebar permission management
+  useEffect(() => {
+    axios.get(`${API}/users`, { headers: auth() })
+      .then(r => setSidebarUsers((r.data as SidebarUser[]).filter(u => u.role !== "admin")))
+      .catch(() => {});
+  }, []);
+
+  const handleSelectUser = (id: number) => {
+    setSelectedUserId(id);
+    const u = sidebarUsers.find(u => u.id === id);
+    if (u) setUserPerms({ full_sidebar_access: !!u.full_sidebar_access, sidebar_permissions: u.sidebar_permissions || {} });
+  };
+
+  const saveSidebarPerms = async () => {
+    if (!selectedUserId) return;
+    setSavingPerms(true);
+    try {
+      await axios.put(`${API}/users/${selectedUserId}`, {
+        full_sidebar_access: userPerms.full_sidebar_access,
+        sidebar_permissions: userPerms.sidebar_permissions,
+      }, { headers: auth() });
+      setSidebarUsers(us => us.map(u => u.id === selectedUserId ? { ...u, ...userPerms } : u));
+      toast("Sidebar permissions saved.");
+    } catch (e: any) {
+      toast(e?.response?.data?.message || "Failed to save permissions", "error");
+    } finally { setSavingPerms(false); }
+  };
+
+  // Matrix helpers
+  const getMatrixRoles = (field: string, src: string): string[] => {
+    if (src === "loan") return (loanCfg as any)[field] as string[] ?? [];
+    return ((bioCfg as any)[field] as string ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+  };
+  const setMatrixRoles = (field: string, src: string, roles: string[]) => {
+    if (src === "loan") setL({ [field]: roles } as any, "access");
+    else setB({ [field]: roles.join(",") } as any);
+  };
+  const toggleMatrixCell = (field: string, src: string, roles: string[]) => {
+    const current = getMatrixRoles(field, src);
+    const anyActive = roles.some(r => current.includes(r));
+    const next = anyActive
+      ? current.filter(r => !roles.includes(r))
+      : [...current, ...roles.filter(r => !current.includes(r))];
+    setMatrixRoles(field, src, next);
+  };
 
   const markDirty = (t: Tab) => setDirty(d => ({ ...d, [t]: true }));
 
@@ -447,37 +544,155 @@ export default function Configurations() {
         {/* ══ ACCESS CONTROL ════════════════════════════════════════════════ */}
         {tab === "access" && (
           <div className="cfg-tab-content">
-            <SectionCard icon="🔒" title="Compliance & Regulator Reports">
-              <p className="cfg-section-desc">Roles that can view BOT regulator reports, loan lifecycle, and write-off records.</p>
-              <RoleCheckGrid
-                value={loanCfg.compliance_roles}
-                onChange={v => setL({ compliance_roles: v }, "access")}
-              />
-            </SectionCard>
 
-            <SectionCard icon="💼" title="Payroll Management">
-              <p className="cfg-section-desc">Roles that can create, approve, post and pay salary runs. Employees outside this list see only their own salary slip.</p>
-              <RoleCheckGrid
-                value={loanCfg.payroll_access_roles}
-                onChange={v => setL({ payroll_access_roles: v }, "access")}
-              />
-            </SectionCard>
+            {/* Role × Permission matrix */}
+            <div className="cfg-section-card" style={{ padding: 0, overflow: "hidden" }}>
+              <div className="cfg-section-hd" style={{ padding: "16px 20px 14px", marginBottom: 0 }}>
+                <span className="cfg-section-icon">🔐</span>
+                <h3 className="cfg-section-title">Role Permissions Matrix</h3>
+              </div>
+              <p className="cfg-section-desc" style={{ padding: "0 20px 12px", marginBottom: 0 }}>
+                Click any cell to grant or revoke that permission for the role. Admin is always granted all permissions. Finance Officer and Cashier share the same access level.
+              </p>
+              <div className="cfg-matrix-wrap">
+                <table className="cfg-matrix">
+                  <thead>
+                    <tr className="cfg-matrix-head-row">
+                      <th className="cfg-matrix-perm-hd">Permission</th>
+                      {MATRIX_COLS.map(col => (
+                        <th key={col.key} className={`cfg-matrix-role-hd${col.locked ? " cfg-matrix-role-hd--admin" : ""}`}>
+                          <span className="cfg-matrix-role-icon">{col.icon}</span>
+                          <span className={`cfg-matrix-role-label${col.locked ? " cfg-matrix-role-label--admin" : ""}`}>{col.label}</span>
+                          {col.locked && <span className="cfg-matrix-locked-badge">Always on</span>}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MATRIX_ROWS.map((row, ri) => {
+                      const currentRoles = getMatrixRoles(row.field, row.src);
+                      return (
+                        <tr key={row.key} className={ri % 2 === 0 ? "cfg-matrix-row--even" : ""}>
+                          <td className="cfg-matrix-perm-cell">
+                            <div className="cfg-matrix-perm-name">{row.label}</div>
+                            <div className="cfg-matrix-perm-desc">{row.desc}</div>
+                          </td>
+                          {MATRIX_COLS.map(col => {
+                            const granted = col.roles.some(r => currentRoles.includes(r)) || !!col.locked;
+                            return (
+                              <td
+                                key={col.key}
+                                className={`cfg-matrix-tick-cell cfg-matrix-tick-cell--${granted ? "yes" : "no"}${col.locked ? " cfg-matrix-tick-cell--locked" : ""}`}
+                                onClick={() => !col.locked && toggleMatrixCell(row.field, row.src, [...col.roles])}
+                                title={col.locked ? "Admin always has this permission" : granted ? "Click to revoke" : "Click to grant"}
+                              >
+                                <div className="cfg-matrix-tick-inner">
+                                  <span className={`cfg-matrix-tick-sym cfg-matrix-tick-sym--${granted ? "yes" : (col.locked ? "no-locked" : "no")}`}>
+                                    {granted ? "✓" : "✗"}
+                                  </span>
+                                  <span className={`cfg-matrix-tick-label cfg-matrix-tick-label--${granted ? "yes" : "no"}`}>
+                                    {granted ? "Granted" : "Denied"}
+                                  </span>
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="cfg-matrix-legend">
+                <span className="cfg-matrix-legend-item"><span className="cfg-matrix-tick-sm cfg-matrix-tick-sm--yes">✓</span> Granted — click to revoke</span>
+                <span className="cfg-matrix-legend-item"><span className="cfg-matrix-tick-sm cfg-matrix-tick-sm--no">✗</span> Denied — click to grant</span>
+                <span className="cfg-matrix-legend-item" style={{ color: "#b45309" }}>🏅 Admin column is always granted</span>
+              </div>
+            </div>
 
-            <SectionCard icon="👆" title="Biometric Scanner Operators">
-              <p className="cfg-section-desc">Roles allowed to operate the fingerprint scanner during loan disbursement.</p>
-              <RoleCommaGrid
-                value={bioCfg.allowed_roles}
-                onChange={v => setB({ allowed_roles: v })}
-              />
-            </SectionCard>
+            {/* Sidebar Access Control per user */}
+            <div className="cfg-section-card" style={{ padding: 0, overflow: "hidden" }}>
+              <div className="cfg-section-hd" style={{ padding: "16px 20px 14px", marginBottom: 0 }}>
+                <span className="cfg-section-icon">🗂️</span>
+                <h3 className="cfg-section-title">Sidebar Access Control</h3>
+              </div>
+              <p className="cfg-section-desc" style={{ padding: "0 20px 14px", marginBottom: 0 }}>
+                Tick a box to let this user see that menu item, untick it to lock them out. Select a user below.
+              </p>
 
-            <SectionCard icon="🚨" title="Biometric Exception Authorizers">
-              <p className="cfg-section-desc">Roles allowed to authorize a biometric exception (bypass when scanner fails or person cannot scan).</p>
-              <RoleCommaGrid
-                value={bioCfg.exception_roles}
-                onChange={v => setB({ exception_roles: v })}
-              />
-            </SectionCard>
+              {/* User picker bar */}
+              <div className="cfg-sidebar-picker">
+                <select className="cfg-sidebar-user-sel"
+                  value={selectedUserId ?? ""}
+                  onChange={e => e.target.value ? handleSelectUser(+e.target.value) : setSelectedUserId(null)}>
+                  <option value="">— Select a user —</option>
+                  {sidebarUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g," ")})</option>
+                  ))}
+                </select>
+                {selectedUserId && (
+                  <button className="cfg-save-btn" onClick={saveSidebarPerms} disabled={savingPerms}>
+                    {savingPerms ? "Saving…" : "💾 Save Permissions"}
+                  </button>
+                )}
+              </div>
+
+              {selectedUserId ? (
+                <div className="cfg-sbm-wrap">
+                  <table className="cfg-sbm-table">
+                    <thead>
+                      <tr className="cfg-sbm-head-row">
+                        {/* Full access column */}
+                        <th className="cfg-sbm-th cfg-sbm-th--master">
+                          <div className="cfg-sbm-th-label">Full Access</div>
+                          <div className="cfg-sbm-th-hint">Grants all items below</div>
+                        </th>
+                        {SIDEBAR_KEYS.map(item => (
+                          <th key={item.key} className="cfg-sbm-th">
+                            <div className="cfg-sbm-th-label">{item.label}</div>
+                            {item.sub && <div className="cfg-sbm-th-hint">{item.sub}</div>}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="cfg-sbm-body-row">
+                        {/* Full access toggle */}
+                        <td className="cfg-sbm-td cfg-sbm-td--master">
+                          <label className="cfg-sw">
+                            <input type="checkbox" checked={userPerms.full_sidebar_access}
+                              onChange={e => setUserPerms(p => ({ ...p, full_sidebar_access: e.target.checked, sidebar_permissions: e.target.checked ? {} : p.sidebar_permissions }))} />
+                            <span className="cfg-sw-track" />
+                          </label>
+                        </td>
+                        {SIDEBAR_KEYS.map(item => {
+                          const granted = userPerms.full_sidebar_access || !!userPerms.sidebar_permissions[item.key];
+                          return (
+                            <td key={item.key} className="cfg-sbm-td">
+                              <label className={`cfg-sw${userPerms.full_sidebar_access ? " cfg-sw-locked" : ""}`}>
+                                <input type="checkbox" checked={granted}
+                                  disabled={userPerms.full_sidebar_access}
+                                  onChange={e => setUserPerms(p => ({
+                                    ...p,
+                                    sidebar_permissions: { ...p.sidebar_permissions, [item.key]: e.target.checked },
+                                  }))} />
+                                <span className="cfg-sw-track" />
+                              </label>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="cfg-sidebar-empty">
+                  <div className="cfg-sidebar-empty-icon">🗂️</div>
+                  <p>Select a user above to manage which sidebar menu items they can see.</p>
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -1018,6 +1233,82 @@ export default function Configurations() {
         .cfg-color-hex { flex:1; }
         /* Textarea */
         .cfg-field-textarea { resize:vertical; font-size:13px; }
+
+        /* ── role permission matrix ── */
+        .cfg-matrix-wrap { overflow-x: auto; border-top: 1px solid #e2e8f0; }
+        .cfg-matrix { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+        .cfg-matrix th, .cfg-matrix td { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        .cfg-matrix th:first-child, .cfg-matrix td:first-child { border-left: none; }
+        .cfg-matrix-head-row { background: #f8fafc; }
+        .cfg-matrix-perm-hd { text-align: left; padding: 10px 20px; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .07em; min-width: 200px; }
+        .cfg-matrix-role-hd { text-align: center; padding: 10px 6px 9px; min-width: 96px; vertical-align: bottom; }
+        .cfg-matrix-role-hd--admin { background: #fef9f0; }
+        .cfg-matrix-role-icon { display: block; font-size: 17px; margin-bottom: 4px; }
+        .cfg-matrix-role-label { display: block; font-size: 11px; font-weight: 700; color: #334155; line-height: 1.4; }
+        .cfg-matrix-role-label--admin { color: #b45309; }
+        .cfg-matrix-locked-badge { display: inline-block; margin-top: 4px; font-size: 9px; background: #fef3c7; color: #92400e; border-radius: 20px; padding: 2px 7px; font-weight: 700; letter-spacing: .03em; border: 1px solid #fde68a; }
+        .cfg-matrix-perm-cell { padding: 11px 20px; vertical-align: top; background: #fff; }
+        .cfg-matrix-perm-name { font-weight: 700; color: #0f172a; font-size: 13px; margin-bottom: 3px; }
+        .cfg-matrix-perm-desc { font-size: 11px; color: #64748b; line-height: 1.55; max-width: 240px; }
+        .cfg-matrix-tick-cell { text-align: center; vertical-align: middle; padding: 0; cursor: pointer; transition: background .1s; position: relative; }
+        .cfg-matrix-tick-cell--locked { cursor: default; }
+        .cfg-matrix-tick-cell--yes { background: #f0fdf4; }
+        .cfg-matrix-tick-cell--no { background: #fff; }
+        .cfg-matrix-tick-cell--no:hover:not(.cfg-matrix-tick-cell--locked) { background: #fef2f2; }
+        .cfg-matrix-tick-cell--yes:hover:not(.cfg-matrix-tick-cell--locked) { background: #dcfce7; }
+        .cfg-matrix-row--even .cfg-matrix-perm-cell { background: #fafbfc; }
+        .cfg-matrix-row--even .cfg-matrix-tick-cell--yes { background: #ecfdf5; }
+        .cfg-matrix-row--even .cfg-matrix-tick-cell--no { background: #fafbfc; }
+        .cfg-matrix-tick-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 11px 6px; gap: 2px; }
+        .cfg-matrix-tick-sym { font-size: 18px; font-weight: 900; line-height: 1; }
+        .cfg-matrix-tick-sym--yes { color: #16a34a; }
+        .cfg-matrix-tick-sym--no { color: #d1d5db; }
+        .cfg-matrix-tick-sym--no-locked { color: #d1d5db; opacity: .5; }
+        .cfg-matrix-tick-label { font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+        .cfg-matrix-tick-label--yes { color: #16a34a; }
+        .cfg-matrix-tick-label--no { color: #d1d5db; }
+        .cfg-matrix-tick-sm { display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; }
+        .cfg-matrix-tick-sm--yes { color: #16a34a; }
+        .cfg-matrix-tick-sm--no { color: #dc2626; }
+        .cfg-matrix-legend { display: flex; gap: 20px; flex-wrap: wrap; padding: 9px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; align-items: center; }
+        .cfg-matrix-legend-item { display: flex; align-items: center; gap: 6px; }
+
+        /* ── sidebar access ── */
+        .cfg-sidebar-picker { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; background: #f8fafc; }
+        .cfg-sidebar-user-sel { flex: 1; min-width: 220px; max-width: 380px; font-size: 14px; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white; color: #0f172a; }
+        .cfg-sidebar-user-sel:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px #3b82f620; }
+        .cfg-sidebar-master-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; cursor: pointer; user-select: none; }
+        .cfg-sidebar-master-row:hover { background: #f1f5f9; }
+        .cfg-sidebar-master-info { flex: 1; }
+        .cfg-sidebar-master-label { font-size: 13px; font-weight: 700; color: #0f172a; }
+        .cfg-sidebar-master-hint { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.5; }
+        .cfg-master-tick { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; font-size: 17px; font-weight: 900; flex-shrink: 0; transition: all .15s; }
+        .cfg-master-tick--yes { background: #dcfce7; color: #16a34a; }
+        .cfg-master-tick--no { background: #fee2e2; color: #dc2626; }
+        .cfg-master-tick--locked { opacity: .6; cursor: default; }
+        /* sidebar matrix (horizontal) */
+        .cfg-sbm-wrap { overflow-x: auto; border-top: 1px solid #e2e8f0; }
+        .cfg-sbm-table { border-collapse: collapse; min-width: max-content; }
+        .cfg-sbm-head-row { background: #f8fafc; }
+        .cfg-sbm-th { text-align: center; padding: 12px 10px 10px; min-width: 96px; max-width: 110px; vertical-align: bottom; border-right: 1px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; }
+        .cfg-sbm-th--master { min-width: 112px; background: #fef9f0; border-right: 2px solid #fde68a; }
+        .cfg-sbm-th-label { font-size: 11px; font-weight: 700; color: #334155; line-height: 1.35; word-break: break-word; }
+        .cfg-sbm-th--master .cfg-sbm-th-label { color: #b45309; }
+        .cfg-sbm-th-hint { font-size: 9px; color: #94a3b8; margin-top: 3px; line-height: 1.4; word-break: break-word; }
+        .cfg-sbm-body-row { background: #fff; }
+        .cfg-sbm-td { text-align: center; padding: 14px 8px; border-right: 1px solid #f1f5f9; vertical-align: middle; }
+        .cfg-sbm-td--master { background: #fffbf0; border-right: 2px solid #fde68a; }
+        .cfg-sw { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; cursor: pointer; }
+        .cfg-sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .cfg-sw-track { position: absolute; inset: 0; border-radius: 26px; background: #e2e8f0; transition: background .2s; border: 1.5px solid #cbd5e1; }
+        .cfg-sw input:checked + .cfg-sw-track { background: #22c55e; border-color: #16a34a; }
+        .cfg-sw input:disabled + .cfg-sw-track { opacity: .5; cursor: not-allowed; }
+        .cfg-sw-track::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+        .cfg-sw input:checked + .cfg-sw-track::after { transform: translateX(20px); }
+        .cfg-sw-locked { opacity: .55; pointer-events: none; }
+        .cfg-sidebar-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 56px 20px; color: #94a3b8; text-align: center; }
+        .cfg-sidebar-empty-icon { font-size: 40px; opacity: .5; }
+        .cfg-sidebar-empty p { font-size: 13px; margin: 0; max-width: 280px; line-height: 1.6; }
 
         /* ── GL journal preview ── */
         .cfg-je-preview { border:1px solid #bbf7d0; border-radius:10px; overflow:hidden; background:#f0fdf4; }

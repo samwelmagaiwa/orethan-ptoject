@@ -146,7 +146,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessLogout = isAllowed("logout", true);
   const canAccessLoansForm = isAllowed("loans_form", userRole === "admin" || userRole === "loan_officer");
   const canAccessUsers = isAllowed("users", userRole === "admin");
-  const canAccessLoanSettings = isAllowed("loan_settings", userRole === "admin");
+  const canAccessLoanSettings =
+    userRole === "admin" ||
+    user?.sidebar_permissions?.global_settings === true;
   const canAccessManagerReview = isAllowed("manager_review", userRole === "loan_manager" || userRole === "admin");
   const canAccessGmReview = isAllowed("gm_review", userRole === "general_manager" || userRole === "admin");
   const canAccessMdAuth = isAllowed("md_auth", userRole === "managing_director" || userRole === "admin");
@@ -443,8 +445,8 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </>
           )}
 
-          {/* ── Configurations dropdown -- Settings + Biometric ────────── */}
-          {(canAccessLoanSettings || userRole === "admin" || userRole === "finance_officer") && (
+          {/* ── Configurations dropdown -- only shown when admin-granted permission ── */}
+          {canAccessLoanSettings && (
             <>
               <div className="sd-sec">{!isCollapsed ? "CONFIGURATIONS" : "─"}</div>
               <div
@@ -467,11 +469,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               </div>
               {(showConfigs || isActive("/configurations") || isActive("/biometric")) && !isCollapsed && (
                 <div className="sd-sub">
-                  {(canAccessLoanSettings || userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director") && (
-                    <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
-                      ⚙️ Global Settings
-                    </div>
-                  )}
+                  <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
+                    ⚙️ Global Settings
+                  </div>
                   {/* 🔏 Biometric -- commented out until hardware agent is ready
                   {(userRole === "admin" || userRole === "finance_officer") && (
                     <div className={`sd-sub__link ${isActive("/biometric") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/biometric")}>

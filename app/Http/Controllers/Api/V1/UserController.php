@@ -64,9 +64,9 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:users,email,' . $id,
+            'role' => 'sometimes|required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
             'sidebar_permissions' => 'nullable|array',
@@ -74,10 +74,10 @@ class UserController extends Controller
             'full_sidebar_access' => 'nullable|boolean',
         ]);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->role = $request->role;
-        $user->phone = $request->phone;
+        if ($request->has('name')) $user->name = $request->name;
+        if ($request->has('email')) $user->email = $request->email;
+        if ($request->has('role')) $user->role = $request->role;
+        if ($request->has('phone')) $user->phone = $request->phone;
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
