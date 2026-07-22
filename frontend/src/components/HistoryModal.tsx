@@ -371,7 +371,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                 .history-item-premium {
                     background: #ffffff;
                     border-radius: 12px;
-                    padding: 8px 14px;
+                    padding: 16px 14px 8px;
                     border: 1px solid #e2e8f0;
                     transition: all 0.3s ease;
                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
@@ -379,8 +379,9 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    overflow: hidden;
+                    overflow: visible;
                     width: 100%;
+                    margin-top: 12px;
                 }
 
                 .history-item-premium:hover {
@@ -435,17 +436,21 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                 }
 
                 .h-action-pill {
-                    padding: 3px 10px;
+                    position: absolute;
+                    top: -11px;
+                    left: 12px;
+                    padding: 2px 10px;
                     border-radius: 10px;
                     font-size: 9px;
                     font-weight: 800;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    min-width: fit-content;
+                    white-space: nowrap;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+                    z-index: 2;
                 }
 
                 /* Dynamic Status Colors for Action Pills */

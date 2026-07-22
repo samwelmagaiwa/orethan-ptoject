@@ -2659,7 +2659,7 @@ ${e.outerHTML}
                 .history-item-premium {
                     background: #ffffff;
                     border-radius: 12px;
-                    padding: 8px 14px;
+                    padding: 16px 14px 8px;
                     border: 1px solid #e2e8f0;
                     transition: all 0.3s ease;
                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
@@ -2667,8 +2667,9 @@ ${e.outerHTML}
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    overflow: hidden;
+                    overflow: visible;
                     width: 100%;
+                    margin-top: 12px;
                 }
 
                 .history-item-premium:hover {
@@ -2723,17 +2724,21 @@ ${e.outerHTML}
                 }
 
                 .h-action-pill {
-                    padding: 3px 10px;
+                    position: absolute;
+                    top: -11px;
+                    left: 12px;
+                    padding: 2px 10px;
                     border-radius: 10px;
                     font-size: 9px;
                     font-weight: 800;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    min-width: fit-content;
+                    white-space: nowrap;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+                    z-index: 2;
                 }
 
                 /* Dynamic Status Colors for Action Pills */
@@ -3201,7 +3206,7 @@ ${e.outerHTML}
                 .history-item-premium {
                     background: #ffffff;
                     border-radius: 12px;
-                    padding: 8px 14px;
+                    padding: 16px 14px 8px;
                     border: 1px solid #e2e8f0;
                     transition: all 0.3s ease;
                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
@@ -3209,8 +3214,9 @@ ${e.outerHTML}
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    overflow: hidden;
+                    overflow: visible;
                     width: 100%;
+                    margin-top: 12px;
                 }
 
                 .history-item-premium:hover {
@@ -3265,17 +3271,21 @@ ${e.outerHTML}
                 }
 
                 .h-action-pill {
-                    padding: 3px 10px;
+                    position: absolute;
+                    top: -11px;
+                    left: 12px;
+                    padding: 2px 10px;
                     border-radius: 10px;
                     font-size: 9px;
                     font-weight: 800;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    min-width: fit-content;
+                    white-space: nowrap;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
+                    z-index: 2;
                 }
 
                 /* Dynamic Status Colors for Action Pills */
@@ -6921,7 +6931,7 @@ Minimum version required to store current data is: `+c+`.
         .ls-perm-check input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
         .ls-perm-tick { font-size: 13px; font-weight: 800; color: #fff; line-height: 1; user-select: none; pointer-events: none; }
       `})]})},K7=(e,t)=>{let n=URL.createObjectURL(e),r=document.createElement(`a`);r.href=n,r.download=t,document.body.appendChild(r),r.click(),document.body.removeChild(r),URL.revokeObjectURL(n)},Jce=e=>{let t=e==null?``:String(e);return/[",\n]/.test(t)?`"${t.replace(/"/g,`""`)}"`:t},Yce=(e,t)=>{if(!t.length)return;let n=Object.keys(t[0]),r=[n.join(`,`),...t.map(e=>n.map(t=>Jce(e[t])).join(`,`))];K7(new Blob([r.join(`
-`)],{type:`text/csv;charset=utf-8;`}),`${e}.csv`)},Xce=async(e,t,n)=>{if(!n.length)return;let r=new(await(Nt(async()=>{let{default:e}=await import(`./exceljs.min-CnzBYOAl.js`).then(e=>u(e.default,1));return{default:e}},[]))).default.Workbook,i=r.addWorksheet(t.slice(0,31));i.columns=Object.keys(n[0]).map(e=>({header:e,key:e,width:Math.max(14,e.length+2)})),i.getRow(1).font={bold:!0},i.getRow(1).fill={type:`pattern`,pattern:`solid`,fgColor:{argb:`FF102A43`}},i.getRow(1).eachCell(e=>{e.font={bold:!0,color:{argb:`FFFFFFFF`}}}),n.forEach(e=>i.addRow(e));let a=await r.xlsx.writeBuffer();K7(new Blob([a],{type:`application/octet-stream`}),`${e}.xlsx`)},q7=({getRows:e,filename:t,sheetName:n,onPrint:r,disabled:i})=>{let[a,o]=(0,x.useState)(!1);return(0,Y.jsxs)(`div`,{className:`export-buttons`,children:[(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:()=>Yce(t,e()),children:[(0,Y.jsx)(Ec,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`CSV`})]}),(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i||a,onClick:async()=>{o(!0);try{await Xce(t,n||t,e())}finally{o(!1)}},children:[(0,Y.jsx)(Ac,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:a?`Exporting…`:`Excel`})]}),r&&(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:r,children:[(0,Y.jsx)(Yc,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`Print`})]}),(0,Y.jsx)(`style`,{children:`
+`)],{type:`text/csv;charset=utf-8;`}),`${e}.csv`)},Xce=async(e,t,n)=>{if(!n.length)return;let r=new(await(Nt(async()=>{let{default:e}=await import(`./exceljs.min-7E8zVY76.js`).then(e=>u(e.default,1));return{default:e}},[]))).default.Workbook,i=r.addWorksheet(t.slice(0,31));i.columns=Object.keys(n[0]).map(e=>({header:e,key:e,width:Math.max(14,e.length+2)})),i.getRow(1).font={bold:!0},i.getRow(1).fill={type:`pattern`,pattern:`solid`,fgColor:{argb:`FF102A43`}},i.getRow(1).eachCell(e=>{e.font={bold:!0,color:{argb:`FFFFFFFF`}}}),n.forEach(e=>i.addRow(e));let a=await r.xlsx.writeBuffer();K7(new Blob([a],{type:`application/octet-stream`}),`${e}.xlsx`)},q7=({getRows:e,filename:t,sheetName:n,onPrint:r,disabled:i})=>{let[a,o]=(0,x.useState)(!1);return(0,Y.jsxs)(`div`,{className:`export-buttons`,children:[(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:()=>Yce(t,e()),children:[(0,Y.jsx)(Ec,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`CSV`})]}),(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i||a,onClick:async()=>{o(!0);try{await Xce(t,n||t,e())}finally{o(!1)}},children:[(0,Y.jsx)(Ac,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:a?`Exporting…`:`Excel`})]}),r&&(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:r,children:[(0,Y.jsx)(Yc,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`Print`})]}),(0,Y.jsx)(`style`,{children:`
         .export-buttons { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; }
         .export-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
         .export-btn:hover:not(:disabled) { background: #102a43; color: #fff; border-color: #102a43; }
