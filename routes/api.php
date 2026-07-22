@@ -24,11 +24,14 @@ use App\Http\Controllers\Api\V1\BiometricController;
 use App\Http\Controllers\Api\V1\CustomerBiometricController;
 use App\Http\Controllers\Api\V1\BranchReportController;
 use App\Http\Controllers\Api\V1\SmsLogController;
+use App\Http\Controllers\Api\V1\ActivityLogController;
 
 Route::prefix('v1')->group(function () {
 
     // ========== TEST ROUTES ==========
     Route::get('/test', [TestController::class, 'index']);
+    Route::get('/test/sms-diag', [TestController::class, 'smsDiag']);
+    Route::get('/test/otp-diag', [TestController::class, 'otpDiag']);
 
 
 
@@ -36,6 +39,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/verify-forgot-password-otp', [AuthController::class, 'verifyForgotPasswordOtp']);
 
@@ -186,6 +190,7 @@ Route::prefix('v1')->group(function () {
         // CUSTOMER ROUTES
         Route::get('/customers', [CustomerController::class, 'index']);
         Route::get('/customers/{id}', [CustomerController::class, 'show']);
+        Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
 
         // User management
         Route::get('/users', [UserController::class, 'index']);
@@ -207,10 +212,18 @@ Route::prefix('v1')->group(function () {
         Route::get('/branch-reports/{id}',          [BranchReportController::class, 'show']);
         Route::post('/branch-reports',              [BranchReportController::class, 'store']);
         Route::post('/branch-reports/{id}/approve', [BranchReportController::class, 'approve']);
+        Route::post('/branch-reports/{id}/reject',  [BranchReportController::class, 'reject']);
+        Route::put('/branch-reports/{id}',          [BranchReportController::class, 'update']);
         Route::delete('/branch-reports/{id}',       [BranchReportController::class, 'destroy']);
 
         // SMS audit log — filter by loan_id / customer_id / type
         Route::get('/sms-logs', [SmsLogController::class, 'index']);
+
+        // Activity / Audit log — admin only
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/activity-logs/users', [ActivityLogController::class, 'users']);
+        Route::delete('/activity-logs/bulk', [ActivityLogController::class, 'bulkDestroy']);
+        Route::delete('/activity-logs/{id}', [ActivityLogController::class, 'destroy']);
 
         // Accounting â†’ Branch Report integration (all auth roles, incl. Loan Officers)
         Route::get('/accounting/branch-summary', [AccountingReportController::class, 'branchSummary']);

@@ -78,7 +78,11 @@
     "captured": "Imenaswa",
     "preview": "Onyesho",
     "previewAlt": "onyesho la sahihi",
-    "noSignatureYet": "Hakuna sahihi bado"
+    "noSignatureYet": "Hakuna sahihi bado",
+    "draw": "Chora",
+    "upload": "Pakia",
+    "clickToUpload": "Bonyeza kupakia",
+    "clickToReplace": "Bonyeza kubadilisha"
   },
   "signatureReuse": {
     "noSignatureYet": "Hakuna sahihi iliyohifadhiwa bado — haitaonekana kwenye hati iliyosainiwa.",

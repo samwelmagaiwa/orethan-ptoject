@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Models\AuditLog;
+use App\Models\SmsLog;
 use App\Services\Notifier;
+use App\Sms\SmsService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -89,6 +91,9 @@ class LeaveRequestController extends Controller
             if ($role = Notifier::roleForStatus($lr->status)) {
                 Notifier::toRoles($role, 'leave_request', 'New leave request',
                     $user->name . ' submitted a leave request for your approval.', '/leave-requests', ['id' => $lr->id]);
+                $sms = app(SmsService::class);
+                \App\Models\User::where('role', $role)->whereNotNull('phone')->get()
+                    ->each(fn($u) => $sms->sendLeaveRequestPending($u, $lr));
             }
 
             return $this->success($lr, 'Ombi la likizo limewasilishwa');
@@ -114,7 +119,23 @@ class LeaveRequestController extends Controller
             else $query->where('created_by', $user->id);
         }
 
-        return response()->json(['requests' => $query->get()]);
+        $requests = $query->get();
+
+        // Attach latest sms_status per leave request
+        $ids = $requests->pluck('id');
+        $latestSms = SmsLog::whereIn('leave_request_id', $ids)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('leave_request_id')
+            ->map(fn($logs) => $logs->first());
+
+        $requests->each(function ($r) use ($latestSms) {
+            $sms = $latestSms->get($r->id);
+            $r->sms_status = $sms?->status;
+            $r->sms_type   = $sms?->type;
+        });
+
+        return response()->json(['requests' => $requests]);
     }
 
     public function show($id)
@@ -232,12 +253,17 @@ class LeaveRequestController extends Controller
             AuditLog::record('leave_request.approved', $user, $lr,
                 'Ombi la likizo limeidhinishwa (' . $stage . ')', ['stage' => $stage]);
 
+            $sms = app(SmsService::class);
             if ($lr->status === 'authorized') {
                 Notifier::toUsers([$lr->created_by], 'leave_request', 'Leave approved',
                     'Your leave request has been approved.', '/leave-requests', ['id' => $lr->id]);
+                $applicant = \App\Models\User::find($lr->created_by);
+                if ($applicant) $sms->sendLeaveRequestAuthorized($applicant, $lr);
             } elseif ($nextRole = Notifier::roleForStatus($lr->status)) {
                 Notifier::toRoles($nextRole, 'leave_request', 'Leave request awaiting your approval',
                     $lr->employee_name . ' has a leave request needing your approval.', '/leave-requests', ['id' => $lr->id]);
+                \App\Models\User::where('role', $nextRole)->whereNotNull('phone')->get()
+                    ->each(fn($u) => $sms->sendLeaveRequestPending($u, $lr));
             }
 
             return $this->success($lr, $lr->status === 'authorized' ? 'Likizo imeidhinishwa kikamilifu' : 'Imeidhinishwa, imepelekwa hatua inayofuata');
@@ -279,6 +305,8 @@ class LeaveRequestController extends Controller
 
             Notifier::toUsers([$lr->created_by], 'leave_request', 'Leave request rejected',
                 'Your leave request was not approved. You can edit and resubmit it.', '/leave-requests', ['id' => $lr->id]);
+            $applicant = \App\Models\User::find($lr->created_by);
+            if ($applicant) app(SmsService::class)->sendLeaveRequestRejected($applicant, $lr, $data['reason']);
 
             return $this->success($lr, 'Ombi limekataliwa');
         } catch (\Exception $e) {

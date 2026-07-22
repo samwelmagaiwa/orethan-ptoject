@@ -10,6 +10,9 @@ class SmsLog extends Model
     protected $fillable = [
         'customer_id',
         'loan_id',
+        'payment_request_id',
+        'leave_request_id',
+        'branch_report_id',
         'phone',
         'type',
         'message',

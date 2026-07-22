@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\AuditLog;
+use App\Services\ActivityLogger;
+use App\Sms\SmsService;
+use App\Sms\SmsTemplates;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -30,7 +32,6 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
-            'password' => 'required|string|min:6',
             'role' => 'required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
             'sidebar_permissions' => 'nullable|array',
@@ -41,19 +42,33 @@ class UserController extends Controller
         $fullAccess = (bool) $request->input('full_sidebar_access', false);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'phone' => $request->phone,
-            // Full access and per-item overrides are mutually exclusive — see update().
-            'sidebar_permissions' => $fullAccess ? [] : array_intersect_key(
+            'name'                => $request->name,
+            'email'               => $request->email,
+            'password'            => Hash::make('ORETHAN'),
+            'role'                => $request->role,
+            'phone'               => $request->phone,
+            'must_change_password' => true,
+            'password_expires_at'  => now()->addHours(12),
+            'sidebar_permissions'  => $fullAccess ? [] : array_intersect_key(
                 $request->input('sidebar_permissions', []),
                 array_flip(User::SIDEBAR_KEYS)
             ),
-            'full_sidebar_access' => $fullAccess,
+            'full_sidebar_access'  => $fullAccess,
         ]);
 
+        // Send welcome SMS with default password if user has a phone number
+        if ($user->phone) {
+            try {
+                app(SmsService::class)->send(
+                    $user->phone,
+                    SmsTemplates::welcomeNewUser($user->name)
+                );
+            } catch (\Throwable) {
+                // SMS failure must never block user creation
+            }
+        }
+
+        ActivityLogger::log($request->user(), 'create', 'User', "Created user {$user->name} ({$user->role})", $user->id, $user->name);
         return response()->json($this->shape($user), 201);
     }
 
@@ -69,6 +84,8 @@ class UserController extends Controller
             'role' => 'sometimes|required|in:admin,loan_officer,loan_manager,general_manager,managing_director,finance_officer',
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
+            'must_change_password' => 'nullable|boolean',
+            'password_expires_at' => 'nullable|date',
             'sidebar_permissions' => 'nullable|array',
             'sidebar_permissions.*' => 'boolean',
             'full_sidebar_access' => 'nullable|boolean',
@@ -81,6 +98,8 @@ class UserController extends Controller
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
+        if ($request->has('must_change_password')) $user->must_change_password = (bool) $request->must_change_password;
+        if ($request->has('password_expires_at')) $user->password_expires_at = $request->password_expires_at;
         $fullAccess = $request->has('full_sidebar_access')
             ? (bool) $request->input('full_sidebar_access')
             : (bool) $user->full_sidebar_access;
@@ -102,6 +121,16 @@ class UserController extends Controller
         }
         $user->save();
 
+        // Send SMS when admin resets a user's password back to ORETHAN
+        if ($request->filled('password') && $request->has('must_change_password') && $request->must_change_password && $user->phone) {
+            try {
+                app(SmsService::class)->send($user->phone, SmsTemplates::passwordReset($user->name));
+            } catch (\Throwable) {}
+            ActivityLogger::log($request->user(), 'reset_password', 'User', "Reset password for {$user->name}", $user->id, $user->name);
+        } else {
+            ActivityLogger::log($request->user(), 'update', 'User', "Updated user {$user->name}", $user->id, $user->name);
+        }
+
         return response()->json($this->shape($user));
     }
 
@@ -113,7 +142,7 @@ class UserController extends Controller
         if ($user->id === $request->user()->id) {
             return response()->json(['message' => 'Huwezi kujifuta mwenyewe'], 422);
         }
-        AuditLog::record('user.deleted', $request->user(), $user, 'Mtumiaji amefutwa: ' . $user->name);
+        ActivityLogger::log($request->user(), 'delete', 'User', "Deleted user {$user->name} ({$user->role})", $user->id, $user->name);
         $user->tokens()->delete();
         $user->delete();
         return response()->json(['message' => 'User deleted']);
@@ -136,7 +165,7 @@ class UserController extends Controller
         $user->save();
         $user->tokens()->delete(); // force logout everywhere
 
-        AuditLog::record('user.locked', $request->user(), $user, 'Mtumiaji amefungwa: ' . $user->name, ['reason' => $data['reason'] ?? null]);
+        ActivityLogger::log($request->user(), 'lock', 'User', "Locked user {$user->name}" . ($data['reason'] ? ": {$data['reason']}" : ""), $user->id, $user->name);
         return response()->json(['message' => 'User locked', 'user' => $this->shape($user)]);
     }
 
@@ -150,7 +179,7 @@ class UserController extends Controller
         $user->locked_reason = null;
         $user->save();
 
-        AuditLog::record('user.unlocked', $request->user(), $user, 'Mtumiaji amefunguliwa: ' . $user->name);
+        ActivityLogger::log($request->user(), 'unlock', 'User', "Unlocked user {$user->name}", $user->id, $user->name);
         return response()->json(['message' => 'User unlocked', 'user' => $this->shape($user)]);
     }
 

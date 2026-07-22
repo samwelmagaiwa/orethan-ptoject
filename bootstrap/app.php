@@ -10,11 +10,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__ . '/../routes/api.php',   // 👈 muhimu
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
-        apiPrefix: 'api',
+        apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(append: [
             \App\Http\Middleware\EnforceSessionTimeout::class,
+            \App\Http\Middleware\UpdateLastSeen::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

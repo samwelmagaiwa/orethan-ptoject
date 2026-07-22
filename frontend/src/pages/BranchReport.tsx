@@ -12,6 +12,7 @@ import {
   ClipboardList, DollarSign, Building2, X, SlidersHorizontal,
 } from "lucide-react";
 import { letterheadBlock, watermarkBlock, triggerPrint } from "../utils/printDoc";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { API_BASE as API } from "../lib/api";
 
 const fmtTZS = (n: any) => Number(n || 0).toLocaleString();
@@ -194,7 +195,8 @@ export default function BranchReport() {
   // validation errors
   const [errors, setErrors] = useState<Record<string,string>>({});
   // signature modals
-  const [sigModal, setSigModal]     = useState<"submit"|"approve"|null>(null);
+  const [sigModal, setSigModal]     = useState<"submit"|"approve"|"reject"|null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [sigPassword, setSigPassword] = useState("");
   const [sigLoading, setSigLoading]   = useState(false);
   const [sigError, setSigError]       = useState("");
@@ -505,6 +507,11 @@ export default function BranchReport() {
     setSigModal("approve");
   };
 
+  const openReject = (r: any) => {
+    setApproveTarget(r); setSigPassword(""); setSigError(""); setRejectReason("");
+    setSigModal("reject");
+  };
+
   const doApprove = async () => {
     if (!approveTarget) return;
     setSigLoading(true); setSigError("");
@@ -512,7 +519,22 @@ export default function BranchReport() {
       const res = await axios.post(`${API}/branch-reports/${approveTarget.id}/approve`, { signature_password: sigPassword });
       showToast("✓ Ripoti imeidhinishwa na imewekwa kwa GM/MD/Admin");
       setSigModal(null);
-      // update local list
+      setReports(rs => rs.map(r => r.id === approveTarget.id ? res.data.data : r));
+      if (detail?.id === approveTarget.id) setDetail(res.data.data);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Hitilafu -- jaribu tena";
+      setSigError(msg);
+    } finally { setSigLoading(false); }
+  };
+
+  const doReject = async () => {
+    if (!approveTarget) return;
+    if (!rejectReason.trim()) { setSigError("Tafadhali ingiza sababu ya kukataa"); return; }
+    setSigLoading(true); setSigError("");
+    try {
+      const res = await axios.post(`${API}/branch-reports/${approveTarget.id}/reject`, { reason: rejectReason, signature_password: sigPassword });
+      showToast("❌ Ripoti imekataliwa — mwasilishaji amearifiwa", false);
+      setSigModal(null);
       setReports(rs => rs.map(r => r.id === approveTarget.id ? res.data.data : r));
       if (detail?.id === approveTarget.id) setDetail(res.data.data);
     } catch (err: any) {
@@ -1324,8 +1346,11 @@ export default function BranchReport() {
                     {/* Approval status badge */}
                     {r.approval_status === "approved"
                       ? <span style={{ background:"#dcfce7", color:"#15803d", fontSize:"10px", fontWeight:800, padding:"3px 9px", borderRadius:"20px", display:"flex", alignItems:"center", gap:"4px" }}>✅ Imeidhinishwa</span>
+                      : r.approval_status === "rejected"
+                      ? <span style={{ background:"#fee2e2", color:"#b91c1c", fontSize:"10px", fontWeight:800, padding:"3px 9px", borderRadius:"20px", display:"flex", alignItems:"center", gap:"4px" }}>❌ Imekataliwa</span>
                       : <span style={{ background:"#fef9c3", color:"#854d0e", fontSize:"10px", fontWeight:800, padding:"3px 9px", borderRadius:"20px", display:"flex", alignItems:"center", gap:"4px" }}>⏳ Inasubiri LM</span>
                     }
+                    <SmsStatusBadge status={r.sms_status} type={r.sms_type} />
                     <span style={{ fontWeight:800, color:"#0f172a", fontSize:"13px" }}>{fmtDate(r.period_start)} -- {fmtDate(r.period_end)}</span>
                     <span style={{ fontSize:"12px", color:"#64748b", fontWeight:600 }}>{r.branch || t("view.branchMissing")}</span>
                     <span style={{ marginLeft:"auto", fontSize:"11px", color:"#94a3b8" }}>{t("view.submittedBy")} {r.submitted_by_name}</span>
@@ -1565,7 +1590,10 @@ export default function BranchReport() {
 
           {/* SIGNATURE SECTION -- all in one row */}
           <div style={{ padding:"18px 28px", borderTop:"2px solid #f1f5f9", background:"#fafbfc" }}>
-            <div style={{ display:"grid", gridTemplateColumns: canApprove && isLoanManager && r.approval_status === "pending" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap:"14px", alignItems:"stretch" }}>
+            {(() => {
+              const show4th = (canApprove && isLoanManager && r.approval_status === "pending") || (r.approval_status === "rejected" && r.submitted_by === JSON.parse(localStorage.getItem("user")||"{}").id);
+              return (
+            <div style={{ display:"grid", gridTemplateColumns: show4th ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap:"14px", alignItems:"stretch" }}>
 
               {/* LO Signature card -- always shows submitter; indicates if digitally signed */}
               <div style={{ border:`2px solid ${r.lo_signed ? "#86efac" : r.submitted_by_name ? "#bfdbfe" : "#e2e8f0"}`, borderRadius:"12px", padding:"14px 18px", background: r.lo_signed ? "#f0fdf4" : r.submitted_by_name ? "#eff6ff" : "#fff" }}>
@@ -1630,12 +1658,32 @@ export default function BranchReport() {
                     <div style={{ fontSize:"12px", fontWeight:700, color:"#854d0e" }}>Ripoti hii inasubiri idhini yako</div>
                     <div style={{ fontSize:"10px", color:"#92400e", marginTop:"3px" }}>na {r.submitted_by_name} · {fmtDate(r.period_start)}</div>
                   </div>
-                  <button onClick={() => openApprove(r)} style={{ background:"#059669", border:"none", borderRadius:"8px", padding:"9px 14px", color:"#fff", fontSize:"12px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", width:"100%" }}>
-                    ✅ Saini & Idhinisha
+                  <div style={{ display:"flex", gap:"8px" }}>
+                    <button onClick={() => openApprove(r)} style={{ background:"#059669", border:"none", borderRadius:"8px", padding:"9px 14px", color:"#fff", fontSize:"12px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", flex:1 }}>
+                      ✅ Saini & Idhinisha
+                    </button>
+                    <button onClick={() => openReject(r)} style={{ background:"#dc2626", border:"none", borderRadius:"8px", padding:"9px 14px", color:"#fff", fontSize:"12px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", flex:1 }}>
+                      ❌ Kataa
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* LO resubmit card — shown when report is rejected and viewer is the submitter */}
+              {r.approval_status === "rejected" && r.submitted_by === JSON.parse(localStorage.getItem("user")||"{}").id && (
+                <div style={{ border:"2px solid #fecaca", borderRadius:"12px", padding:"14px 18px", background:"#fff1f2", display:"flex", flexDirection:"column", justifyContent:"space-between", gap:"10px" }}>
+                  <div>
+                    <div style={{ fontSize:"9px", fontWeight:800, color:"#b91c1c", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>❌ Imekataliwa</div>
+                    <div style={{ fontSize:"12px", fontWeight:700, color:"#991b1b" }}>Ripoti yako imekataliwa na Meneja</div>
+                    <div style={{ fontSize:"10px", color:"#b91c1c", marginTop:"3px" }}>Hariri na uiwasilishe tena</div>
+                  </div>
+                  <button onClick={() => { setDetail(null); setTab("submit"); setForm({ ...blankReport(), branch: r.branch || "", department: r.department || "", section: r.section || "", report_type: r.report_type || "daily", period_start: r.period_start ? r.period_start.toString().slice(0,10) : "", period_end: r.period_end ? r.period_end.toString().slice(0,10) : "", operations: r.operations || blankOps(), financials: r.financials || [], balances: r.balances || { cash:"", mobile:"", safe:"" }, loan_officers: r.loan_officers || [], expected_loans: r.expected_loans || [] }); }} style={{ background:"#dc2626", border:"none", borderRadius:"8px", padding:"9px 14px", color:"#fff", fontSize:"12px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", width:"100%" }}>
+                    ✏️ Hariri & Wasilisha Tena
                   </button>
                 </div>
               )}
             </div>
+            ); })()}
           </div>
         </div>
         <div style={{ height:40 }}/>
@@ -1752,6 +1800,7 @@ export default function BranchReport() {
 
       {/* CSS for the tab bar */}
       <style>{`
+        ${smsStatusBadgeStyles}
         .br-tab-bar {
           display: flex;
           align-items: stretch;
@@ -2052,16 +2101,26 @@ export default function BranchReport() {
             {sigModal === "submit" ? (
               <>
                 <div className="br-sig-title">✍️ Thibitisha Saini Yako</div>
-                <div className="br-sig-sub">
-                  Ingiza nywila yako ili kuthibitisha ripoti hii kabla ya kuwasilisha kwa Meneja wa Mikopo.
-                </div>
+                <div className="br-sig-sub">Ingiza nywila yako ili kuthibitisha ripoti hii kabla ya kuwasilisha kwa Meneja wa Mikopo.</div>
+              </>
+            ) : sigModal === "reject" ? (
+              <>
+                <div className="br-sig-title" style={{ color:"#dc2626" }}>❌ Kataa Ripoti</div>
+                <div className="br-sig-sub">Toa sababu ya kukataa ripoti hii. Mwasilishaji ataarifiwa na ataweza kuihariri na kuiwasilisha tena.</div>
+                <label className="br-sig-label">Sababu ya kukataa</label>
+                <textarea
+                  className="br-sig-input"
+                  placeholder="Eleza makosa au sababu ya kukataa..."
+                  value={rejectReason}
+                  onChange={e => { setRejectReason(e.target.value); setSigError(""); }}
+                  rows={3}
+                  style={{ resize:"vertical", minHeight:72 }}
+                />
               </>
             ) : (
               <>
                 <div className="br-sig-title">✅ Idhinisha Ripoti</div>
-                <div className="br-sig-sub">
-                  Ingiza nywila yako ili kuthibitisha idhini -- ripoti itaonekana kwa GM, MD, na Admin.
-                </div>
+                <div className="br-sig-sub">Ingiza nywila yako ili kuthibitisha idhini -- ripoti itaonekana kwa GM, MD, na Admin.</div>
               </>
             )}
             <label className="br-sig-label">Nywila yako</label>
@@ -2071,18 +2130,19 @@ export default function BranchReport() {
               placeholder="••••••••"
               value={sigPassword}
               onChange={e => { setSigPassword(e.target.value); setSigError(""); }}
-              onKeyDown={e => e.key === "Enter" && (sigModal === "submit" ? doSubmit() : doApprove())}
-              autoFocus
+              onKeyDown={e => e.key === "Enter" && (sigModal === "submit" ? doSubmit() : sigModal === "reject" ? doReject() : doApprove())}
+              autoFocus={sigModal !== "reject"}
             />
             {sigError && <div className="br-sig-err">⚠ {sigError}</div>}
             <div className="br-sig-row">
               <button className="br-sig-cancel" onClick={() => setSigModal(null)}>Ghairi</button>
               <button
                 className={`br-sig-ok ${sigModal === "approve" ? "br-approve-ok" : ""}`}
-                disabled={sigLoading || !sigPassword.trim()}
-                onClick={sigModal === "submit" ? doSubmit : doApprove}
+                style={sigModal === "reject" ? { background:"linear-gradient(135deg,#dc2626,#b91c1c)", boxShadow:"0 4px 12px rgba(220,38,38,0.3)" } : undefined}
+                disabled={sigLoading || !sigPassword.trim() || (sigModal === "reject" && !rejectReason.trim())}
+                onClick={sigModal === "submit" ? doSubmit : sigModal === "reject" ? doReject : doApprove}
               >
-                {sigLoading ? "Inatuma..." : sigModal === "submit" ? "✓ Saini & Wasilisha" : "✅ Saini & Idhinisha"}
+                {sigLoading ? "Inatuma..." : sigModal === "submit" ? "✓ Saini & Wasilisha" : sigModal === "reject" ? "❌ Kataa Ripoti" : "✅ Saini & Idhinisha"}
               </button>
             </div>
           </div>

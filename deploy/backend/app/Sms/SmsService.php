@@ -191,6 +191,88 @@ class SmsService
         return $results;
     }
 
+    /** SMS to the next approver when a payment request is submitted or advanced. */
+    public function sendPaymentRequestPending(\App\Models\User $approver, \App\Models\PaymentRequest $pr): SmsResult
+    {
+        return $this->dispatch(
+            type: 'payment_request_pending',
+            phone: $approver->phone ?? null,
+            message: SmsTemplates::paymentRequestPending($approver->name, $pr->applicant_name, (float) $pr->final_amount, $pr->payable_to),
+            customerId: null,
+            loanId: null,
+            paymentRequestId: $pr->id,
+        );
+    }
+
+    /** SMS to the applicant when their payment request is fully disbursed. */
+    public function sendPaymentRequestDisbursed(\App\Models\User $applicant, \App\Models\PaymentRequest $pr): SmsResult
+    {
+        return $this->dispatch(
+            type: 'payment_request_disbursed',
+            phone: $applicant->phone ?? null,
+            message: SmsTemplates::paymentRequestDisbursed($applicant->name, (float) $pr->final_amount, $pr->payable_to),
+            customerId: null,
+            loanId: null,
+            paymentRequestId: $pr->id,
+        );
+    }
+
+    /** SMS to the applicant when their payment request is rejected. */
+    public function sendPaymentRequestRejected(\App\Models\User $applicant, \App\Models\PaymentRequest $pr, string $reason): SmsResult
+    {
+        return $this->dispatch(
+            type: 'payment_request_rejected',
+            phone: $applicant->phone ?? null,
+            message: SmsTemplates::paymentRequestRejected($applicant->name, (float) $pr->amount, $reason),
+            customerId: null,
+            loanId: null,
+            paymentRequestId: $pr->id,
+        );
+    }
+
+    /** SMS to the next approver when a leave request is submitted or advanced. */
+    public function sendLeaveRequestPending(\App\Models\User $approver, \App\Models\LeaveRequest $lr): SmsResult
+    {
+        $from = $lr->from_date instanceof \Carbon\Carbon ? $lr->from_date->format('d/m/Y') : (string) $lr->from_date;
+        $to   = $lr->to_date instanceof \Carbon\Carbon   ? $lr->to_date->format('d/m/Y')   : (string) $lr->to_date;
+        return $this->dispatch(
+            type: 'leave_request_pending',
+            phone: $approver->phone ?? null,
+            message: SmsTemplates::leaveRequestPending($approver->name, $lr->employee_name, $lr->absence_type, $from, $to),
+            customerId: null,
+            loanId: null,
+            leaveRequestId: $lr->id,
+        );
+    }
+
+    /** SMS to the applicant when their leave is fully authorized. */
+    public function sendLeaveRequestAuthorized(\App\Models\User $applicant, \App\Models\LeaveRequest $lr): SmsResult
+    {
+        $from = $lr->from_date instanceof \Carbon\Carbon ? $lr->from_date->format('d/m/Y') : (string) $lr->from_date;
+        $to   = $lr->to_date instanceof \Carbon\Carbon   ? $lr->to_date->format('d/m/Y')   : (string) $lr->to_date;
+        return $this->dispatch(
+            type: 'leave_request_authorized',
+            phone: $applicant->phone ?? null,
+            message: SmsTemplates::leaveRequestAuthorized($applicant->name, $from, $to),
+            customerId: null,
+            loanId: null,
+            leaveRequestId: $lr->id,
+        );
+    }
+
+    /** SMS to the applicant when their leave request is rejected. */
+    public function sendLeaveRequestRejected(\App\Models\User $applicant, \App\Models\LeaveRequest $lr, string $reason): SmsResult
+    {
+        return $this->dispatch(
+            type: 'leave_request_rejected',
+            phone: $applicant->phone ?? null,
+            message: SmsTemplates::leaveRequestRejected($applicant->name, $reason),
+            customerId: null,
+            loanId: null,
+            leaveRequestId: $lr->id,
+        );
+    }
+
     /** SMS to Loan Manager(s) when a Branch Report is submitted for approval. */
     public function sendBranchReportPending(\App\Models\User $lm, \App\Models\BranchReport $report, \App\Models\User $submitter): SmsResult
     {
@@ -207,6 +289,28 @@ class SmsService
             ),
             customerId: null,
             loanId: null,
+            branchReportId: $report->id,
+        );
+    }
+
+    /** SMS to the original submitter when their Branch Report is rejected. */
+    public function sendBranchReportRejected(\App\Models\User $submitter, \App\Models\BranchReport $report, string $rejectorName, string $reason): SmsResult
+    {
+        $period = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
+        return $this->dispatch(
+            type: 'branch_report_rejected',
+            phone: $submitter->phone ?? null,
+            message: SmsTemplates::branchReportRejected(
+                $submitter->name,
+                $report->branch ?? '--',
+                $report->report_type,
+                $period,
+                $rejectorName,
+                $reason,
+            ),
+            customerId: null,
+            loanId: null,
+            branchReportId: $report->id,
         );
     }
 
@@ -224,6 +328,22 @@ class SmsService
                 $period,
                 $approverName,
             ),
+            customerId: null,
+            loanId: null,
+            branchReportId: $report->id,
+        );
+    }
+
+    /**
+     * Generic send for ad-hoc messages (user management, system notifications).
+     * Uses type 'system' for logging.
+     */
+    public function send(string $phone, string $message): SmsResult
+    {
+        return $this->dispatch(
+            type: 'system',
+            phone: $phone,
+            message: $message,
             customerId: null,
             loanId: null,
         );
@@ -260,6 +380,33 @@ class SmsService
             customerId: $loan->customer_id,
             loanId: $loan->id,
         );
+    }
+
+    /**
+     * Notify all users of a given role that a loan needs their review.
+     * Sends one SMS per matching user who has a phone number.
+     *
+     * @return SmsResult[]
+     */
+    public function notifyRoleAboutLoan(string $role, Loan $loan, string $templateMethod): array
+    {
+        $loanNo = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $amount = (float) $loan->amount;
+        $applicant = $loan->name;
+
+        $results = [];
+        $users = \App\Models\User::where('role', $role)->whereNotNull('phone')->get();
+        foreach ($users as $user) {
+            $message = SmsTemplates::$templateMethod($user->name, $applicant, $amount, $loanNo);
+            $results[] = $this->dispatch(
+                type: "loan_pending_{$role}",
+                phone: $user->phone,
+                message: $message,
+                customerId: $loan->customer_id,
+                loanId: $loan->id,
+            );
+        }
+        return $results;
     }
 
     /** SMS to the borrower when their loan application is rejected at any stage. */
@@ -310,19 +457,27 @@ class SmsService
         return $loan->customer?->phone_number ?: $loan->phone;
     }
 
-    protected function dispatch(string $type, ?string $phone, string $message, ?int $customerId, ?int $loanId): SmsResult
-    {
+    protected function dispatch(
+        string $type,
+        ?string $phone,
+        string $message,
+        ?int $customerId,
+        ?int $loanId,
+        ?int $paymentRequestId = null,
+        ?int $leaveRequestId = null,
+        ?int $branchReportId = null,
+    ): SmsResult {
         $normalized = PhoneNumber::normalize($phone, config('sms.country_code', '255'));
 
         if (!PhoneNumber::isValid($normalized)) {
             $result = SmsResult::failed('Invalid or missing phone number');
-            $this->log($type, $phone ?? 'unknown', $message, $result, $customerId, $loanId);
+            $this->log($type, $phone ?? 'unknown', $message, $result, $customerId, $loanId, $paymentRequestId, $leaveRequestId, $branchReportId);
             return $result;
         }
 
         if (!config('sms.enabled', true)) {
             $result = SmsResult::disabled();
-            $this->log($type, $normalized, $message, $result, $customerId, $loanId);
+            $this->log($type, $normalized, $message, $result, $customerId, $loanId, $paymentRequestId, $leaveRequestId, $branchReportId);
             return $result;
         }
 
@@ -333,12 +488,21 @@ class SmsService
             $result = SmsResult::failed($e->getMessage());
         }
 
-        $this->log($type, $normalized, $message, $result, $customerId, $loanId);
+        $this->log($type, $normalized, $message, $result, $customerId, $loanId, $paymentRequestId, $leaveRequestId, $branchReportId);
         return $result;
     }
 
-    protected function log(string $type, string $phone, string $message, SmsResult $result, ?int $customerId, ?int $loanId): void
-    {
+    protected function log(
+        string $type,
+        string $phone,
+        string $message,
+        SmsResult $result,
+        ?int $customerId,
+        ?int $loanId,
+        ?int $paymentRequestId = null,
+        ?int $leaveRequestId = null,
+        ?int $branchReportId = null,
+    ): void {
         try {
             $status = match(true) {
                 $result->success   => 'sent',
@@ -347,15 +511,18 @@ class SmsService
             };
 
             SmsLog::create([
-                'customer_id' => $customerId,
-                'loan_id' => $loanId,
-                'phone' => $phone,
-                'type' => $type,
-                'message' => $message,
-                'status' => $status,
+                'customer_id'         => $customerId,
+                'loan_id'             => $loanId,
+                'payment_request_id'  => $paymentRequestId,
+                'leave_request_id'    => $leaveRequestId,
+                'branch_report_id'    => $branchReportId,
+                'phone'               => $phone,
+                'type'                => $type,
+                'message'             => $message,
+                'status'              => $status,
                 'provider_message_id' => $result->providerMessageId,
-                'provider_response' => $result->rawResponse,
-                'error' => $result->error,
+                'provider_response'   => $result->rawResponse,
+                'error'               => $result->error,
             ]);
         } catch (\Throwable $e) {
             // Logging the SMS attempt must never itself break the caller.

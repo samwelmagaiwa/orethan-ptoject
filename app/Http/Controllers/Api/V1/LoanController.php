@@ -13,6 +13,7 @@ use App\Models\Customer;
 use App\Models\LoanApproval;
 use App\Http\Requests\StoreLoanRequest;
 use App\Services\LoanService;
+use App\Services\ActivityLogger;
 use App\Traits\ApiResponse;
 
 class LoanController extends Controller
@@ -44,6 +45,7 @@ class LoanController extends Controller
                 ['id' => $loan->id]
             );
 
+            ActivityLogger::log($request->user(), 'create', 'Loan', "Submitted loan application for {$loan->name} — TZS " . number_format($loan->amount), $loan->id, $loan->loan_account_number ?? "LN-{$loan->id}");
             return $this->success($loan, 'Loan created successfully', 201);
         } catch (\Exception $e) {
             Log::error('Loan submission error: ' . $e->getMessage());
@@ -271,6 +273,8 @@ class LoanController extends Controller
                 );
             }
 
+            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            ActivityLogger::log($user, 'approve', 'Loan', "Approved loan {$loanNo} for {$updatedLoan->name} → status: {$updatedLoan->status}", $updatedLoan->id, $loanNo);
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan approved successfully');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
@@ -300,6 +304,8 @@ class LoanController extends Controller
             }
 
             $updatedLoan = $this->loanService->rejectLoan($loan, $request->all(), $user);
+            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            ActivityLogger::log($user, 'reject', 'Loan', "Rejected loan {$loanNo} for {$updatedLoan->name}. Reason: {$request->reason}", $updatedLoan->id, $loanNo);
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan rejected successfully');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
@@ -372,6 +378,8 @@ class LoanController extends Controller
         try {
             $loan = Loan::findOrFail($id);
             $updatedLoan = $this->loanService->disburseLoan($loan, $data, $user);
+            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            ActivityLogger::log($user, 'disburse', 'Loan', "Disbursed loan {$loanNo} for {$updatedLoan->name} — TZS " . number_format($data['amount']), $updatedLoan->id, $loanNo);
             return $this->success(
                 $updatedLoan->fresh(['disbursement', 'customer']),
                 'Loan disbursed and activated successfully'
@@ -547,6 +555,8 @@ class LoanController extends Controller
             unset($loan->nextInstallment);
         }
 
+        $this->appendBorrowerMetrics($loans);
+
         return response()->json($loans);
     }
 
@@ -558,6 +568,8 @@ class LoanController extends Controller
             ->orWhere('remaining_balance', '<=', 0)
             ->orderBy('updated_at', 'desc')
             ->get();
+
+        $this->appendBorrowerMetrics($loans);
 
         // Round numbers to remove decimals
         foreach ($loans as $loan) {

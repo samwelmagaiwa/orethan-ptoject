@@ -49,6 +49,7 @@ import CashTill from "./pages/CashTill";
 import Payroll from "./pages/Payroll";
 import BranchReport from "./pages/BranchReport";
 import Configurations from "./pages/Configurations";
+import AuditLog from "./pages/AuditLog";
 import Biometric from "./pages/Biometric";
 import EmployeeLoan from "./pages/EmployeeLoan";
 import { API_BASE } from "./lib/api";
@@ -87,7 +88,7 @@ axios.interceptors.response.use(
       }
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
@@ -211,7 +212,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
     setTotalFee(fee);
 
     // Sustainability Calculation
-    if (fromLoan && income && expenses) {
+    if (income && expenses) {
       const netIncome = Number(income) - Number(expenses);
       const monthlyPaymentEquivalent = installmentAmount * installmentsPerMonth;
       const dti = netIncome > 0 ? (monthlyPaymentEquivalent / netIncome) * 100 : 1000;
@@ -438,47 +439,41 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
             />
           </div>
 
-          {fromLoan && (
-            <>
-              <div className="field-group">
-                <label>Kipato kwa Mwezi (TZS)</label>
-                <input
-                  type="text"
-                  value={income ? formatMoney(Number(income)) : ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    setIncome(val);
-                  }}
-                  placeholder="mf. 1,500,000"
-                />
-              </div>
-              <div className="field-group">
-                <label>Matumizi kwa Mwezi (TZS)</label>
-                <input
-                  type="text"
-                  value={expenses ? formatMoney(Number(expenses)) : ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    setExpenses(val);
-                  }}
-                  placeholder="mf. 600,000"
-                />
-              </div>
-            </>
-          )}
+          <div className="field-group">
+            <label>Kipato kwa Mwezi (TZS)</label>
+            <input
+              type="text"
+              value={income ? formatMoney(Number(income)) : ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setIncome(val);
+              }}
+              placeholder="mf. 1,500,000"
+            />
+          </div>
+          <div className="field-group">
+            <label>Matumizi kwa Mwezi (TZS)</label>
+            <input
+              type="text"
+              value={expenses ? formatMoney(Number(expenses)) : ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setExpenses(val);
+              }}
+              placeholder="mf. 600,000"
+            />
+          </div>
 
-          {!fromLoan && (
-            <div className="field-group">
-              <label>Tarehe ya Kuanza</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-          )}
+          <div className="field-group">
+            <label>Tarehe ya Kuanza</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
 
-          <div className="field-group buttons" style={{ gridColumn: fromLoan ? 'span 2' : 'auto' }}>
+          <div className="field-group buttons">
             <button className="btn-calculate" onClick={calculateLoan}>KOKOTOA</button>
             {fromLoan ? (
               <button
@@ -769,7 +764,7 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
         .form-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
+          gap: 16px 20px;
           margin-bottom: 32px;
         }
 
@@ -897,8 +892,23 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
           color: #64748b;
         }
 
-        /* Responsive */
-        @media (max-width: 1000px) {
+        /* ── Responsive ── */
+
+        /* Large tablet / small desktop (≤1200px): 3 columns */
+        @media (max-width: 1200px) {
+          .main-calculator {
+            padding: 28px 28px;
+          }
+          .form-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        /* Tablet landscape (≤1024px) */
+        @media (max-width: 1024px) {
+          .top-nav {
+            padding: 0 30px;
+          }
           .form-grid {
             grid-template-columns: repeat(3, 1fr);
           }
@@ -907,34 +917,94 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
           }
         }
 
-        @media (max-width: 800px) {
+        /* Tablet portrait (≤768px): 2 columns */
+        @media (max-width: 768px) {
           .top-nav {
-            padding: 15px 30px;
-            flex-direction: column;
-            gap: 15px;
+            padding: 0 20px;
+            height: 56px;
           }
           .calculator-section {
-            padding: 30px;
+            padding: 14px;
           }
           .main-calculator {
-            padding: 24px;
+            padding: 20px 16px;
+            border-radius: 16px;
           }
-          .form-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .calc-header {
+            margin-bottom: 20px;
           }
           .title-circle {
-            min-width: 250px;
-            padding: 15px 25px;
+            min-width: 0;
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 40px;
           }
           .title-circle h1 {
             font-size: 16px;
+            letter-spacing: 0.5px;
+          }
+          .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px 14px;
+          }
+          .calc-results {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
           }
           .custom-logo-image {
-            height: 35px;
+            height: 100px;
           }
         }
 
+        /* Large phone (≤600px): 2 columns still but tighter */
         @media (max-width: 600px) {
+          .top-nav {
+            padding: 0 14px;
+            height: 52px;
+          }
+          .login-btn {
+            padding: 7px 18px;
+            font-size: 13px;
+          }
+          .calculator-section {
+            padding: 10px;
+          }
+          .main-calculator {
+            padding: 16px 12px;
+            border-radius: 14px;
+          }
+          .title-circle {
+            padding: 12px 16px;
+          }
+          .title-circle h1 {
+            font-size: 14px;
+          }
+          .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px 12px;
+          }
+          .field-group label {
+            font-size: 11px;
+          }
+          .field-group input,
+          .field-group select {
+            padding: 10px 10px;
+            font-size: 13px;
+          }
+          .calc-results {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+          }
+          .result-value {
+            font-size: 15px;
+          }
+          .custom-logo-image {
+            height: 80px;
+          }
+        }
+
+        /* Small phone (≤400px): single column */
+        @media (max-width: 400px) {
           .form-grid {
             grid-template-columns: 1fr;
           }
@@ -944,15 +1014,11 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
           .field-group.buttons {
             flex-direction: column;
           }
-          .title-circle {
-            min-width: 200px;
-            padding: 12px 20px;
-          }
           .title-circle h1 {
-            font-size: 14px;
+            font-size: 13px;
           }
           .custom-logo-image {
-            height: 30px;
+            height: 65px;
           }
         }
       `}</style>
@@ -966,7 +1032,7 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
@@ -986,10 +1052,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     if (expired) {
-      // Full page reload so all in-memory state is cleared
-      window.location.href = "/login";
+      window.location.href = "/";
     } else {
-      navigate("/login");
+      navigate("/");
     }
   };
 
@@ -1426,6 +1491,7 @@ function App() {
 
           {/* ========== CONFIGURATIONS & BIOMETRIC ========== */}
           <Route path="/configurations" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
+          <Route path="/audit-log" element={<ProtectedRoute><MainLayout><AuditLog /></MainLayout></ProtectedRoute>} />
           <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
 
           {/* FALLBACK */}

@@ -2,6 +2,7 @@
 import axios from "axios";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -42,6 +43,7 @@ interface DashboardData {
 
 const Dashboard: FC = () => {
   const { t } = useTranslation("dashboard");
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData>({
     usersCount: 0,
     loanStats: {
@@ -91,6 +93,7 @@ const Dashboard: FC = () => {
       hint: t("stats.totalUsers.hint"),
       color: "#3b82f6",
       progress: data.usersCount > 0 ? Math.min(100, Math.round((data.usersCount / 200) * 100)) : 0,
+      route: "/users",
     },
     {
       key: "loans",
@@ -99,6 +102,7 @@ const Dashboard: FC = () => {
       hint: t("stats.totalLoans.hint"),
       color: "#8b5cf6",
       progress: data.loanStats.total > 0 ? Math.min(100, Math.round((data.loanStats.total / 100) * 100)) : 0,
+      route: "/loan-manager",
     },
     {
       key: "approved",
@@ -107,6 +111,7 @@ const Dashboard: FC = () => {
       hint: t("stats.approvedLoans.hint"),
       color: "#10b981",
       progress: data.loanStats.total > 0 ? Math.round((data.loanStats.approved / data.loanStats.total) * 100) : 0,
+      route: "/loan-manager",
     },
     {
       key: "pending",
@@ -117,6 +122,7 @@ const Dashboard: FC = () => {
       progress: data.loanStats.total > 0
         ? Math.round(((data.loanStats.manager_review + data.loanStats.gm_review + data.loanStats.md_review) / data.loanStats.total) * 100)
         : 0,
+      route: "/loan-manager",
     },
   ];
 
@@ -212,7 +218,7 @@ const Dashboard: FC = () => {
 
       <div className="stats-grid">
         {stats.map((s) => (
-          <div key={s.key} className="stat-card" style={{ borderTopColor: s.color }}>
+          <div key={s.key} className="stat-card" style={{ borderTopColor: s.color, cursor: "pointer" }} onClick={() => navigate(s.route)}>
             <div className="stat-card-header">
               <span className="stat-label">{s.label}</span>
               <span className="stat-hint">{s.hint}</span>

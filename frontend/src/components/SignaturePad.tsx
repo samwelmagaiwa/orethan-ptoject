@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eraser, Check, Upload } from "lucide-react";
+import { Eraser, Check, Upload, PenLine } from "lucide-react";
 
 interface Props {
   value?: string;                         // existing data URL
@@ -18,10 +18,12 @@ interface Props {
 const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: Props) => {
   const { t } = useTranslation("miscModals");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
   const [hasInk, setHasInk] = useState(!!value);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value || savedSignature || null);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
 
   // Set up canvas size (handles HiDPI) and restore any existing value once.
   useEffect(() => {
@@ -80,7 +82,23 @@ const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: 
     canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
     setHasInk(false);
     setPreviewUrl(null);
+    setUploadedName(null);
     onChange?.(null);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const url = evt.target?.result as string;
+      setPreviewUrl(url);
+      setHasInk(true);
+      setUploadedName(file.name);
+      onChange?.(url);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const loadImage = (src: string) => {
@@ -106,9 +124,12 @@ const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: 
       {label && <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.6px" }}>{label}</label>}
 
       <div className="sp-wrap">
-        {/* LEFT: drawing field */}
-        <div className="sp-pad">
-          <div style={{ position: "relative", border: `1.5px dashed ${hasInk ? "#10b981" : "#cbd5e1"}`, borderRadius: 10, background: "#fff", overflow: "hidden" }}>
+        {/* LEFT half: draw */}
+        <div className="sp-draw-half">
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <PenLine size={10} /> {t("signaturePad.draw")}
+          </div>
+          <div style={{ position: "relative", border: `1.5px dashed ${hasInk && !uploadedName ? "#10b981" : "#cbd5e1"}`, borderRadius: 10, background: "#fff", overflow: "hidden" }}>
             <canvas
               ref={canvasRef}
               style={{ width: "100%", height, display: "block", touchAction: "none", cursor: "crosshair" }}
@@ -128,11 +149,42 @@ const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: 
             {savedSignature && (
               <button type="button" onClick={() => loadImage(savedSignature)} style={btn("#eef2ff", "#4f46e5", "#e0e7ff")}><Upload size={13} /> {t("signaturePad.useSaved")}</button>
             )}
-            {hasInk && <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: "#059669", marginLeft: "auto" }}><Check size={13} /> {t("signaturePad.captured")}</span>}
+            {hasInk && !uploadedName && <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: "#059669", marginLeft: "auto" }}><Check size={13} /> {t("signaturePad.captured")}</span>}
           </div>
         </div>
 
-        {/* RIGHT: preview pane */}
+        {/* RIGHT half: upload electronic signature */}
+        <div className="sp-upload-half">
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <Upload size={10} /> {t("signaturePad.upload")}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{ height, borderRadius: 10, border: `1.5px dashed ${uploadedName ? "#10b981" : "#cbd5e1"}`, background: uploadedName ? "#f0fdf4" : "#fafafa", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", gap: "0.4rem", padding: "0.6rem", boxSizing: "border-box", transition: "border-color 0.2s" }}
+          >
+            {uploadedName ? (
+              <>
+                <Check size={22} color="#059669" />
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#059669", textAlign: "center", wordBreak: "break-all" }}>{uploadedName}</span>
+                <span style={{ fontSize: "0.65rem", color: "#94a3b8" }}>{t("signaturePad.clickToReplace")}</span>
+              </>
+            ) : (
+              <>
+                <Upload size={22} color="#cbd5e1" />
+                <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#94a3b8" }}>{t("signaturePad.clickToUpload")}</span>
+                <span style={{ fontSize: "0.65rem", color: "#cbd5e1" }}>PNG, JPG, SVG</span>
+              </>
+            )}
+          </div>
+          {uploadedName && (
+            <div style={{ marginTop: "0.5rem" }}>
+              <button type="button" onClick={clear} style={btn("#fef2f2", "#dc2626", "#fecaca")}><Eraser size={13} /> Clear</button>
+            </div>
+          )}
+        </div>
+
+        {/* FAR RIGHT: preview pane */}
         <div className="sp-preview">
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem" }}>{t("signaturePad.preview")}</div>
           <div style={{ height, borderRadius: 10, border: "1px solid #eef1f6", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.6rem", boxSizing: "border-box" }}>
@@ -144,9 +196,10 @@ const SignaturePad = ({ value, onChange, height = 150, label, savedSignature }: 
       </div>
 
       <style>{`
-        .sp-wrap { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
-        .sp-pad { flex: 1 1 300px; min-width: 0; }
-        .sp-preview { flex: 1 1 220px; min-width: 0; }
+        .sp-wrap { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-start; }
+        .sp-draw-half { flex: 1 1 200px; min-width: 0; }
+        .sp-upload-half { flex: 1 1 160px; min-width: 0; }
+        .sp-preview { flex: 1 1 160px; min-width: 0; }
       `}</style>
     </div>
   );

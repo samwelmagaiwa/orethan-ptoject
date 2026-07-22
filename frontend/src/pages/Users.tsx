@@ -22,7 +22,7 @@ const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "requests", label: "Requests / Maombi" },
   { key: "loans_form", label: "Loans Form", hint: "Personal Loan, Group Loan, My Applications" },
   { key: "users", label: "Users Management" },
-  { key: "loan_settings", label: "Loan Settings", hint: "Penalty rate, default interest rate, default processing fee" },
+  { key: "global_settings", label: "⚙️ Global Settings", hint: "Configurations page — penalty rate, interest rate, access control" },
   { key: "manager_review", label: "Manager Review" },
   { key: "gm_review", label: "GM Review" },
   { key: "md_auth", label: "MD Auth" },
@@ -119,7 +119,7 @@ const Users = () => {
     }
     const rect = e.currentTarget.getBoundingClientRect();
     const menuWidth = 170;
-    const estimatedMenuHeight = 190;
+    const estimatedMenuHeight = 245;
     const spaceBelow = window.innerHeight - rect.bottom;
     const top = spaceBelow >= estimatedMenuHeight + 8
       ? rect.bottom + 4
@@ -151,7 +151,7 @@ const Users = () => {
       if (err.response?.status === 401) {
         setModal({ isOpen: true, title: "Session Expired", message: "Please login again.", type: 'error' });
         setTimeout(() => {
-          window.location.href = "/login";
+          window.location.href = "/";
         }, 2000);
       }
     } finally {
@@ -175,39 +175,47 @@ const Users = () => {
           sidebar_permissions: newUser.sidebar_permissions,
           full_sidebar_access: newUser.full_sidebar_access,
         };
-        if (newUser.password) payload.password = newUser.password;
-        const res = await axios.put(`${API_BASE}/users/${editUser.id}`, payload, {
-          headers: getAuthHeaders()
-        });
+        const res = await axios.put(`${API_BASE}/users/${editUser.id}`, payload, { headers: getAuthHeaders() });
         setUsers(users.map(u => u.id === editUser.id ? res.data : u));
         setModal({ isOpen: true, title: "Success", message: "User updated successfully!", type: 'success' });
       } else {
-        if (!newUser.password) {
-          setModal({ isOpen: true, title: "Missing Password", message: "Password is required for new user!", type: 'warning' });
-          return;
-        }
-
         const res = await axios.post(`${API_BASE}/users`, {
           name: newUser.name,
           email: newUser.email,
           phone: newUser.phone,
-          password: newUser.password,
           role: newUser.role,
           sidebar_permissions: newUser.sidebar_permissions,
           full_sidebar_access: newUser.full_sidebar_access,
-        }, {
-          headers: getAuthHeaders()
-        });
-
-        console.log("Created user:", res.data);
+        }, { headers: getAuthHeaders() });
         setUsers([...users, res.data]);
-        setModal({ isOpen: true, title: "Success", message: `User ${res.data.name} created successfully!`, type: 'success' });
+        setModal({ isOpen: true, title: "Success", message: `User ${res.data.name} created. Default password ORETHAN sent via SMS.`, type: 'success' });
       }
       resetModal();
     } catch (err: any) {
-      console.error("Save error:", err.response?.data || err.message);
       setModal({ isOpen: true, title: "Error", message: err.response?.data?.message || "Operation failed", type: 'error' });
     }
+  };
+
+  const resetPassword = (user: any) => {
+    setConfirm({
+      isOpen: true,
+      title: "Reset Password",
+      message: `Reset ${user.name}'s password back to ORETHAN? They will be required to change it on next login and must do so within 12 hours.`,
+      type: 'warning',
+      onConfirm: async () => {
+        setConfirm(prev => ({ ...prev, isOpen: false }));
+        try {
+          await axios.put(`${API_BASE}/users/${user.id}`, {
+            password: 'ORETHAN',
+            must_change_password: true,
+            password_expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+          }, { headers: getAuthHeaders() });
+          setModal({ isOpen: true, title: "Password Reset", message: `${user.name}'s password has been reset to ORETHAN. They must change it within 12 hours.`, type: 'success' });
+        } catch (err: any) {
+          setModal({ isOpen: true, title: "Error", message: err?.response?.data?.message || "Reset failed", type: 'error' });
+        }
+      }
+    });
   };
 
   const deleteUser = (id: number) => {
@@ -403,6 +411,7 @@ const Users = () => {
                               <>
                                 <button className="lock-btn" style={{ background: user.is_locked ? "#ecfdf5" : "#fffbeb", color: user.is_locked ? "#059669" : "#d97706", border: `1px solid ${user.is_locked ? "#a7f3d0" : "#fde68a"}` }} onClick={() => { toggleLock(user); setOpenMenuFor(null); }}>{user.is_locked ? "Unlock" : "Lock"}</button>
                                 <button className="delete-btn" onClick={() => { deleteUser(user.id); setOpenMenuFor(null); }}>Delete</button>
+                                <button className="reset-pwd-btn" onClick={() => { resetPassword(user); setOpenMenuFor(null); }}>Reset Password</button>
                               </>
                             )}
                           </div>,
@@ -451,15 +460,24 @@ const Users = () => {
                     onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                   />
                 </div>
-                <div className="form-field">
-                  <label>{editUser ? "New Password (optional)" : "Password"}</label>
-                  <input
-                    type="password"
-                    placeholder={editUser ? "Leave blank to keep current" : "Enter password"}
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  />
-                </div>
+                {editUser ? (
+                  <div className="form-field">
+                    <label>New Password (optional)</label>
+                    <input
+                      type="password"
+                      placeholder="Leave blank to keep current"
+                      value={newUser.password ?? ""}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    />
+                  </div>
+                ) : (
+                  <div className="form-field" style={{ gridColumn: "1 / -1" }}>
+                    <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "8px", padding: "10px 14px", color: "#166534", fontSize: "0.85rem", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                      <span style={{ fontSize: "1.1rem" }}>🔑</span>
+                      <span>Default password <strong>ORETHAN</strong> will be set automatically. The user will receive an SMS and must change it within <strong>12 hours</strong>.</span>
+                    </div>
+                  </div>
+                )}
                 <div className="form-field">
                   <label>User Role</label>
                   <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
@@ -730,10 +748,24 @@ const Users = () => {
 
         .actions-dropdown .edit-btn,
         .actions-dropdown .lock-btn,
-        .actions-dropdown .delete-btn {
+        .actions-dropdown .delete-btn,
+        .actions-dropdown .reset-pwd-btn {
           width: 100%;
           text-align: center;
         }
+
+        .reset-pwd-btn {
+          background: #7c3aed;
+          color: #fff;
+          border: none;
+          padding: 7px 14px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.82rem;
+          font-weight: 500;
+          transition: background 0.15s;
+        }
+        .reset-pwd-btn:hover { background: #6d28d9; }
 
         .edit-btn {
           background: #3b82f6;

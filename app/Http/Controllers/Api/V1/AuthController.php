@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Services\ActivityLogger;
 
 class AuthController extends Controller
 {
@@ -62,6 +63,13 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // Temporary password expired — block login until admin resets the account
+        if ($user->password_expires_at && now()->gt($user->password_expires_at) && $user->must_change_password) {
+            return response()->json([
+                'message' => 'Nenosiri lako la muda limeisha muda wake (masaa 12). Wasiliana na Admin ili kuweka upya akaunti yako. (Your temporary password has expired after 12 hours. Contact Admin to reset your account.)',
+            ], 403);
+        }
+
         // First-ever login -- send a 6-digit OTP to the user's phone
         if ($user->first_login) {
             $otp = (string) random_int(100000, 999999);
@@ -83,6 +91,7 @@ class AuthController extends Controller
             ]);
         }
 
+        ActivityLogger::log($user, 'login', 'Auth', "User logged in from {$request->ip()}");
         return $this->issueToken($user);
     }
 
@@ -183,7 +192,34 @@ class AuthController extends Controller
         $user->otp_expires_at      = null;
         $user->save();
 
+        ActivityLogger::log($user, 'login', 'Auth', "Password reset via OTP, logged in");
         return $this->issueToken($user);
+    }
+
+    /** Resend the first-login OTP to the user's phone. */
+    public function resendOtp(Request $request)
+    {
+        $data = $request->validate(['email' => 'required|email']);
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user || !$user->first_login) {
+            // Don't reveal whether the email exists
+            return response()->json(['message' => 'If an OTP is pending, a new code has been sent.']);
+        }
+
+        $otp = (string) random_int(100000, 999999);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(10);
+        $user->save();
+
+        $smsResult = app(SmsService::class)->sendOtp($user, $otp, 'first_login');
+
+        return response()->json([
+            'sms_sent' => $smsResult->success,
+            'message'  => $smsResult->success
+                ? 'A new verification code has been sent to your registered phone number.'
+                : 'Could not send SMS. Please contact your administrator for the code.',
+        ]);
     }
 
     /** Change password (voluntary change while already authenticated). */
@@ -196,8 +232,10 @@ class AuthController extends Controller
         $user = $request->user();
         $user->password = Hash::make($data['new_password']);
         $user->must_change_password = false;
+        $user->password_expires_at = null;
         $user->save();
 
+        ActivityLogger::log($user, 'update', 'Auth', "Changed own password");
         return response()->json(['message' => 'Password changed successfully.']);
     }
 
@@ -216,11 +254,10 @@ class AuthController extends Controller
     // LOGOUT
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        
-        return response()->json([
-            'message' => 'Logged out successfully'
-        ]);
+        $user = $request->user();
+        ActivityLogger::log($user, 'logout', 'Auth', "User logged out");
+        $user->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
     }
 
     // GET CURRENT USER

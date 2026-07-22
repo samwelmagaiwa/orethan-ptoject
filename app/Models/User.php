@@ -59,6 +59,7 @@ class User extends Authenticatable
         'otp_expires_at' => 'datetime',
         'first_login' => 'boolean',
         'must_change_password' => 'boolean',
+        'password_expires_at' => 'datetime',
         'sidebar_permissions' => 'array',
         'full_sidebar_access' => 'boolean',
     ];

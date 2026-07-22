@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, ShieldCheck, KeyRound, Phone, Lock } from "lucide-react";
@@ -34,6 +34,31 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const resendTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (resendTimer.current) clearInterval(resendTimer.current); };
+  }, []);
+
+  const startResendCooldown = () => {
+    setResendCooldown(60);
+    resendTimer.current = setInterval(() => {
+      setResendCooldown(prev => { if (prev <= 1) { clearInterval(resendTimer.current!); return 0; } return prev - 1; });
+    }, 1000);
+  };
+
+  const handleResendOtp = async () => {
+    reset();
+    try {
+      const res = await axios.post(`${API_BASE}/resend-otp`, { email: email.trim() });
+      setSmsSent(res.data.sms_sent ?? false);
+      setInfo(res.data.message);
+      startResendCooldown();
+    } catch {
+      setError("Failed to resend code. Please try again.");
+    }
+  };
 
   const reset = () => { setError(null); setInfo(null); };
 
@@ -54,7 +79,7 @@ function Login() {
     try {
       const res = await axios.post(`${API_BASE}/login`, { email: email.trim(), password: password.trim() });
       if (res.data.otp_required) {
-        setSmsSent(res.data.sms_sent ?? false); setStep("otp"); setOtp("");
+        setSmsSent(res.data.sms_sent ?? false); setStep("otp"); setOtp(""); startResendCooldown();
         browserNotify("Orethan -- Verification Code", res.data.message ?? "A verification code has been sent to your phone.");
       } else {
         finalize(res.data);
@@ -181,13 +206,22 @@ function Login() {
             <h2>Verify it's you</h2>
             <p className="lg__sub">
               {smsSent
-                ? "A 6-digit verification code has been sent to your registered phone number."
+                ? "A 6-digit verification code has been sent to your registered phone number. Check your SMS."
                 : "Enter the 6-digit verification code provided by your administrator."}
             </p>
             <Field label="6-digit verification code">
               <input inputMode="numeric" maxLength={6} placeholder="••••••" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} style={{ textAlign: "center", letterSpacing: "0.5rem", fontSize: "1.3rem", fontWeight: 800 }} required />
             </Field>
             <button type="submit" className="lg__btn" disabled={loading}>{loading ? "Verifying…" : "Verify & Continue"}</button>
+            <div style={{ textAlign: "center", marginTop: "12px" }}>
+              {resendCooldown > 0 ? (
+                <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Resend code in {resendCooldown}s</span>
+              ) : (
+                <button type="button" className="lg__link" onClick={handleResendOtp}>
+                  Didn't receive the code? Resend
+                </button>
+              )}
+            </div>
           </form>
         )}
 

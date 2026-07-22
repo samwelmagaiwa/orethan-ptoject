@@ -123,21 +123,13 @@ class SmsTemplates
             'monthly' => 'ya Mwezi',
             default   => $reportType,
         };
-        return "Mpendwa {$lmName}, ripoti {$typeLabel} ya tawi la {$branch} imewasilishwa na "
-            . "{$officerName} kwa kipindi cha {$period}. Tafadhali ingia kwenye mfumo kuikagua "
-            . "na kuiidhinisha. Asante - Orethan Microfinance.";
+        return "Ripoti {$typeLabel} ({$branch}, {$period}) imewasilishwa na {$officerName}. Ingia mfumoni kuikagua. - Orethan";
     }
 
     /** OTP code for forgot-password or first-login verification. */
     public static function otp(string $name, string $otp, string $context = 'otp'): string
     {
-        $reason = match ($context) {
-            'forgot_password' => 'kupata upya nywila yako',
-            'first_login'     => 'uthibitisho wa kuingia mara ya kwanza',
-            default           => 'uthibitisho wa akaunti yako',
-        };
-        return "Mpendwa {$name}, nambari yako ya uthibitisho (OTP) kwa {$reason} ni: {$otp}. "
-            . "Itaisha baada ya dakika 10. Usishiriki nambari hii na mtu yeyote. - Orethan Microfinance.";
+        return "Orethan: Nambari yako ya OTP ni {$otp}. Halali kwa dakika 10. Usimwambie mtu. - Orethan Microfinance";
     }
 
     /** Sent immediately after a borrower's loan application is submitted. */
@@ -157,6 +149,24 @@ class SmsTemplates
             . "Tafadhali wasiliana na ofisi yetu kwa maelezo zaidi. Asante - Orethan Microfinance.";
     }
 
+    /** Sent to Loan Manager(s) when a new loan application arrives for their review. */
+    public static function loanApplicationPendingReview(string $managerName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$managerName}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia mfumoni. - Orethan";
+    }
+
+    /** Sent to General Manager(s) when Loan Manager approves and escalates to GM stage. */
+    public static function loanPendingGmReview(string $gmName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$gmName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako. Ingia mfumoni. - Orethan";
+    }
+
+    /** Sent to Managing Director(s) when GM approves and escalates to MD stage. */
+    public static function loanPendingMdReview(string $mdName, string $applicantName, float $amount, string $loanNo): string
+    {
+        return "Mpendwa {$mdName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako ya mwisho. Ingia mfumoni. - Orethan";
+    }
+
     /** Sent to the original submitter when the Loan Manager approves their Branch Report. */
     public static function branchReportApproved(
         string $officerName,
@@ -173,5 +183,79 @@ class SmsTemplates
         };
         return "Mpendwa {$officerName}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
             . "cha {$period} imeidhinishwa na {$approverName}. Asante kwa kazi nzuri - Orethan Microfinance.";
+    }
+
+    /** SMS to the next approver when a payment request is submitted or advanced. */
+    public static function paymentRequestPending(string $approverName, string $applicantName, float $amount, string $payableTo): string
+    {
+        return "Mpendwa {$approverName}, ombi la malipo TZS " . self::money($amount) . " ({$applicantName}) linasubiri idhini yako. Ingia mfumoni. - Orethan";
+    }
+
+    /** SMS to the applicant when their payment request is fully disbursed. */
+    public static function paymentRequestDisbursed(string $applicantName, float $amount, string $payableTo): string
+    {
+        return "Mpendwa {$applicantName}, ombi lako la malipo la TZS " . self::money($amount)
+            . " kwa {$payableTo} limeidhinishwa na kulipwa. Asante - Orethan Microfinance.";
+    }
+
+    /** SMS to the applicant when their payment request is rejected. */
+    public static function paymentRequestRejected(string $applicantName, float $amount, string $reason): string
+    {
+        return "Mpendwa {$applicantName}, ombi lako la malipo la TZS " . self::money($amount)
+            . " limekataliwa. Sababu: {$reason}. Unaweza kuhariri na kuliwasilisha tena. Asante - Orethan Microfinance.";
+    }
+
+    /** SMS to the next approver when a leave request is submitted or advanced. */
+    public static function leaveRequestPending(string $approverName, string $employeeName, string $absenceType, string $from, string $to): string
+    {
+        return "Mpendwa {$approverName}, ombi la likizo ({$absenceType}) kutoka {$employeeName} ({$from}-{$to}) linasubiri idhini yako. Ingia mfumoni. - Orethan";
+    }
+
+    /** SMS to the applicant when their leave request is fully authorized. */
+    public static function leaveRequestAuthorized(string $employeeName, string $from, string $to): string
+    {
+        return "Mpendwa {$employeeName}, ombi lako la likizo kuanzia {$from} hadi {$to} "
+            . "limeidhinishwa kikamilifu. Likizo njema! Asante - Orethan Microfinance.";
+    }
+
+    /** SMS to the applicant when their leave request is rejected. */
+    public static function leaveRequestRejected(string $employeeName, string $reason): string
+    {
+        return "Mpendwa {$employeeName}, ombi lako la likizo limekataliwa. "
+            . "Sababu: {$reason}. Unaweza kuhariri na kuliwasilisha tena. Asante - Orethan Microfinance.";
+    }
+
+    public static function branchReportRejected(
+        string $officerName,
+        string $branch,
+        string $reportType,
+        string $period,
+        string $rejectorName,
+        string $reason
+    ): string {
+        $typeLabel = match ($reportType) {
+            'daily'   => 'ya Kila Siku',
+            'weekly'  => 'ya Wiki',
+            'monthly' => 'ya Mwezi',
+            default   => $reportType,
+        };
+        return "Mpendwa {$officerName}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
+            . "cha {$period} imekataliwa na {$rejectorName}. Sababu: {$reason}. Tafadhali ihariri na uiwasilishe tena - Orethan Microfinance.";
+    }
+
+    /** Sent to a newly created system user so they know their login credentials. */
+    public static function welcomeNewUser(string $name): string
+    {
+        return "Karibu {$name}! Akaunti yako ya mfumo wa Orethan Microfinance imeundwa. "
+            . "Ingia kwa akaunti yako na ubadilishe neno la siri kabla ya kuendelea. "
+            . "Neno lako la siri la muda ni: ORETHAN (herufi kubwa). - Orethan Microfinance.";
+    }
+
+    /** Sent when an admin resets a user's password back to the default. */
+    public static function passwordReset(string $name): string
+    {
+        return "Habari {$name}! Nenosiri lako la mfumo wa Orethan Microfinance limewekwa upya na msimamizi. "
+            . "Nenosiri lako la muda ni: ORETHAN (herufi kubwa). "
+            . "Ingia na ubadilishe nenosiri kabla ya masaa 12 au utafungiwa nje. - Orethan Microfinance.";
     }
 }

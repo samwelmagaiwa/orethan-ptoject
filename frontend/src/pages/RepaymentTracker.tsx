@@ -30,6 +30,8 @@ import { printReceipt, type ReceiptData } from "../utils/receipt";
 
 import AlertModal from "../components/AlertModal";
 
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
+
 import { API_BASE } from "../lib/api";
 
 
@@ -75,6 +77,10 @@ interface Loan {
   completed_at?: string;
 
   next_installment?: NextInstallment | null;
+
+  sms_status?: string | null;
+
+  sms_type?: string | null;
 
 }
 
@@ -175,6 +181,10 @@ const RepaymentTracker = () => {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+
+  const [filterStatus, setFilterStatus] = useState<"all" | "current" | "overdue" | "pending">("all");
+
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
 
 
 
@@ -511,8 +521,38 @@ const RepaymentTracker = () => {
 
 
   const currentLoans = (activeTab === "active" ? activeLoans : completedLoans)
+    .filter((l) => l.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((l) => {
+      if (filterStatus === "all") return true;
+      const s = l.next_installment?.status ?? l.payment_status;
+      return s === filterStatus;
+    });
 
-    .filter((l) => l.name.toLowerCase().includes(search.toLowerCase()));
+  const exportCsv = () => {
+    const rows = [
+      ["#", "Client", "Loan ID", "Installment", "Due Date", "Principal", "Interest", "Total", "Balance", "Status"],
+      ...currentLoans.map((l, i) => [
+        i + 1,
+        l.name,
+        `LN-${l.id}`,
+        l.next_installment ? `#${l.next_installment.installment_number}` : "—",
+        l.next_installment?.due_date ? new Date(l.next_installment.due_date).toLocaleDateString("en-GB") : "—",
+        l.next_installment?.principal_amount ?? "—",
+        l.next_installment?.interest_amount ?? "—",
+        l.next_installment?.total_amount ?? "—",
+        l.remaining_balance,
+        l.next_installment?.status ?? l.payment_status,
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `repayment-tracker-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
 
 
@@ -958,26 +998,31 @@ const RepaymentTracker = () => {
 
               </div>
 
-              <button style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#64748b" }}>
-
-                <Filter size={14} /> {t("filters.filter")}
-
-              </button>
+              <div style={{ position: "relative" }}>
+                <button onClick={() => setShowFilterMenu(v => !v)}
+                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: filterStatus !== "all" ? "#eef2ff" : "white", border: filterStatus !== "all" ? "1px solid #6366f1" : "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus !== "all" ? "#4f46e5" : "#64748b" }}>
+                  <Filter size={14} /> {t("filters.filter")}{filterStatus !== "all" ? ` · ${filterStatus}` : ""}
+                </button>
+                {showFilterMenu && (
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(15,23,42,0.12)", zIndex: 200, minWidth: 160, overflow: "hidden" }}>
+                    {(["all", "current", "overdue", "pending"] as const).map((s) => (
+                      <button key={s} onClick={() => { setFilterStatus(s); setShowFilterMenu(false); }}
+                        style={{ display: "block", width: "100%", padding: "0.6rem 1rem", background: filterStatus === s ? "#eef2ff" : "white", border: "none", textAlign: "left", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus === s ? "#4f46e5" : "#475569" }}>
+                        {s === "all" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-
                 style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#475569" }}>
-
                 <RefreshCw size={14} className={loading ? "rt-spin" : ""} /> {t("actions.refresh")}
-
               </motion.button>
 
-              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={exportCsv}
                 style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.95rem", borderRadius: 8, background: "#6366f1", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
-
                 <ArrowUpRight size={14} /> {t("actions.export")}
-
               </motion.button>
 
             </div>
@@ -994,9 +1039,9 @@ const RepaymentTracker = () => {
 
                 <tr>
 
-                  {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), t("scheduleModal.total"), t("table.balance"), t("table.status"), t("table.management")].map((h, i) => (
+                  {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), t("scheduleModal.total"), t("table.balance"), t("table.status"), "SMS", t("table.management")].map((h, i) => (
 
-                    <th key={h} style={{ textAlign: i === 9 ? "right" : i >= 4 && i <= 7 ? "right" : "left", padding: "0 0.8rem 1rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
+                    <th key={h} style={{ textAlign: i === 10 ? "right" : i >= 4 && i <= 7 ? "right" : "left", padding: "0 0.8rem 1rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
 
                   ))}
 
@@ -1099,6 +1144,12 @@ const RepaymentTracker = () => {
                             );
 
                           })()}
+
+                        </td>
+
+                        <td style={{ padding: "1rem 0.8rem" }}>
+
+                          <SmsStatusBadge status={loan.sms_status} type={loan.sms_type} />
 
                         </td>
 
@@ -1516,6 +1567,8 @@ const RepaymentTracker = () => {
         .rt-spin { animation: rt-spin 1s linear infinite; }
 
         @keyframes rt-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        ${smsStatusBadgeStyles}
 
         .rt-stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(15,23,42,0.1) !important; border-color: #dbe2ea !important; }
 

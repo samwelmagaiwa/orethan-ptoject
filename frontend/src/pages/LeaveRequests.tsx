@@ -6,6 +6,7 @@ import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
 import DelegationForm from "../components/DelegationForm";
 import SignatureReuse from "../components/SignatureReuse";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { API_BASE } from "../lib/api";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review"];
@@ -270,7 +271,7 @@ const LeaveRequests = () => {
                 <Field label="Employee's Signature / Sahihi ya Mfanyakazi"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.employee_signature} onChange={(e) => set("employee_signature", e.target.value)} /></Field>
                 <Field label="Date / Tarehe"><input type="date" className="pr-input" style={inp} value={form.employee_date} onChange={(e) => set("employee_date", e.target.value)} /></Field>
                 <div className="pr-span-all">
-                  <SignaturePad label="Signature (draw) / Sahihi" value={form.employee_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("employee_signature_img", d || "")} height={130} />
+                  <SignaturePad label="Signature / Sahihi (draw or upload)" value={form.employee_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("employee_signature_img", d || "")} height={130} />
                 </div>
               </div>
             </Section>
@@ -306,8 +307,8 @@ const LeaveRequests = () => {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Employee", "Type", "From", "To", "Status", "Submitted", ""].map((h, i) => (
-                      <th key={h} style={{ textAlign: i === 6 ? "right" : "left", padding: "0 0.7rem 0.9rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
+                    {["Employee", "Type", "From", "To", "Status", "SMS", "Submitted", ""].map((h, i) => (
+                      <th key={h} style={{ textAlign: i === 7 ? "right" : "left", padding: "0 0.7rem 0.9rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -321,6 +322,7 @@ const LeaveRequests = () => {
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(r.from_date)}</td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.78rem", color: "#475569", whiteSpace: "nowrap" }}>{fmtDate(r.to_date)}</td>
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.64rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
+                        <td style={{ padding: "0.85rem 0.7rem" }}><SmsStatusBadge status={r.sms_status} type={r.sms_type} /></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.76rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.created_at)}</td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
                           <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
@@ -341,7 +343,7 @@ const LeaveRequests = () => {
                     );
                   })}
                   {requests.length === 0 && !loading && (
-                    <tr><td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>No leave requests found</td></tr>
+                    <tr><td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>No leave requests found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -430,6 +432,7 @@ const LeaveRequests = () => {
         .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem 1.3rem; }
         .pr-span-all { grid-column: 1 / -1; }
         @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        ${smsStatusBadgeStyles}
         @media (max-width: 600px) { .pr-grid3 { grid-template-columns: 1fr; } }
 
         .prf-page { background: #e8f0fe; border-radius: 14px; padding: 0.5rem; }

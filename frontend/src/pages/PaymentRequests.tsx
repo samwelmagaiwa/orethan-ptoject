@@ -6,6 +6,7 @@ import { printDocument } from "../utils/printDoc";
 import SignaturePad from "../components/SignaturePad";
 import SuccessModal from "../components/SuccessModal";
 import SignatureReuse from "../components/SignatureReuse";
+import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { API_BASE } from "../lib/api";
 
 const PENDING_STATUSES = ["manager_review", "gm_review", "md_review", "awaiting_disbursement"];
@@ -344,7 +345,7 @@ const PaymentRequests = () => {
                 <Field label="Applicant Signature (name)"><input className="pr-input" style={inp} placeholder="Type your full name" value={form.applicant_signature} onChange={(e) => set("applicant_signature", e.target.value)} /></Field>
                 <Field label="Date"><input type="date" className="pr-input" style={inp} value={form.applicant_date} onChange={(e) => set("applicant_date", e.target.value)} /></Field>
                 <div className="pr-span-all">
-                  <SignaturePad label="Signature (draw)" value={form.applicant_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("applicant_signature_img", d || "")} height={130} />
+                  <SignaturePad label="Signature (draw or upload)" value={form.applicant_signature_img || undefined} savedSignature={user?.signature} onChange={(d) => set("applicant_signature_img", d || "")} height={130} />
                 </div>
               </div>
             </Section>
@@ -380,8 +381,8 @@ const PaymentRequests = () => {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Applicant", "Activity", "Payable To", "Amount", "Status", "Date", ""].map((h, i) => (
-                      <th key={h} style={{ textAlign: i === 6 ? "right" : "left", padding: "0 0.7rem 0.9rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
+                    {["Applicant", "Activity", "Payable To", "Amount", "Status", "SMS", "Date", ""].map((h, i) => (
+                      <th key={h} style={{ textAlign: i === 7 ? "right" : "left", padding: "0 0.7rem 0.9rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -395,6 +396,7 @@ const PaymentRequests = () => {
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.8rem", color: "#475569" }}>{r.payable_to}</td>
                         <td style={{ padding: "0.85rem 0.7rem", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(r.final_amount ?? r.amount, r.currency)}</td>
                         <td style={{ padding: "0.85rem 0.7rem" }}><span style={{ background: sm.bg, color: sm.color, padding: "3px 10px", borderRadius: 20, fontSize: "0.66rem", fontWeight: 800, whiteSpace: "nowrap" }}>{sm.label}</span></td>
+                        <td style={{ padding: "0.85rem 0.7rem" }}><SmsStatusBadge status={r.sms_status} type={r.sms_type} /></td>
                         <td style={{ padding: "0.85rem 0.7rem", fontSize: "0.76rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.created_at)}</td>
                         <td style={{ padding: "0.85rem 0.7rem", textAlign: "right" }}>
                           <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
@@ -415,7 +417,7 @@ const PaymentRequests = () => {
                     );
                   })}
                   {requests.length === 0 && !loading && (
-                    <tr><td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>No payment requests found</td></tr>
+                    <tr><td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>No payment requests found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -537,6 +539,7 @@ const PaymentRequests = () => {
         .pr-row:hover { background: #fdfbf7; }
         .pr-input { transition: border-color 0.18s, box-shadow 0.18s, background 0.18s; }
         .pr-input:focus { border-color: #6366f1 !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        ${smsStatusBadgeStyles}
         .pr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem 1.3rem; }
         .pr-span-all { grid-column: 1 / -1; }
         @media (max-width: 900px) { .pr-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

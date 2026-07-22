@@ -97,7 +97,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
       setHasEmployeeRecord(!!res.data.has_employee_record);
     } catch (err) {
       localStorage.removeItem("token");
-      navigate("/login");
+      navigate("/");
     }
   };
 
@@ -124,7 +124,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     sessionStorage.removeItem("session_last_path");
-    navigate("/login");
+    navigate("/");
   };
 
   const userRole = user?.role;
@@ -242,7 +242,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   </button>
                 ))}
                 <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
-                <button onClick={async () => { setShowSideProfile(false); try { await fetch(`${API_BASE}/logout`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }); } catch {} localStorage.removeItem("token"); localStorage.removeItem("user"); sessionStorage.removeItem("session_last_path"); navigate("/login"); }}
+                <button onClick={async () => { setShowSideProfile(false); try { await fetch(`${API_BASE}/logout`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }); } catch {} localStorage.removeItem("token"); localStorage.removeItem("user"); sessionStorage.removeItem("session_last_path"); navigate("/"); }}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#dc2626", textAlign: "left" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
@@ -467,11 +467,16 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   </span>
                 )}
               </div>
-              {(showConfigs || isActive("/configurations") || isActive("/biometric")) && !isCollapsed && (
+              {(showConfigs || isActive("/configurations") || isActive("/biometric") || isActive("/audit-log")) && !isCollapsed && (
                 <div className="sd-sub">
                   <div className={`sd-sub__link ${isActive("/configurations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/configurations")}>
                     ⚙️ Global Settings
                   </div>
+                  {userRole === "admin" && (
+                    <div className={`sd-sub__link ${isActive("/audit-log") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/audit-log")}>
+                      🔍 Event Auditor
+                    </div>
+                  )}
                   {/* 🔏 Biometric -- commented out until hardware agent is ready
                   {(userRole === "admin" || userRole === "finance_officer") && (
                     <div className={`sd-sub__link ${isActive("/biometric") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/biometric")}>

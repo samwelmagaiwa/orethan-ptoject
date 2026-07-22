@@ -78,7 +78,11 @@
     "captured": "Captured",
     "preview": "Preview",
     "previewAlt": "signature preview",
-    "noSignatureYet": "No signature yet"
+    "noSignatureYet": "No signature yet",
+    "draw": "Draw",
+    "upload": "Upload",
+    "clickToUpload": "Click to upload",
+    "clickToReplace": "Click to replace"
   },
   "signatureReuse": {
     "noSignatureYet": "No saved signature yet — it won't appear on the signed document.",

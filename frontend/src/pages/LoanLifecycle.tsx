@@ -304,8 +304,10 @@ const LoanLifecycle = () => {
                   </select>
                 </div>
                 <div className="ll-field">
-                  <label>Interest rate % <span className="ll-opt">(leave blank to keep current)</span></label>
-                  <input type="number" step="0.1" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} placeholder="e.g. 18" />
+                  {(() => { const isLM = JSON.parse(localStorage.getItem("user")||"{}").role === "loan_manager"; return (<>
+                    <label>Interest rate % <span className="ll-opt">{isLM ? "(set by admin — cannot change)" : "(leave blank to keep current)"}</span></label>
+                    <input type="number" step="0.1" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} placeholder="e.g. 18" disabled={isLM} style={isLM ? { opacity: 0.5, cursor: "not-allowed", background: "#f1f5f9" } : undefined} />
+                  </>); })()}
                 </div>
                 <div className="ll-field">
                   <label>Start date <span className="ll-opt">(optional)</span></label>

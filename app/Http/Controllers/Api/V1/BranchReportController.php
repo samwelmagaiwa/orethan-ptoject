@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BranchReport;
 use App\Models\LoanSetting;
 use App\Models\Notification;
+use App\Models\SmsLog;
 use App\Models\User;
 use App\Services\AccountingService;
 use App\Sms\SmsService;
@@ -56,7 +57,23 @@ class BranchReportController extends Controller
         if ($request->filled('date_from')) $q->where('period_start', '>=', $request->date_from);
         if ($request->filled('date_to'))   $q->where('period_end',   '<=', $request->date_to);
 
-        return response()->json(['data' => $q->paginate(50)]);
+        $reports = $q->paginate(50);
+
+        // Attach latest sms_status per branch report
+        $ids = collect($reports->items())->pluck('id');
+        $latestSms = SmsLog::whereIn('branch_report_id', $ids)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('branch_report_id')
+            ->map(fn($logs) => $logs->first());
+
+        foreach ($reports->items() as $report) {
+            $sms = $latestSms->get($report->id);
+            $report->sms_status = $sms?->status;
+            $report->sms_type   = $sms?->type;
+        }
+
+        return response()->json(['data' => $reports]);
     }
 
     /** GET /branch-reports/{id} */
@@ -252,6 +269,123 @@ class BranchReportController extends Controller
             if ($submitter) {
                 app(SmsService::class)->sendBranchReportApproved($submitter, $report, $user->name);
             }
+        }
+
+        return response()->json(['data' => $report->fresh()]);
+    }
+
+    /** POST /branch-reports/{id}/reject */
+    public function reject(Request $request, int $id)
+    {
+        $user  = auth()->user();
+        $role  = $user?->role ?? '';
+        $perms = $this->perms();
+
+        if (!in_array($role, $perms['approve'] ?? [])) {
+            return response()->json(['message' => 'Huna ruhusa ya kukataa ripoti'], 403);
+        }
+
+        $request->validate([
+            'reason'           => 'required|string|min:3',
+            'signature_password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->signature_password, $user->password)) {
+            return response()->json(['message' => 'Nywila si sahihi — saini haikuthibitishwa'], 422);
+        }
+
+        $report = BranchReport::findOrFail($id);
+
+        if ($report->approval_status !== 'pending') {
+            return response()->json(['message' => 'Ripoti hii si katika hali ya kusubiri idhini'], 422);
+        }
+
+        $report->update([
+            'approval_status' => 'rejected',
+            'lm_signed'       => false,
+        ]);
+
+        // Notify the original submitter so they can edit and resubmit
+        $typeMap   = ['daily' => 'Kila Siku', 'weekly' => 'Wiki', 'monthly' => 'Mwezi'];
+        $typeLabel = $typeMap[$report->report_type] ?? $report->report_type;
+        $period    = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
+
+        if ($report->submitted_by) {
+            Notification::create([
+                'user_id' => $report->submitted_by,
+                'type'    => 'branch_report_rejected',
+                'title'   => "❌ Ripoti Yako Imekataliwa",
+                'message' => "Ripoti yako ya {$typeLabel} ya {$period} imekataliwa na {$user->name}. Sababu: {$request->reason}. Tafadhali ihariri na uiwasilishe tena.",
+                'link'    => '/branch-report',
+            ]);
+            $submitter = User::find($report->submitted_by);
+            if ($submitter) {
+                app(SmsService::class)->sendBranchReportRejected($submitter, $report, $user->name, $request->reason);
+            }
+        }
+
+        return response()->json(['data' => $report->fresh(), 'rejection_reason' => $request->reason]);
+    }
+
+    /** PUT /branch-reports/{id} — LO edits a rejected report and resubmits */
+    public function update(Request $request, int $id)
+    {
+        $user  = auth()->user();
+        $report = BranchReport::findOrFail($id);
+
+        if ($report->submitted_by !== $user?->id) {
+            return response()->json(['message' => 'Unaweza kuhariri ripoti zako mwenyewe tu'], 403);
+        }
+        if ($report->approval_status !== 'rejected') {
+            return response()->json(['message' => 'Ripoti zilizotaliwa tu zinaweza kuhaririwa'], 422);
+        }
+
+        $data = $request->validate([
+            'branch'             => 'nullable|string|max:100',
+            'department'         => 'nullable|string|max:100',
+            'section'            => 'nullable|string|max:100',
+            'report_type'        => 'required|in:daily,weekly,monthly',
+            'period_start'       => 'required|date',
+            'period_end'         => 'required|date',
+            'operations'         => 'nullable|array',
+            'financials'         => 'nullable|array',
+            'balances'           => 'nullable|array',
+            'loan_officers'      => 'nullable|array',
+            'expected_loans'     => 'nullable|array',
+            'signature_password' => 'nullable|string',
+        ]);
+
+        $lo_signed = false;
+        if (!empty($data['signature_password']) && $user) {
+            $lo_signed = Hash::check($data['signature_password'], $user->password);
+        }
+        unset($data['signature_password']);
+
+        $data['approval_status'] = 'pending';
+        $data['lo_signed']       = $lo_signed;
+        $data['lm_signed']       = false;
+        $data['approved_by']     = null;
+        $data['approved_by_name'] = null;
+        $data['approved_at']     = null;
+
+        $report->update($data);
+
+        // Notify loan managers of the resubmission
+        $typeMap   = ['daily' => 'Kila Siku', 'weekly' => 'Wiki', 'monthly' => 'Mwezi'];
+        $typeLabel = $typeMap[$report->report_type] ?? $report->report_type;
+        $period    = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
+
+        $managers = User::where('role', 'loan_manager')->get();
+        $sms = app(SmsService::class);
+        foreach ($managers as $m) {
+            Notification::create([
+                'user_id' => $m->id,
+                'type'    => 'branch_report_pending',
+                'title'   => "🔄 Ripoti ya Tawi Imewasilishwa Tena ({$typeLabel})",
+                'message' => "{$report->submitted_by_name} amewasilisha tena ripoti ya {$typeLabel} ya {$period} ({$report->branch}). Tafadhali kagua.",
+                'link'    => '/branch-report',
+            ]);
+            $sms->sendBranchReportPending($m, $report->fresh(), $user);
         }
 
         return response()->json(['data' => $report->fresh()]);

@@ -303,6 +303,32 @@ const Customers: React.FC = () => {
         }
     };
 
+    const handleDeleteCustomer = (customer: Customer) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Futa Mteja",
+            message: `Una uhakika unataka kufuta ${customer.full_name}? Hatua hii haiwezi kutenduliwa na itafuta mikopo yake yote.`,
+            type: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(m => ({ ...m, isOpen: false }));
+                try {
+                    const token = localStorage.getItem("token");
+                    await axios.delete(`${API_BASE}/customers/${customer.id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setCustomers(prev => prev.filter(c => c.id !== customer.id));
+                    setModalMessage("Mteja amefutwa.");
+                    setModalType("success");
+                    setShowModal(true);
+                } catch (err: any) {
+                    setModalMessage(err?.response?.data?.message || "Imeshindwa kufuta mteja.");
+                    setModalType("error");
+                    setShowModal(true);
+                }
+            },
+        });
+    };
+
     const openRejectModal = (loan: Loan) => {
         setSelectedLoan(loan);
         setRejectReason("");
@@ -653,6 +679,15 @@ const Customers: React.FC = () => {
                                                     >
                                                         <IconCreditCard /> {t("actions.repay")}
                                                     </button>
+                                                    {user?.role === 'admin' && (
+                                                        <button
+                                                            className="btn-delete"
+                                                            onClick={() => handleDeleteCustomer(customer)}
+                                                            title="Futa mteja"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1321,6 +1356,26 @@ const Customers: React.FC = () => {
                 .btn-repay:hover {
                     background: #1d4ed8;
                     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+                }
+
+                .btn-delete {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 6px 10px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    background: #fee2e2;
+                    color: #dc2626;
+                    border: 1px solid #fca5a5;
+                }
+                .btn-delete:hover {
+                    background: #dc2626;
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
                 }
 
                 .dots-button {

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
 use App\Models\AuditLog;
+use App\Models\SmsLog;
 use App\Services\AccountingService;
 use App\Services\Notifier;
+use App\Sms\SmsService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -117,6 +119,7 @@ class PaymentRequestController extends Controller
             );
 
             // Notify the appropriate next stage
+            $sms = app(SmsService::class);
             if ($isHighAuthority) {
                 Notifier::toRoles(
                     'finance_officer',
@@ -126,6 +129,8 @@ class PaymentRequestController extends Controller
                     '/payment-requests',
                     ['id' => $pr->id]
                 );
+                \App\Models\User::where('role', 'finance_officer')->whereNotNull('phone')->get()
+                    ->each(fn($u) => $sms->sendPaymentRequestPending($u, $pr));
             } else {
                 Notifier::toRoles(
                     'loan_manager',
@@ -135,6 +140,8 @@ class PaymentRequestController extends Controller
                     '/payment-requests',
                     ['id' => $pr->id]
                 );
+                \App\Models\User::where('role', 'loan_manager')->whereNotNull('phone')->get()
+                    ->each(fn($u) => $sms->sendPaymentRequestPending($u, $pr));
             }
 
             return $this->success($pr, 'Ombi la malipo limewasilishwa');
@@ -170,7 +177,23 @@ class PaymentRequestController extends Controller
                 $query->where('created_by', $user->id);
         }
 
-        return response()->json(['requests' => $query->get()]);
+        $requests = $query->get();
+
+        // Attach latest sms_status per payment request
+        $ids = $requests->pluck('id');
+        $latestSms = SmsLog::whereIn('payment_request_id', $ids)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('payment_request_id')
+            ->map(fn($logs) => $logs->first());
+
+        $requests->each(function ($r) use ($latestSms) {
+            $sms = $latestSms->get($r->id);
+            $r->sms_status = $sms?->status;
+            $r->sms_type   = $sms?->type;
+        });
+
+        return response()->json(['requests' => $requests]);
     }
 
     public function show($id)
@@ -275,6 +298,7 @@ class PaymentRequestController extends Controller
             AuditLog::record($action, $user, $pr, $desc, ['decision' => $decision, 'amount' => $pr->final_amount]);
 
             // Arifa hatua inayofuata / mwombaji
+            $sms = app(SmsService::class);
             if ($pr->status === 'disbursed') {
                 Notifier::toUsers(
                     [$pr->created_by],
@@ -284,6 +308,8 @@ class PaymentRequestController extends Controller
                     '/payment-requests',
                     ['id' => $pr->id]
                 );
+                $applicant = \App\Models\User::find($pr->created_by);
+                if ($applicant) $sms->sendPaymentRequestDisbursed($applicant, $pr);
             } elseif ($nextRole = Notifier::roleForStatus($pr->status)) {
                 Notifier::toRoles(
                     $nextRole,
@@ -293,6 +319,8 @@ class PaymentRequestController extends Controller
                     '/payment-requests',
                     ['id' => $pr->id]
                 );
+                \App\Models\User::where('role', $nextRole)->whereNotNull('phone')->get()
+                    ->each(fn($u) => $sms->sendPaymentRequestPending($u, $pr));
             }
 
             $msg = match ($pr->status) {
@@ -450,6 +478,8 @@ class PaymentRequestController extends Controller
                 '/payment-requests',
                 ['id' => $pr->id]
             );
+            $applicant = \App\Models\User::find($pr->created_by);
+            if ($applicant) app(SmsService::class)->sendPaymentRequestRejected($applicant, $pr, $data['reason']);
 
             return $this->success($pr, 'Ombi limekataliwa');
         } catch (\Exception $e) {

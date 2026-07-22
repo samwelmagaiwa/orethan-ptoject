@@ -56,6 +56,7 @@ const SIDEBAR_KEYS = [
   { key: "loans_form",          label: "Loans Form",             sub: "Personal Loan, Group Loan, My Applications" },
   { key: "users",               label: "Users Management" },
   { key: "global_settings",      label: "⚙️ Global Settings",     sub: "Configurations page — penalty rate, interest rate, access control" },
+  { key: "audit_log",            label: "🔍 Event Auditor",        sub: "Admin-only — real-time activity log, online users, change history" },
   { key: "manager_review",      label: "Manager Review" },
   { key: "gm_review",           label: "GM Review" },
   { key: "md_auth",             label: "MD Auth" },
