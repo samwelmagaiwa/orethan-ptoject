@@ -476,7 +476,7 @@ const PersonalLoan: React.FC = () => {
 
     // Auto-derive hasMumeMke from marital status
     if (name === "haliYaNdoa") {
-      updates.hasMumeMke = finalValue === "Nimeoa/Olewa" ? "Ndio" : "Hapana";
+      updates.hasMumeMke = (finalValue === "Nimeoa" || finalValue === "Nimeolewa") ? "Ndio" : "Hapana";
     }
 
     setForm({ ...form, ...updates });
@@ -712,11 +712,13 @@ const PersonalLoan: React.FC = () => {
       }
     }
 
-    // Step 4: Declarations (tamko) must be accepted
+    // Step 4: Declarations (tamko) must be accepted + signatures confirmed
     if (step === 4) {
       if (!form.tamkoLaMwombaji) missingFields.push("Tamko la Mwombaji");
-      if (!form.tamkoMdhamini1) missingFields.push("Tamko la Mdhamini 1");
-      if (!form.tamkoMdhamini2) missingFields.push("Tamko la Mdhamini 2");
+      if (!form.mdhamini1AmesainiFomuNgumu) missingFields.push("Mdhamini 1 amesaini fomu ngumu");
+      if (!form.tamkoMdhamini1) missingFields.push("Tamko la Mdhamini 1 (Nakubali udhamini)");
+      if (!form.mdhamini2AmesainiFomuNgumu) missingFields.push("Mdhamini 2 amesaini fomu ngumu");
+      if (!form.tamkoMdhamini2) missingFields.push("Tamko la Mdhamini 2 (Nakubali udhamini)");
     }
 
     // Step 5: Documentation checklist must be resolved
@@ -987,10 +989,12 @@ const PersonalLoan: React.FC = () => {
                       <td colSpan={4}><strong>Hali ya ndoa</strong><br />
                         <select name="haliYaNdoa" className={errors.haliYaNdoa ? "input-error" : ""} value={form.haliYaNdoa} onChange={handleChange}>
                           <option value="">Chagua</option>
-                          <option value="Nimeoa/Olewa">1. Nimeoa/Olewa</option>
-                          <option value="Sijaoa/Olewa">2. Sijaoa/Olewa</option>
-                          <option value="Nimeachika">3. Nimeachika</option>
-                          <option value="Mjane">4. Mjane</option>
+                          <option value="Nimeoa">1. Nimeoa</option>
+                          <option value="Nimeolewa">2. Nimeolewa</option>
+                          <option value="Sijaoa">3. Sijaoa</option>
+                          <option value="Sijaolewa">4. Sijaolewa</option>
+                          <option value="Nimeachika">5. Nimeachika</option>
+                          <option value="Mjane">6. Mjane</option>
                         </select>
                         {errors.haliYaNdoa && <span className="error-text">{errors.haliYaNdoa}</span>}
                       </td>
@@ -1063,7 +1067,7 @@ const PersonalLoan: React.FC = () => {
                         <select name="umilikiWaMakazi" className={errors.umilikiWaMakazi ? "input-error" : ""} value={form.umilikiWaMakazi} onChange={handleChange}>
                           <option value="">Chagua</option>
                           <option value="Kwake">Kwake</option>
-                          <option value="Umepanga">Umepanga</option>
+                          <option value="Amepanga">Amepanga</option>
                           <option value="Mengine">Mengine (eleza)</option>
                         </select>
                         {errors.umilikiWaMakazi && <span className="error-text">{errors.umilikiWaMakazi}</span>}
