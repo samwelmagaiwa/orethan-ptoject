@@ -1291,6 +1291,7 @@ const Customers: React.FC = () => {
                     display: inline-flex;
                     align-items: center;
                     gap: 6px;
+                    white-space: nowrap;
                 }
 
                 .active-count::before {
