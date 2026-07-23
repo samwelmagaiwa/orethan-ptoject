@@ -681,16 +681,24 @@ const PersonalLoan: React.FC = () => {
       }
     });
 
-    // Step 2: Validate dhamanaList -- only critical fields
+    // Step 2: Validate dhamanaList required fields (namba is optional)
     if (step === 2) {
       form.dhamanaList.forEach((dhamana, index) => {
         if (!dhamana.aina) {
           setErrors(prev => ({ ...prev, [`dhamanaList.${index}.aina`]: "Sehemu hii inahitajika" }));
           if (!missingFields.includes("Aina ya Dhamana")) missingFields.push("Aina ya Dhamana");
         }
+        if (!dhamana.umiliki) {
+          setErrors(prev => ({ ...prev, [`dhamanaList.${index}.umiliki`]: "Sehemu hii inahitajika" }));
+          if (!missingFields.includes("Umiliki wa Dhamana")) missingFields.push("Umiliki wa Dhamana");
+        }
         if (!dhamana.thamani) {
           setErrors(prev => ({ ...prev, [`dhamanaList.${index}.thamani`]: "Sehemu hii inahitajika" }));
           if (!missingFields.includes("Thamani ya Dhamana")) missingFields.push("Thamani ya Dhamana");
+        }
+        if (!dhamana.muonekano) {
+          setErrors(prev => ({ ...prev, [`dhamanaList.${index}.muonekano`]: "Sehemu hii inahitajika" }));
+          if (!missingFields.includes("Muonekano wa Dhamana")) missingFields.push("Muonekano wa Dhamana");
         }
       });
 
