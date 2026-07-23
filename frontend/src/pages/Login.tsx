@@ -75,6 +75,9 @@ function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); reset();
     if (!email.trim() || !password.trim()) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Please enter a valid email address."); return; }
+    if (email.trim().length > 100) { setError("Email address is too long."); return; }
+    if (password.length > 100) { setError("Password is too long."); return; }
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/login`, { email: email.trim(), password: password.trim() });
