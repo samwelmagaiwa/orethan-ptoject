@@ -433,9 +433,12 @@ const ManagingDirector = () => {
                                       loan.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
                       {(loan.status !== 'approved' && loan.status !== 'disbursed') && (loan as any).rejection_metadata && (
-                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', wordBreak: 'break-word' }}>
-                          {t("table.reasonLabel")} {(loan as any).rejection_metadata.reason}
-                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); viewHistory(loan); }}
+                          style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 10px', fontSize: '10px', fontWeight: 700, color: '#fff', background: '#ef4444', border: 'none', borderRadius: '20px', cursor: 'pointer', letterSpacing: '0.5px', textTransform: 'uppercase', animation: 'rejectionPulse 1.8s ease-in-out infinite', boxShadow: '0 0 0 0 rgba(239,68,68,0.4)' }}
+                        >
+                          ↩ Rejection
+                        </button>
                       )}
                     </td>
                     <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
