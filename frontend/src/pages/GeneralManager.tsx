@@ -440,7 +440,7 @@ const GeneralManager = () => {
 
                     </span>
                     {(loan.status === 'manager_review' || loan.status === 'loan_officer') && (loan as any).rejection_metadata && (
-                      <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={(loan as any).rejection_metadata.reason}>
+                      <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', wordBreak: 'break-word' }}>
                         {t("table.reason")}: {(loan as any).rejection_metadata.reason}
                       </div>
                     )}

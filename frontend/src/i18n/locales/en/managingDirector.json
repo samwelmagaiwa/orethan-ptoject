@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalHandled": "Total Handled",
     "currentRole": "Current Role",
@@ -26,14 +26,14 @@
     "reasonLabel": "Reason:"
   },
   "status": {
-    "pendingMd": "PENDING MD",
+    "pendingMd": "PENDING MANAGING DIRECTOR",
     "approved": "APPROVED",
     "disbursed": "DISBURSED",
     "rejected": "REJECTED",
     "returnedForCorrection": "RETURNED FOR CORRECTION",
-    "pendingLm": "PENDING LM",
-    "lmApproved": "LM APPROVED",
-    "pendingGm": "PENDING GM"
+    "pendingLm": "PENDING LOAN MANAGER",
+    "lmApproved": "LOAN MANAGER APPROVED",
+    "pendingGm": "PENDING GENERAL MANAGER"
   },
   "empty": {
     "noApplications": "No loan applications",
@@ -46,7 +46,7 @@
     "viewHistory": "View Recommendations"
   },
   "pagination": {
-    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "showing": "Showing {{from}}â€“{{to}} of {{total}}",
     "previous": "Previous",
     "next": "Next"
   },
@@ -71,3 +71,4 @@
     "rejectError": "Failed to reject application"
   }
 }
+

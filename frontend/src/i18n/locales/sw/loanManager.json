@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalHandled": "Jumla Iliyoshughulikiwa",
     "currentRole": "Wadhifa wa Sasa",
@@ -28,11 +28,11 @@
     "subtitle": "Hakuna maombi yanayosubiri kupitiwa"
   },
   "status": {
-    "pendingLm": "INASUBIRI LM",
-    "lmApproved": "LM AMEIDHINISHA",
-    "pendingGm": "INASUBIRI GM",
-    "gmApproved": "GM AMEIDHINISHA",
-    "pendingMd": "INASUBIRI MD",
+    "pendingLm": "INASUBIRI MENEJA WA MIKOPO",
+    "lmApproved": "MENEJA WA MIKOPO AMEIDHINISHA",
+    "pendingGm": "INASUBIRI MKURUGENZI WA JUMLA",
+    "gmApproved": "MKURUGENZI WA JUMLA AMEIDHINISHA",
+    "pendingMd": "INASUBIRI MKURUGENZI MTENDAJI",
     "rejected": "IMEKATALIWA",
     "approved": "IMEIDHINISHWA",
     "disbursed": "IMETOLEWA"
@@ -69,3 +69,4 @@
     "deleteError": "Imefeli kufuta mkopo"
   }
 }
+

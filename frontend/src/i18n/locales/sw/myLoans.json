@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalApplications": "Maombi Yote",
     "approved": "Yaliyokubaliwa",
@@ -29,11 +29,11 @@
   },
   "status": {
     "returnedForCorrection": "IMERUDISHWA KWA MAREKEBISHO",
-    "pendingLm": "INASUBIRI LM",
-    "lmApproved": "LM AMEKUBALI",
-    "pendingGm": "INASUBIRI GM",
-    "gmApproved": "GM AMEKUBALI",
-    "pendingMd": "INASUBIRI MD",
+    "pendingLm": "INASUBIRI MENEJA WA MIKOPO",
+    "lmApproved": "MENEJA WA MIKOPO AMEKUBALI",
+    "pendingGm": "INASUBIRI MKURUGENZI WA JUMLA",
+    "gmApproved": "MKURUGENZI WA JUMLA AMEKUBALI",
+    "pendingMd": "INASUBIRI MKURUGENZI MTENDAJI",
     "approved": "IMEKUBALIWA",
     "disbursed": "IMETOLEWA",
     "reasonLabel": "Sababu"
@@ -45,7 +45,7 @@
     "delete": "Futa"
   },
   "pagination": {
-    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "showing": "Inaonyesha {{from}}â€“{{to}} kati ya {{total}}",
     "previous": "Iliyotangulia",
     "next": "Inayofuata"
   },
@@ -57,3 +57,4 @@
     "deleteError": "Hitilafu katika kufuta mkopo: {{message}}"
   }
 }
+

@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalHandled": "Jumla Iliyoshughulikiwa",
     "currentRole": "Wadhifa wa Sasa",
@@ -44,7 +44,7 @@
     "viewHistory": "Angalia Mapendekezo"
   },
   "pagination": {
-    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "showing": "Inaonyesha {{from}}â€“{{to}} kati ya {{total}}",
     "previous": "Iliyotangulia",
     "next": "Inayofuata"
   },
@@ -73,3 +73,4 @@
     "deleteError": "Imefeli kufuta mkopo"
   }
 }
+

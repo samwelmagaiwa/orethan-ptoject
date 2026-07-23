@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalHandled": "Jumla Zilizoshughulikiwa",
     "currentRole": "Wadhifa wa Sasa",
@@ -26,14 +26,14 @@
     "reasonLabel": "Sababu:"
   },
   "status": {
-    "pendingMd": "INASUBIRI MD",
+    "pendingMd": "INASUBIRI MKURUGENZI MTENDAJI",
     "approved": "IMEIDHINISHWA",
     "disbursed": "IMETOLEWA",
     "rejected": "IMEKATALIWA",
     "returnedForCorrection": "IMERUDISHWA KWA MAREKEBISHO",
-    "pendingLm": "INASUBIRI LM",
-    "lmApproved": "LM AMEIDHINISHA",
-    "pendingGm": "INASUBIRI GM"
+    "pendingLm": "INASUBIRI MENEJA WA MIKOPO",
+    "lmApproved": "MENEJA WA MIKOPO AMEIDHINISHA",
+    "pendingGm": "INASUBIRI MKURUGENZI WA JUMLA"
   },
   "empty": {
     "noApplications": "Hakuna maombi ya mkopo",
@@ -46,7 +46,7 @@
     "viewHistory": "Angalia Mapendekezo"
   },
   "pagination": {
-    "showing": "Inaonyesha {{from}}–{{to}} kati ya {{total}}",
+    "showing": "Inaonyesha {{from}}â€“{{to}} kati ya {{total}}",
     "previous": "Iliyotangulia",
     "next": "Inayofuata"
   },
@@ -71,3 +71,4 @@
     "rejectError": "Imeshindwa kukataa ombi"
   }
 }
+

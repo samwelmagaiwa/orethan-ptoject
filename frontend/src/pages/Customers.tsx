@@ -723,7 +723,7 @@ const Customers: React.FC = () => {
                                                     {renderLoanStatusLabel(loan)}
                                                 </span>
                                                 {loan.rejection_reason && (loan.status === 'loan_officer') && (
-                                                    <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={loan.rejection_reason}>
+                                                    <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: '500', wordBreak: 'break-word' }}>
                                                         {t("table.reason")}: {loan.rejection_reason}
                                                     </div>
                                                 )}

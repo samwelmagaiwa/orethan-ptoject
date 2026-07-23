@@ -429,7 +429,7 @@ const ManagingDirector = () => {
                                       loan.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
                       {(loan.status !== 'approved' && loan.status !== 'disbursed') && (loan as any).rejection_metadata && (
-                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={(loan as any).rejection_metadata.reason}>
+                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', wordBreak: 'break-word' }}>
                           {t("table.reasonLabel")} {(loan as any).rejection_metadata.reason}
                         </div>
                       )}

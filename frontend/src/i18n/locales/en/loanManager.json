@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalHandled": "Total Handled",
     "currentRole": "Current Role",
@@ -28,11 +28,11 @@
     "subtitle": "No pending applications to review"
   },
   "status": {
-    "pendingLm": "PENDING LM",
-    "lmApproved": "LM APPROVED",
-    "pendingGm": "PENDING GM",
-    "gmApproved": "GM APPROVED",
-    "pendingMd": "PENDING MD",
+    "pendingLm": "PENDING LOAN MANAGER",
+    "lmApproved": "LOAN MANAGER APPROVED",
+    "pendingGm": "PENDING GENERAL MANAGER",
+    "gmApproved": "GENERAL MANAGER APPROVED",
+    "pendingMd": "PENDING MANAGING DIRECTOR",
     "rejected": "REJECTED",
     "approved": "APPROVED",
     "disbursed": "DISBURSED"
@@ -69,3 +69,4 @@
     "deleteError": "Failed to delete loan"
   }
 }
+

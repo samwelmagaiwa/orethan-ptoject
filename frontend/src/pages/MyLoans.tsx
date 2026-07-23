@@ -291,7 +291,7 @@ const MyLoans = () => {
 
                       </span>
                       {loan.rejection_metadata && (
-                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={loan.rejection_metadata.reason}>
+                        <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', wordBreak: 'break-word' }}>
                           {t("status.reasonLabel")}: {loan.rejection_metadata.reason}
                         </div>
                       )}

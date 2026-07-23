@@ -99,6 +99,14 @@ ${el.outerHTML}
     setTimeout(() => win.print(), 800);
   };
 
+  const normalizeMaritalStatus = (status: string | undefined, gender: string | undefined): string | undefined => {
+    if (!status) return status;
+    const isFemale = (gender || '').toLowerCase().includes('ke') || (gender || '').toLowerCase() === 'female';
+    if (status === 'Nimeoa/Olewa') return isFemale ? 'Nimeolewa' : 'Nimeoa';
+    if (status === 'Sijaoa/Olewa') return isFemale ? 'Sijaolewa' : 'Sijaoa';
+    return status;
+  };
+
   const renderVal = (val: any) => {
     if (val === undefined || val === null || val === "" || val === "-") return <RedDash />;
     return val;
@@ -170,7 +178,7 @@ ${el.outerHTML}
 
                     <div className="pdf-item col-4"><span>{t('loanDetails.section1.idType')}</span><strong>{renderVal(loan.details?.ainaYaKitambulisho)}</strong></div>
                     <div className="pdf-item col-4"><span>{t('loanDetails.section1.idNumber')}</span><strong>{renderVal(loan.details?.nambaYaKitambulisho)}</strong></div>
-                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.nationalityMaritalStatus')}</span><strong>{renderVal(loan.details?.uraia || t('loanDetails.section1.defaultNationality'))} / {renderVal(loan.details?.haliYaNdoa)}</strong></div>
+                    <div className="pdf-item col-4"><span>{t('loanDetails.section1.nationalityMaritalStatus')}</span><strong>{renderVal(loan.details?.uraia || t('loanDetails.section1.defaultNationality'))} / {renderVal(normalizeMaritalStatus(loan.details?.haliYaNdoa, loan.details?.jinsia))}</strong></div>
                     <div className="pdf-item col-4"><span>{t('loanDetails.section1.residenceOwnership')}</span><strong>{renderVal(loan.details?.umilikiWaMakazi)} {loan.details?.umilikiWaMakazi === "Mengine (Eleza)" ? `(${renderVal(loan.details?.umilikiWaMakaziMengine)})` : ""}</strong></div>
                     <div className="pdf-item col-4"><span>{t('loanDetails.section1.applicantSignatureHardCopy')}</span><strong className={loan.details?.mwombajiAmesainiFomuNgumu ? "text-success" : ""}>{loan.details?.mwombajiAmesainiFomuNgumu ? t('loanDetails.section1.yesAffixed') : t('loanDetails.section1.no')}</strong></div>
                     <div className="pdf-item col-8"><span>{t('loanDetails.section1.applicantThumbprintHardCopy')}</span><strong className={(loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2) ? "text-success" : ""}>{loan.details?.mwombajiAmewekaDoleGumba || loan.details?.mwombajiAmewekaDoleGumba2 ? t('loanDetails.section1.yesAffixed') : t('loanDetails.section1.no')}</strong></div>

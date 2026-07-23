@@ -1,4 +1,4 @@
-{
+﻿{
   "stats": {
     "totalApplications": "Total Applications",
     "approved": "Approved",
@@ -29,11 +29,11 @@
   },
   "status": {
     "returnedForCorrection": "RETURNED FOR CORRECTION",
-    "pendingLm": "PENDING LM",
-    "lmApproved": "LM APPROVED",
-    "pendingGm": "PENDING GM",
-    "gmApproved": "GM APPROVED",
-    "pendingMd": "PENDING MD",
+    "pendingLm": "PENDING LOAN MANAGER",
+    "lmApproved": "LOAN MANAGER APPROVED",
+    "pendingGm": "PENDING GENERAL MANAGER",
+    "gmApproved": "GENERAL MANAGER APPROVED",
+    "pendingMd": "PENDING MANAGING DIRECTOR",
     "approved": "APPROVED",
     "disbursed": "DISBURSED",
     "reasonLabel": "Reason"
@@ -45,7 +45,7 @@
     "delete": "Delete"
   },
   "pagination": {
-    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "showing": "Showing {{from}}â€“{{to}} of {{total}}",
     "previous": "Previous",
     "next": "Next"
   },
@@ -57,3 +57,4 @@
     "deleteError": "Error deleting loan: {{message}}"
   }
 }
+
