@@ -26,6 +26,7 @@ interface Loan {
   total_arrears?: number;
   sms_status?: string | null;
   sms_type?: string | null;
+  loan_account_number?: string | null;
 }
 
 const GeneralManager = () => {
@@ -367,6 +368,7 @@ const GeneralManager = () => {
           <thead>
             <tr>
               <th>#</th>
+              <th>{t("table.accountNumber")}</th>
               <th>{t("table.client")}</th>
               <th>{t("table.phoneNumber")}</th>
               <th>{t("table.activeLoans")}</th>
@@ -379,7 +381,7 @@ const GeneralManager = () => {
           </thead>
           <tbody>
             {filteredLoans.length === 0 ? (
-              <tr><td colSpan={9} className="table-empty">{t("table.noApplicationsFound")}</td></tr>
+              <tr><td colSpan={10} className="table-empty">{t("table.noApplicationsFound")}</td></tr>
             ) : (
               pagedLoans.map((loan, index) => (
                 <tr
@@ -388,6 +390,7 @@ const GeneralManager = () => {
                   className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                 >
                   <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                   <td>
                     <div className="client-info">
                       <div className="avatar">{loan.name.charAt(0)}</div>

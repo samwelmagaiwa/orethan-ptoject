@@ -25,6 +25,7 @@
     "loanType": "Loan Type",
     "status": "Status",
     "smsStatus": "SMS Status",
+    "accountNumber": "Account No",
     "actions": "Actions"
   },
   "status": {
@@ -57,4 +58,5 @@
     "deleteError": "Error deleting loan: {{message}}"
   }
 }
+
 

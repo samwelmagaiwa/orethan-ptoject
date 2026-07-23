@@ -18,6 +18,7 @@
     "arrears": "Arrears",
     "status": "Status",
     "smsStatus": "SMS Status",
+    "accountNumber": "Account No",
     "actions": "Actions",
     "activeCount": "{{count}} Active",
     "none": "None",
@@ -69,4 +70,5 @@
     "deleteError": "Failed to delete loan"
   }
 }
+
 

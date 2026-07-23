@@ -27,6 +27,7 @@
     "type": "Type",
     "status": "Status",
     "smsStatus": "SMS Status",
+    "accountNumber": "Account No",
     "activeCount": "{{count}} Active",
     "none": "None",
     "reason": "Reason"
@@ -100,4 +101,5 @@
     "deleteFailed": "Failed to delete loan"
   }
 }
+
 

@@ -19,6 +19,7 @@
     "arrears": "Madeni Yaliyochelewa",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
+    "accountNumber": "Namba ya Akaunti",
     "actions": "Hatua",
     "notAvailable": "Haipo",
     "activeCount": "{{count}} Amilifu",
@@ -71,4 +72,5 @@
     "rejectError": "Imeshindwa kukataa ombi"
   }
 }
+
 

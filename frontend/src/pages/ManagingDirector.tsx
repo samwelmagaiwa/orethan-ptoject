@@ -26,6 +26,7 @@ interface Loan {
   total_arrears?: number;
   sms_status?: string | null;
   sms_type?: string | null;
+  loan_account_number?: string | null;
 }
 
 const ManagingDirector = () => {
@@ -332,6 +333,7 @@ const ManagingDirector = () => {
             <thead>
               <tr>
                 <th>#</th>
+                <th>{t("table.accountNumber")}</th>
                 <th>{t("table.client")}</th>
                 <th>{t("table.phoneNumber")}</th>
                 <th>{t("table.activeLoans")}</th>
@@ -347,6 +349,7 @@ const ManagingDirector = () => {
                 Array(5).fill(0).map((_, i) => (
                   <tr key={`skeleton-${i}`} className="skeleton-row">
                     <td><div className="skeleton-bar" style={{ width: '30px' }}></div></td>
+                    <td><div className="skeleton-bar" style={{ width: '130px' }}></div></td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className="skeleton-avatar"></div>
@@ -364,7 +367,7 @@ const ManagingDirector = () => {
                 ))
               ) : filteredLoans.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <div className="empty-state">
                       <p>{t("empty.noApplications")}</p>
                       <span>{t("empty.noApplicationsSubtitle")}</span>
@@ -379,6 +382,7 @@ const ManagingDirector = () => {
                     className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                   >
                     <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                     <td>
                       <div className="client-info">
                         <div className="avatar">{loan.name.charAt(0)}</div>

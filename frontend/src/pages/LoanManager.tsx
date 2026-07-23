@@ -25,6 +25,7 @@ interface Loan {
   total_arrears?: number;
   sms_status?: string | null;
   sms_type?: string | null;
+  loan_account_number?: string | null;
 }
 
 const LoanManager = () => {
@@ -288,6 +289,7 @@ const LoanManager = () => {
           <thead>
             <tr>
               <th>{t("table.number")}</th>
+              <th>{t("table.accountNumber")}</th>
               <th>{t("table.client")}</th>
               <th>{t("table.phoneNumber")}</th>
               <th>{t("table.activeLoans")}</th>
@@ -303,6 +305,7 @@ const LoanManager = () => {
               Array(5).fill(0).map((_, i) => (
                 <tr key={`skeleton-${i}`} className="skeleton-row">
                   <td><div className="skeleton-bar" style={{ width: '30px' }}></div></td>
+                  <td><div className="skeleton-bar" style={{ width: '130px' }}></div></td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div className="skeleton-avatar"></div>
@@ -320,7 +323,7 @@ const LoanManager = () => {
               ))
             ) : loans.length === 0 ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="empty-state">
                     <p>{t("empty.title")}</p>
                     <span>{t("empty.subtitle")}</span>
@@ -335,6 +338,7 @@ const LoanManager = () => {
                   className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                 >
                   <td className="col-number">{index + 1}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                   <td>
                     <div className="client-info">
                       <div className="avatar">{loan.name.charAt(0)}</div>

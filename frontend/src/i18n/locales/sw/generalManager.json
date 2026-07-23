@@ -19,6 +19,7 @@
     "arrears": "Madeni Yaliyochelewa",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
+    "accountNumber": "Namba ya Akaunti",
     "actions": "Hatua",
     "noApplicationsFound": "Hakuna maombi yaliyopatikana.",
     "notAvailable": "Haipo",
@@ -73,4 +74,5 @@
     "deleteError": "Imefeli kufuta mkopo"
   }
 }
+
 

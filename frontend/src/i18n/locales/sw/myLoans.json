@@ -25,6 +25,7 @@
     "loanType": "Aina ya Mkopo",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
+    "accountNumber": "Namba ya Akaunti",
     "actions": "Vitendo"
   },
   "status": {
@@ -57,4 +58,5 @@
     "deleteError": "Hitilafu katika kufuta mkopo: {{message}}"
   }
 }
+
 

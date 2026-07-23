@@ -27,6 +27,7 @@
     "type": "Aina",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
+    "accountNumber": "Namba ya Akaunti",
     "activeCount": "{{count}} Amilifu",
     "none": "Hakuna",
     "reason": "Sababu"
@@ -100,4 +101,5 @@
     "deleteFailed": "Imeshindwa kufuta mkopo"
   }
 }
+
 

@@ -19,6 +19,7 @@
     "arrears": "Arrears",
     "status": "Status",
     "smsStatus": "SMS Status",
+    "accountNumber": "Account No",
     "actions": "Actions",
     "noApplicationsFound": "No applications found.",
     "notAvailable": "N/A",
@@ -73,4 +74,5 @@
     "deleteError": "Failed to delete loan"
   }
 }
+
 

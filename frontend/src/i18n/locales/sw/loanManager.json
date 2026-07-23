@@ -18,6 +18,7 @@
     "arrears": "Arrears",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
+    "accountNumber": "Namba ya Akaunti",
     "actions": "Hatua",
     "activeCount": "{{count}} Amilifu",
     "none": "Hakuna",
@@ -69,4 +70,5 @@
     "deleteError": "Imefeli kufuta mkopo"
   }
 }
+
 

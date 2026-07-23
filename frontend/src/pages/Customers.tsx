@@ -599,6 +599,7 @@ const Customers: React.FC = () => {
                             ) : (
                                 <tr>
                                     <th>#</th>
+                                    <th>{t("table.accountNumber")}</th>
                                     <th>{t("table.applicant")}</th>
                                     <th>{t("table.phone")}</th>
                                     <th>{t("table.amount")}</th>
@@ -695,7 +696,7 @@ const Customers: React.FC = () => {
                                 )
                             ) : (
                                 filteredLoans.length === 0 ? (
-                                    <tr><td colSpan={8} className="table-empty">{t("empty.noApplications")}</td></tr>
+                                    <tr><td colSpan={9} className="table-empty">{t("empty.noApplications")}</td></tr>
                                 ) : (
                                     pagedLoans.map((loan, index) => (
                                         <tr
@@ -704,6 +705,7 @@ const Customers: React.FC = () => {
                                             className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                                         >
                                             <td>{(currentPage - 1) * entriesPerPage + index + 1}</td>
+                                            <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                                             <td>
                                                 <div className="client-info">
                                                     <div className="avatar">{loan.name.charAt(0)}</div>

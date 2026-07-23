@@ -55,7 +55,7 @@ class Loan extends Model
      */
     public function generateAccountNumber()
     {
-        $date = $this->disbursed_at ?? now();
+        $date = $this->disbursed_at ?? $this->created_at ?? now();
         $day = $date->format('d');
         $month = $date->format('m');
         $year = $date->format('Y');

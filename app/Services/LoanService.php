@@ -55,6 +55,10 @@ class LoanService
                 'user_id' => $data['user_id'] ?? null,
             ]);
 
+            // Assign account number immediately at submission (needs persisted id)
+            $loan->loan_account_number = $loan->generateAccountNumber();
+            $loan->save();
+
             // Create initial approval record for audit trail
             \App\Models\LoanApproval::create([
                 'loan_id' => $loan->id,

@@ -242,6 +242,7 @@ const MyLoans = () => {
               <thead>
                 <tr>
                   <th>{t("table.number")}</th>
+                  <th>{t("table.accountNumber")}</th>
                   <th>{t("table.clientName")}</th>
                   <th>{t("table.loanAmount")}</th>
                   <th>{t("table.loanType")}</th>
@@ -254,6 +255,7 @@ const MyLoans = () => {
                 {pagedLoans.map((loan, index) => (
                   <tr key={loan.id}>
                     <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                     <td>
                       <div className="client-info">
                         <span className="client-name">{loan.name}</span>
