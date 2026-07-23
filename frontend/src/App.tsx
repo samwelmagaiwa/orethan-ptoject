@@ -956,44 +956,67 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
           }
         }
 
-        /* Large phone (≤600px): 2 columns still but tighter */
+        /* Large phone (≤600px): single column, tighter spacing */
         @media (max-width: 600px) {
           .top-nav {
-            padding: 0 14px;
+            padding: 0 12px;
             height: 52px;
           }
           .login-btn {
-            padding: 7px 18px;
-            font-size: 13px;
+            padding: 6px 14px;
+            font-size: 12px;
           }
           .calculator-section {
-            padding: 10px;
+            padding: 8px;
           }
           .main-calculator {
             padding: 16px 12px;
             border-radius: 14px;
+            width: 100%;
+          }
+          .calc-header {
+            margin-bottom: 16px;
           }
           .title-circle {
-            padding: 12px 16px;
+            padding: 11px 14px;
+            border-radius: 30px;
+            min-width: 0;
+            width: 100%;
           }
           .title-circle h1 {
-            font-size: 14px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
           }
           .form-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px 12px;
+            grid-template-columns: 1fr;
+            gap: 10px;
           }
           .field-group label {
             font-size: 11px;
           }
           .field-group input,
           .field-group select {
-            padding: 10px 10px;
+            padding: 11px 12px;
+            font-size: 14px;
+          }
+          .field-group.buttons {
+            flex-direction: row;
+            margin-top: 4px;
+          }
+          .btn-calculate,
+          .btn-export {
+            padding: 12px 8px;
             font-size: 13px;
           }
           .calc-results {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
+          }
+          .result-card {
+            padding: 12px 8px;
+          }
+          .result-label {
+            font-size: 10px;
           }
           .result-value {
             font-size: 15px;
@@ -1003,11 +1026,8 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
           }
         }
 
-        /* Small phone (≤400px): single column */
+        /* Small phone (≤400px) */
         @media (max-width: 400px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
           .calc-results {
             grid-template-columns: 1fr;
           }
@@ -1015,7 +1035,7 @@ function Home({ setLoading, setSyncMessages }: { setLoading: (l: boolean) => voi
             flex-direction: column;
           }
           .title-circle h1 {
-            font-size: 13px;
+            font-size: 12px;
           }
           .custom-logo-image {
             height: 65px;

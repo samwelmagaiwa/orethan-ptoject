@@ -6931,7 +6931,7 @@ Minimum version required to store current data is: `+c+`.
         .ls-perm-check input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
         .ls-perm-tick { font-size: 13px; font-weight: 800; color: #fff; line-height: 1; user-select: none; pointer-events: none; }
       `})]})},K7=(e,t)=>{let n=URL.createObjectURL(e),r=document.createElement(`a`);r.href=n,r.download=t,document.body.appendChild(r),r.click(),document.body.removeChild(r),URL.revokeObjectURL(n)},Jce=e=>{let t=e==null?``:String(e);return/[",\n]/.test(t)?`"${t.replace(/"/g,`""`)}"`:t},Yce=(e,t)=>{if(!t.length)return;let n=Object.keys(t[0]),r=[n.join(`,`),...t.map(e=>n.map(t=>Jce(e[t])).join(`,`))];K7(new Blob([r.join(`
-`)],{type:`text/csv;charset=utf-8;`}),`${e}.csv`)},Xce=async(e,t,n)=>{if(!n.length)return;let r=new(await(Nt(async()=>{let{default:e}=await import(`./exceljs.min-BJeSeUuf.js`).then(e=>u(e.default,1));return{default:e}},[]))).default.Workbook,i=r.addWorksheet(t.slice(0,31));i.columns=Object.keys(n[0]).map(e=>({header:e,key:e,width:Math.max(14,e.length+2)})),i.getRow(1).font={bold:!0},i.getRow(1).fill={type:`pattern`,pattern:`solid`,fgColor:{argb:`FF102A43`}},i.getRow(1).eachCell(e=>{e.font={bold:!0,color:{argb:`FFFFFFFF`}}}),n.forEach(e=>i.addRow(e));let a=await r.xlsx.writeBuffer();K7(new Blob([a],{type:`application/octet-stream`}),`${e}.xlsx`)},q7=({getRows:e,filename:t,sheetName:n,onPrint:r,disabled:i})=>{let[a,o]=(0,x.useState)(!1);return(0,Y.jsxs)(`div`,{className:`export-buttons`,children:[(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:()=>Yce(t,e()),children:[(0,Y.jsx)(Ec,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`CSV`})]}),(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i||a,onClick:async()=>{o(!0);try{await Xce(t,n||t,e())}finally{o(!1)}},children:[(0,Y.jsx)(Ac,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:a?`Exporting…`:`Excel`})]}),r&&(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:r,children:[(0,Y.jsx)(Yc,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`Print`})]}),(0,Y.jsx)(`style`,{children:`
+`)],{type:`text/csv;charset=utf-8;`}),`${e}.csv`)},Xce=async(e,t,n)=>{if(!n.length)return;let r=new(await(Nt(async()=>{let{default:e}=await import(`./exceljs.min-DYim-EYZ.js`).then(e=>u(e.default,1));return{default:e}},[]))).default.Workbook,i=r.addWorksheet(t.slice(0,31));i.columns=Object.keys(n[0]).map(e=>({header:e,key:e,width:Math.max(14,e.length+2)})),i.getRow(1).font={bold:!0},i.getRow(1).fill={type:`pattern`,pattern:`solid`,fgColor:{argb:`FF102A43`}},i.getRow(1).eachCell(e=>{e.font={bold:!0,color:{argb:`FFFFFFFF`}}}),n.forEach(e=>i.addRow(e));let a=await r.xlsx.writeBuffer();K7(new Blob([a],{type:`application/octet-stream`}),`${e}.xlsx`)},q7=({getRows:e,filename:t,sheetName:n,onPrint:r,disabled:i})=>{let[a,o]=(0,x.useState)(!1);return(0,Y.jsxs)(`div`,{className:`export-buttons`,children:[(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:()=>Yce(t,e()),children:[(0,Y.jsx)(Ec,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`CSV`})]}),(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i||a,onClick:async()=>{o(!0);try{await Xce(t,n||t,e())}finally{o(!1)}},children:[(0,Y.jsx)(Ac,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:a?`Exporting…`:`Excel`})]}),r&&(0,Y.jsxs)(`button`,{type:`button`,className:`export-btn`,disabled:i,onClick:r,children:[(0,Y.jsx)(Yc,{size:14}),(0,Y.jsx)(`span`,{className:`export-btn__label`,children:`Print`})]}),(0,Y.jsx)(`style`,{children:`
         .export-buttons { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; }
         .export-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
         .export-btn:hover:not(:disabled) { background: #102a43; color: #fff; border-color: #102a43; }
@@ -9554,44 +9554,67 @@ Minimum version required to store current data is: `+c+`.
           }
         }
 
-        /* Large phone (≤600px): 2 columns still but tighter */
+        /* Large phone (≤600px): single column, tighter spacing */
         @media (max-width: 600px) {
           .top-nav {
-            padding: 0 14px;
+            padding: 0 12px;
             height: 52px;
           }
           .login-btn {
-            padding: 7px 18px;
-            font-size: 13px;
+            padding: 6px 14px;
+            font-size: 12px;
           }
           .calculator-section {
-            padding: 10px;
+            padding: 8px;
           }
           .main-calculator {
             padding: 16px 12px;
             border-radius: 14px;
+            width: 100%;
+          }
+          .calc-header {
+            margin-bottom: 16px;
           }
           .title-circle {
-            padding: 12px 16px;
+            padding: 11px 14px;
+            border-radius: 30px;
+            min-width: 0;
+            width: 100%;
           }
           .title-circle h1 {
-            font-size: 14px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
           }
           .form-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px 12px;
+            grid-template-columns: 1fr;
+            gap: 10px;
           }
           .field-group label {
             font-size: 11px;
           }
           .field-group input,
           .field-group select {
-            padding: 10px 10px;
+            padding: 11px 12px;
+            font-size: 14px;
+          }
+          .field-group.buttons {
+            flex-direction: row;
+            margin-top: 4px;
+          }
+          .btn-calculate,
+          .btn-export {
+            padding: 12px 8px;
             font-size: 13px;
           }
           .calc-results {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
+          }
+          .result-card {
+            padding: 12px 8px;
+          }
+          .result-label {
+            font-size: 10px;
           }
           .result-value {
             font-size: 15px;
@@ -9601,11 +9624,8 @@ Minimum version required to store current data is: `+c+`.
           }
         }
 
-        /* Small phone (≤400px): single column */
+        /* Small phone (≤400px) */
         @media (max-width: 400px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
           .calc-results {
             grid-template-columns: 1fr;
           }
@@ -9613,7 +9633,7 @@ Minimum version required to store current data is: `+c+`.
             flex-direction: column;
           }
           .title-circle h1 {
-            font-size: 13px;
+            font-size: 12px;
           }
           .custom-logo-image {
             height: 65px;
