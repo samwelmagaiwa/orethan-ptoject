@@ -280,13 +280,21 @@ const ManagingDirector = () => {
           <div className="stat-number">{loans.length}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#6b5a2e' }}>
-          <div className="stat-label" style={{ marginBottom: '10px' }}>APPROVED &nbsp;|&nbsp; REJECTED &nbsp;|&nbsp; AWAITING</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0', justifyContent: 'flex-start' }}>
-            <span style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{loans.filter(l => ['approved','disbursed'].includes(l.status)).length}</span>
-            <span style={{ margin: '0 14px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300 }}>|</span>
-            <span style={{ fontSize: '26px', fontWeight: 800, color: '#ef4444' }}>{loans.filter(l => (l as any).rejection_metadata?.rejector_role === 'managing_director').length}</span>
-            <span style={{ margin: '0 14px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300 }}>|</span>
-            <span style={{ fontSize: '26px', fontWeight: 800, color: '#f59e0b' }}>{loans.filter(l => l.status === 'md_review').length}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span className="stat-label" style={{ fontSize: '10px', marginBottom: '6px', whiteSpace: 'nowrap' }}>APPROVED</span>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{loans.filter(l => ['approved','disbursed'].includes(l.status)).length}</span>
+            </div>
+            <span style={{ margin: '0 6px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300, alignSelf: 'center' }}>|</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span className="stat-label" style={{ fontSize: '10px', marginBottom: '6px', whiteSpace: 'nowrap' }}>REJECTED</span>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: '#ef4444' }}>{loans.filter(l => (l as any).rejection_metadata?.rejector_role === 'managing_director').length}</span>
+            </div>
+            <span style={{ margin: '0 6px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300, alignSelf: 'center' }}>|</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span className="stat-label" style={{ fontSize: '10px', marginBottom: '6px', whiteSpace: 'nowrap' }}>AWAITING</span>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: '#f59e0b' }}>{loans.filter(l => l.status === 'md_review').length}</span>
+            </div>
           </div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#f59e0b' }}>
