@@ -72,12 +72,11 @@ class LoanController extends Controller
         // Show loans CURRENTLY at manager_review
         // OR previously at/above manager_review (to keep rejected/returned loans visible)
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->where('status', 'manager_review')
+            ->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                // include 'rejected' so loans the manager sent back to the officer stay visible
-                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'rejected']);
+                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'rejected', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'manager_review', 'gm_review', 'md_review', 'approved', 'loan_officer')")
+            ->orderByRaw("FIELD(status, 'manager_review', 'gm_review', 'md_review', 'approved', 'disbursed', 'loan_officer')")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
@@ -89,11 +88,11 @@ class LoanController extends Controller
         // Show loans CURRENTLY at gm_review or higher
         // OR previously processed by GM level or above
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->whereIn('status', ['gm_review', 'md_review', 'approved'])
+            ->whereIn('status', ['gm_review', 'md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                $query->whereIn('status', ['gm_review', 'md_review', 'approved']);
+                $query->whereIn('status', ['gm_review', 'md_review', 'approved', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'gm_review', 'md_review', 'approved', 'manager_review', 'loan_officer')")
+            ->orderByRaw("FIELD(status, 'gm_review', 'md_review', 'approved', 'disbursed', 'manager_review', 'loan_officer')")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
@@ -105,11 +104,11 @@ class LoanController extends Controller
         // Show loans CURRENTLY at md_review or higher
         // OR previously processed by MD level
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->whereIn('status', ['md_review', 'approved'])
+            ->whereIn('status', ['md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                $query->whereIn('status', ['md_review', 'approved']);
+                $query->whereIn('status', ['md_review', 'approved', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'md_review', 'approved', 'gm_review', 'manager_review', 'loan_officer')")
+            ->orderByRaw("FIELD(status, 'md_review', 'approved', 'disbursed', 'gm_review', 'manager_review', 'loan_officer')")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
