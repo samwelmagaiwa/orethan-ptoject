@@ -274,22 +274,20 @@ const ManagingDirector = () => {
           </div>
         </div>
       )}
-      <div className="ph-bar">
-        <div className="ph-inner">
-          <div className="ph-brand">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
-            <span>MD Authorization</span>
-          </div>
-        </div>
-      </div>
       <div className="stats-row">
         <div className="stat-box">
           <div className="stat-label">{t("stats.totalHandled")}</div>
           <div className="stat-number">{loans.length}</div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#6b5a2e' }}>
-          <div className="stat-label">{t("stats.currentRole")}</div>
-          <div className="stat-number" style={{ fontSize: '24px' }}>{t("stats.managingDirector")}</div>
+          <div className="stat-label" style={{ marginBottom: '10px' }}>APPROVED &nbsp;|&nbsp; REJECTED &nbsp;|&nbsp; AWAITING</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0', justifyContent: 'flex-start' }}>
+            <span style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{loans.filter(l => ['approved','disbursed'].includes(l.status)).length}</span>
+            <span style={{ margin: '0 14px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300 }}>|</span>
+            <span style={{ fontSize: '26px', fontWeight: 800, color: '#ef4444' }}>{loans.filter(l => (l as any).rejection_metadata?.rejector_role === 'managing_director').length}</span>
+            <span style={{ margin: '0 14px', color: '#cbd5e1', fontSize: '22px', fontWeight: 300 }}>|</span>
+            <span style={{ fontSize: '26px', fontWeight: 800, color: '#f59e0b' }}>{loans.filter(l => l.status === 'md_review').length}</span>
+          </div>
         </div>
         <div className="stat-box" style={{ borderLeftColor: '#f59e0b' }}>
           <div className="stat-label">{t("stats.actionRequired")}</div>
