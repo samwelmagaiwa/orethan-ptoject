@@ -383,7 +383,7 @@ const LoanManager = () => {
                                   loan.status.replace(/_/g, ' ').toUpperCase()}
                     </span>
                     {(loan.status === 'loan_officer') && (loan as any).rejection_metadata && (
-                      <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px' }}>
+                      <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={(loan as any).rejection_metadata.reason}>
                         {t("table.reason")}: {(loan as any).rejection_metadata.reason}
                       </div>
                     )}

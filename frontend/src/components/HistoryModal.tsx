@@ -400,13 +400,14 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
                 .h-comment-text {
                     position: absolute;
                     top: -11px;
+                    left: 130px;
                     right: 12px;
-                    max-width: 52%;
                     background: #ffffff;
                     padding: 0 6px;
-                    color: #64748b;
+                    color: #475569;
                     font-size: 11px;
                     font-style: italic;
+                    font-weight: 700;
                     white-space: nowrap;
                     overflow-x: auto;
                     scrollbar-width: thin;
