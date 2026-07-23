@@ -427,6 +427,58 @@ class SmsService
     }
 
     /**
+     * SMS to the staff member whose submission was returned for corrections.
+     * $statusBeforeReject is the loan status BEFORE rejectLoan() changed it.
+     *   manager_review → notify the loan officer ($loan->user)
+     *   gm_review      → notify all users with role='manager'
+     *   md_review      → notify all users with role='general_manager'
+     */
+    public function sendLoanReturnedToStaff(Loan $loan, string $statusBeforeReject, string $reason = ''): void
+    {
+        $loan->loadMissing('user');
+        $loanNo = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $applicant = $loan->name;
+
+        if ($statusBeforeReject === 'manager_review') {
+            // Returned to the individual loan officer who submitted it
+            $officer = $loan->user;
+            if ($officer && $officer->phone) {
+                $this->dispatch(
+                    type: 'loan_returned_to_staff',
+                    phone: $officer->phone,
+                    message: SmsTemplates::loanReturnedToStaff($officer->name, $applicant, $loanNo, $reason),
+                    customerId: $loan->customer_id,
+                    loanId: $loan->id,
+                );
+            }
+        } elseif ($statusBeforeReject === 'gm_review') {
+            // Returned to all loan managers
+            $users = \App\Models\User::where('role', 'manager')->whereNotNull('phone')->get();
+            foreach ($users as $u) {
+                $this->dispatch(
+                    type: 'loan_returned_to_staff',
+                    phone: $u->phone,
+                    message: SmsTemplates::loanReturnedToStaff($u->name, $applicant, $loanNo, $reason),
+                    customerId: $loan->customer_id,
+                    loanId: $loan->id,
+                );
+            }
+        } elseif ($statusBeforeReject === 'md_review') {
+            // Returned to all general managers
+            $users = \App\Models\User::where('role', 'general_manager')->whereNotNull('phone')->get();
+            foreach ($users as $u) {
+                $this->dispatch(
+                    type: 'loan_returned_to_staff',
+                    phone: $u->phone,
+                    message: SmsTemplates::loanReturnedToStaff($u->name, $applicant, $loanNo, $reason),
+                    customerId: $loan->customer_id,
+                    loanId: $loan->id,
+                );
+            }
+        }
+    }
+
+    /**
      * Reads guarantor name+phone pairs out of the loan's free-form `details`
      * JSON. Field prefix differs by loan type: PersonalLoan.tsx writes
      * wdhamini1/2*, GroupLoan.tsx writes mdhamini1/2* -- both follow the same

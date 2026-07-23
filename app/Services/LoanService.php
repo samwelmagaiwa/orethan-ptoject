@@ -131,6 +131,8 @@ class LoanService
      */
     public function rejectLoan($loan, array $data, $user)
     {
+        $statusBeforeReject = $loan->status;
+
         $loan = DB::transaction(function () use ($loan, $data, $user) {
             if ($loan->status == 'manager_review') {
                 $loan->status = 'loan_officer';
@@ -155,8 +157,8 @@ class LoanService
             return $loan;
         });
 
-        // Notify the borrower that their application was not approved.
-        $this->sms->sendLoanRejected($loan, $data['reason'] ?? '');
+        // Notify the staff member the loan was returned to, not the borrower.
+        $this->sms->sendLoanReturnedToStaff($loan, $statusBeforeReject, $data['reason'] ?? '');
 
         return $loan;
     }

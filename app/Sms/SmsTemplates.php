@@ -149,7 +149,15 @@ class SmsTemplates
             . "Tafadhali wasiliana na ofisi yetu kwa maelezo zaidi. Asante - Orethan Microfinance.";
     }
 
-    /** Sent to Loan Manager(s) when a new loan application arrives for their review. */
+    /** Sent to the staff member whose loan submission was returned for corrections. */
+    public static function loanReturnedToStaff(string $staffName, string $applicantName, string $loanNo, string $reason = ''): string
+    {
+        $reasonLine = $reason ? " Sababu: {$reason}." : '';
+        return "Mpendwa {$staffName}, ombi la mkopo ({$loanNo}, {$applicantName}) "
+            . "limerudishwa kwako kwa marekebisho.{$reasonLine} Tafadhali rekebisha na utume tena. - Orethan Microfinance.";
+    }
+
+    /** Sent to the staff member whose loan submission was returned for corrections. */
     public static function loanApplicationPendingReview(string $managerName, string $applicantName, float $amount, string $loanNo): string
     {
         return "Mpendwa {$managerName}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia mfumoni. - Orethan";
