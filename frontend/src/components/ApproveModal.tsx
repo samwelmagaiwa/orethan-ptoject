@@ -639,14 +639,21 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                 }
 
                 .h-comment-text {
+                    position: absolute;
+                    top: -11px;
+                    right: 12px;
+                    max-width: 52%;
+                    background: #ffffff;
+                    padding: 0 6px;
                     color: #64748b;
-                    font-size: 14px;
-                    flex: 1;
-                    min-width: 0;
+                    font-size: 11px;
+                    font-style: italic;
                     white-space: nowrap;
                     overflow-x: auto;
                     scrollbar-width: thin;
                     scrollbar-color: #e2e8f0 transparent;
+                    z-index: 2;
+                    border-radius: 4px;
                 }
 
                 .h-date-outside {
