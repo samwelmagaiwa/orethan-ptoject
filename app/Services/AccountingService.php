@@ -80,13 +80,14 @@ class AccountingService
 
             $entryDate = $data['entry_date'] ?? now()->toDateString();
             $entry = JournalEntry::create([
-                'entry_number' => $this->nextEntryNumber($entryDate),
-                'entry_date' => $entryDate,
+                'entry_number'   => $this->nextEntryNumber($entryDate),
+                'entry_date'     => $entryDate,
                 'reference_type' => $data['reference_type'] ?? null,
-                'reference_id' => $data['reference_id'] ?? null,
-                'description' => $data['description'],
-                'status' => 'posted',
-                'created_by' => $user->id ?? null,
+                'reference_id'   => $data['reference_id'] ?? null,
+                'voucher_number' => $data['voucher_number'] ?? null,
+                'description'    => $data['description'],
+                'status'         => 'posted',
+                'created_by'     => $user->id ?? null,
             ]);
 
             foreach ($lines as $i => $line) {
@@ -116,15 +117,16 @@ class AccountingService
             }
 
             $reversal = $this->postJournalEntry([
-                'entry_date' => now()->toDateString(),
+                'entry_date'     => now()->toDateString(),
                 'reference_type' => $entry->reference_type,
-                'reference_id' => $entry->reference_id,
-                'description' => 'Reversal of ' . $entry->entry_number . ($reason ? " — {$reason}" : ''),
+                'reference_id'   => $entry->reference_id,
+                'voucher_number' => $entry->voucher_number, // carry original voucher for audit trail
+                'description'    => 'Reversal of ' . $entry->entry_number . ($reason ? " — {$reason}" : ''),
                 'lines' => $entry->lines->map(fn($line) => [
                     'chart_of_account_id' => $line->chart_of_account_id,
-                    'debit' => $line->credit,
-                    'credit' => $line->debit,
-                    'description' => $line->description,
+                    'debit'               => $line->credit,
+                    'credit'              => $line->debit,
+                    'description'         => $line->description,
                 ])->all(),
             ], $user);
 
@@ -138,6 +140,42 @@ class AccountingService
 
             return $reversal;
         });
+    }
+
+    /**
+     * Opening-balance GL entry for a historical (pre-system) loan.
+     * Only the outstanding balance (after historical payments) is posted:
+     *
+     *   Dr  1100  Loans Receivable     remaining_balance
+     *   Cr  3020  Retained Earnings    remaining_balance
+     *
+     * Historical cash flows are intentionally omitted — the retained earnings
+     * credit represents the net equity from those past transactions brought on-book.
+     */
+    public function postHistoricalLoanOpening(\App\Models\Loan $loan, float $remainingBalance, ?User $user = null): JournalEntry
+    {
+        $lines = [
+            [
+                'chart_of_account_id' => $this->account(self::LOANS_RECEIVABLE)->id,
+                'debit'               => $remainingBalance,
+                'credit'              => 0,
+                'description'         => 'Historical loan opening balance — ' . ($loan->loan_account_number ?? $loan->id),
+            ],
+            [
+                'chart_of_account_id' => $this->account(self::RETAINED_EARNINGS)->id,
+                'debit'               => 0,
+                'credit'              => $remainingBalance,
+                'description'         => 'Historical loan equity (pre-system) — ' . ($loan->loan_account_number ?? $loan->id),
+            ],
+        ];
+
+        return $this->postJournalEntry([
+            'entry_date'     => $loan->disbursed_at?->toDateString() ?? now()->toDateString(),
+            'reference_type' => 'historical_loan_opening',
+            'reference_id'   => $loan->id,
+            'description'    => 'Historical loan opening — ' . ($loan->loan_account_number ?? $loan->id) . ' (pre-system import)',
+            'lines'          => $lines,
+        ], $user);
     }
 
     /**
@@ -172,11 +210,18 @@ class AccountingService
             ];
         }
 
+        $voucherNo = $disbursement->voucher_number ?? null;
+
         return $this->postJournalEntry([
-            'entry_date' => $disbursement->disbursement_date,
+            'entry_date'     => $disbursement->disbursement_date,
             'reference_type' => 'loan_disbursement',
-            'reference_id' => $disbursement->id,
-            'description' => 'Disbursement of loan ' . ($loan->loan_account_number ?? $loan->id) . ' (' . ($disbursement->voucher_number ?? 'no voucher') . ')',
+            'reference_id'   => $disbursement->id,
+            'voucher_number' => $voucherNo,
+            'description'    => implode(' — ', array_filter([
+                'Loan disbursement',
+                $loan->loan_account_number ?? ('Loan #' . $loan->id),
+                $voucherNo ? 'Kitabu NO. ' . $voucherNo : null,
+            ])),
             'lines' => $lines,
         ], $user);
     }
@@ -245,11 +290,18 @@ class AccountingService
             ];
         }
 
+        $voucherNo = $repayment->transaction_id ?? null;
+
         return $this->postJournalEntry([
-            'entry_date' => $repayment->payment_date,
+            'entry_date'     => $repayment->payment_date,
             'reference_type' => 'repayment',
-            'reference_id' => $repayment->id,
-            'description' => 'Repayment for loan ' . ($loan->loan_account_number ?? $loan->id) . ' (' . ($repayment->receipt_number ?? 'no receipt') . ')',
+            'reference_id'   => $repayment->id,
+            'voucher_number' => $voucherNo,
+            'description'    => implode(' — ', array_filter([
+                'Loan repayment',
+                $loan->loan_account_number ?? ('Loan #' . $loan->id),
+                $voucherNo ? 'Kitabu NO. ' . $voucherNo : null,
+            ])),
             'lines' => $lines,
         ], $user);
     }
@@ -284,11 +336,12 @@ class AccountingService
             $delta = $account->normal_balance === 'debit' ? ($line->debit - $line->credit) : ($line->credit - $line->debit);
             $running = round($running + $delta, 2);
             return [
-                'date' => $line->journalEntry->entry_date->toDateString(),
-                'entry_number' => $line->journalEntry->entry_number,
-                'description' => $line->description ?: $line->journalEntry->description,
-                'debit' => (float) $line->debit,
-                'credit' => (float) $line->credit,
+                'date'            => $line->journalEntry->entry_date->toDateString(),
+                'entry_number'    => $line->journalEntry->entry_number,
+                'voucher_number'  => $line->journalEntry->voucher_number,
+                'description'     => $line->description ?: $line->journalEntry->description,
+                'debit'           => (float) $line->debit,
+                'credit'          => (float) $line->credit,
                 'running_balance' => $running,
             ];
         });
@@ -589,12 +642,19 @@ class AccountingService
         $expense  = $this->account(self::OTHER_EXPENSE);
         $payment  = $this->cashOrBankAccount($pr->mode_of_payment ?? 'cash');
 
-        $desc = "Payment Request: {$pr->payable_to} — {$pr->activity_type}";
+        $voucherNo = $pr->cashier_reference ?? null;
+        $desc = implode(' — ', array_filter([
+            'Payment request',
+            $pr->payable_to,
+            $pr->activity_type,
+            $voucherNo ? 'Kitabu NO. ' . $voucherNo : null,
+        ]));
 
         return $this->postJournalEntry([
             'entry_date'     => now()->toDateString(),
             'reference_type' => 'payment_request',
             'reference_id'   => $pr->id,
+            'voucher_number' => $voucherNo,
             'description'    => $desc,
             'lines'          => [
                 ['chart_of_account_id' => $expense->id, 'debit' => $amount,  'credit' => 0,       'description' => $desc],

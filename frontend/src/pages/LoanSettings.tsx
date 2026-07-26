@@ -117,19 +117,20 @@ const LoanSettings = () => {
     }
   };
 
-  const field = (key: keyof Settings, label: string, hint: string) => (
+  const field = (key: keyof Settings, label: string, hint: string, opts?: { prefix?: string; suffix?: string; step?: string; max?: number }) => (
     <div className="ls-field">
       <label>{label}</label>
       <div className="ls-input-wrap">
+        {opts?.prefix && <span className="ls-percent">{opts.prefix}</span>}
         <input
           type="number"
-          step="0.01"
+          step={opts?.step ?? "0.01"}
           min="0"
-          max="100"
+          max={opts?.max ?? 100}
           value={form[key] as string | number | readonly string[]}
           onChange={e => setForm({ ...form, [key]: e.target.value })}
         />
-        <span className="ls-percent">%</span>
+        {opts?.suffix && <span className="ls-percent">{opts.suffix}</span>}
       </div>
       <p className="ls-hint">{hint}</p>
     </div>
@@ -162,9 +163,9 @@ const LoanSettings = () => {
         ) : (
           <>
             <div className="ls-grid">
-              {field("penalty_rate", t("loanSettings.page.penaltyLabel"), t("loanSettings.page.penaltyHint"))}
-              {field("default_interest_rate", t("loanSettings.page.interestLabel"), t("loanSettings.page.interestHint"))}
-              {field("default_processing_fee_rate", t("loanSettings.page.processingLabel"), t("loanSettings.page.processingHint"))}
+              {field("penalty_rate", t("loanSettings.page.penaltyLabel"), t("loanSettings.page.penaltyHint"), { prefix: "TZS", step: "1", max: 9999999 })}
+              {field("default_interest_rate", t("loanSettings.page.interestLabel"), t("loanSettings.page.interestHint"), { suffix: "%" })}
+              {field("default_processing_fee_rate", t("loanSettings.page.processingLabel"), t("loanSettings.page.processingHint"), { suffix: "%" })}
             </div>
 
             <div className="ls-section">

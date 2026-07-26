@@ -25,7 +25,7 @@
     "loanType": "Aina ya Mkopo",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
-    "accountNumber": "Namba ya Akaunti",
+    "accountNumber": "Kitabu NO",
     "actions": "Vitendo"
   },
   "status": {
@@ -46,7 +46,7 @@
     "delete": "Futa"
   },
   "pagination": {
-    "showing": "Inaonyesha {{from}}â€“{{to}} kati ya {{total}}",
+    "showing": "Inaonyesha {{from}}-{{to}} kati ya {{total}}",
     "previous": "Iliyotangulia",
     "next": "Inayofuata"
   },

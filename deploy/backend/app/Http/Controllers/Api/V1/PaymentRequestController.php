@@ -45,8 +45,8 @@ class PaymentRequestController extends Controller
             'manager_review' => $user->isLoanManager(),
             'gm_review' => $user->isGeneralManager(),
             'md_review' => $user->isManagingDirector(),
-            // Hatua ya malipo ni ya Finance Officer / Cashier pekee
-            'awaiting_disbursement' => $user->isFinanceOfficer(),
+            // Finance Officer, Cashier, or any user with the can_disburse permission
+            'awaiting_disbursement' => $user->canDisburse(),
             default => false,
         };
     }

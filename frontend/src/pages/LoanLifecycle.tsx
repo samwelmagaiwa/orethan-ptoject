@@ -20,6 +20,7 @@ interface LoanResult {
   status: string;
   payment_status?: string;
   next_payment_date?: string;
+  details?: { kiwakocha_Riba?: number | string; kwaTarakimu?: number | string; repayment_frequency?: string; repaymentFrequency?: string };
 }
 interface HistoryRow {
   id: number;
@@ -100,6 +101,12 @@ const LoanLifecycle = () => {
   const selectLoan = (l: LoanResult) => {
     setLoan(l);
     setResults([]);
+    const rate = l.details?.kiwakocha_Riba;
+    if (rate != null) setInterestRate(String(rate));
+    const freq = l.details?.repayment_frequency ?? l.details?.repaymentFrequency;
+    if (freq) setFrequency(freq);
+    const term = l.details?.kwaTarakimu;
+    if (term) setTermMonths(Number(term));
     loadHistory(l.id);
   };
 

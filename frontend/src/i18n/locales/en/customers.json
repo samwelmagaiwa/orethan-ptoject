@@ -34,11 +34,11 @@
   },
   "status": {
     "rejected": "REJECTED",
-    "pendingLm": "PENDING LOAN MANAGER",
-    "lmApproved": "LOAN MANAGER APPROVED",
-    "pendingGm": "PENDING GENERAL MANAGER",
-    "gmApproved": "GENERAL MANAGER APPROVED",
-    "pendingMd": "PENDING MANAGING DIRECTOR",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
     "approved": "APPROVED",
     "active": "Active"
   },

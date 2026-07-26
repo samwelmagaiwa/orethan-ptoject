@@ -21,44 +21,44 @@ class StaffPerformanceController extends Controller
 
         // Loan officer performance: loans submitted, disbursed, amount
         $loansRaw = Loan::select(
-                'submitted_by',
+                'user_id',
                 DB::raw('COUNT(*) as total_submitted'),
                 DB::raw('SUM(CASE WHEN status IN ("disbursed","active","closed","fully_paid") THEN 1 ELSE 0 END) as total_disbursed'),
                 DB::raw('SUM(CASE WHEN status IN ("disbursed","active","closed","fully_paid") THEN amount ELSE 0 END) as total_amount'),
                 DB::raw('SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as total_rejected'),
-                DB::raw('SUM(CASE WHEN days_overdue > 0 THEN 1 ELSE 0 END) as overdue_count')
+                DB::raw('SUM(CASE WHEN status IN ("disbursed","active") AND next_payment_date < CURDATE() THEN 1 ELSE 0 END) as overdue_count')
             )
             ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
-            ->whereNotNull('submitted_by')
-            ->groupBy('submitted_by')
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
             ->get();
 
         // Repayment collections by loan officer
         $collectionsRaw = DB::table('repayments')
             ->join('loans', 'repayments.loan_id', '=', 'loans.id')
             ->select(
-                'loans.submitted_by',
+                'loans.user_id',
                 DB::raw('SUM(repayments.amount) as total_collected'),
                 DB::raw('COUNT(repayments.id) as repayment_count')
             )
             ->whereBetween('repayments.payment_date', [$from, $to])
-            ->whereNotNull('loans.submitted_by')
-            ->groupBy('loans.submitted_by')
+            ->whereNotNull('loans.user_id')
+            ->groupBy('loans.user_id')
             ->get()
-            ->keyBy('submitted_by');
+            ->keyBy('user_id');
 
         // Fetch user details for all relevant user IDs
-        $userIds = $loansRaw->pluck('submitted_by')->merge($collectionsRaw->keys())->unique();
+        $userIds = $loansRaw->pluck('user_id')->merge($collectionsRaw->keys())->unique();
         $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
 
         $officers = $loansRaw->map(function ($row) use ($users, $collectionsRaw) {
-            $user = $users->get($row->submitted_by);
-            $col  = $collectionsRaw->get($row->submitted_by);
+            $user = $users->get($row->user_id);
+            $col  = $collectionsRaw->get($row->user_id);
             $disbursementRate = $row->total_submitted > 0
                 ? round(($row->total_disbursed / $row->total_submitted) * 100, 1) : 0;
 
             return [
-                'user_id'           => $row->submitted_by,
+                'user_id'           => $row->user_id,
                 'name'              => $user?->name ?? 'Unknown',
                 'role'              => $user?->role ?? '—',
                 'total_submitted'   => (int) $row->total_submitted,
@@ -93,7 +93,7 @@ class StaffPerformanceController extends Controller
         $from = $request->filled('from') ? $request->from : now()->startOfMonth()->toDateString();
         $to   = $request->filled('to')   ? $request->to   : now()->toDateString();
 
-        $loans = Loan::where('submitted_by', $userId)
+        $loans = Loan::where('user_id', $userId)
             ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->with('repayments')
             ->get();
@@ -105,7 +105,7 @@ class StaffPerformanceController extends Controller
             ->sum('amount');
 
         // Monthly trend: submissions per month
-        $monthlyTrend = Loan::where('submitted_by', $userId)
+        $monthlyTrend = Loan::where('user_id', $userId)
             ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(amount) as amount')
             ->groupBy('month')
             ->orderBy('month')

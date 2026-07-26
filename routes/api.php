@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\V1\CustomerBiometricController;
 use App\Http\Controllers\Api\V1\BranchReportController;
 use App\Http\Controllers\Api\V1\SmsLogController;
 use App\Http\Controllers\Api\V1\ActivityLogController;
+use App\Http\Controllers\Api\V1\HistoricalLoanController;
+use App\Http\Controllers\Api\V1\VoucherController;
 
 Route::prefix('v1')->group(function () {
 
@@ -65,8 +67,8 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    // Loan statistics
-    Route::get('/loans/stats', [LoanController::class, 'getStats']);
+    // Loan statistics (requires auth — controller uses request->user() for role-based counts)
+    Route::middleware('auth:sanctum')->get('/loans/stats', [LoanController::class, 'getStats']);
 
     // All loans
     Route::get('/loans/all', [LoanController::class, 'allLoans']);
@@ -111,11 +113,22 @@ Route::prefix('v1')->group(function () {
         Route::put('/loans/{id}', [LoanController::class, 'update']);
         Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
 
+        // HISTORICAL LOAN IMPORT (pre-system loans)
+        // Voucher book number generation
+        Route::get('/vouchers/peek', [VoucherController::class, 'peek']);
+        Route::get('/vouchers/next', [VoucherController::class, 'next']);
+        Route::post('/vouchers/release', [VoucherController::class, 'release']);
+
+        Route::get('/loans/historical/allowed-roles', [HistoricalLoanController::class, 'allowedRoles']);
+        Route::get('/loans/historical', [HistoricalLoanController::class, 'index']);
+        Route::post('/loans/historical', [HistoricalLoanController::class, 'store']);
+
         // ROUTE YA KUONA HISTORIA YA MALIPO YA MKOPO MMOJA
         Route::get('/loans/{id}/repayments', [LoanController::class, 'repaymentHistory']);
 
         // REPAYMENT SCHEDULE YA MKOPO MMOJA (installments + live status)
         Route::get('/loans/{id}/schedule', [LoanController::class, 'loanSchedule']);
+        Route::get('/loans/{id}/renewal-prefill', [LoanController::class, 'renewalPrefill']);
 
         // ROUTE YA KUREKODI MALIPO MPYA
         Route::post('/loans/{id}/repay', [LoanController::class, 'recordRepayment']);
@@ -291,6 +304,16 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/risk/par-summary', [RiskReportController::class, 'parSummary']);
         Route::get('/reports/risk/default-analysis', [RiskReportController::class, 'defaultAnalysis']);
+        Route::get('/reports/risk/par-aging', [RiskReportController::class, 'parAging']);
+        Route::get('/reports/eod-cash', [\App\Http\Controllers\Api\V1\EodCashReportController::class, 'index']);
+        Route::get('/escalations', [\App\Http\Controllers\Api\V1\DelinquencyEscalationController::class, 'index']);
+        // Branches / Region grouping
+        Route::get('/branches', [\App\Http\Controllers\Api\V1\BranchController::class, 'index']);
+        Route::post('/branches', [\App\Http\Controllers\Api\V1\BranchController::class, 'store']);
+        Route::put('/branches/{id}', [\App\Http\Controllers\Api\V1\BranchController::class, 'update']);
+        Route::delete('/branches/{id}', [\App\Http\Controllers\Api\V1\BranchController::class, 'destroy']);
+        Route::put('/branches/{id}/assign-user', [\App\Http\Controllers\Api\V1\BranchController::class, 'assignUser']);
+        Route::get('/branches/{id}/stats', [\App\Http\Controllers\Api\V1\BranchController::class, 'stats']);
 
         Route::get('/reports/financial/executive-summary', [FinancialReportController::class, 'executiveSummary']);
         Route::get('/reports/financial/collections', [FinancialReportController::class, 'collectionsReport']);

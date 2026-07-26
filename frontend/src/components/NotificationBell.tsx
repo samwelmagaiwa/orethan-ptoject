@@ -54,12 +54,32 @@ const NotificationBell = () => {
     setOpen(o => !o);
   };
 
+  const resolveLink = (n: any): string | null => {
+    if (n.type === "loan_request") {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const role: string = user?.role ?? "";
+        switch (role) {
+          case "loan_manager":      return "/loan-manager";
+          case "general_manager":   return "/general-manager";
+          case "managing_director": return "/managing-director";
+          case "finance_officer":
+          case "cashier":           return "/finance/customers";
+          case "loan_officer":      return "/my-applications";
+          default: break;
+        }
+      } catch { /* fall through */ }
+    }
+    return n.link ?? null;
+  };
+
   const openItem = async (n: any) => {
     setOpen(false);
     try { await axios.post(`${API_BASE}/notifications/${n.id}/read`, {}, { headers: headers() }); } catch { /* ignore */ }
     setUnread((u) => Math.max(0, u - (n.read_at ? 0 : 1)));
     setItems((arr) => arr.map((x) => x.id === n.id ? { ...x, read_at: x.read_at || new Date().toISOString() } : x));
-    if (n.link) navigate(n.link);
+    const dest = resolveLink(n);
+    if (dest) navigate(dest);
   };
 
   const markAll = async () => {

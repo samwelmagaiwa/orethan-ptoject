@@ -1,0 +1,25 @@
+AddDefaultCharset UTF-8
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Content-Type "text/html; charset=UTF-8"
+  </FilesMatch>
+  <FilesMatch "\.js$">
+    Header set Content-Type "application/javascript; charset=UTF-8"
+  </FilesMatch>
+</IfModule>
+
+RewriteEngine On
+
+# 1. Serve real files and directories directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 2. Pass /api/* requests through to public_html/api/ (Laravel backend)
+#    — do NOT rewrite these to index.html
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ - [L]
+
+# 3. Everything else → React SPA
+RewriteRule ^ index.html [L]

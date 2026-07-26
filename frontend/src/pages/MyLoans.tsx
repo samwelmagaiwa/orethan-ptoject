@@ -28,7 +28,7 @@ interface Loan {
   created_at?: string;
   loan_account_number?: string | null;
   customer?: { customer_number?: string | null; email?: string | null; nida_number?: string | null } | null;
-  disbursement?: { transaction_reference?: string | null } | null;
+  disbursement?: { voucher_number?: string | null; transaction_reference?: string | null } | null;
   sms_status?: string | null;
   sms_type?: string | null;
 }
@@ -242,10 +242,11 @@ const MyLoans = () => {
               <thead>
                 <tr>
                   <th>{t("table.number")}</th>
-                  <th>{t("table.accountNumber")}</th>
+                  <th>Account No</th>
                   <th>{t("table.clientName")}</th>
                   <th>{t("table.loanAmount")}</th>
                   <th>{t("table.loanType")}</th>
+                  <th>Kitabu NO</th>
                   <th>{t("table.status")}</th>
                   <th>{t("table.smsStatus")}</th>
                   <th style={{ textAlign: 'center', width: '80px' }}>{t("table.actions")}</th>
@@ -255,7 +256,7 @@ const MyLoans = () => {
                 {pagedLoans.map((loan, index) => (
                   <tr key={loan.id}>
                     <td className="col-number">{(currentPage - 1) * entriesPerPage + index + 1}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                     <td>
                       <div className="client-info">
                         <span className="client-name">{loan.name}</span>
@@ -263,6 +264,7 @@ const MyLoans = () => {
                     </td>
                     <td className="col-amount">TZS {Number(loan.amount).toLocaleString()}</td>
                     <td><span className="loan-type-badge">{loan.type}</span></td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '13px', color: '#4f7c3f', fontWeight: 800, whiteSpace: 'nowrap' }}>{loan.disbursement?.voucher_number || '—'}</td>
                     <td>
                       <span className={`status-badge status-${loan.status.replace('_', '-')}`} style={{
                         color: (loan.status === 'approved' || loan.status === 'disbursed') ? '#16a34a' : 'inherit',
@@ -274,18 +276,10 @@ const MyLoans = () => {
                           loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span> :
 
                             loan.status === 'gm_review' ? (
-                              <span>
-                                <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
-                                <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
-                              </span>
+                              <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                             ) :
                               loan.status === 'md_review' ? (
-                                <span>
-                                  <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
-                                  <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                                  <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
-                                </span>
+                                <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
                               ) :
                                 loan.status === 'approved' ? t("status.approved") :
                                   loan.status === 'disbursed' ? t("status.disbursed") :
@@ -558,12 +552,18 @@ const MyLoans = () => {
 
         .table-wrapper {
           overflow-x: auto;
-          min-height: 400px; /* Ensure enough space for dropdowns */
-          padding-bottom: 100px; /* Extra space at the bottom */
+          overflow-y: auto;
+          min-height: 400px;
+          padding-bottom: 100px;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .table-wrapper::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
         table {
           width: 100%;
+          min-width: 1150px;
           border-collapse: collapse;
         }
 

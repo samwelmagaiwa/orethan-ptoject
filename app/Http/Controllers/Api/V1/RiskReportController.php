@@ -144,7 +144,7 @@ class RiskReportController extends Controller
                 ],
                 'defaulted_loans' => $defaultedLoans->map(fn($loan) => [
                     'loan_id' => $loan->id,
-                    'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                    'loan_number' => $loan->loan_account_number,
                     'borrower' => $loan->name,
                     'disbursed_at' => optional($loan->disbursed_at)->toDateString(),
                     'amount' => round((float) $loan->amount),
@@ -154,6 +154,100 @@ class RiskReportController extends Controller
         } catch (\Exception $e) {
             Log::error('defaultAnalysis error: ' . $e->getMessage());
             return $this->error('Failed to load Default Analysis', 500);
+        }
+    }
+
+    /**
+     * PAR Aging Ladder: bucket overdue loans into 1-30 / 31-60 / 61-90 / 90+ DPD.
+     * Returns summary per bucket + per-loan detail for drill-down.
+     * GET /reports/par-aging
+     */
+    public function parAging(Request $request)
+    {
+        if (!$request->user()->canAccessAccounting()) {
+            return $this->error('Forbidden', 403);
+        }
+
+        try {
+            $today = now()->toDateString();
+
+            // All active/disbursed loans with at least one unpaid overdue installment
+            $loans = Loan::whereIn('status', ['disbursed', 'active'])
+                ->whereHas('schedules', fn($q) =>
+                    $q->where('status', '!=', 'paid')->whereDate('due_date', '<', $today)
+                )
+                ->with([
+                    'customer:id,full_name,phone_number',
+                    'user:id,name',
+                    'schedules' => fn($q) =>
+                        $q->where('status', '!=', 'paid')->whereDate('due_date', '<', $today)->orderBy('due_date'),
+                ])
+                ->get();
+
+            $totalOutstanding = (float) Loan::whereIn('status', ['disbursed', 'active'])->sum('remaining_balance');
+
+            $buckets = [
+                '1_30'  => ['label' => '1–30 Siku',  'min' => 1,  'max' => 30,  'loans' => [], 'count' => 0, 'outstanding' => 0],
+                '31_60' => ['label' => '31–60 Siku', 'min' => 31, 'max' => 60,  'loans' => [], 'count' => 0, 'outstanding' => 0],
+                '61_90' => ['label' => '61–90 Siku', 'min' => 61, 'max' => 90,  'loans' => [], 'count' => 0, 'outstanding' => 0],
+                '90+'   => ['label' => '90+ Siku',   'min' => 91, 'max' => PHP_INT_MAX, 'loans' => [], 'count' => 0, 'outstanding' => 0],
+            ];
+
+            foreach ($loans as $loan) {
+                $earliest = $loan->schedules->first();
+                if (!$earliest) continue;
+
+                $dpd = (int) Carbon::parse($earliest->due_date)->diffInDays($today);
+                $outstanding = (float) $loan->remaining_balance;
+                $officerName = $loan->user?->name ?? ($loan->officer_name ?? '—');
+
+                $row = [
+                    'loan_id'       => $loan->id,
+                    'loan_number'   => $loan->loan_account_number,
+                    'borrower'      => $loan->customer?->full_name ?? $loan->name,
+                    'phone'         => $loan->customer?->phone_number ?? $loan->phone,
+                    'officer'       => $officerName,
+                    'amount'        => round((float) $loan->amount),
+                    'outstanding'   => round($outstanding),
+                    'dpd'           => $dpd,
+                    'overdue_since' => $earliest->due_date,
+                    'status'        => $loan->status,
+                ];
+
+                foreach ($buckets as $key => &$bucket) {
+                    if ($dpd >= $bucket['min'] && $dpd <= $bucket['max']) {
+                        $bucket['loans'][]     = $row;
+                        $bucket['count']++;
+                        $bucket['outstanding'] += $outstanding;
+                        break;
+                    }
+                }
+                unset($bucket);
+            }
+
+            // Build summary (strip loans array from summary)
+            $summary = [];
+            foreach ($buckets as $key => $bucket) {
+                $summary[$key] = [
+                    'label'       => $bucket['label'],
+                    'count'       => $bucket['count'],
+                    'outstanding' => round($bucket['outstanding']),
+                    'par_pct'     => $totalOutstanding > 0
+                        ? round(($bucket['outstanding'] / $totalOutstanding) * 100, 2) : 0,
+                    'loans'       => $bucket['loans'],
+                ];
+            }
+
+            return $this->success([
+                'total_outstanding_portfolio' => round($totalOutstanding),
+                'total_at_risk'   => round($loans->sum('remaining_balance')),
+                'total_at_risk_count' => $loans->count(),
+                'buckets'         => $summary,
+                'as_of'           => $today,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('parAging error: ' . $e->getMessage());
+            return $this->error('Failed to load PAR Aging', 500);
         }
     }
 }

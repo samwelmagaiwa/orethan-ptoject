@@ -4,6 +4,7 @@ import { User, Building2, CreditCard, Calendar, Calculator, Banknote, FileText, 
 import axios from "axios";
 import AlertModal from "../components/AlertModal";
 import { letterheadBlock, watermarkBlock, triggerPrint } from "../utils/printDoc";
+import { printDisbursementDoc } from "../utils/disbursementPrint";
 import { API_BASE, fmtLoanId } from "../lib/api";
 
 
@@ -39,10 +40,12 @@ const DisburseLoan = () => {
     const [method, setMethod] = useState("cash");
     const [payDetails, setPayDetails] = useState<Record<string, string>>({});
     const [transactionRef, setTransactionRef] = useState("");
+    const [voucherLoading, setVoucherLoading] = useState(false);
     const [disbursementDate, setDisbursementDate] = useState(new Date().toISOString().slice(0, 10));
     const [narration, setNarration] = useState("");
     const [confirm, setConfirm] = useState(false);
     const [password, setPassword] = useState("");
+    const [disburseDone, setDisburseDone] = useState(false);
 
     const getLoggedInUserName = () => {
         try {
@@ -55,7 +58,19 @@ const DisburseLoan = () => {
         return "";
     };
 
-    useEffect(() => { fetchPreview(); }, [id]);
+    useEffect(() => { fetchPreview(); reserveVoucher(); }, [id]);
+
+    const voucherContextKey = `disburse_loan_${id}`;
+
+    const reserveVoucher = async () => {
+        setVoucherLoading(true);
+        try {
+            const res = await axios.get(`${API_BASE}/vouchers/next?context=${voucherContextKey}`);
+            setTransactionRef(res.data.voucher_number);
+        } catch { /* silent */ } finally {
+            setVoucherLoading(false);
+        }
+    };
 
     // Cashier processing the disbursement is always the logged-in user —
     // capture their name automatically instead of asking them to type it.
@@ -110,7 +125,8 @@ const DisburseLoan = () => {
                 confirm: true,
                 password,
             });
-            setAlert({ isOpen: true, title: "Disbursement Successful", message: `The loan for ${loan.name} has been successfully disbursed and activated.`, type: "success" });
+            axios.post(`${API_BASE}/vouchers/release`, { context: voucherContextKey }).catch(() => {});
+            setDisburseDone(true);
         } catch (err: any) {
             setAlert({ isOpen: true, title: "Error", message: err?.response?.data?.message || "Disbursement failed", type: "error" });
         } finally {
@@ -247,6 +263,48 @@ const DisburseLoan = () => {
     if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa", fontSize: "16px", color: "#4a5568" }}>Loading...</div>;
     if (!loan) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f7fa" }}>Record not found</div>;
 
+    if (disburseDone) return (
+        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: "'Inter', sans-serif" }}>
+            <div style={{ maxWidth: "520px", width: "100%", background: "white", borderRadius: "20px", overflow: "hidden", boxShadow: "0 30px 60px rgba(0,0,0,0.3)" }}>
+                {/* Success header */}
+                <div style={{ background: "linear-gradient(135deg, #102a43 0%, #1d3a5f 100%)", padding: "32px 28px", textAlign: "center", position: "relative" }}>
+                    <div style={{ width: "64px", height: "64px", background: "linear-gradient(135deg, #22c55e, #16a34a)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 8px 20px rgba(34,197,94,0.4)", fontSize: "28px" }}>✓</div>
+                    <div style={{ fontSize: "20px", fontWeight: 800, color: "#e2bc8a", letterSpacing: "0.5px" }}>Mkopo Umetolewa!</div>
+                    <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "6px" }}>{loan.name} · {accountNumber}</div>
+                    <div style={{ fontSize: "28px", fontWeight: 900, color: "white", marginTop: "12px" }}>{fmt(netAmount)}</div>
+                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", textTransform: "uppercase", letterSpacing: "1px" }}>Net Disbursed · {methodLabel} · {fmtDate(disbursementDate)}</div>
+                </div>
+
+                {/* Print both receipts */}
+                <div style={{ padding: "28px" }}>
+                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px", textAlign: "center" }}>Print Documents</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+                        <button onClick={() => printDoc("Voucher", buildVoucherBody())}
+                            style={{ padding: "20px 12px", border: "2px solid #c7d2fe", borderRadius: "14px", cursor: "pointer", background: "linear-gradient(145deg, #eef2ff, #dde3ff)", color: "#4338ca", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "13px", transition: "all 0.2s" }}
+                            onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 24px rgba(99,102,241,0.3)"; }}
+                            onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+                            <FileText size={28} strokeWidth={1.8} />
+                            <span>Voucher</span>
+                            <span style={{ fontSize: "10px", fontWeight: 600, color: "#6366f1", opacity: 0.8 }}>Disbursement Record</span>
+                        </button>
+                        <button onClick={() => printDoc("Agreement", buildAgreementBody())}
+                            style={{ padding: "20px 12px", border: "2px solid #a7f3d0", borderRadius: "14px", cursor: "pointer", background: "linear-gradient(145deg, #f0fdf4, #ccfbe8)", color: "#15803d", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "13px", transition: "all 0.2s" }}
+                            onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 24px rgba(16,185,129,0.3)"; }}
+                            onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+                            <FileText size={28} strokeWidth={1.8} />
+                            <span>Agreement</span>
+                            <span style={{ fontSize: "10px", fontWeight: 600, color: "#16a34a", opacity: 0.8 }}>Loan Contract</span>
+                        </button>
+                    </div>
+                    <button onClick={() => navigate("/finance/customers")}
+                        style={{ width: "100%", padding: "14px", border: "none", borderRadius: "10px", background: "#0f172a", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer", letterSpacing: "0.5px" }}>
+                        Done — Back to Loans
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="dl-page-wrap" style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px 20px", fontFamily: "'Inter', sans-serif" }}>
             <AlertModal isOpen={alert.isOpen} title={alert.title} message={alert.message} type={alert.type} onClose={() => { if (alert.type === "success") navigate("/finance/customers"); setAlert({ ...alert, isOpen: false }); }} />
@@ -374,6 +432,21 @@ const DisburseLoan = () => {
                                         {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                                     </select>
                                 </div>
+                                {/* Physical Voucher Book Number — auto-generated, applies to all payment methods */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6 }}>
+                                        Namba ya Vocha (Kitabu)
+                                        <span style={{ fontSize: "10px", fontWeight: 800, background: "#102a43", color: "#e2bc8a", padding: "2px 7px", borderRadius: 20 }}>AUTO</span>
+                                    </span>
+                                    <div style={{ position: "relative" }}>
+                                        <input
+                                            type="text" required readOnly
+                                            value={voucherLoading ? "Inapata..." : transactionRef}
+                                            style={{ width: "100%", padding: "12px 40px 12px 16px", border: "2px solid #e2bc8a", borderRadius: "8px", fontSize: "18px", fontWeight: 800, color: "#102a43", background: "#fffcf0", letterSpacing: "2px", cursor: "default", boxSizing: "border-box" }}
+                                        />
+                                        <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem" }}>🔖</span>
+                                    </div>
+                                </div>
                                 {method === "cash" && (
                                     <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Cashier Name</span><input type="text" value={payDetails.cashier || ""} onChange={e => setDetail("cashier", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
@@ -389,7 +462,7 @@ const DisburseLoan = () => {
                                 {MOBILE_METHODS.includes(method) && (
                                     <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Phone No</span><input type="text" value={payDetails.phone_number || ""} onChange={e => setDetail("phone_number", e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Trace ID</span><input type="text" value={transactionRef} onChange={e => setTransactionRef(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }} /></div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}><span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Vocha No.</span><input type="text" readOnly value={transactionRef} style={{ padding: "10px 12px", border: "1px solid #e2bc8a", borderRadius: "6px", fontSize: "13px", fontWeight: 800, background: "#fffcf0", cursor: "default" }} /></div>
                                     </div>
                                 )}
                             </div>
@@ -409,6 +482,27 @@ const DisburseLoan = () => {
                                         <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", lineHeight: "1.4" }}>I confirm details are correct for net amount of {fmt(netAmount)}.</span>
                                     </label>
                                 </div>
+
+                                {/* REPRINT PANEL — shown when loan is already disbursed */}
+                                {alreadyDisbursed && (
+                                    <div style={{ background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "1.5px solid #86efac", borderRadius: "12px", padding: "16px 18px" }}>
+                                        <div style={{ fontSize: "12px", fontWeight: 800, color: "#15803d", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                            <Check size={14} /> Loan Already Disbursed — Reprint Documents
+                                        </div>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                                            <button onClick={() => printDisbursementDoc(id!, 'voucher')}
+                                                style={{ padding: "12px 8px", border: "2px solid #c7d2fe", borderRadius: "10px", cursor: "pointer", background: "linear-gradient(145deg,#eef2ff,#dde3ff)", color: "#4338ca", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", fontWeight: 800, fontSize: "12px" }}>
+                                                <FileText size={20} strokeWidth={1.8} />
+                                                Reprint Voucher
+                                            </button>
+                                            <button onClick={() => printDisbursementDoc(id!, 'agreement')}
+                                                style={{ padding: "12px 8px", border: "2px solid #a7f3d0", borderRadius: "10px", cursor: "pointer", background: "linear-gradient(145deg,#f0fdf4,#ccfbe8)", color: "#15803d", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", fontWeight: 800, fontSize: "12px" }}>
+                                                <FileText size={20} strokeWidth={1.8} />
+                                                Reprint Agreement
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* READINESS CHECKLIST */}
                                 {!canDisburse && (

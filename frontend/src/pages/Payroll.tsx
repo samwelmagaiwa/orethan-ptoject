@@ -2095,12 +2095,32 @@ const CSS = `
 .pay-page { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; background:#fffcf6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; display:flex; flex-direction:column; }
 
 /* --- Tab bar --------------------------------------------------------- */
-.pay-tab-bar { display:flex; align-items:center; gap:0; padding:0 18px; background:linear-gradient(135deg,#102a43,#1d3a5f); position:sticky; top:0; z-index:10; border-bottom:2px solid #0d2137; overflow-x:auto; flex-shrink:0; }
+.pay-tab-bar {
+  display:flex; align-items:stretch; gap:0; padding:0 20px;
+  background:linear-gradient(135deg,#0a1628 0%,#102a43 50%,#1a3050 100%);
+  position:sticky; top:0; z-index:10;
+  border-bottom:2px solid rgba(0,0,0,.4);
+  overflow-x:auto; flex-shrink:0; min-height:52px;
+  box-shadow:0 2px 12px rgba(0,0,0,.3);
+}
+.pay-tab-bar::-webkit-scrollbar { display:none; }
 .pay-tab { white-space:nowrap; }
-.pay-tab { padding:13px 22px; border:none; border-radius:0; font-size:13px; font-weight:700; cursor:pointer; background:transparent; color:rgba(255,255,255,.6); transition:all .15s; letter-spacing:.2px; }
-.pay-tab--active { background:rgba(255,255,255,.1); color:#e2bc8a; box-shadow:0 -3px 0 #e2bc8a inset; }
-.pay-tab:hover:not(.pay-tab--active) { background:rgba(255,255,255,.07); color:rgba(255,255,255,.9); }
+.pay-tab {
+  padding:0 22px; border:none; border-radius:0; font-size:13px; font-weight:700;
+  cursor:pointer; background:transparent; color:rgba(255,255,255,.55);
+  transition:all .18s; letter-spacing:.2px; display:flex; align-items:center; gap:6px;
+  border-bottom:3px solid transparent; margin-bottom:-2px;
+}
+.pay-tab--active { color:#f59e0b; border-bottom-color:#f59e0b; background:rgba(255,255,255,.06); }
+.pay-tab:hover:not(.pay-tab--active) { background:rgba(255,255,255,.06); color:rgba(255,255,255,.85); border-bottom-color:rgba(255,255,255,.15); }
 .pay-tab-space { flex:1; }
+.pay-tab-bar .pay-btn--primary {
+  align-self:center; margin-left:4px;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff;
+  border-radius:8px; padding:8px 18px; font-size:13px; font-weight:700;
+  box-shadow:0 2px 10px rgba(79,70,229,.4); border:none; cursor:pointer; transition:all .15s;
+}
+.pay-tab-bar .pay-btn--primary:hover { background:linear-gradient(135deg,#6d28d9,#4338ca); box-shadow:0 4px 16px rgba(79,70,229,.5); transform:translateY(-1px); }
 
 /* --- Buttons --------------------------------------------------------- */
 .pay-btn { padding:8px 16px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }

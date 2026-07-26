@@ -19,7 +19,7 @@
     "arrears": "Arrears",
     "status": "Status",
     "smsStatus": "SMS Status",
-    "accountNumber": "Account No",
+    "accountNumber": "Kitabu NO",
     "actions": "Actions",
     "notAvailable": "N/A",
     "activeCount": "{{count}} Active",
@@ -47,7 +47,7 @@
     "viewHistory": "View Recommendations"
   },
   "pagination": {
-    "showing": "Showing {{from}}â€“{{to}} of {{total}}",
+    "showing": "Showing {{from}}-{{to}} of {{total}}",
     "previous": "Previous",
     "next": "Next"
   },

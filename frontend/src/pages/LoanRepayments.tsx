@@ -30,13 +30,31 @@ const LoanRepayments: React.FC = () => {
   const [method, setMethod] = useState("cash");
   const [notes, setNotes] = useState("");
   const [transactionId, setTransactionId] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
-  useEffect(() => { fetchCustomerAndLoans(); }, [id]);
+  // Peek at the upcoming voucher number for display — does NOT consume or reserve it.
+  // Any transaction that submits first gets this number via /vouchers/next.
+  const peekVoucher = async () => {
+    setVoucherLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE}/vouchers/peek`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      setTransactionId(res.data.voucher_number);
+    } catch {
+      // silent
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchCustomerAndLoans(); peekVoucher(); }, [id]);
 
   const fetchCustomerAndLoans = async () => {
     try {
@@ -75,12 +93,23 @@ const LoanRepayments: React.FC = () => {
     setRepaying(true);
     try {
       const token = localStorage.getItem("token");
+
+      // Atomically claim the next sequential voucher number at submit time.
+      // The peek shown on screen was only indicative — whoever submits first wins it.
+      let voucherNo = "";
+      try {
+        const vRes = await axios.get(`${API_BASE}/vouchers/next`, {
+          headers: { Authorization: token ? `Bearer ${token}` : "" },
+        });
+        voucherNo = vRes.data.voucher_number;
+      } catch { /* proceed without voucher if network fails */ }
+
       const res = await axios.post(`${API_BASE}/loans/${selectedLoan.id}/repay`, {
         amount: Number(amount),
         payment_date: paymentDate,
         payment_method: method,
         notes,
-        transaction_id: transactionId
+        transaction_id: voucherNo,
       }, { headers: { Authorization: token ? `Bearer ${token}` : "" } });
 
       const rcpt = res.data?.data?.receipt;
@@ -90,6 +119,8 @@ const LoanRepayments: React.FC = () => {
       setShowModal(true);
       setAmount(""); setNotes(""); setTransactionId("");
       fetchCustomerAndLoans();
+      // Refresh the peek so the form shows the next upcoming number
+      peekVoucher();
     } catch (err: any) {
       console.error(err);
       setModalMessage(err.response?.data?.error || "Imeshindwa kurekodi malipo");
@@ -295,12 +326,20 @@ const LoanRepayments: React.FC = () => {
                       </select>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
-                      <label className="lr-label">Transaction ID (Kama ipo)</label>
-                      <input
-                        type="text" placeholder="Reference number..."
-                        value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
-                        className="lr-input"
-                      />
+                      <label className="lr-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        Namba ya Vocha (Kitabu)
+                        <span style={{ fontSize: "0.6rem", fontWeight: 800, background: "#102a43", color: "#e2bc8a", padding: "2px 7px", borderRadius: 20, letterSpacing: "0.5px" }}>AUTO</span>
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type="text" required
+                          value={voucherLoading ? "Inapata..." : transactionId}
+                          readOnly
+                          className="lr-input"
+                          style={{ background: "#f8f1de", color: "#102a43", fontWeight: 800, fontSize: "1rem", letterSpacing: "1px", cursor: "default", paddingRight: 40 }}
+                        />
+                        <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1rem" }}>🔖</span>
+                      </div>
                     </div>
                   </div>
 

@@ -182,7 +182,7 @@ class OverdueController extends Controller
 
                 return [
                     'loan_id' => $loan->id,
-                    'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                    'loan_number' => $loan->loan_account_number,
                     'borrower' => $loan->name,
                     'customer_id' => $loan->customer?->customer_number ?? ('CUST-' . str_pad((string) ($loan->customer_id ?? 0), 6, '0', STR_PAD_LEFT)),
                     'product' => $loan->product_name,

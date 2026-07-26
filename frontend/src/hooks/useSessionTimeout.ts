@@ -13,7 +13,9 @@ export function saveLastPath() {
 }
 
 export function popLastPath(): string | null {
-  return sessionStorage.getItem(LAST_PATH_KEY);
+  const v = sessionStorage.getItem(LAST_PATH_KEY);
+  sessionStorage.removeItem(LAST_PATH_KEY);
+  return v;
 }
 
 interface Options {

@@ -41,6 +41,7 @@ interface Entry {
   id: number;
   entry_number: string;
   entry_date: string;
+  voucher_number?: string | null;
   description: string;
   status: "posted" | "reversed";
   lines: { id: number; debit: number; credit: number; description?: string; account: { id: number; code: string; name: string } }[];
@@ -91,7 +92,7 @@ const JournalEntries = () => {
   const exportRows = () => {
     const rows: Record<string, unknown>[] = [];
     entries.forEach(e => e.lines.forEach(l => rows.push({
-      "Entry No.": e.entry_number, Date: e.entry_date, Status: e.status,
+      "Entry No.": e.entry_number, Date: e.entry_date, "Kitabu NO.": e.voucher_number || "—", Status: e.status,
       "Entry Description": e.description, Account: `${l.account.code} — ${l.account.name}`,
       "Line Description": l.description || "", Debit: l.debit, Credit: l.credit,
     })));
@@ -100,7 +101,7 @@ const JournalEntries = () => {
 
   const handlePrint = () => {
     const rowsHtml = entries.map(e => `
-      <tr><td colspan="4" style="background:#f8fafc;font-weight:700">${e.entry_number} — ${e.entry_date} — ${e.description} (${e.status})</td></tr>
+      <tr><td colspan="5" style="background:#f8fafc;font-weight:700">${e.entry_number} — ${e.entry_date}${e.voucher_number ? " — Kitabu NO. " + e.voucher_number : ""} — ${e.description} (${e.status})</td></tr>
       ${e.lines.map(l => `<tr><td></td><td>${l.account.code} — ${l.account.name}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td></tr>`).join("")}
     `).join("");
     const body = `<table><thead><tr><th></th><th>Account</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
@@ -314,11 +315,20 @@ const JournalEntries = () => {
           <div className="je-table-scroll">
             <table>
               <thead>
-                <tr><th>{t("common.entryNo")}</th><th>{t("common.date")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.status")}</th><th></th></tr>
+                <tr>
+                  <th>{t("common.entryNo")}</th>
+                  <th>{t("common.date")}</th>
+                  <th style={{ whiteSpace: "nowrap" }}>Kitabu NO.</th>
+                  <th>{t("common.description")}</th>
+                  <th>{t("common.debit")}</th>
+                  <th>{t("common.credit")}</th>
+                  <th>{t("common.status")}</th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
                 {entries.length === 0 ? (
-                  <tr><td colSpan={7} className="je-empty">{t("journal.noEntries")}</td></tr>
+                  <tr><td colSpan={8} className="je-empty">{t("journal.noEntries")}</td></tr>
                 ) : entries.map(entry => {
                   const debit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
                   const credit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
@@ -327,6 +337,9 @@ const JournalEntries = () => {
                       <tr id={`je-row-${entry.id}`} className={`je-row ${highlightId === entry.id ? "je-row--highlight" : ""}`} onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
                         <td className="je-number">{entry.entry_number}</td>
                         <td>{entry.entry_date}</td>
+                        <td style={{ fontFamily: "monospace", fontWeight: 700, color: "#5c3d11" }}>
+                          {entry.voucher_number || <span style={{ color: "#cbd5e1", fontWeight: 400 }}>—</span>}
+                        </td>
                         <td>{entry.description}</td>
                         <td>{fmt(debit)}</td>
                         <td>{fmt(credit)}</td>

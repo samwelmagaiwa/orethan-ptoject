@@ -144,7 +144,7 @@ class RiskReportController extends Controller
                 ],
                 'defaulted_loans' => $defaultedLoans->map(fn($loan) => [
                     'loan_id' => $loan->id,
-                    'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                    'loan_number' => $loan->loan_account_number,
                     'borrower' => $loan->name,
                     'disbursed_at' => optional($loan->disbursed_at)->toDateString(),
                     'amount' => round((float) $loan->amount),

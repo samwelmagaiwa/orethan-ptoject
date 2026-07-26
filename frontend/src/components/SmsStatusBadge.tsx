@@ -54,8 +54,8 @@ const SmsStatusBadge = ({ status, type }: Props) => {
   if (status === "sent" || status === "delivered") {
     const confirmed = status === "delivered";
     return (
-      <span className="smsb smsb--sent" title={confirmed ? `Delivered (confirmed)${label ? ` · ${label}` : ""}` : label || "SMS sent"}>
-        ✓ {confirmed ? "Delivered ✓" : "Delivered"}{label ? ` · ${label}` : ""}
+      <span className="smsb smsb--sent" title={confirmed ? "Delivered (confirmed)" : "SMS sent"}>
+        ✓ {confirmed ? "Delivered ✓" : "Delivered"}
       </span>
     );
   }

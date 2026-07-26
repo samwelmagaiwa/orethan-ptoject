@@ -123,7 +123,7 @@ class SmsTemplates
             'monthly' => 'ya Mwezi',
             default   => $reportType,
         };
-        return "Ripoti {$typeLabel} ({$branch}, {$period}) imewasilishwa na {$officerName}. Ingia mfumoni kuikagua. - Orethan";
+        return "Ripoti {$typeLabel} ({$branch}, {$period}) imewasilishwa na {$officerName}. Ingia kwenye mfumo kuendelea kuikagua. - Orethan";
     }
 
     /** OTP code for forgot-password or first-login verification. */
@@ -149,22 +149,30 @@ class SmsTemplates
             . "Tafadhali wasiliana na ofisi yetu kwa maelezo zaidi. Asante - Orethan Microfinance.";
     }
 
-    /** Sent to Loan Manager(s) when a new loan application arrives for their review. */
+    /** Sent to the staff member whose loan submission was returned for corrections. */
+    public static function loanReturnedToStaff(string $staffName, string $applicantName, string $loanNo, string $reason = ''): string
+    {
+        $reasonLine = $reason ? " Sababu: {$reason}." : '';
+        return "Mpendwa {$staffName}, ombi la mkopo ({$loanNo}, {$applicantName}) "
+            . "limerudishwa kwako kwa marekebisho.{$reasonLine} Tafadhali rekebisha na utume tena. - Orethan Microfinance.";
+    }
+
+    /** Sent to the staff member whose loan submission was returned for corrections. */
     public static function loanApplicationPendingReview(string $managerName, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$managerName}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia mfumoni. - Orethan";
+        return "Mpendwa {$managerName}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to General Manager(s) when Loan Manager approves and escalates to GM stage. */
     public static function loanPendingGmReview(string $gmName, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$gmName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako. Ingia mfumoni. - Orethan";
+        return "Mpendwa {$gmName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to Managing Director(s) when GM approves and escalates to MD stage. */
     public static function loanPendingMdReview(string $mdName, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$mdName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako ya mwisho. Ingia mfumoni. - Orethan";
+        return "Mpendwa {$mdName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako ya mwisho. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to the original submitter when the Loan Manager approves their Branch Report. */
@@ -188,7 +196,7 @@ class SmsTemplates
     /** SMS to the next approver when a payment request is submitted or advanced. */
     public static function paymentRequestPending(string $approverName, string $applicantName, float $amount, string $payableTo): string
     {
-        return "Mpendwa {$approverName}, ombi la malipo TZS " . self::money($amount) . " ({$applicantName}) linasubiri idhini yako. Ingia mfumoni. - Orethan";
+        return "Mpendwa {$approverName}, ombi la malipo TZS " . self::money($amount) . " ({$applicantName}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** SMS to the applicant when their payment request is fully disbursed. */
@@ -208,7 +216,7 @@ class SmsTemplates
     /** SMS to the next approver when a leave request is submitted or advanced. */
     public static function leaveRequestPending(string $approverName, string $employeeName, string $absenceType, string $from, string $to): string
     {
-        return "Mpendwa {$approverName}, ombi la likizo ({$absenceType}) kutoka {$employeeName} ({$from}-{$to}) linasubiri idhini yako. Ingia mfumoni. - Orethan";
+        return "Mpendwa {$approverName}, ombi la likizo ({$absenceType}) kutoka {$employeeName} ({$from}-{$to}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** SMS to the applicant when their leave request is fully authorized. */
@@ -241,6 +249,27 @@ class SmsTemplates
         };
         return "Mpendwa {$officerName}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
             . "cha {$period} imekataliwa na {$rejectorName}. Sababu: {$reason}. Tafadhali ihariri na uiwasilishe tena - Orethan Microfinance.";
+    }
+
+    /**
+     * Sent to every staff member when a historical loan is imported into the system.
+     * The customer does NOT receive this SMS — only staff are notified.
+     */
+    public static function historicalLoanStaffNotice(
+        string $staffName,
+        string $customerName,
+        string $loanAccountNumber,
+        float  $amount,
+        float  $remainingBalance,
+        string $disbursedAt,
+        string $importedBy
+    ): string {
+        return "Mpendwa {$staffName}, mkopo wa kihistoria umerekodiwa mfumoni. "
+            . "Mteja: {$customerName}, Akaunti: {$loanAccountNumber}, "
+            . "Kiasi: TZS " . self::money($amount) . ", "
+            . "Salio: TZS " . self::money($remainingBalance) . ", "
+            . "Tarehe ya mkopo: " . self::date($disbursedAt) . ". "
+            . "Imerekodiwa na: {$importedBy}. - Orethan Microfinance.";
     }
 
     /** Sent to a newly created system user so they know their login credentials. */

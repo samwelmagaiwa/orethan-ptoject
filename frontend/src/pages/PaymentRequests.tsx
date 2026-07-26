@@ -70,6 +70,7 @@ const PaymentRequests = () => {
   const [adjustedAmount, setAdjustedAmount] = useState("");
   const [comments, setComments] = useState("");
   const [cashierRef, setCashierRef] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
   const [pin, setPin] = useState("");
   const [acting, setActing] = useState(false);
 
@@ -78,12 +79,13 @@ const PaymentRequests = () => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
+  const hasDisburseAccess = role === "finance_officer" || user?.full_sidebar_access === true || user?.sidebar_permissions?.can_disburse === true;
   const canDecide = (status: string) => {
     if (role === "admin") return true;
     if (status === "manager_review") return role === "loan_manager";
     if (status === "gm_review") return role === "general_manager";
     if (status === "md_review") return role === "managing_director";
-    if (status === "awaiting_disbursement") return role === "finance_officer";
+    if (status === "awaiting_disbursement") return hasDisburseAccess;
     return false;
   };
   const canEdit = (r: any) => r.status === "rejected" && (r.created_by === user?.id || role === "admin");
@@ -163,7 +165,19 @@ const PaymentRequests = () => {
     setEditingId(r.id); setSelected(null); setTab("new");
   };
 
-  const openDetail = (r: any) => { setSelected(r); setAdjustedAmount(""); setComments(""); setCashierRef(""); setPin(""); };
+  const openDetail = (r: any) => {
+    setSelected(r); setAdjustedAmount(""); setComments(""); setPin("");
+    if (r.status === "awaiting_disbursement") {
+      setCashierRef("");
+      setVoucherLoading(true);
+      axios.get(`${API_BASE}/vouchers/next?context=payreq_${r.id}`, { headers: headers() })
+        .then(res => { setCashierRef(res.data.voucher_number); })
+        .catch(() => {/* silent */})
+        .finally(() => setVoucherLoading(false));
+    } else {
+      setCashierRef("");
+    }
+  };
 
   const adminDelete = async (id: number) => {
     if (!window.confirm("Delete this payment request permanently?")) return;
@@ -182,7 +196,7 @@ const PaymentRequests = () => {
         <tr><td>Department / Section</td><td>${[r.department, r.section].filter(Boolean).join(" / ") || "—"}</td></tr>
         <tr><td>Activity</td><td>${r.activity_type}${r.activity_detail ? " — " + r.activity_detail : ""}</td></tr>
         <tr><td>Mode of Payment</td><td>${String(r.mode_of_payment).replace("_", " ")}</td></tr>
-        ${r.cashier_reference ? `<tr><td>Transaction Reference</td><td>${r.cashier_reference}</td></tr>` : ""}
+        ${r.cashier_reference ? `<tr><td>Kitabu NO.</td><td style="font-weight:700;font-family:monospace">${r.cashier_reference}</td></tr>` : ""}
       </table>
       <div class="net-box"><span>Amount Paid</span><div>${fmt(r.final_amount ?? r.amount, r.currency)}</div></div>
       ${r.amount_in_words ? `<p style="font-style:italic;color:#475569;font-size:13px">Amount in words: ${r.amount_in_words}</p>` : ""}
@@ -204,6 +218,8 @@ const PaymentRequests = () => {
       await axios.post(`${API_BASE}/payment-requests/${selected.id}/approve`, {
         adjusted_amount: adjustedAmount ? Number(adjustedAmount) : null, comments, cashier_reference: cashierRef || null, password: pin,
       }, { headers: headers() });
+      // Release reservation so re-opening this (now-disbursed) record doesn't reuse the number
+      axios.post(`${API_BASE}/vouchers/release`, { context: `payreq_${selected.id}` }, { headers: headers() }).catch(() => {});
       setSelected(null); setPin(""); await load();
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
   };
@@ -495,7 +511,16 @@ const PaymentRequests = () => {
                     <SignatureReuse signature={user?.signature} />
                     {selected.status === "awaiting_disbursement" ? (
                       <>
-                        <input type="text" style={{ ...inp, marginBottom: "0.5rem" }} placeholder="Transaction / Voucher reference (optional)" value={cashierRef} onChange={(e) => setCashierRef(e.target.value)} />
+                        <div style={{ position: "relative", marginBottom: "0.5rem" }}>
+                          <input
+                            type="text" required readOnly
+                            style={{ ...inp, background: "#fffcf0", color: "#102a43", fontWeight: 800, fontSize: "1rem", letterSpacing: "2px", cursor: "default", paddingRight: 36 }}
+                            value={voucherLoading ? "Inapata..." : cashierRef}
+                            placeholder="Namba ya Vocha..."
+                          />
+                          <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }}>🔖</span>
+                          <span style={{ position: "absolute", top: -22, right: 0, fontSize: "0.6rem", fontWeight: 800, background: "#102a43", color: "#e2bc8a", padding: "2px 7px", borderRadius: 20 }}>AUTO — Namba ya Vocha</span>
+                        </div>
                         <textarea style={{ ...inp, resize: "vertical", marginBottom: "0.5rem" }} rows={2} placeholder="Disbursement notes..." value={comments} onChange={(e) => setComments(e.target.value)} />
                         <div style={{ position: "relative" }}>
                           <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />

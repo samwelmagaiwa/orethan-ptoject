@@ -19,3 +19,6 @@ Schedule::command('loans:send-repayment-reminders')->dailyAt('08:00');
 
 // 09:00 — accrue daily penalty + daily guarantor overdue updates
 Schedule::command('loans:notify-guarantors-overdue')->dailyAt('09:00');
+
+// 10:00 — auto-escalate delinquent loans to manager chain (7d→LM, 30d→GM, 60d→MD)
+Schedule::command('loans:escalate-delinquency')->dailyAt('10:00');

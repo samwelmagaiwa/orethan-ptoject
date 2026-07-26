@@ -226,17 +226,27 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $data = $request->validate([
-            'new_password' => 'required|string|min:6|confirmed',
+            'current_password' => 'required|string',
+            'new_password'     => 'required|string|min:6|confirmed',
         ]);
 
         $user = $request->user();
+
+        // Verify the user knows their current password before allowing change
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return response()->json(['message' => 'Nenosiri la sasa si sahihi.'], 422);
+        }
+
         $user->password = Hash::make($data['new_password']);
         $user->must_change_password = false;
         $user->password_expires_at = null;
         $user->save();
 
-        ActivityLogger::log($user, 'update', 'Auth', "Changed own password");
-        return response()->json(['message' => 'Password changed successfully.']);
+        // Revoke ALL tokens so every active session must re-authenticate
+        $user->tokens()->delete();
+
+        ActivityLogger::log($user, 'update', 'Auth', "Changed own password — all sessions revoked");
+        return response()->json(['message' => 'Nenosiri limebadilishwa. Tafadhali ingia tena.']);
     }
 
     private function issueToken(User $user)

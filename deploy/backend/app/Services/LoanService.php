@@ -40,6 +40,13 @@ class LoanService
                 ]
             );
 
+            // Normalize details: frontend sends camelCase keys (repaymentFrequency),
+            // backend reads snake_case (repayment_frequency) — unify to snake_case here.
+            $details = $data['details'] ?? [];
+            if (!empty($details['repaymentFrequency']) && empty($details['repayment_frequency'])) {
+                $details['repayment_frequency'] = $details['repaymentFrequency'];
+            }
+
             // Create loan
             $loan = Loan::create([
                 'name' => $data['name'],
@@ -47,13 +54,17 @@ class LoanService
                 'amount' => $data['amount'],
                 'type' => $data['type'],
                 'status' => 'manager_review',
-                'details' => $data['details'] ?? null,
+                'details' => $details,
                 'passport_photo' => $data['passport_photo'] ?? null,
                 'guarantor_1_photo' => $data['guarantor_1_photo'] ?? null,
                 'guarantor_2_photo' => $data['guarantor_2_photo'] ?? null,
                 'customer_id' => $customer->id,
                 'user_id' => $data['user_id'] ?? null,
             ]);
+
+            // Assign account number immediately at submission (needs persisted id)
+            $loan->loan_account_number = $loan->generateAccountNumber();
+            $loan->save();
 
             // Create initial approval record for audit trail
             \App\Models\LoanApproval::create([
@@ -66,9 +77,11 @@ class LoanService
             return $loan;
         });
 
-        // Notify the borrower that their application was received — sent after
-        // the transaction commits so a gateway hiccup never rolls back the loan.
+        // Notify the borrower that their application was received.
         $this->sms->sendLoanApplicationReceived($loan);
+
+        // Notify all loan managers that a new application is waiting for review.
+        $this->sms->notifyRoleAboutLoan('loan_manager', $loan, 'loanApplicationPendingReview');
 
         return $loan;
     }
@@ -107,11 +120,17 @@ class LoanService
             return $loan;
         });
 
-        // SMS only on final approval (status === 'approved') — the loan is now
-        // fully cleared and just awaiting disbursement. Sent after the DB
-        // transaction commits so a gateway hiccup can never roll back the
-        // approval itself.
-        if ($loan->status === 'approved') {
+        // Escalation notifications — notify the next reviewer in the chain,
+        // or notify the borrower on final approval. All sent after commit so a
+        // gateway hiccup never rolls back the approval record.
+        if ($loan->status === 'gm_review') {
+            // Loan manager approved → notify all General Managers
+            $this->sms->notifyRoleAboutLoan('general_manager', $loan, 'loanPendingGmReview');
+        } elseif ($loan->status === 'md_review') {
+            // GM approved → notify all Managing Directors
+            $this->sms->notifyRoleAboutLoan('managing_director', $loan, 'loanPendingMdReview');
+        } elseif ($loan->status === 'approved') {
+            // MD approved → notify the borrower
             $this->sms->sendLoanApproved($loan);
         }
 
@@ -123,6 +142,8 @@ class LoanService
      */
     public function rejectLoan($loan, array $data, $user)
     {
+        $statusBeforeReject = $loan->status;
+
         $loan = DB::transaction(function () use ($loan, $data, $user) {
             if ($loan->status == 'manager_review') {
                 $loan->status = 'loan_officer';
@@ -147,8 +168,8 @@ class LoanService
             return $loan;
         });
 
-        // Notify the borrower that their application was not approved.
-        $this->sms->sendLoanRejected($loan, $data['reason'] ?? '');
+        // Notify the staff member the loan was returned to, not the borrower.
+        $this->sms->sendLoanReturnedToStaff($loan, $statusBeforeReject, $data['reason'] ?? '');
 
         return $loan;
     }
@@ -165,7 +186,7 @@ class LoanService
      */
     public function disburseLoan(Loan $loan, array $data, $user)
     {
-        $disbursedLoan = DB::transaction(function () use ($loan, $data, $user) {
+        $txResult = DB::transaction(function () use ($loan, $data, $user) {
             // Only MD-approved loans can be disbursed
             if ($loan->status !== 'approved') {
                 throw new \Exception('Only approved loans can be disbursed');
@@ -190,10 +211,24 @@ class LoanService
                 throw new \Exception('Total charges cannot exceed the loan amount');
             }
 
-            // Auto-generated voucher & receipt numbers (one disbursement per loan -> unique)
+            // Use the voucher number pre-reserved by VoucherController (passed as transaction_reference,
+            // e.g. "0205"). If nothing was reserved (edge case), pull the next number from the counter.
+            $rawRef = $data['transaction_reference'] ?? null;
+            if ($rawRef && ctype_digit(ltrim($rawRef, '0') ?: '0')) {
+                // It's a pure-numeric reservation from VoucherController — use it as-is.
+                $voucherNumber = str_pad($rawRef, 4, '0', STR_PAD_LEFT);
+            } else {
+                // Fallback: consume a number directly from the voucher_counter table.
+                $voucherNumber = DB::transaction(function () {
+                    $row = DB::table('voucher_counter')->where('id', 1)->lockForUpdate()->first();
+                    $current = (int) ($row->next_number ?? 205);
+                    DB::table('voucher_counter')->where('id', 1)->update(['next_number' => $current + 1]);
+                    return str_pad((string) $current, 4, '0', STR_PAD_LEFT);
+                });
+            }
+
             $seq = str_pad((string) $loan->id, 5, '0', STR_PAD_LEFT);
             $stamp = \Carbon\Carbon::parse($disbursementDate)->format('Ymd');
-            $voucherNumber = 'VCH-' . $stamp . '-' . $seq;
             $receiptNumber = 'RCP-' . $stamp . '-' . $seq;
 
             // 1. Record the disbursement transaction (the ledger entry at this app's maturity)
@@ -216,28 +251,35 @@ class LoanService
                 'disbursed_by' => $user->id ?? 1,
             ]);
 
-            $this->accounting->postLoanDisbursement($disbursement, $user);
+            // 2. The approved (gross) amount is the authoritative loan principal.
+            //    Fees are collected separately at disbursement — they do NOT reduce
+            //    the amount the client owes. Keep loan->amount = grossAmount.
+            $loan->amount = $grossAmount;
 
-            // 2. Generate Repayment Schedule from the disbursement date (using captured interest
-            //    rate, falling back to the admin-configured default — Loan Settings — if missing)
+            // 3. Generate Repayment Schedule from the disbursement date
             $defaultInterestRate = \App\Models\LoanSetting::current()->default_interest_rate;
             $interestRate = (float) ($loan->details['kiwakocha_Riba'] ?? $defaultInterestRate) / 100;
             $loan->generateSchedule($loan->termMonths(), $interestRate, $loan->repaymentFrequency(), $disbursementDate);
 
-            // 3. Activate the loan account
+            // 4. Activate the loan account
             $firstSchedule = $loan->schedules()->orderBy('due_date', 'asc')->first();
+
+            // Total outstanding = sum of all installment totals (principal + interest across all periods)
+            $totalScheduled = (float) $loan->schedules()->sum('total_amount');
 
             $loan->disbursed_at = $disbursementDate;
             $loan->status = 'disbursed'; // Active
             $loan->payment_status = 'pending';
             $loan->total_paid = 0;
-            $loan->remaining_balance = round($loan->amount); // Outstanding Balance = principal
+            $loan->remaining_balance = $totalScheduled > 0 ? $totalScheduled : $grossAmount;
             $loan->next_payment_date = $firstSchedule?->due_date; // First Due Date
             $loan->monthly_payment = $firstSchedule ? round($firstSchedule->total_amount) : null;
             $loan->save();
 
-            // 4. Assign the Loan Account number (needs the persisted id)
+            // 4. Account number must already be set from submission time.
+            //    If it is somehow missing (legacy data), generate it now and warn.
             if (!$loan->loan_account_number) {
+                Log::warning("Loan #{$loan->id} reached disbursement without an account number — generating now. Check LoanService::createLoan.");
                 $loan->loan_account_number = $loan->generateAccountNumber();
                 $loan->save();
             }
@@ -259,13 +301,20 @@ class LoanService
                 $data['branch'] ?? null
             );
 
-            return $loan->fresh(['schedules', 'disbursement']);
+            return ['loan' => $loan->fresh(['schedules', 'disbursement']), 'disbursement' => $disbursement];
         });
 
-        // Sent after commit so a gateway hiccup never rolls back the disbursement.
-        $this->sms->sendDisbursementNotice($disbursedLoan);
+        // Post to GL after commit — accounting failure must never roll back a disbursement.
+        try {
+            $this->accounting->postLoanDisbursement($txResult['disbursement'], $user);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('GL post failed for disbursement #' . $txResult['disbursement']->id . ': ' . $e->getMessage());
+        }
 
-        return $disbursedLoan;
+        // Sent after commit so a gateway hiccup never rolls back the disbursement.
+        $this->sms->sendDisbursementNotice($txResult['loan']);
+
+        return $txResult['loan'];
     }
 
     /**
@@ -305,7 +354,7 @@ class LoanService
             $repayment->save();
 
             $loan->total_paid = round(($loan->total_paid ?? 0) + $amount);
-            $loan->remaining_balance = round($loan->amount - $loan->total_paid);
+            $loan->remaining_balance = round($remaining - $amount);
 
             if ($loan->remaining_balance <= 0) {
                 $loan->payment_status = 'completed';
@@ -323,8 +372,6 @@ class LoanService
             $repayment->interest_amount = $split['interest'];
             $repayment->save();
 
-            $this->accounting->postRepayment($repayment, $user);
-
             $nextSchedule = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date', 'asc')->first();
 
             // Digital verification code (tamper-evident short hash)
@@ -334,13 +381,14 @@ class LoanService
             $receipt = [
                 'receipt_number' => $repayment->receipt_number,
                 'transaction_number' => $transactionNumber,
+                'voucher_number' => $data['transaction_id'] ?? null,
                 'payment_date' => \Carbon\Carbon::parse($data['payment_date'])->toDateString(),
                 'payment_time' => $repayment->created_at?->format('H:i:s'),
                 'customer_id' => $loan->customer_id,
                 'customer_name' => $loan->name,
                 'customer_number' => $loan->customer?->customer_number ?? ('CUST-' . str_pad((string) ($loan->customer_id ?? 0), 6, '0', STR_PAD_LEFT)),
                 'loan_id' => $loan->id,
-                'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                'loan_number' => $loan->loan_account_number,
                 'phone' => $loan->phone ?? $loan->customer?->phone_number,
                 'original_amount' => round($loan->amount),
                 'balance_before' => round($balanceBefore),
@@ -359,6 +407,13 @@ class LoanService
                 'receipt' => $receipt,
             ];
         });
+
+        // Post to GL after commit — accounting failure must never roll back a recorded repayment.
+        try {
+            $this->accounting->postRepayment($result['repayment'], $user);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('GL post failed for repayment #' . $result['repayment']->id . ': ' . $e->getMessage());
+        }
 
         // Sent after commit so a gateway hiccup never rolls back the repayment.
         $this->sms->sendRepaymentReceipt($result['receipt']);

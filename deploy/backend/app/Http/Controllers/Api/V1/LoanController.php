@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Loan;
+use App\Models\LoanSchedule;
 use App\Models\Repayment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class LoanController extends Controller
                 ['id' => $loan->id]
             );
 
-            ActivityLogger::log($request->user(), 'create', 'Loan', "Submitted loan application for {$loan->name} — TZS " . number_format($loan->amount), $loan->id, $loan->loan_account_number ?? "LN-{$loan->id}");
+            ActivityLogger::log($request->user(), 'create', 'Loan', "Submitted loan application for {$loan->name} — TZS " . number_format($loan->amount), $loan->id, $loan->loan_account_number);
             return $this->success($loan, 'Loan created successfully', 201);
         } catch (\Exception $e) {
             Log::error('Loan submission error: ' . $e->getMessage());
@@ -61,6 +62,8 @@ class LoanController extends Controller
     {
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->where('user_id', $request->user()->id)
+            ->orderByRaw("IF(status = 'disbursed', 1, 0) ASC")
+            ->orderByRaw("CAST(IFNULL((SELECT voucher_number FROM loan_disbursements WHERE loan_id = loans.id LIMIT 1), 0) AS UNSIGNED) ASC")
             ->orderBy('created_at', 'desc')
             ->get();
         return $this->appendBorrowerMetrics($loans);
@@ -69,15 +72,14 @@ class LoanController extends Controller
     // MANAGER VIEW
     public function managerLoans()
     {
-        // Show loans CURRENTLY at manager_review
-        // OR previously at/above manager_review (to keep rejected/returned loans visible)
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->where('status', 'manager_review')
+            ->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                // include 'rejected' so loans the manager sent back to the officer stay visible
-                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'rejected']);
+                $query->whereIn('status', ['manager_review', 'gm_review', 'md_review', 'approved', 'rejected', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'manager_review', 'gm_review', 'md_review', 'approved', 'loan_officer')")
+            ->orderByRaw("IF(status = 'disbursed', 1, 0) ASC")
+            ->orderByRaw("FIELD(status, 'manager_review', 'gm_review', 'md_review', 'approved', 'loan_officer') DESC")
+            ->orderByRaw("CAST(IFNULL((SELECT voucher_number FROM loan_disbursements WHERE loan_id = loans.id LIMIT 1), 0) AS UNSIGNED) ASC")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
@@ -86,14 +88,14 @@ class LoanController extends Controller
     // GM VIEW
     public function gmLoans()
     {
-        // Show loans CURRENTLY at gm_review or higher
-        // OR previously processed by GM level or above
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->whereIn('status', ['gm_review', 'md_review', 'approved'])
+            ->whereIn('status', ['gm_review', 'md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                $query->whereIn('status', ['gm_review', 'md_review', 'approved']);
+                $query->whereIn('status', ['gm_review', 'md_review', 'approved', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'gm_review', 'md_review', 'approved', 'manager_review', 'loan_officer')")
+            ->orderByRaw("IF(status = 'disbursed', 1, 0) ASC")
+            ->orderByRaw("FIELD(status, 'gm_review', 'md_review', 'approved', 'manager_review', 'loan_officer') DESC")
+            ->orderByRaw("CAST(IFNULL((SELECT voucher_number FROM loan_disbursements WHERE loan_id = loans.id LIMIT 1), 0) AS UNSIGNED) ASC")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
@@ -102,25 +104,26 @@ class LoanController extends Controller
     // MD VIEW
     public function mdLoans()
     {
-        // Show loans CURRENTLY at md_review or higher
-        // OR previously processed by MD level
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
-            ->whereIn('status', ['md_review', 'approved'])
+            ->whereIn('status', ['md_review', 'approved', 'disbursed'])
             ->orWhereHas('approvals', function ($query) {
-                $query->whereIn('status', ['md_review', 'approved']);
+                $query->whereIn('status', ['md_review', 'approved', 'disbursed']);
             })
-            ->orderByRaw("FIELD(status, 'md_review', 'approved', 'gm_review', 'manager_review', 'loan_officer')")
+            ->orderByRaw("IF(status = 'disbursed', 1, 0) ASC")
+            ->orderByRaw("FIELD(status, 'md_review', 'approved', 'gm_review', 'manager_review', 'loan_officer') DESC")
+            ->orderByRaw("CAST(IFNULL((SELECT voucher_number FROM loan_disbursements WHERE loan_id = loans.id LIMIT 1), 0) AS UNSIGNED) ASC")
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($this->appendBorrowerMetrics($loans));
     }
 
 
-    // FINANCE OFFICER / CASHIER VIEW (approved loans awaiting disbursement, plus already disbursed for reference)
+    // FINANCE OFFICER / CASHIER VIEW (MD-approved loans awaiting disbursement, plus already disbursed for reference)
     public function financeLoans()
     {
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereIn('status', ['approved', 'disbursed'])
+            ->where(fn($q) => $q->whereNull('is_historical')->orWhere('is_historical', false))
             ->orderByRaw("FIELD(status, 'approved', 'disbursed')")
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -237,7 +240,7 @@ class LoanController extends Controller
             if ($loan->status === 'gm_review' && !$user->isGeneralManager() && !$user->isAdmin()) {
                 return $this->error('Only General Manager can approve this stage', 403);
             }
-            if ($loan->status === 'md_review' && !$user->isManagingDirector() && !$user->isAdmin()) {
+            if ($loan->status === 'md_review' && !$user->canActAsMd()) {
                 return $this->error('Only Managing Director can approve this stage', 403);
             }
 
@@ -273,7 +276,7 @@ class LoanController extends Controller
                 );
             }
 
-            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            $loanNo = $updatedLoan->loan_account_number;
             ActivityLogger::log($user, 'approve', 'Loan', "Approved loan {$loanNo} for {$updatedLoan->name} → status: {$updatedLoan->status}", $updatedLoan->id, $loanNo);
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan approved successfully');
         } catch (\Exception $e) {
@@ -299,12 +302,12 @@ class LoanController extends Controller
             if ($loan->status === 'gm_review' && !$user->isGeneralManager() && !$user->isAdmin()) {
                 return $this->error('Only General Manager can reject this stage', 403);
             }
-            if ($loan->status === 'md_review' && !$user->isManagingDirector() && !$user->isAdmin()) {
+            if ($loan->status === 'md_review' && !$user->canActAsMd()) {
                 return $this->error('Only Managing Director can reject this stage', 403);
             }
 
             $updatedLoan = $this->loanService->rejectLoan($loan, $request->all(), $user);
-            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            $loanNo = $updatedLoan->loan_account_number;
             ActivityLogger::log($user, 'reject', 'Loan', "Rejected loan {$loanNo} for {$updatedLoan->name}. Reason: {$request->reason}", $updatedLoan->id, $loanNo);
             return $this->success($updatedLoan->fresh(['customer', 'approvals.user']), 'Loan rejected successfully');
         } catch (\Exception $e) {
@@ -316,8 +319,8 @@ class LoanController extends Controller
     public function disbursementPreview(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
-            return $this->error('Only Finance Officer/Cashier can access disbursement', 403);
+        if (!$user->canDisburse()) {
+            return $this->error('You do not have permission to access disbursement', 403);
         }
 
         $loan = Loan::with(['customer', 'user', 'disbursement'])->findOrFail($id);
@@ -349,8 +352,8 @@ class LoanController extends Controller
     public function disburse(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
-            return $this->error('Only Finance Officer/Cashier can disburse loans', 403);
+        if (!$user->canDisburse()) {
+            return $this->error('You do not have permission to disburse loans', 403);
         }
 
         $data = $request->validate([
@@ -378,7 +381,7 @@ class LoanController extends Controller
         try {
             $loan = Loan::findOrFail($id);
             $updatedLoan = $this->loanService->disburseLoan($loan, $data, $user);
-            $loanNo = $updatedLoan->loan_account_number ?? "LN-{$updatedLoan->id}";
+            $loanNo = $updatedLoan->loan_account_number;
             ActivityLogger::log($user, 'disburse', 'Loan', "Disbursed loan {$loanNo} for {$updatedLoan->name} — TZS " . number_format($data['amount']), $updatedLoan->id, $loanNo);
             return $this->success(
                 $updatedLoan->fresh(['disbursement', 'customer']),
@@ -439,9 +442,10 @@ class LoanController extends Controller
             $loan = Loan::findOrFail($id);
 
             $data = $request->validate([
-                'amount'   => 'required|numeric|min:1|max:9999999999999',
-                'details'  => 'nullable|array',
+                'amount'      => 'required|numeric|min:1|max:9999999999999',
+                'details'     => 'nullable|array',
                 'adjusted_by' => 'nullable|string|max:100',
+                'frequency'   => 'nullable|string|in:Daily,Weekly,Monthly',
             ]);
 
             $mergedDetails = array_merge(
@@ -450,10 +454,34 @@ class LoanController extends Controller
                 ['adjusted_by' => $data['adjusted_by'] ?? $role]
             );
 
-            $loan->update([
-                'amount'  => $data['amount'],
-                'details' => $mergedDetails,
-            ]);
+            if (!empty($data['frequency'])) {
+                $mergedDetails['repayment_frequency'] = $data['frequency'];
+            }
+
+            // Recalculate monthly_payment using the new amount + global interest rate.
+            // Temporarily set amount and details on the model so scheduleSummary() uses the new values.
+            $loan->amount = $data['amount'];
+            $loan->details = $mergedDetails;
+            $defaultInterestRate = \App\Models\LoanSetting::current()->default_interest_rate;
+            $rateFromDetails = $loan->details['kiwakocha_Riba'] ?? null;
+            $interestRate = (float) ($rateFromDetails ?? $defaultInterestRate) / 100;
+            $summary = $loan->scheduleSummary($interestRate);
+            $newMonthlyPayment = $summary['installment_amount'] ?? 0;
+
+            $updateData = [
+                'amount'         => $data['amount'],
+                'details'        => $mergedDetails,
+                'monthly_payment' => $newMonthlyPayment,
+            ];
+
+            // For loans not yet disbursed keep remaining_balance in sync.
+            $preDisbursementStatuses = ['manager_review', 'gm_review', 'md_review', 'approved'];
+            if (in_array($loan->status, $preDisbursementStatuses)) {
+                $updateData['remaining_balance'] = $data['amount'];
+                $updateData['total_paid'] = 0;
+            }
+
+            $loan->update($updateData);
 
             return $this->success($loan->fresh(), 'Loan adjusted successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -488,34 +516,51 @@ class LoanController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        $today = now()->toDateString();
+
         $counts = [
             'manager_review' => 0,
-            'gm_review' => 0,
-            'md_review' => 0,
-            'approved' => 0,
+            'gm_review'      => 0,
+            'md_review'      => 0,
+            'approved'       => 0,
         ];
 
-        // Role-based visibility logic
+        // Role-based approval pipeline counts
         if ($user->isAdmin() || $user->isLoanManager()) {
             $counts['manager_review'] = Loan::where('status', 'manager_review')->count();
         }
-
         if ($user->isAdmin() || $user->isLoanManager() || $user->isGeneralManager()) {
             $counts['gm_review'] = Loan::where('status', 'gm_review')->count();
         }
-
         if ($user->isAdmin() || $user->isLoanManager() || $user->isGeneralManager() || $user->isManagingDirector()) {
             $counts['md_review'] = Loan::where('status', 'md_review')->count();
         }
-
-        // Everyone (except maybe officer) can see approved/disbursed totals?
-        // Let's keep it visible for all management roles as a baseline
         if ($user->isAdmin() || $user->isLoanManager() || $user->isGeneralManager() || $user->isManagingDirector()) {
             $counts['approved'] = Loan::whereIn('status', ['approved', 'disbursed', 'completed'])->count();
         }
 
+        // Portfolio stats — visible to all management roles
+        $overdueLoanIds = LoanSchedule::whereHas('loan', fn($q) => $q->whereNotNull('disbursed_at'))
+            ->where('status', '!=', 'paid')
+            ->whereDate('due_date', '<', $today)
+            ->distinct()
+            ->pluck('loan_id');
+
+        $activeLoans    = Loan::whereNotNull('disbursed_at')->where('status', 'disbursed')->count();
+        $completedLoans = Loan::where('status', 'completed')->count();
+        $historicalLoans = Loan::where('is_historical', true)->count();
+        $overdueLoans   = $overdueLoanIds->count();
+        $overdueAmount  = (int) Loan::whereIn('id', $overdueLoanIds)->sum('remaining_balance');
+        $totalPortfolio = (int) Loan::whereNotNull('disbursed_at')->where('status', 'disbursed')->sum('remaining_balance');
+
         return response()->json(array_merge($counts, [
-            'total' => array_sum($counts)
+            'total'           => array_sum($counts),
+            'active_loans'    => $activeLoans,
+            'completed_loans' => $completedLoans,
+            'historical_loans'=> $historicalLoans,
+            'overdue_loans'   => $overdueLoans,
+            'overdue_amount'  => $overdueAmount,
+            'total_portfolio' => $totalPortfolio,
         ]));
     }
 
@@ -525,14 +570,10 @@ class LoanController extends Controller
     // GET ACTIVE LOANS
     public function activeLoans()
     {
-        // Only disbursed loans are being repaid — approved-but-undisbursed loans
-        // are still awaiting the finance/cashier and must not show here.
+        // Return all disbursed loans (active + completed) so the tracker can show both tabs.
+        // Approved-but-undisbursed loans (no disbursed_at) are excluded.
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement', 'nextInstallment'])
             ->whereNotNull('disbursed_at')
-            ->where(function ($query) {
-                $query->where('payment_status', '!=', 'completed')
-                    ->orWhereNull('payment_status');
-            })
             ->get();
 
         $today = now()->toDateString();
@@ -612,8 +653,8 @@ class LoanController extends Controller
     public function recordRepayment(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->isFinanceOfficer() && !$user->isAdmin() && !$user->isLoanOfficer()) {
-            return $this->error('Only Finance Officer/Cashier and Loan Officers can record payments', 403);
+        if (!$user->canDisburse() && !$user->isLoanOfficer()) {
+            return $this->error('You do not have permission to record payments', 403);
         }
 
         $data = $request->validate([
@@ -627,6 +668,11 @@ class LoanController extends Controller
 
         try {
             $loan = Loan::findOrFail($id);
+
+            if (!$loan->disbursed_at || !in_array($loan->status, ['disbursed', 'completed'])) {
+                return $this->error('Loan has not been disbursed yet. Please disburse the loan before recording repayments.', 422);
+            }
+
             $result = $this->loanService->recordRepayment($loan, $data, $user);
             return $this->success($result, 'Repayment recorded successfully');
         } catch (\Exception $e) {
@@ -639,8 +685,8 @@ class LoanController extends Controller
     public function reverseRepayment(Request $request, $repaymentId)
     {
         $user = $request->user();
-        if (!$user->isFinanceOfficer() && !$user->isAdmin()) {
-            return $this->error('Only Finance Officer/Cashier can reverse transactions', 403);
+        if (!$user->canDisburse()) {
+            return $this->error('You do not have permission to reverse transactions', 403);
         }
 
         $data = $request->validate([
@@ -764,7 +810,7 @@ class LoanController extends Controller
                 'loan_id' => $loan?->id,
                 'schedule_id' => $s->id,
                 'customer' => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
-                'loan_number' => $loan?->loan_account_number ?? ('LN-' . $loan?->id),
+                'loan_number' => $loan?->loan_account_number,
                 'due_amount' => round((float) $s->total_amount - (float) ($s->amount_paid ?? 0)),
                 'due_date' => $s->due_date?->toDateString(),
                 'status' => 'pending',
@@ -796,7 +842,7 @@ class LoanController extends Controller
                 'loan_id' => $loan?->id,
                 'schedule_id' => $s->id,
                 'customer' => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
-                'loan_number' => $loan?->loan_account_number ?? ('LN-' . $loan?->id),
+                'loan_number' => $loan?->loan_account_number,
                 'days_late' => $daysLate,
                 'amount' => $amount,
                 'penalty' => round($amount * $penaltyRate),
@@ -832,7 +878,7 @@ class LoanController extends Controller
             return response()->json([
                 'loan_id' => $loan->id,
                 'customer' => $loan->name,
-                'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                'loan_number' => $loan->loan_account_number,
                 'schedule' => $rows,
             ]);
         } catch (\Exception $e) {
@@ -852,7 +898,7 @@ class LoanController extends Controller
             $start = $month->copy()->startOfMonth();
             $end = $month->copy()->endOfMonth();
 
-            $disbursed = round(Loan::where('status', 'approved')
+            $disbursed = round(Loan::where('status', 'disbursed')
                 ->whereBetween('disbursed_at', [$start, $end])
                 ->sum('amount'));
 
@@ -875,7 +921,7 @@ class LoanController extends Controller
      */
     private function buildPortfolioHealth(): array
     {
-        $loans = Loan::where('status', 'approved')
+        $loans = Loan::where('status', 'disbursed')
             ->whereIn('payment_status', ['pending', 'partial', 'overdue'])
             ->get(['payment_status', 'next_payment_date']);
 

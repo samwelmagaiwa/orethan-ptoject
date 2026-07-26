@@ -62,13 +62,40 @@ function Login() {
 
   const reset = () => { setError(null); setInfo(null); };
 
+  const roleHomePath = (role?: string): string => {
+    switch (role) {
+      case "loan_manager":      return "/loan-manager";
+      case "general_manager":   return "/general-manager";
+      case "managing_director": return "/managing-director";
+      case "cashier":           return "/cashier";
+      case "accountant":        return "/accounting";
+      default:                  return "/repayment-tracker";
+    }
+  };
+
   const finalize = (data: any) => {
     if (data.token) localStorage.setItem("token", data.token);
     if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
     if (data.must_change_password) { setStep("change"); reset(); }
     else {
       const lastPath = popLastPath();
-      navigate(lastPath || "/repayment-tracker");
+      const homePath = roleHomePath(data.user?.role);
+      // Only reuse lastPath if it belongs to this same session (same role's area).
+      // Restrict to paths the role is allowed to land on to prevent cross-user leakage.
+      const role = data.user?.role as string | undefined;
+      const allowedForRole = (path: string): boolean => {
+        if (path === "/audit-log" && !["admin"].includes(role ?? "")) return false;
+        if (path === "/configurations" && !["admin"].includes(role ?? "")) return false;
+        if (path === "/general-manager" && !["general_manager", "admin"].includes(role ?? "")) return false;
+        if (path === "/managing-director" && !["managing_director", "admin"].includes(role ?? "")) return false;
+        if (path === "/loan-manager" && !["loan_manager", "admin"].includes(role ?? "")) return false;
+        if (path === "/cashier" && !["cashier", "admin"].includes(role ?? "")) return false;
+        if (path === "/payroll" && !["admin"].includes(role ?? "")) return false;
+        if (["/accounting", "/financial-reports", "/risk-reports"].some(p => path.startsWith(p)) && !["accountant", "general_manager", "managing_director", "admin"].includes(role ?? "")) return false;
+        return true;
+      };
+      const destination = (lastPath && allowedForRole(lastPath)) ? lastPath : homePath;
+      navigate(destination);
     }
   };
 
@@ -147,8 +174,18 @@ function Login() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${API_BASE}/change-password`, { new_password: newPassword, new_password_confirmation: confirmPassword }, { headers: { Authorization: `Bearer ${token}` } });
-      navigate(popLastPath() || "/repayment-tracker");
+      await axios.post(
+        `${API_BASE}/change-password`,
+        { current_password: password, new_password: newPassword, new_password_confirmation: confirmPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // All server tokens are now revoked — clear local auth and force re-login
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("session_last_path");
+      setNewPassword(""); setConfirmPassword("");
+      setStep("login");
+      setInfo("Nenosiri limebadilishwa. Tafadhali ingia tena na nenosiri jipya.");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Could not change password");
     } finally { setLoading(false); }

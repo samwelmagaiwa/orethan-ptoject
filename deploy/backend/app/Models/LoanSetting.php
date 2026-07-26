@@ -44,6 +44,7 @@ class LoanSetting extends Model
         'fiscal_year_start_month',
         'brand_color',
         'session_timeout_minutes',
+        'historical_loan_roles',
         'updated_by',
     ];
 
@@ -55,6 +56,7 @@ class LoanSetting extends Model
         'payroll_access_roles'       => 'array',
         'branch_report_roles'        => 'array',
         'branch_report_permissions'  => 'array',
+        'historical_loan_roles'      => 'array',
     ];
 
     /** The active settings row, cached — creates the default row if the table is ever empty. */

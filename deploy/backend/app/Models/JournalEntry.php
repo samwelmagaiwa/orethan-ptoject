@@ -11,6 +11,7 @@ class JournalEntry extends Model
         'entry_date',
         'reference_type',
         'reference_id',
+        'voucher_number',
         'description',
         'status',
         'created_by',

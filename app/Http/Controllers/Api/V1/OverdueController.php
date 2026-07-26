@@ -25,10 +25,10 @@ class OverdueController extends Controller
 
     const DEFAULT_DAYS = 90;     // siku za kuhesabu mkopo kuwa "defaulted"
 
-    // Admin-configurable via Loan Settings — see App\Models\LoanSetting.
-    private function penaltyRate(): float
+    // Flat daily penalty in TZS (e.g. 1000) — configured in Loan Settings.
+    private function dailyPenalty(): float
     {
-        return LoanSetting::current()->penaltyRateFraction();
+        return LoanSetting::current()->dailyPenaltyAmount();
     }
 
     /**
@@ -54,7 +54,8 @@ class OverdueController extends Controller
             foreach ($overdueSchedules as $s) {
                 $amt = (float) $s->total_amount - (float) ($s->amount_paid ?? 0);
                 $overdueAmount += $amt;
-                $penalties += $amt * $this->penaltyRate();
+                $daysLate = \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
+                $penalties += $this->dailyPenalty() * max(1, $daysLate);
                 $overdueLoanIds[$s->loan_id] = true;
                 if ($s->loan?->customer_id) {
                     $delinquentCustomers[$s->loan->customer_id] = true;
@@ -170,7 +171,7 @@ class OverdueController extends Controller
                 $overdueAmount = $overdue->sum(fn($s) => (float) $s->total_amount - (float) ($s->amount_paid ?? 0));
                 $earliest = $overdue->sortBy('due_date')->first();
                 $dpd = $earliest ? Carbon::parse($earliest->due_date)->diffInDays(now()) : 0;
-                $penalty = round($overdueAmount * $this->penaltyRate());
+                $penalty = round($this->dailyPenalty() * max(1, $dpd));
 
                 $latestActivity = $loan->collectionActivities->sortByDesc('created_at')->first();
                 $recoveryStatus = $latestActivity?->recovery_status;
@@ -182,7 +183,7 @@ class OverdueController extends Controller
 
                 return [
                     'loan_id' => $loan->id,
-                    'loan_number' => $loan->loan_account_number ?? ('LN-' . $loan->id),
+                    'loan_number' => $loan->loan_account_number,
                     'borrower' => $loan->name,
                     'customer_id' => $loan->customer?->customer_number ?? ('CUST-' . str_pad((string) ($loan->customer_id ?? 0), 6, '0', STR_PAD_LEFT)),
                     'product' => $loan->product_name,
@@ -321,7 +322,7 @@ class OverdueController extends Controller
             // but only the first time for this installment, whether that's
             // triggered here or by the scheduled daily check.
             if ($isOverdue && !$schedule->guarantor_notified_at) {
-                $this->sms->sendGuarantorOverdueNotices($loan, $this->penaltyRate() * 100);
+                $this->sms->sendGuarantorOverdueNotices($loan, $this->dailyPenalty());
                 $schedule->guarantor_notified_at = now();
                 $schedule->save();
             }

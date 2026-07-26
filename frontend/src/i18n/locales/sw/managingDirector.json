@@ -19,7 +19,7 @@
     "arrears": "Madeni Yaliyochelewa",
     "status": "Hali",
     "smsStatus": "Hali ya SMS",
-    "accountNumber": "Namba ya Akaunti",
+    "accountNumber": "Kitabu NO",
     "actions": "Hatua",
     "notAvailable": "Haipo",
     "activeCount": "{{count}} Amilifu",
@@ -47,7 +47,7 @@
     "viewHistory": "Angalia Mapendekezo"
   },
   "pagination": {
-    "showing": "Inaonyesha {{from}}â€“{{to}} kati ya {{total}}",
+    "showing": "Inaonyesha {{from}}-{{to}} kati ya {{total}}",
     "previous": "Iliyotangulia",
     "next": "Inayofuata"
   },

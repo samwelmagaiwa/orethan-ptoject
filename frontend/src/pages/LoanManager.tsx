@@ -7,6 +7,7 @@ import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
+import RejectModal from "../components/RejectModal";
 import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { API_BASE } from "../lib/api";
 
@@ -26,6 +27,7 @@ interface Loan {
   sms_status?: string | null;
   sms_type?: string | null;
   loan_account_number?: string | null;
+  disbursement?: { voucher_number?: string | null; transaction_reference?: string | null } | null;
 }
 
 const LoanManager = () => {
@@ -44,6 +46,7 @@ const LoanManager = () => {
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: 'info' as any });
   const [confirm, setConfirm] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as any });
   const [searchQuery, setSearchQuery] = useState("");
+  const [customersCount, setCustomersCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const _filteredLoans = loans.filter(l =>
@@ -74,6 +77,7 @@ const LoanManager = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     setLoading(true);
+    axios.get(`${API_BASE}/loans/stats`, { headers }).then(r => setCustomersCount(r.data.customers_count || 0)).catch(() => {});
     axios
       .get(`${API_BASE}/loans/manager`, { headers })
       .then((res) => {
@@ -120,24 +124,27 @@ const LoanManager = () => {
     setActiveDropdown(null);
   };
 
-  const submitApproval = async (comments: string) => {
+  const submitApproval = async (comments: string, adjustedAmount?: number, adjustedFrequency?: string) => {
     setSubmitting(true);
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-    axios
-      .post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, { comments }, { headers })
-      .then(() => {
-        setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.approveSuccess"), type: 'success' });
-        setShowApproveModal(false);
-        fetchLoans();
-        setActiveDropdown(null);
-      })
-      .catch((err) => {
-        console.log(err);
-        setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.approveError"), type: 'error' });
-      })
-      .finally(() => setSubmitting(false));
+    try {
+      if (adjustedAmount && adjustedAmount !== Number(selectedLoan?.amount)) {
+        const adjustBody: any = { amount: adjustedAmount };
+        if (adjustedFrequency) adjustBody.frequency = adjustedFrequency;
+        await axios.patch(`${API_BASE}/loans/${selectedLoan?.id}/adjust`, adjustBody, { headers });
+      }
+      await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, { comments }, { headers });
+      setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.approveSuccess"), type: 'success' });
+      setShowApproveModal(false);
+      fetchLoans();
+      setActiveDropdown(null);
+    } catch (err) {
+      console.log(err);
+      setModal({ isOpen: true, title: t("alerts.errorTitle"), message: t("alerts.approveError"), type: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openRejectModal = (loan: Loan) => {
@@ -147,20 +154,13 @@ const LoanManager = () => {
     setActiveDropdown(null);
   };
 
-  const submitRejection = () => {
-    if (!rejectReason.trim()) {
-      setModal({ isOpen: true, title: t("alerts.infoTitle"), message: t("alerts.reasonRequired"), type: 'warning' });
-      return;
-    }
-
+  const submitRejection = (reason: string) => {
+    if (!reason.trim()) return;
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
     setSubmitting(true);
     axios
-      .post(`${API_BASE}/loans/${selectedLoan?.id}/reject`, {
-        reason: rejectReason,
-      }, { headers })
+      .post(`${API_BASE}/loans/${selectedLoan?.id}/reject`, { reason }, { headers })
       .then(() => {
         setModal({ isOpen: true, title: t("alerts.successTitle"), message: t("alerts.rejectSuccess"), type: 'warning' });
         setShowRejectModal(false);
@@ -242,6 +242,10 @@ const LoanManager = () => {
         onCancel={() => setConfirm({ ...confirm, isOpen: false })}
       />
       <div className="stats-row">
+        <div className="stat-box" style={{ borderLeftColor: '#0ea5e9' }}>
+          <div className="stat-label">TOTAL CUSTOMERS</div>
+          <div className="stat-number" style={{ color: '#0ea5e9' }}>{customersCount}</div>
+        </div>
         <div className="stat-box">
           <div className="stat-label">{t("stats.totalHandled")}</div>
           <div className="stat-number">{loans.length}</div>
@@ -295,12 +299,13 @@ const LoanManager = () => {
           <thead>
             <tr>
               <th>{t("table.number")}</th>
-              <th>{t("table.accountNumber")}</th>
+              <th>Account No</th>
               <th>{t("table.client")}</th>
               <th>{t("table.phoneNumber")}</th>
               <th>{t("table.activeLoans")}</th>
               <th>{t("table.remainingBalance")}</th>
               <th>{t("table.arrears")}</th>
+              <th>Kitabu NO</th>
               <th>{t("table.status")}</th>
               <th>{t("table.smsStatus")}</th>
               <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
@@ -329,7 +334,7 @@ const LoanManager = () => {
               ))
             ) : loans.length === 0 ? (
               <tr>
-                <td colSpan={10}>
+                <td colSpan={11}>
                   <div className="empty-state">
                     <p>{t("empty.title")}</p>
                     <span>{t("empty.subtitle")}</span>
@@ -344,7 +349,7 @@ const LoanManager = () => {
                   className={selectedLoan?.id === loan.id ? 'selected-row' : ''}
                 >
                   <td className="col-number">{index + 1}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#4f7c3f', fontWeight: 700, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{loan.loan_account_number || '—'}</td>
                   <td>
                     <div className="client-info">
                       <div className="avatar">{loan.name.charAt(0)}</div>
@@ -363,6 +368,7 @@ const LoanManager = () => {
                       {Number(loan.total_arrears || 0) > 0 ? `TZS ${Number(loan.total_arrears).toLocaleString()}` : t("table.none")}
                     </span>
                   </td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '13px', color: '#4f7c3f', fontWeight: 800, whiteSpace: 'nowrap' }}>{loan.disbursement?.voucher_number || '—'}</td>
                   <td>
                     <span className={`status-badge status-${loan.status.replace('_', '-')}`} style={{
                       color: (loan.status === 'approved' || loan.status === 'disbursed') ? '#16a34a' : 'inherit',
@@ -372,18 +378,10 @@ const LoanManager = () => {
                     }}>
                       {loan.status === 'manager_review' ? <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingLm")}</span> :
                         loan.status === 'gm_review' ? (
-                          <span>
-                            <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
-                            <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                            <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
-                          </span>
+                          <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                         ) :
                           loan.status === 'md_review' ? (
-                            <span>
-                              <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
-                              <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                              <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
-                            </span>
+                            <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
                           ) :
                             (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') ? (
                               <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
@@ -401,7 +399,7 @@ const LoanManager = () => {
                       </button>
                     )}
                   </td>
-                  <td><SmsStatusBadge status={loan.sms_status} type={loan.sms_type} /></td>
+                  <td><SmsStatusBadge status={loan.status === 'manager_review' ? undefined : loan.sms_status} type={loan.sms_type} /></td>
                   <td style={{ textAlign: 'right', position: 'relative' }}>
                     <button className="dots-button" onClick={(e) => toggleDropdown(loan.id, e, loan.status === 'manager_review' ? 4 : 2)}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg>
@@ -471,53 +469,16 @@ const LoanManager = () => {
         onConfirm={submitApproval}
         onCancel={() => setShowApproveModal(false)}
         submitting={submitting}
+        canAdjustAmount={true}
       />
 
-      {/* Reject Modal */}
-      {
-        showRejectModal && (
-          <div className="reject-overlay-premium" onClick={() => setShowRejectModal(false)}>
-            <div className="reject-card-premium animate-pop-premium" onClick={(e) => e.stopPropagation()}>
-              <div className="reject-header-premium">
-                <div className="reject-icon-box">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 15h2M12 9v4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                </div>
-                <h2>{t("modal.rejectTitle")}</h2>
-                <p>{t("modal.rejectDescription")}</p>
-              </div>
-
-              <div className="reject-client-info">
-                <div className="info-item">
-                  <span>{t("modal.client")}</span>
-                  <strong>{selectedLoan?.name}</strong>
-                </div>
-                <div className="info-item">
-                  <span>{t("modal.amount")}</span>
-                  <strong>TZS {Number(selectedLoan?.amount).toLocaleString()}</strong>
-                </div>
-              </div>
-
-              <textarea
-                placeholder={t("modal.rejectReasonPlaceholder")}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                rows={4}
-                className="reject-textarea-premium"
-              />
-
-              <div className="reject-footer-premium">
-                <button className="reject-btn-cancel" onClick={() => setShowRejectModal(false)} disabled={submitting}>
-                  {t("modal.cancel")}
-                </button>
-                <button className="reject-btn-confirm" onClick={submitRejection} disabled={submitting}>
-                  {submitting ? t("modal.processing") : t("modal.returnForCorrections")}
-                </button>
-              </div>
-
-            </div>
-          </div>
-        )
-      }
+      <RejectModal
+        isOpen={showRejectModal}
+        loan={selectedLoan}
+        onConfirm={submitRejection}
+        onCancel={() => setShowRejectModal(false)}
+        submitting={submitting}
+      />
 
       {/* Details Modal */}
       <LoanDetailsModal
@@ -548,7 +509,7 @@ const LoanManager = () => {
 
         .stats-row {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 24px;
           margin-bottom: 32px;
           width: 100%;
@@ -645,12 +606,18 @@ const LoanManager = () => {
         }
 
         .table-wrapper {
-          overflow: auto;
+          overflow-y: auto;
+          overflow-x: auto;
           max-height: calc(100vh - 240px);
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .table-wrapper::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
         table {
           width: 100%;
+          min-width: 1320px;
           border-collapse: collapse;
         }
 
@@ -920,37 +887,6 @@ const LoanManager = () => {
           text-align: center;
           padding: 40px;
           color: #64748b;
-        }
-
-        /* PREMIUM REJECT MODAL STYLES */
-        .reject-overlay-premium {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.7);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10002;
-          padding: 20px;
-        }
-
-        .reject-card-premium {
-          background: white;
-          width: 100%;
-          max-width: 480px;
-          border-radius: 28px;
-          padding: 40px;
-          box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
-        }
-
-        @keyframes pop {
-          0% { transform: scale(0.9); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
-        .animate-pop-premium {
-          animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         @media (max-width: 900px) {

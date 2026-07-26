@@ -13,7 +13,7 @@ import { API_BASE } from "../lib/api";
 const fmt = (v: any) => Number(v || 0).toLocaleString();
 
 interface Account { id: number; code: string; name: string; }
-interface GLLine { date: string; entry_number: string; description: string; debit: number; credit: number; running_balance: number; }
+interface GLLine { date: string; entry_number: string; voucher_number?: string | null; description: string; debit: number; credit: number; running_balance: number; }
 
 const GeneralLedger = () => {
   const { t } = useTranslation("accounting");
@@ -67,8 +67,8 @@ const GeneralLedger = () => {
   };
 
   const exportRows = () => (ledger?.lines || []).map(l => ({
-    Date: l.date, "Entry No.": l.entry_number, Description: l.description,
-    Debit: l.debit, Credit: l.credit, Balance: l.running_balance,
+    Date: l.date, "Entry No.": l.entry_number, "Kitabu NO.": l.voucher_number || "—",
+    Description: l.description, Debit: l.debit, Credit: l.credit, Balance: l.running_balance,
   }));
 
   const handlePrint = () => {
@@ -76,8 +76,8 @@ const GeneralLedger = () => {
     const body = `
       <p><strong>Account:</strong> ${ledger.account.code} — ${ledger.account.name} &nbsp; | &nbsp; <strong>Opening:</strong> ${fmt(ledger.opening_balance)} &nbsp; | &nbsp; <strong>Closing:</strong> ${fmt(ledger.closing_balance)}</p>
       <table>
-        <thead><tr><th>Date</th><th>Entry No.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
-        <tbody>${ledger.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
+        <thead><tr><th>Date</th><th>Entry No.</th><th>Kitabu NO.</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
+        <tbody>${ledger.lines.map(l => `<tr><td>${l.date}</td><td>${l.entry_number}</td><td style="font-family:monospace;font-weight:700">${l.voucher_number || "—"}</td><td>${l.description}</td><td style="text-align:right">${Number(l.debit) > 0 ? fmt(l.debit) : "—"}</td><td style="text-align:right">${Number(l.credit) > 0 ? fmt(l.credit) : "—"}</td><td style="text-align:right">${fmt(l.running_balance)}</td></tr>`).join("")}</tbody>
       </table>
     `;
     printDocument("General Ledger", body, `${from || "—"} to ${to || "—"}`);
@@ -124,14 +124,27 @@ const GeneralLedger = () => {
             </div>
             <div className="gl-table-scroll">
               <table>
-                <thead><tr><th>{t("common.date")}</th><th>{t("common.entryNo")}</th><th>{t("common.description")}</th><th>{t("common.debit")}</th><th>{t("common.credit")}</th><th>{t("common.balance")}</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>{t("common.date")}</th>
+                    <th>{t("common.entryNo")}</th>
+                    <th style={{ whiteSpace: "nowrap" }}>Kitabu NO.</th>
+                    <th>{t("common.description")}</th>
+                    <th>{t("common.debit")}</th>
+                    <th>{t("common.credit")}</th>
+                    <th>{t("common.balance")}</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {ledger.lines.length === 0 ? (
-                    <tr><td colSpan={6} className="gl-empty">No transactions in this period</td></tr>
+                    <tr><td colSpan={7} className="gl-empty">No transactions in this period</td></tr>
                   ) : ledger.lines.map((line, i) => (
                     <tr key={i}>
                       <td>{line.date}</td>
                       <td className="gl-entry-number">{line.entry_number}</td>
+                      <td style={{ fontFamily: "monospace", fontWeight: 700, color: "#5c3d11", whiteSpace: "nowrap" }}>
+                        {line.voucher_number || <span style={{ color: "#cbd5e1", fontWeight: 400 }}>—</span>}
+                      </td>
                       <td>{line.description}</td>
                       <td>{Number(line.debit) > 0 ? fmt(line.debit) : "—"}</td>
                       <td>{Number(line.credit) > 0 ? fmt(line.credit) : "—"}</td>

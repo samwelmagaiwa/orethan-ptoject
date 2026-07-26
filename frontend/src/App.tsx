@@ -52,6 +52,14 @@ import Configurations from "./pages/Configurations";
 import AuditLog from "./pages/AuditLog";
 import Biometric from "./pages/Biometric";
 import EmployeeLoan from "./pages/EmployeeLoan";
+import HistoricalLoan from "./pages/HistoricalLoan";
+import StaffPerformance from "./pages/StaffPerformance";
+import ParAging from "./pages/ParAging";
+import ClientStatement from "./pages/ClientStatement";
+import EodCashReport from "./pages/EodCashReport";
+import LoanRenewal from "./pages/LoanRenewal";
+import Branches from "./pages/Branches";
+import DelinquencyEscalations from "./pages/DelinquencyEscalations";
 import { API_BASE } from "./lib/api";
 import { setOrgSettings, dispatchOrgUpdate } from "./utils/orgSettings";
 import { useSessionTimeout, saveLastPath, popLastPath } from "./hooks/useSessionTimeout";
@@ -118,7 +126,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
   const [loanAmount, setLoanAmount] = useState<number>(1000000);
   const [loanPeriod, setLoanPeriod] = useState<number>(12);
   const [repaymentFrequency, setRepaymentFrequency] = useState<string>("Monthly");
-  const [interestType, setInterestType] = useState<string>("Declining Balance");
+  const interestType = "Flat Rate";
   const [interestRate, setInterestRate] = useState<number>(3);
   const [processingFee, setProcessingFee] = useState<number>(2);
   const [startDate, setStartDate] = useState<string>("2026-06-27");
@@ -176,7 +184,7 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 
   useEffect(() => {
     calculateLoan();
-  }, [loanAmount, loanPeriod, interestRate, processingFee, interestType, repaymentFrequency, income, expenses]);
+  }, [loanAmount, loanPeriod, interestRate, processingFee, repaymentFrequency, income, expenses]);
 
   const [sustainability, setSustainability] = useState<{ isSustainable: boolean; dti: number; message: string; suggestedMax: number } | null>(null);
 
@@ -190,17 +198,9 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
     const totalInstallments = Math.max(1, Math.round(loanPeriod * installmentsPerMonth));
     let installmentAmount = 0;
 
-    if (interestType === "Declining Balance") {
-      const ratePerInstallment = (interestRate / 100) / installmentsPerMonth;
-      if (ratePerInstallment > 0) {
-        installmentAmount = loanAmount * ratePerInstallment * Math.pow(1 + ratePerInstallment, totalInstallments) / (Math.pow(1 + ratePerInstallment, totalInstallments) - 1);
-      } else {
-        installmentAmount = loanAmount / totalInstallments;
-      }
-    } else {
-      const totalInterestFlat = loanAmount * (interestRate / 100) * loanPeriod;
-      installmentAmount = (loanAmount + totalInterestFlat) / totalInstallments;
-    }
+    // Flat rate: interest on original principal for full term, divided equally
+    const totalInterestFlat = loanAmount * (interestRate / 100) * loanPeriod;
+    installmentAmount = (loanAmount + totalInterestFlat) / totalInstallments;
 
     const totalLoanPayment = installmentAmount * totalInstallments;
     const interest = totalLoanPayment - loanAmount;
@@ -413,10 +413,9 @@ function MicrofinanceCalculator({ setLoading, setSyncMessages }: { setLoading: (
 
           <div className="field-group">
             <label>Aina ya Riba</label>
-            <select value={interestType} onChange={(e) => setInterestType(e.target.value)}>
-              <option value="Declining Balance">Riba Inayopungua (Declining)</option>
-              <option value="Flat Rate">Riba Isiyobadilika (Flat Rate)</option>
-            </select>
+            <div style={{ padding: "10px 14px", background: "#f1f5f9", borderRadius: "8px", fontWeight: 700, fontSize: "13px", color: "#1e5fae", border: "1.5px solid #cbd5e1" }}>
+              Riba Isiyobadilika (Flat Rate)
+            </div>
           </div>
 
           <div className="field-group">
@@ -1126,7 +1125,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         transition: "margin-left 0.3s ease"
       }}>
         <Navbar />
-        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
+        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "auto", display: "flex", flexDirection: "column", position: "relative" }}>
           {children}
         </div>
         <Footer />
@@ -1294,6 +1293,12 @@ function App() {
 
           {/* ========== RISK & FINANCIAL REPORTS ========== */}
           <Route path="/reports/risk" element={<ProtectedRoute><MainLayout><RiskReports /></MainLayout></ProtectedRoute>} />
+          <Route path="/reports/par-aging" element={<ProtectedRoute><MainLayout><ParAging /></MainLayout></ProtectedRoute>} />
+          <Route path="/reports/eod-cash" element={<ProtectedRoute><MainLayout><EodCashReport /></MainLayout></ProtectedRoute>} />
+          <Route path="/customers/:id/statement" element={<ProtectedRoute><MainLayout><ClientStatement /></MainLayout></ProtectedRoute>} />
+          <Route path="/loans/:id/renew" element={<ProtectedRoute><MainLayout><LoanRenewal /></MainLayout></ProtectedRoute>} />
+          <Route path="/branches" element={<ProtectedRoute><MainLayout><Branches /></MainLayout></ProtectedRoute>} />
+          <Route path="/escalations" element={<ProtectedRoute><MainLayout><DelinquencyEscalations /></MainLayout></ProtectedRoute>} />
           <Route path="/reports/financial" element={<ProtectedRoute><MainLayout><FinancialReports /></MainLayout></ProtectedRoute>} />
           <Route path="/reports/regulator" element={<ProtectedRoute><MainLayout><RegulatorReports /></MainLayout></ProtectedRoute>} />
           <Route path="/loan-lifecycle" element={<ProtectedRoute><MainLayout><LoanLifecycle /></MainLayout></ProtectedRoute>} />
@@ -1513,6 +1518,8 @@ function App() {
           <Route path="/configurations" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
           <Route path="/audit-log" element={<ProtectedRoute><MainLayout><AuditLog /></MainLayout></ProtectedRoute>} />
           <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
+          <Route path="/historical-loan" element={<ProtectedRoute><MainLayout><HistoricalLoan /></MainLayout></ProtectedRoute>} />
+          <Route path="/staff-performance" element={<ProtectedRoute><MainLayout><StaffPerformance /></MainLayout></ProtectedRoute>} />
 
           {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />

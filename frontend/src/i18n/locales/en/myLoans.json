@@ -25,16 +25,16 @@
     "loanType": "Loan Type",
     "status": "Status",
     "smsStatus": "SMS Status",
-    "accountNumber": "Account No",
+    "accountNumber": "Kitabu NO",
     "actions": "Actions"
   },
   "status": {
     "returnedForCorrection": "RETURNED FOR CORRECTION",
-    "pendingLm": "PENDING LOAN MANAGER",
-    "lmApproved": "LOAN MANAGER APPROVED",
-    "pendingGm": "PENDING GENERAL MANAGER",
-    "gmApproved": "GENERAL MANAGER APPROVED",
-    "pendingMd": "PENDING MANAGING DIRECTOR",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
     "approved": "APPROVED",
     "disbursed": "DISBURSED",
     "reasonLabel": "Reason"
@@ -46,7 +46,7 @@
     "delete": "Delete"
   },
   "pagination": {
-    "showing": "Showing {{from}}â€“{{to}} of {{total}}",
+    "showing": "Showing {{from}}-{{to}} of {{total}}",
     "previous": "Previous",
     "next": "Next"
   },

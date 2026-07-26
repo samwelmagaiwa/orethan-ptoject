@@ -7,6 +7,7 @@ import { getOrgSettings, getCompanyName } from "./orgSettings";
 export interface ReceiptData {
   receipt_number: string;
   transaction_number: string;
+  voucher_number?: string | null;
   payment_date: string;
   payment_time?: string;
   customer_name: string;
@@ -78,6 +79,15 @@ async function buildA4(r: ReceiptData) {
       ${r.fully_paid ? `<div style="border:2px solid #059669;color:#059669;font-size:11px;font-weight:800;letter-spacing:1.5px;padding:6px 14px;border-radius:6px;text-transform:uppercase">Loan Cleared</div>`
       : `<div style="border:2px solid #102a43;color:#102a43;font-size:11px;font-weight:800;letter-spacing:1.5px;padding:6px 14px;border-radius:6px;text-transform:uppercase">Paid</div>`}
     </div>
+
+    ${r.voucher_number ? `
+    <div style="display:flex;align-items:center;gap:14px;background:#fffbeb;border:2px solid #d97706;border-radius:10px;padding:10px 18px;margin:14px 0 4px">
+      <span style="font-size:22px">📋</span>
+      <div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:#92400e;font-weight:700">Physical Voucher No (Kitabu)</div>
+        <div style="font-size:22px;font-weight:900;color:#92400e;font-family:ui-monospace,monospace;letter-spacing:3px">${r.voucher_number}</div>
+      </div>
+    </div>` : ""}
 
     ${sectionTitle(1, "Receipt Information")}
     ${grid([
@@ -169,6 +179,10 @@ async function buildThermal(r: ReceiptData, mm: 58 | 80) {
     ${hr}
     <div style="text-align:center;font-weight:800;font-size:12px;letter-spacing:1px">PAYMENT RECEIPT</div>
     ${hr}
+    ${r.voucher_number ? `<div style="text-align:center;border:1.5px dashed #d97706;border-radius:6px;padding:4px 8px;margin:4px 0;background:#fffbeb">
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#92400e;font-weight:700">Voucher No (Kitabu)</div>
+      <div style="font-weight:900;font-size:16px;font-family:'Courier New',monospace;letter-spacing:3px;color:#92400e">${r.voucher_number}</div>
+    </div>${hr}` : ""}
     ${line("Receipt", r.receipt_number)}
     ${line("Txn", r.transaction_number)}
     ${line("Date", fmtDate(r.payment_date))}

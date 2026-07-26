@@ -29,6 +29,8 @@ interface Loan {
   penalty: number;
   repayments: any[];
   schedules: any[];
+  disbursed_at?: string | null;
+  disbursement?: { voucher_number?: string | null } | null;
 }
 
 interface Customer {
@@ -299,6 +301,12 @@ const CustomerDetails: React.FC = () => {
           >
             <IconArrowLeft /> Back
           </button>
+          <button
+            onClick={() => navigate(`/customers/${id}/statement`)}
+            style={{ background: "rgba(79,70,229,0.15)", border: "1px solid rgba(79,70,229,0.4)", borderRadius: "8px", padding: "6px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#a5b4fc" }}
+          >
+            📄 Taarifa ya Mteja
+          </button>
         </div>
       </div>
 
@@ -438,6 +446,7 @@ const CustomerDetails: React.FC = () => {
                             <th>Malimbikizo</th>
                             <th>Adhabu</th>
                             <th>Tarehe</th>
+                            <th>Kitabu NO.</th>
                             <th>Maendeleo</th>
                             <th>Hali</th>
                             <th>Vitendo</th>
@@ -473,27 +482,27 @@ const CustomerDetails: React.FC = () => {
                                 </td>
 
                                 {/* Amount */}
-                                <td>
-                                  <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#102a43", wordBreak: "break-word" }}>{fmtAmt(loan.amount)}</div>
+                                <td style={{ whiteSpace: "nowrap" }}>
+                                  <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#102a43" }}>{fmtAmt(loan.amount)}</div>
                                 </td>
 
                                 {/* Remaining balance */}
-                                <td>
-                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.remaining_balance > 0 ? "#102a43" : "#059669", wordBreak: "break-word" }}>
+                                <td style={{ whiteSpace: "nowrap" }}>
+                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.remaining_balance > 0 ? "#102a43" : "#059669" }}>
                                     {fmtAmt(loan.remaining_balance)}
                                   </div>
                                 </td>
 
                                 {/* Arrears */}
-                                <td>
-                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.arrears > 0 ? "#dc2626" : "#059669", wordBreak: "break-word" }}>
+                                <td style={{ whiteSpace: "nowrap" }}>
+                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.arrears > 0 ? "#dc2626" : "#059669" }}>
                                     {fmtAmt(loan.arrears)}
                                   </div>
                                 </td>
 
                                 {/* Penalty */}
-                                <td>
-                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.penalty > 0 ? "#b45309" : "#059669", wordBreak: "break-word" }}>
+                                <td style={{ whiteSpace: "nowrap" }}>
+                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: loan.penalty > 0 ? "#b45309" : "#059669" }}>
                                     {fmtAmt(loan.penalty)}
                                   </div>
                                 </td>
@@ -502,6 +511,15 @@ const CustomerDetails: React.FC = () => {
                                 <td>
                                   <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#5a4e38", wordBreak: "break-word" }}>
                                     {new Date(loan.created_at).toLocaleDateString("en-GB")}
+                                  </div>
+                                </td>
+
+                                {/* Voucher number */}
+                                <td>
+                                  <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#5c3d11", fontFamily: "monospace", whiteSpace: "nowrap" }}>
+                                    {loan.disbursement?.voucher_number
+                                      ? loan.disbursement.voucher_number
+                                      : <span style={{ color: "#cbd5e1", fontWeight: 500, fontFamily: "inherit" }}>—</span>}
                                   </div>
                                 </td>
 
@@ -534,9 +552,11 @@ const CustomerDetails: React.FC = () => {
                                       <IconFileText size={14} />
                                     </button>
                                     <button
-                                      onClick={() => navigate(prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`)}
+                                      onClick={() => { if (loan.disbursed_at || loan.status === 'disbursed' || loan.status === 'completed') navigate(prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`); }}
                                       className="cd-act-btn cd-act-btn--primary"
-                                      title="Record repayment"
+                                      title={loan.disbursed_at || loan.status === 'disbursed' || loan.status === 'completed' ? "Record repayment" : "Mkopo bado haujatolewa (not disbursed)"}
+                                      disabled={!(loan.disbursed_at || loan.status === 'disbursed' || loan.status === 'completed')}
+                                      style={{ opacity: (loan.disbursed_at || loan.status === 'disbursed' || loan.status === 'completed') ? 1 : 0.3, cursor: (loan.disbursed_at || loan.status === 'disbursed' || loan.status === 'completed') ? 'pointer' : 'not-allowed' }}
                                     >
                                       <IconCreditCard size={14} />
                                     </button>
@@ -567,19 +587,19 @@ const CustomerDetails: React.FC = () => {
                             <td colSpan={2} style={{ paddingLeft: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#8a7338", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                               Jumla / Total
                             </td>
-                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#102a43", wordBreak: "break-word" }}>
+                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#e2bc8a", whiteSpace: "nowrap" }}>
                               {fmtAmt(customer.loans.reduce((s, l) => s + Number(l.amount), 0))}
                             </td>
-                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#102a43", wordBreak: "break-word" }}>
+                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#e2bc8a", whiteSpace: "nowrap" }}>
                               {fmtAmt(customer.loans.reduce((s, l) => s + Number(l.remaining_balance), 0))}
                             </td>
-                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#dc2626", wordBreak: "break-word" }}>
+                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#dc2626", whiteSpace: "nowrap" }}>
                               {fmtAmt(customer.loans.reduce((s, l) => s + Number(l.arrears), 0))}
                             </td>
-                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#b45309", wordBreak: "break-word" }}>
+                            <td style={{ fontWeight: 800, fontSize: "0.84rem", color: "#b45309", whiteSpace: "nowrap" }}>
                               {fmtAmt(customer.loans.reduce((s, l) => s + Number(l.penalty), 0))}
                             </td>
-                            <td colSpan={4} />
+                            <td colSpan={5} />
                           </tr>
                         </tfoot>
                       </table>

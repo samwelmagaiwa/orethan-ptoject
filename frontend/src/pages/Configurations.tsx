@@ -66,6 +66,7 @@ const SIDEBAR_KEYS = [
   { key: "loan_lifecycle",      label: "Loan Restructuring" },
   { key: "disburse_payments",   label: "Disburse & Payments" },
   { key: "cash_till",           label: "Cashier Till" },
+  { key: "can_disburse",        label: "💳 Finance Write Access", sub: "Allow this user to disburse loans, record repayments & approve payment requests — regardless of role" },
   { key: "profile",             label: "My Signature" },
   { key: "logout",              label: "Log Out",                sub: "Sidebar link only — the top user-menu logout always stays available" },
 ];

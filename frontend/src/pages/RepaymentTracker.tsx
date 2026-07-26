@@ -82,6 +82,8 @@ interface Loan {
 
   sms_type?: string | null;
 
+  customer_id?: number | null;
+
 }
 
 
@@ -176,6 +178,10 @@ const RepaymentTracker = () => {
 
   const [completedLoans, setCompletedLoans] = useState<Loan[]>([]);
 
+  const [customersCount, setCustomersCount] = useState(0);
+  const [pendingCustomers, setPendingCustomers] = useState(0);
+  const [disbursedCustomers, setDisbursedCustomers] = useState(0);
+
   const [summary, setSummary] = useState<Summary | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -185,6 +191,8 @@ const RepaymentTracker = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "current" | "overdue" | "pending">("all");
 
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [openRowDropdown, setOpenRowDropdown] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
 
 
 
@@ -248,6 +256,14 @@ const RepaymentTracker = () => {
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-rt-dropdown]')) setOpenRowDropdown(null);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
 
 
   const loadData = async () => {
@@ -267,6 +283,12 @@ const RepaymentTracker = () => {
         axios.get(`${API_BASE}/repayments/summary`, { headers }),
 
       ]);
+
+      axios.get(`${API_BASE}/loans/stats`, { headers }).then(r => {
+        setCustomersCount(r.data.customers_count || 0);
+        setPendingCustomers(r.data.pending_customers || 0);
+        setDisbursedCustomers(r.data.disbursed_customers || 0);
+      }).catch(() => {});
 
 
 
@@ -464,19 +486,23 @@ const RepaymentTracker = () => {
 
   const statCards = [
 
-    { label: t("stats.totalExpected"), value: fmt(summary?.total_expected), icon: <DollarSign size={20} />, gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
+    { label: "Pending Customers", value: pendingCustomers, total: customersCount, icon: <Users size={18} />, accent: "#f59e0b", bg: "#fffbeb", border: "#fde68a", iconBg: "linear-gradient(135deg,#f59e0b,#fbbf24)", hint: "Awaiting disbursement" },
 
-    { label: t("stats.totalCollected"), value: fmt(summary?.total_collected), icon: <TrendingUp size={20} />, gradient: "linear-gradient(135deg, #10b981, #34d399)" },
+    { label: "Disbursed Customers", value: disbursedCustomers, total: customersCount, icon: <Users size={18} />, accent: "#0ea5e9", bg: "#f0f9ff", border: "#bae6fd", iconBg: "linear-gradient(135deg,#0ea5e9,#38bdf8)", hint: "Active borrowers" },
 
-    { label: t("stats.outstandingBalance"), value: fmt(summary?.outstanding_balance), icon: <Wallet size={20} />, gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
+    { label: t("stats.totalExpected"), value: fmt(summary?.total_expected), total: null, icon: <DollarSign size={18} />, accent: "#6366f1", bg: "#eef2ff", border: "#c7d2fe", iconBg: "linear-gradient(135deg,#6366f1,#818cf8)", hint: null },
 
-    { label: t("stats.overdueAmount"), value: fmt(summary?.overdue_amount), icon: <AlertTriangle size={20} />, gradient: "linear-gradient(135deg, #ef4444, #f87171)" },
+    { label: t("stats.totalCollected"), value: fmt(summary?.total_collected), total: null, icon: <TrendingUp size={18} />, accent: "#10b981", bg: "#ecfdf5", border: "#a7f3d0", iconBg: "linear-gradient(135deg,#10b981,#34d399)", hint: null },
 
-    { label: t("stats.collectionRate"), value: `${collectionRate}%`, icon: <PieIcon size={20} />, gradient: "linear-gradient(135deg, #3b82f6, #60a5fa)" },
+    { label: t("stats.outstandingBalance"), value: fmt(summary?.outstanding_balance), total: null, icon: <Wallet size={18} />, accent: "#f59e0b", bg: "#fffbeb", border: "#fde68a", iconBg: "linear-gradient(135deg,#f59e0b,#fbbf24)", hint: null },
 
-    { label: t("stats.activeLoans"), value: summary?.active_loans ?? activeLoans.length, icon: <Users size={20} />, gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)" },
+    { label: t("stats.overdueAmount"), value: fmt(summary?.overdue_amount), total: null, icon: <AlertTriangle size={18} />, accent: "#ef4444", bg: "#fef2f2", border: "#fecaca", iconBg: "linear-gradient(135deg,#ef4444,#f87171)", hint: null },
 
-    { label: t("stats.defaultedLoans"), value: summary?.defaulted_loans ?? 0, icon: <AlertCircle size={20} />, gradient: "linear-gradient(135deg, #f43f5e, #fb7185)" },
+    { label: t("stats.collectionRate"), value: `${collectionRate}%`, total: null, icon: <PieIcon size={18} />, accent: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe", iconBg: "linear-gradient(135deg,#3b82f6,#60a5fa)", hint: null },
+
+    { label: t("stats.activeLoans"), value: summary?.active_loans ?? activeLoans.length, total: null, icon: <Users size={18} />, accent: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe", iconBg: "linear-gradient(135deg,#8b5cf6,#a78bfa)", hint: null },
+
+    { label: t("stats.defaultedLoans"), value: summary?.defaulted_loans ?? 0, total: null, icon: <AlertCircle size={18} />, accent: "#f43f5e", bg: "#fff1f2", border: "#fecdd3", iconBg: "linear-gradient(135deg,#f43f5e,#fb7185)", hint: null },
 
   ];
 
@@ -578,30 +604,72 @@ const RepaymentTracker = () => {
 
 
 
-        {/* ─── STAT CARDS — SEPARATE BORDERED CARDS WITH SPACING (WRAPPING) ─── */}
+        {/* ─── STAT CARDS — ALL IN ONE ROW ─── */}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(225px, 1fr))", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
 
-          {statCards.map((card, i) => (
+          {/* ── COMBINED CUSTOMER CARD — same padding/height as regular cards ── */}
+          <div style={{ background: "white", border: "1.5px solid #e2e8f0", borderRadius: 14, boxShadow: "0 2px 10px rgba(15,23,42,0.06)", padding: "1.15rem 1rem", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: 0, transition: "box-shadow 0.2s, transform 0.2s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(15,23,42,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 10px rgba(15,23,42,0.06)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+          >
+            {/* Total badge — top-right corner */}
+            <span style={{ position: "absolute", top: 8, right: 10, background: "linear-gradient(135deg,#f59e0b,#0ea5e9)", color: "#fff", fontSize: "0.58rem", fontWeight: 800, padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap" }}>
+              {customersCount} total
+            </span>
 
-            <div key={i} className="rt-stat-card"
+            {/* Left — Pending */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", paddingRight: "0.6rem", borderRight: "1px solid #f1f5f9" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: "linear-gradient(135deg,#f59e0b,#fbbf24)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 10px #f59e0b33" }}>
+                <Users size={16} color="#fff" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "#f59e0b", margin: "0 0 0.2rem", lineHeight: 1.2 }}>Pending</p>
+                <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.1rem" }}>{pendingCustomers}</h3>
+                <p style={{ fontSize: "0.55rem", fontWeight: 600, color: "#f59e0b", margin: 0, opacity: 0.8 }}>Awaiting</p>
+              </div>
+            </div>
 
-              style={{ ...CARD_STYLE, padding: "1.15rem 1.2rem", display: "flex", alignItems: "center", gap: "0.85rem", transition: "all 0.2s", overflow: "hidden" }}>
+            {/* Right — Disbursed */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", paddingLeft: "0.6rem" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: "linear-gradient(135deg,#0ea5e9,#38bdf8)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 10px #0ea5e933" }}>
+                <Users size={16} color="#fff" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "#0ea5e9", margin: "0 0 0.2rem", lineHeight: 1.2 }}>Disbursed</p>
+                <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#0f172a", margin: "0 0 0.1rem" }}>{disbursedCustomers}</h3>
+                <p style={{ fontSize: "0.55rem", fontWeight: 600, color: "#0ea5e9", margin: 0, opacity: 0.8 }}>Active</p>
+              </div>
+            </div>
 
-              <div style={{ width: 44, height: 44, borderRadius: "12px", background: card.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(15,23,42,0.12)" }}>
+            {/* Decorative corner circle */}
+            <div style={{ position: "absolute", bottom: -14, right: -14, width: 52, height: 52, borderRadius: "50%", background: "#0ea5e9", opacity: 0.07, pointerEvents: "none" }} />
+          </div>
 
+          {/* ── REMAINING 7 STAT CARDS ── */}
+          {statCards.filter(c => c.total === null).map((card, i) => (
+
+            <div key={i} style={{
+              background: card.bg,
+              border: `1.5px solid ${card.border}`,
+              borderRadius: 14,
+              padding: "1.15rem 1rem",
+              boxShadow: "0 2px 10px rgba(15,23,42,0.06)",
+              display: "flex", alignItems: "center", gap: "0.7rem",
+              position: "relative", overflow: "hidden",
+              transition: "box-shadow 0.2s, transform 0.2s",
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(15,23,42,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 10px rgba(15,23,42,0.06)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: `0 4px 10px ${card.accent}33` }}>
                 <span style={{ transform: "scale(0.85)" }}>{card.icon}</span>
-
               </div>
-
               <div style={{ minWidth: 0, overflow: "hidden" }}>
-
-                <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", color: "#94a3b8", margin: "0 0 0.3rem", lineHeight: 1.25, wordBreak: "break-word" }}>{card.label}</p>
-
-                <h3 title={String(card.value)} style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.value}</h3>
-
+                <p style={{ fontSize: "0.58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: card.accent, margin: "0 0 0.25rem", lineHeight: 1.2 }}>{card.label}</p>
+                <h3 title={String(card.value)} style={{ fontSize: "1rem", fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.value}</h3>
               </div>
-
+              <div style={{ position: "absolute", bottom: -14, right: -14, width: 52, height: 52, borderRadius: "50%", background: card.accent, opacity: 0.07, pointerEvents: "none" }} />
             </div>
 
           ))}
@@ -778,174 +846,89 @@ const RepaymentTracker = () => {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SECTION_GAP, marginBottom: SECTION_GAP }}>
 
-          {/* Today's Collection */}
-
-          <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-
-              <Calendar size={18} style={{ color: "#6366f1" }} />
-
-              <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("todayCollection.title")}</h2>
-
-              <span style={{ marginLeft: "auto", background: "#eef2ff", color: "#6366f1", padding: "2px 10px", borderRadius: 20, fontSize: "0.7rem", fontWeight: 800 }}>{t("todayCollection.dueBadge", { count: todayCollections.length })}</span>
-
+          {/* ── Today's Collection — navy blue accent ── */}
+          <div style={{ background: "white", borderRadius: 14, boxShadow: "0 2px 16px rgba(15,23,42,0.10)", borderTop: "4px solid #1e5fae", border: "1px solid #dbeafe", borderTopWidth: 4, borderTopColor: "#1e5fae", overflow: "hidden" }}>
+            <div style={{ padding: "1rem 1.25rem 0.5rem", display: "flex", alignItems: "center", gap: "0.6rem", borderBottom: "1px solid #eff6ff" }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#1e5fae,#3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Calendar size={16} color="#fff" />
+              </div>
+              <span style={{ fontWeight: 800, fontSize: "1rem", color: "#102a43", flex: 1 }}>{t("todayCollection.title")}</span>
+              <span style={{ background: "#1e5fae", color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800 }}>{t("todayCollection.dueBadge", { count: todayCollections.length })}</span>
             </div>
-
             <div style={{ overflowX: "auto" }}>
-
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
                 <thead>
-
-                  <tr>
-
+                  <tr style={{ background: "#eff6ff" }}>
                     {[t("table.customer"), t("table.loanNo"), t("table.dueAmount"), t("table.dueDate"), t("table.action")].map((h, i) => (
-
-                      <th key={h} style={{ textAlign: i >= 2 && i <= 3 ? "left" : i === 4 ? "right" : "left", padding: "0 0.6rem 0.7rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
-
+                      <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0.6rem 0.75rem", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1e5fae", borderBottom: "2px solid #bfdbfe", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
-
                   </tr>
-
                 </thead>
-
                 <tbody>
-
-                  {todayCollections.map((row) => (
-
-                    <tr key={row.schedule_id} className="rt-table-row">
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{row.customer}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", whiteSpace: "nowrap" }}>{row.loan_number}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(row.due_amount)}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontSize: "0.78rem", color: "#64748b" }}>{new Date(row.due_date).toLocaleDateString("en-GB")}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem" }}>
-
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
-
-                          <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} title={t("actions.collectPayment")}
-
-                            style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>{t("actions.collect")}</button>
-
-                          <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} title={t("actions.sendSmsReminder")}
-
-                            style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: sendingReminderFor === row.loan_id ? "wait" : "pointer", color: "#64748b", display: "flex", alignItems: "center", opacity: sendingReminderFor === row.loan_id ? 0.6 : 1 }}><Send size={13} /></button>
-
-                          <button onClick={() => viewSchedule(row.loan_id)} title={t("actions.viewLoan")}
-
-                            style={{ padding: "0.35rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}><Eye size={13} /></button>
-
+                  {todayCollections.map((row, idx) => (
+                    <tr key={row.schedule_id} style={{ background: idx % 2 === 0 ? "#fff" : "#f0f7ff", borderBottom: "1px solid #e0effe" }}>
+                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#102a43", fontSize: "0.8rem" }}>{row.customer}</td>
+                      <td style={{ padding: "0.7rem 0.75rem", fontSize: "0.68rem", fontWeight: 600, color: "#1e5fae", whiteSpace: "nowrap" }}>{row.loan_number}</td>
+                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 800, color: "#102a43", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(row.due_amount)}</td>
+                      <td style={{ padding: "0.7rem 0.75rem", fontSize: "0.75rem", color: "#475569", whiteSpace: "nowrap" }}>{new Date(row.due_date).toLocaleDateString("en-GB")}</td>
+                      <td style={{ padding: "0.7rem 0.75rem" }}>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
+                          <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#1e5fae", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>
+                          <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ padding: "0.3rem 0.4rem", borderRadius: 7, background: "#dbeafe", border: "1px solid #93c5fd", cursor: "pointer", color: "#1d4ed8", display: "flex", alignItems: "center", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Send size={12} /></button>
+                          <button onClick={() => viewSchedule(row.loan_id)} style={{ padding: "0.3rem 0.4rem", borderRadius: 7, background: "#f0f9ff", border: "1px solid #7dd3fc", cursor: "pointer", color: "#0369a1", display: "flex", alignItems: "center" }}><Eye size={12} /></button>
                         </div>
-
                       </td>
-
                     </tr>
-
                   ))}
-
                   {todayCollections.length === 0 && (
-
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noPaymentsDueToday")}</td></tr>
-
+                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noPaymentsDueToday")}</td></tr>
                   )}
-
                 </tbody>
-
               </table>
-
             </div>
-
           </div>
 
-
-
-          {/* Overdue Management */}
-
-          <div style={{ ...CARD_STYLE, padding: "1.5rem", minWidth: 0 }}>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-
-              <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-
-              <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("overdueManagement.title")}</h2>
-
-              <span style={{ marginLeft: "auto", background: "#fef2f2", color: "#ef4444", padding: "2px 10px", borderRadius: 20, fontSize: "0.7rem", fontWeight: 800 }}>{t("overdueManagement.lateBadge", { count: overdueList.length })}</span>
-
+          {/* ── Overdue Management — crimson red accent ── */}
+          <div style={{ background: "white", borderRadius: 14, boxShadow: "0 2px 16px rgba(15,23,42,0.10)", border: "1px solid #fee2e2", borderTopWidth: 4, borderTopColor: "#dc2626", overflow: "hidden" }}>
+            <div style={{ padding: "1rem 1.25rem 0.5rem", display: "flex", alignItems: "center", gap: "0.6rem", borderBottom: "1px solid #fff1f2" }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#991b1b,#dc2626)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <AlertTriangle size={16} color="#fff" />
+              </div>
+              <span style={{ fontWeight: 800, fontSize: "1rem", color: "#7f1d1d", flex: 1 }}>{t("overdueManagement.title")}</span>
+              <span style={{ background: "#dc2626", color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800 }}>{t("overdueManagement.lateBadge", { count: overdueList.length })}</span>
             </div>
-
             <div style={{ overflowX: "auto" }}>
-
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
                 <thead>
-
-                  <tr>
-
+                  <tr style={{ background: "#fff1f2" }}>
                     {[t("table.customer"), t("table.daysLate"), t("table.amount"), t("table.penalty"), t("table.action")].map((h, i) => (
-
-                      <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0 0.6rem 0.7rem", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{h}</th>
-
+                      <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0.6rem 0.75rem", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#dc2626", borderBottom: "2px solid #fecaca", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
-
                   </tr>
-
                 </thead>
-
                 <tbody>
-
-                  {overdueList.map((row) => (
-
-                    <tr key={row.schedule_id} className="rt-table-row">
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#1e293b", fontSize: "0.82rem" }}>{row.customer}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem" }}>
-
-                        <span style={{ background: "#fef2f2", color: "#dc2626", padding: "2px 9px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800 }}>{t("overdueManagement.daysLateValue", { count: row.days_late })}</span>
-
+                  {overdueList.map((row, idx) => (
+                    <tr key={row.schedule_id} style={{ background: idx % 2 === 0 ? "#fff" : "#fff5f5", borderBottom: "1px solid #fee2e2" }}>
+                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#7f1d1d", fontSize: "0.8rem" }}>{row.customer}</td>
+                      <td style={{ padding: "0.7rem 0.75rem" }}>
+                        <span style={{ background: "#fef2f2", color: "#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, border: "1px solid #fecaca" }}>{t("overdueManagement.daysLateValue", { count: row.days_late })}</span>
                       </td>
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontWeight: 800, color: "#0f172a", fontSize: "0.82rem" }}>{fmt(row.amount)}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem", fontWeight: 700, color: "#ef4444", fontSize: "0.82rem" }}>{fmt(row.penalty)}</td>
-
-                      <td style={{ padding: "0.8rem 0.6rem" }}>
-
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.35rem" }}>
-
-                          <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} title={t("actions.sendOverdueSms")}
-
-                            style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.35rem 0.7rem", borderRadius: 8, background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", fontWeight: 700, fontSize: "0.62rem", cursor: sendingReminderFor === row.loan_id ? "wait" : "pointer", opacity: sendingReminderFor === row.loan_id ? 0.6 : 1 }}><Phone size={12} /> {t("actions.contact")}</button>
-
-                          <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} title={t("actions.collectWithPenalty")}
-
-                            style={{ padding: "0.35rem 0.7rem", borderRadius: 8, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer" }}>{t("actions.collect")}</button>
-
+                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 800, color: "#102a43", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(row.amount)}</td>
+                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#dc2626", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(row.penalty)}</td>
+                      <td style={{ padding: "0.7rem 0.75rem" }}>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
+                          <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.3rem 0.7rem", borderRadius: 7, background: "#fee2e2", border: "1px solid #fca5a5", color: "#991b1b", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Phone size={12} />{t("actions.contact")}</button>
+                          <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#dc2626", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>
                         </div>
-
                       </td>
-
                     </tr>
-
                   ))}
-
                   {overdueList.length === 0 && (
-
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noOverduePayments")}</td></tr>
-
+                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noOverduePayments")}</td></tr>
                   )}
-
                 </tbody>
-
               </table>
-
             </div>
-
           </div>
 
         </div>
@@ -954,99 +937,90 @@ const RepaymentTracker = () => {
 
         {/* ─── TABLE SECTION ─── */}
 
-        <div style={{ ...CARD_STYLE, padding: "1.5rem" }}>
+        <div style={{ background: "white", borderRadius: 14, boxShadow: "0 2px 16px rgba(15,23,42,0.09)", border: "1px solid #e2e8f0", borderTopWidth: 4, borderTopColor: "#4f46e5", overflow: "hidden" }}>
 
-          {/* TABLE TOOLBAR (NARROW) */}
+          {/* SINGLE TOOLBAR ROW — tabs + search + filter + actions */}
+          <div style={{ padding: "0.85rem 1.25rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", borderBottom: "1px solid #f1f5f9" }}>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.7rem", marginBottom: "1.1rem", paddingBottom: "1rem", borderBottom: "1px solid #f1f5f9" }}>
-
-            <div style={{ display: "flex", background: "#f1f5f9", padding: 3, borderRadius: 9, gap: 3 }}>
-
-              {([["active", t("tabs.activeLoans"), activeLoans.length, Clock, "#4f46e5"], ["completed", t("tabs.completed"), completedLoans.length, CheckCircle2, "#059669"]] as const).map(([key, label, count, Icon, color]) => {
-
+            {/* Tabs */}
+            <div style={{ display: "flex", background: "#f1f5f9", padding: 3, borderRadius: 10, gap: 3, flexShrink: 0 }}>
+              {([["active", t("tabs.activeLoans"), activeLoans.length, "#4f46e5", "#eef2ff"], ["completed", t("tabs.completed"), completedLoans.length, "#059669", "#ecfdf5"]] as const).map(([key, label, count, color, bg]) => {
                 const isActive = activeTab === key;
-
                 return (
-
                   <button key={key} onClick={() => setActiveTab(key)}
-
-                    style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.85rem", borderRadius: 7, border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", background: isActive ? "white" : "transparent", color: isActive ? color : "#64748b", boxShadow: isActive ? "0 1px 4px rgba(15,23,42,0.1)" : "none", transition: "all 0.2s" }}>
-
-                    <Icon size={14} /> {label}
-
-                    <span style={{ background: isActive ? `${color}1a` : "#e2e8f0", color: isActive ? color : "#94a3b8", padding: "0px 7px", borderRadius: 20, fontSize: "0.62rem", fontWeight: 800 }}>{count}</span>
-
+                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.38rem 0.9rem", borderRadius: 8, border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", transition: "all 0.18s",
+                      background: isActive ? "white" : "transparent",
+                      color: isActive ? color : "#64748b",
+                      boxShadow: isActive ? "0 1px 6px rgba(15,23,42,0.12)" : "none" }}>
+                    {isActive ? (key === "active" ? <Clock size={13}/> : <CheckCircle2 size={13}/>) : null}
+                    {label}
+                    <span style={{ background: isActive ? bg : "#e2e8f0", color: isActive ? color : "#94a3b8", padding: "1px 8px", borderRadius: 20, fontSize: "0.62rem", fontWeight: 800, whiteSpace: "nowrap" }}>{count}</span>
                   </button>
-
                 );
-
               })}
-
             </div>
 
+            {/* Search */}
+            <div style={{ position: "relative", flex: "1 1 160px", maxWidth: 240 }}>
+              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("filters.searchClient")}
+                style={{ width: "100%", padding: "0.42rem 0.8rem 0.42rem 2.1rem", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.78rem", color: "#1e293b" }} />
+            </div>
 
+            {/* Filter */}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowFilterMenu(v => !v)}
+                style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.42rem 0.9rem", borderRadius: 8, background: filterStatus !== "all" ? "#eef2ff" : "white", border: filterStatus !== "all" ? "1.5px solid #6366f1" : "1.5px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus !== "all" ? "#4f46e5" : "#64748b" }}>
+                <Filter size={14} /> {t("filters.filter")}{filterStatus !== "all" ? ` · ${filterStatus}` : ""}
+              </button>
+              {showFilterMenu && (
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(15,23,42,0.12)", zIndex: 200, minWidth: 160, overflow: "hidden" }}>
+                  {(["all", "current", "overdue", "pending"] as const).map((s) => (
+                    <button key={s} onClick={() => { setFilterStatus(s); setShowFilterMenu(false); }}
+                      style={{ display: "block", width: "100%", padding: "0.6rem 1rem", background: filterStatus === s ? "#eef2ff" : "white", border: "none", textAlign: "left", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus === s ? "#4f46e5" : "#475569" }}>
+                      {s === "all" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-
-              <div style={{ position: "relative" }}>
-
-                <Search size={14} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("filters.searchClient")}
-
-                  style={{ padding: "0.45rem 0.8rem 0.45rem 2.1rem", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none", fontWeight: 600, fontSize: "0.78rem", color: "#1e293b", width: 200 }} />
-
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <button onClick={() => setShowFilterMenu(v => !v)}
-                  style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: filterStatus !== "all" ? "#eef2ff" : "white", border: filterStatus !== "all" ? "1px solid #6366f1" : "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus !== "all" ? "#4f46e5" : "#64748b" }}>
-                  <Filter size={14} /> {t("filters.filter")}{filterStatus !== "all" ? ` · ${filterStatus}` : ""}
-                </button>
-                {showFilterMenu && (
-                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(15,23,42,0.12)", zIndex: 200, minWidth: 160, overflow: "hidden" }}>
-                    {(["all", "current", "overdue", "pending"] as const).map((s) => (
-                      <button key={s} onClick={() => { setFilterStatus(s); setShowFilterMenu(false); }}
-                        style={{ display: "block", width: "100%", padding: "0.6rem 1rem", background: filterStatus === s ? "#eef2ff" : "white", border: "none", textAlign: "left", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: filterStatus === s ? "#4f46e5" : "#475569" }}>
-                        {s === "all" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+            {/* Refresh + Export */}
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", flexShrink: 0 }}>
               <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={loadData}
-                style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: 8, background: "white", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#475569" }}>
+                style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.42rem 0.9rem", borderRadius: 8, background: "white", border: "1.5px solid #e2e8f0", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "#475569" }}>
                 <RefreshCw size={14} className={loading ? "rt-spin" : ""} /> {t("actions.refresh")}
               </motion.button>
-
               <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={exportCsv}
-                style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.95rem", borderRadius: 8, background: "#6366f1", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.42rem 1.1rem", borderRadius: 8, background: "linear-gradient(135deg,#4f46e5,#6366f1)", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", color: "white", boxShadow: "0 4px 12px rgba(99,102,241,0.35)" }}>
                 <ArrowUpRight size={14} /> {t("actions.export")}
               </motion.button>
-
             </div>
-
           </div>
 
-
-
+          {/* TABLE */}
           <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 780 }}>
 
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <colgroup>
+                <col style={{ width: "3%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "11%" }} />
+              </colgroup>
 
               <thead>
-
-                <tr>
-
-                  {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), t("scheduleModal.total"), t("table.balance"), t("table.status"), "SMS", t("table.management")].map((h, i) => (
-
-                    <th key={h} style={{ textAlign: i === 10 ? "right" : i >= 4 && i <= 7 ? "right" : "left", padding: "0 0.8rem 1rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>{h}</th>
-
+                <tr style={{ background: "#f8f9ff" }}>
+                  {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), "TOTAL BALANCE", t("table.status"), "SMS", t("table.management")].map((h, i) => (
+                    <th key={h} style={{ textAlign: i === 9 ? "right" : i >= 4 && i <= 6 ? "right" : "left", padding: "0.7rem 0.6rem", fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4f46e5", borderBottom: "2px solid #e0e7ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h}</th>
                   ))}
-
                 </tr>
-
               </thead>
 
               <tbody>
@@ -1057,137 +1031,137 @@ const RepaymentTracker = () => {
 
                     return (
 
-                      <motion.tr key={loan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: idx * 0.04 }} className="rt-table-row">
+                      <motion.tr key={loan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: idx * 0.04 }}
+                        style={{ background: idx % 2 === 0 ? "white" : "#fafbff", borderBottom: "1px solid #f1f5f9", cursor: "default" }}>
 
-                        <td style={{ padding: "1rem 0.8rem", fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>{(idx + 1).toString().padStart(2, "0")}</td>
+                        <td style={{ padding: "0.85rem 0.6rem", fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8" }}>{(idx + 1).toString().padStart(2, "0")}</td>
 
-                        <td style={{ padding: "1rem 0.8rem" }}>
-
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
-
-                            <div className="rt-avatar" style={{ width: 36, height: 36, borderRadius: 8, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.85rem", color: "#64748b", border: "1px solid #e2e8f0" }}>
-
-                              {loan.name.charAt(0)}
-
-                            </div>
-
-                            <div>
-
-                              <p style={{ fontWeight: 700, color: "#1e293b", margin: 0, fontSize: "0.85rem" }}>{loan.name}</p>
-
-                              <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", color: "#94a3b8", margin: 0 }}>{t("table.loanNumberFormat", { id: loan.id })}</p>
-
-                            </div>
-
-                          </div>
-
+                        <td style={{ padding: "0.85rem 0.6rem", overflow: "hidden" }}>
+                          <p style={{ fontWeight: 800, color: "#0f172a", margin: 0, fontSize: "0.82rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loan.name}</p>
+                          <p style={{ fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", color: "#4f46e5", margin: 0, letterSpacing: "0.04em" }}>{t("table.loanNumberFormat", { id: loan.id })}</p>
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", fontWeight: 700, color: "#334155", fontSize: "0.85rem" }}>
-
-                          {loan.next_installment ? `#${loan.next_installment.installment_number}` : "—"}
-
+                        <td style={{ padding: "0.85rem 0.6rem" }}>
+                          <span style={{ background: "#eef2ff", color: "#4f46e5", fontWeight: 800, fontSize: "0.72rem", padding: "3px 10px", borderRadius: 20 }}>
+                            {loan.next_installment ? `#${loan.next_installment.installment_number}` : "—"}
+                          </span>
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem", fontSize: "0.76rem", color: "#475569", fontWeight: 600, whiteSpace: "nowrap" }}>
                           {loan.next_installment?.due_date ? new Date(loan.next_installment.due_date).toLocaleDateString("en-GB") : "—"}
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem", textAlign: "right", fontWeight: 700, color: "#102a43", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
                           {loan.next_installment ? fmt(loan.next_installment.principal_amount) : "—"}
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 700, color: "#8a7a52", fontSize: "0.85rem" }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem", textAlign: "right", fontWeight: 700, color: "#92701a", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
                           {loan.next_installment ? fmt(loan.next_installment.interest_amount) : "—"}
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 900, color: "#0f172a", fontSize: "0.85rem" }}>
-
-                          {loan.next_installment ? fmt(loan.next_installment.total_amount) : "—"}
-
-                        </td>
-
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem", textAlign: "right", fontWeight: 900, color: "#0f172a", fontSize: "0.82rem", whiteSpace: "nowrap" }}>
                           {fmt(loan.remaining_balance)}
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem" }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem" }}>
                           {(() => {
-
                             const instStatus = loan.next_installment?.status ?? (loan.payment_status === "completed" ? "paid" : loan.payment_status || "current");
-
+                            const cfg: Record<string, [string, string]> = {
+                              paid:    ["#ecfdf5", "#059669"],
+                              overdue: ["#fef2f2", "#dc2626"],
+                              current: ["#eff6ff", "#1d4ed8"],
+                              pending: ["#eef2ff", "#4f46e5"],
+                            };
+                            const [bg, fg] = cfg[instStatus] ?? ["#f1f5f9", "#64748b"];
                             return (
-
-                              <span style={{
-
-                                display: "inline-block", padding: "0.25rem 0.7rem", borderRadius: 16, fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.8px",
-
-                                background: instStatus === "paid" ? "rgba(16,185,129,0.12)" : instStatus === "overdue" ? "rgba(239,68,68,0.12)" : "rgba(99,102,241,0.12)",
-
-                                color: instStatus === "paid" ? "#059669" : instStatus === "overdue" ? "#dc2626" : "#4f46e5"
-
-                              }}>
-
+                              <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", background: bg, color: fg }}>
                                 {t(`status.${instStatus}`, { defaultValue: instStatus })}
-
                               </span>
-
                             );
-
                           })()}
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem" }}>
-
+                        <td style={{ padding: "0.85rem 0.6rem" }}>
                           <SmsStatusBadge status={loan.sms_status} type={loan.sms_type} />
-
                         </td>
 
-                        <td style={{ padding: "1rem 0.8rem", textAlign: "right" }}>
+                        <td style={{ padding: "0.85rem 0.6rem", textAlign: "right" }}>
 
-                          <div className="rt-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "0.4rem" }}>
+                          <div style={{ position: "relative", display: "inline-block" }} data-rt-dropdown>
 
-                            {activeTab === "active" && (
-
-                              <button onClick={() => {
-
-                                const due = loan.next_installment ? Math.min(loan.next_installment.total_amount, loan.remaining_balance) : loan.remaining_balance;
-
-                                setSelectedLoan(loan);
-
-                                setRepaymentAmount(due > 0 ? String(due) : "");
-
-                                setTransactionId(""); setReceivedBy(""); setNotes("");
-
-                                setPaymentDate(new Date().toISOString().split("T")[0]);
-
-                                setShowRepaymentModal(true);
-
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (openRowDropdown === loan.id) {
+                                  setOpenRowDropdown(null);
+                                  setDropdownPos(null);
+                                } else {
+                                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                  const DROPDOWN_HEIGHT = 140; // approx height of all items
+                                  const spaceBelow = window.innerHeight - rect.bottom;
+                                  if (spaceBelow < DROPDOWN_HEIGHT) {
+                                    setDropdownPos({ bottom: window.innerHeight - rect.top + 6, right: window.innerWidth - rect.right });
+                                  } else {
+                                    setDropdownPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+                                  }
+                                  setOpenRowDropdown(loan.id);
+                                }
                               }}
-
-                                style={{ padding: "0.4rem 0.9rem", borderRadius: 10, background: "#6366f1", border: "none", color: "white", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer", boxShadow: "0 2px 8px rgba(99,102,241,0.3)" }} className="rt-btn-pay">
-
-                                {t("actions.addPayment")}
-
-                              </button>
-
-                            )}
-
-                            <button onClick={() => viewSchedule(loan.id)} title={t("actions.viewSchedule")} style={{ padding: "0.4rem", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
-
+                              style={{ padding: "0.38rem 0.65rem", borderRadius: 8, background: "#eef2ff", border: "1px solid #c7d2fe", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#4f46e5", fontWeight: 700, fontSize: "0.65rem" }}
+                            >
                               <Eye size={14} />
-
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
+
+                            {openRowDropdown === loan.id && dropdownPos && (
+                              <div style={{ position: "fixed", top: dropdownPos.top, bottom: dropdownPos.bottom, right: dropdownPos.right, background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(0,0,0,0.15)", zIndex: 9999, minWidth: 160, overflow: "hidden" }}>
+
+                                {activeTab === "active" && (
+                                  <button
+                                    onClick={() => {
+                                      const due = loan.next_installment ? Math.min(loan.next_installment.total_amount, loan.remaining_balance) : loan.remaining_balance;
+                                      setSelectedLoan(loan);
+                                      setRepaymentAmount(due > 0 ? String(due) : "");
+                                      setTransactionId(""); setReceivedBy(""); setNotes("");
+                                      setPaymentDate(new Date().toISOString().split("T")[0]);
+                                      setShowRepaymentModal(true);
+                                      setOpenRowDropdown(null);
+                                    }}
+                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "none", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700, color: "#4f46e5", textAlign: "left" }}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    {t("actions.addPayment")}
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => { viewSchedule(loan.id); setOpenRowDropdown(null); }}
+                                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textAlign: "left", borderBottom: "1px solid #f1f5f9" }}
+                                >
+                                  <Eye size={13} />
+                                  {t("actions.viewSchedule")}
+                                </button>
+
+                                {loan.customer_id && (
+                                  <button
+                                    onClick={() => { setOpenRowDropdown(null); window.location.href = `/customers/${loan.customer_id}/statement`; }}
+                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "none", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700, color: "#4f46e5", textAlign: "left" }}
+                                  >
+                                    📄 Taarifa ya Mteja
+                                  </button>
+                                )}
+
+                                {['fully_paid', 'closed', 'completed'].includes(loan.status ?? loan.payment_status) && (
+                                  <button
+                                    onClick={() => { window.location.href = `/loans/${loan.id}/renew`; setOpenRowDropdown(null); }}
+                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700, color: "#059669", textAlign: "left" }}
+                                  >
+                                    🔄 Ongeza Mkopo Mpya
+                                  </button>
+                                )}
+
+                              </div>
+                            )}
 
                           </div>
 

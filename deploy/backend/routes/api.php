@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\V1\CustomerBiometricController;
 use App\Http\Controllers\Api\V1\BranchReportController;
 use App\Http\Controllers\Api\V1\SmsLogController;
 use App\Http\Controllers\Api\V1\ActivityLogController;
+use App\Http\Controllers\Api\V1\HistoricalLoanController;
+use App\Http\Controllers\Api\V1\VoucherController;
 
 Route::prefix('v1')->group(function () {
 
@@ -110,6 +112,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/loans/{id}', [LoanController::class, 'show']);
         Route::put('/loans/{id}', [LoanController::class, 'update']);
         Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
+
+        // HISTORICAL LOAN IMPORT (pre-system loans)
+        // Voucher book number generation
+        Route::get('/vouchers/peek', [VoucherController::class, 'peek']);
+        Route::get('/vouchers/next', [VoucherController::class, 'next']);
+        Route::post('/vouchers/release', [VoucherController::class, 'release']);
+
+        Route::get('/loans/historical/allowed-roles', [HistoricalLoanController::class, 'allowedRoles']);
+        Route::get('/loans/historical', [HistoricalLoanController::class, 'index']);
+        Route::post('/loans/historical', [HistoricalLoanController::class, 'store']);
 
         // ROUTE YA KUONA HISTORIA YA MALIPO YA MKOPO MMOJA
         Route::get('/loans/{id}/repayments', [LoanController::class, 'repaymentHistory']);
@@ -222,6 +234,8 @@ Route::prefix('v1')->group(function () {
         // Activity / Audit log — admin only
         Route::get('/activity-logs', [ActivityLogController::class, 'index']);
         Route::get('/activity-logs/users', [ActivityLogController::class, 'users']);
+        Route::delete('/activity-logs/bulk', [ActivityLogController::class, 'bulkDestroy']);
+        Route::delete('/activity-logs/{id}', [ActivityLogController::class, 'destroy']);
 
         // Accounting â†’ Branch Report integration (all auth roles, incl. Loan Officers)
         Route::get('/accounting/branch-summary', [AccountingReportController::class, 'branchSummary']);

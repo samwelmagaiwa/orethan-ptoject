@@ -6,9 +6,10 @@ import { fmtLoanId } from '../lib/api';
 interface ApproveModalProps {
     isOpen: boolean;
     loan: any;
-    onConfirm: (comments: string) => void;
+    onConfirm: (comments: string, adjustedAmount?: number, adjustedFrequency?: string) => void;
     onCancel: () => void;
     submitting: boolean;
+    canAdjustAmount?: boolean;
 }
 
 const RedDash = () => <span style={{ color: '#ef4444', fontWeight: 'bold' }}>-</span>;
@@ -23,25 +24,40 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
     loan,
     onConfirm,
     onCancel,
-    submitting
+    submitting,
+    canAdjustAmount = false,
 }) => {
     const { t } = useTranslation('loanModals');
     const [step, setStep] = useState<'history' | 'confirm' | 'comment'>('history');
     const [comments, setComments] = useState("");
+    const [wantsAdjust, setWantsAdjust] = useState<'yes' | 'no' | null>(null);
+    const [newAmount, setNewAmount] = useState("");
+    const [adjustedFrequency, setAdjustedFrequency] = useState<string>("");
 
-    // Reset step and comments every time the modal opens for a fresh loan
+    // Reset state every time the modal opens for a fresh loan
     useEffect(() => {
         if (isOpen) {
             setStep('history');
             setComments('');
+            setWantsAdjust(null);
+            setNewAmount('');
+            setAdjustedFrequency(loan?.details?.repayment_frequency || 'Monthly');
         }
     }, [isOpen, loan?.id]);
 
     if (!isOpen) return null;
 
+    const parsedNew = newAmount ? Number(newAmount.replace(/,/g, '')) : 0;
+    const originalAmount = Number(loan?.amount || 0);
+    const adjustedAmount = wantsAdjust === 'yes' && parsedNew > 0 ? parsedNew : undefined;
+
+    const canSubmit =
+        comments.trim().length >= 3 &&
+        (wantsAdjust !== 'yes' || (parsedNew > 0 && parsedNew !== originalAmount));
+
     const handleConfirm = () => {
-        if (comments.trim().length < 3) return;
-        onConfirm(comments);
+        if (!canSubmit) return;
+        onConfirm(comments, adjustedAmount, wantsAdjust === 'yes' ? adjustedFrequency : undefined);
     };
 
     return (
@@ -193,14 +209,108 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                         </p>
                     </div>
                 ) : (
-                    <textarea
-                        placeholder={t('approve.textarea.placeholder')}
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        rows={4}
-                        className="approve-textarea-premium"
-                        autoFocus
-                    />
+                    <div className="comment-step-grid">
+                        {/* LEFT — approval comment */}
+                        <div className="comment-col">
+                            <div className="comment-col-label">Maoni ya Idhini</div>
+                            <textarea
+                                placeholder={t('approve.textarea.placeholder')}
+                                value={comments}
+                                onChange={(e) => setComments(e.target.value)}
+                                rows={2}
+                                className="approve-textarea-premium"
+                                autoFocus
+                            />
+                        </div>
+
+                        {/* RIGHT — optional amount adjustment */}
+                        {canAdjustAmount && (
+                            <div className="comment-col adj-col">
+                                <div className="comment-col-label">Rekebisha Kiwango cha Mkopo</div>
+                                <div className="adj-question">
+                                    Je, unataka kubadili kiwango cha mkopo kilichoombwa?
+                                </div>
+                                <div className="adj-current">
+                                    Kiasi kilichoombwa:{' '}
+                                    <strong>TZS {originalAmount.toLocaleString()}</strong>
+                                    {loan?.details?.adjusted_by && (
+                                        <span className="adj-prev-tag">📐 Imebadilishwa na {loan.details.adjusted_by}</span>
+                                    )}
+                                </div>
+                                <div className="adj-radio-group">
+                                    <label className={`adj-radio-label ${wantsAdjust === 'no' ? 'selected' : ''}`}>
+                                        <input
+                                            type="radio"
+                                            name="wantsAdjust"
+                                            value="no"
+                                            checked={wantsAdjust === 'no'}
+                                            onChange={() => { setWantsAdjust('no'); setNewAmount(''); }}
+                                        />
+                                        Hapana — endelea na kiasi kilichoombwa
+                                    </label>
+                                    <label className={`adj-radio-label ${wantsAdjust === 'yes' ? 'selected' : ''}`}>
+                                        <input
+                                            type="radio"
+                                            name="wantsAdjust"
+                                            value="yes"
+                                            checked={wantsAdjust === 'yes'}
+                                            onChange={() => setWantsAdjust('yes')}
+                                        />
+                                        Ndio — badilisha kiasi
+                                    </label>
+                                </div>
+
+                                {wantsAdjust === 'yes' && (
+                                    <div className="adj-input-wrap">
+                                        <label className="adj-input-label">Kiasi Kipya (TZS)</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            className="adj-amount-input"
+                                            placeholder="e.g. 150000"
+                                            value={newAmount}
+                                            onChange={(e) => setNewAmount(e.target.value)}
+                                            autoFocus
+                                        />
+                                        {parsedNew > 0 && parsedNew !== originalAmount && (
+                                            <div className={`adj-diff ${parsedNew < originalAmount ? 'reduced' : 'increased'}`}>
+                                                {parsedNew < originalAmount ? '▼ Imepunguzwa' : '▲ Imeongezwa'}{' '}
+                                                TZS {Math.abs(parsedNew - originalAmount).toLocaleString()}
+                                                {' '}({((parsedNew / originalAmount) * 100).toFixed(1)}% ya kilichoombwa)
+                                            </div>
+                                        )}
+                                        {parsedNew > 0 && parsedNew === originalAmount && (
+                                            <div className="adj-diff same">Kiasi hakijabadilika</div>
+                                        )}
+
+                                        <label className="adj-input-label" style={{ marginTop: 8 }}>Mzunguko wa Malipo</label>
+                                        <div className="adj-freq-group">
+                                            {[
+                                                { value: 'Daily',   label: 'Kila Siku' },
+                                                { value: 'Weekly',  label: 'Kila Wiki' },
+                                                { value: 'Monthly', label: 'Kila Mwezi' },
+                                            ].map(opt => (
+                                                <label key={opt.value} className={`adj-radio-label ${adjustedFrequency === opt.value ? 'selected' : ''}`} style={{ flex: 'none', minWidth: 0 }}>
+                                                    <input
+                                                        type="radio"
+                                                        name="adjFrequency"
+                                                        value={opt.value}
+                                                        checked={adjustedFrequency === opt.value}
+                                                        onChange={() => setAdjustedFrequency(opt.value)}
+                                                    />
+                                                    {opt.label}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {wantsAdjust === null && (
+                                    <div className="adj-hint">Chagua moja ya vipande hapo juu ili kuendelea.</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 <div className="approve-footer-premium">
@@ -227,8 +337,8 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                         <button
                             className="approve-btn-confirm"
                             onClick={handleConfirm}
-                            disabled={submitting || comments.trim().length < 3}
-                            style={{ opacity: (submitting || comments.trim().length < 3) ? 0.6 : 1 }}
+                            disabled={submitting || !canSubmit}
+                            style={{ opacity: (submitting || !canSubmit) ? 0.6 : 1 }}
                         >
                             {submitting ? t('approve.actions.submitting') : t('approve.actions.completeApproval')}
                         </button>
@@ -935,6 +1045,189 @@ const ApproveModal: React.FC<ApproveModalProps> = ({
                     padding: 40px;
                     color: #94a3b8;
                     font-size: 14px;
+                }
+
+                /* ── Two-column comment step ── */
+                .comment-step-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 24px;
+                }
+
+                @media (max-width: 700px) {
+                    .comment-step-grid { grid-template-columns: 1fr; }
+                }
+
+                .comment-col {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .comment-col-label {
+                    font-size: 11px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    color: #64748b;
+                    padding-bottom: 2px;
+                    border-bottom: 2px solid #f1f5f9;
+                }
+
+                .comment-col .approve-textarea-premium {
+                    flex: 1;
+                    margin-bottom: 0;
+                    min-height: 70px;
+                }
+
+                /* Right column */
+                .adj-col {
+                    background: #f8fafc;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 12px 14px 10px;
+                    gap: 8px;
+                }
+
+                .adj-question {
+                    font-size: 12.5px;
+                    font-weight: 700;
+                    color: #1e293b;
+                    line-height: 1.4;
+                }
+
+                .adj-current {
+                    font-size: 11.5px;
+                    color: #475569;
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .adj-prev-tag {
+                    font-size: 10px;
+                    font-weight: 700;
+                    background: #fef3c7;
+                    border: 1px solid #fcd34d;
+                    border-radius: 8px;
+                    padding: 1px 7px;
+                    color: #b45309;
+                }
+
+                .adj-radio-group {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+
+                .adj-radio-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    padding: 6px 10px;
+                    border-radius: 8px;
+                    border: 1.5px solid #e2e8f0;
+                    background: white;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #334155;
+                    cursor: pointer;
+                    transition: all 0.18s;
+                    flex: 1;
+                    min-width: 0;
+                    line-height: 1.3;
+                }
+
+                .adj-radio-label:hover {
+                    border-color: #94a3b8;
+                    background: #f8fafc;
+                }
+
+                .adj-radio-label.selected {
+                    border-color: #3b82f6;
+                    background: #eff6ff;
+                    color: #1e40af;
+                }
+
+                .adj-radio-label input[type="radio"] {
+                    accent-color: #3b82f6;
+                    width: 16px;
+                    height: 16px;
+                    flex-shrink: 0;
+                }
+
+                .adj-input-wrap {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+
+                .adj-input-label {
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #64748b;
+                }
+
+                .adj-amount-input {
+                    width: 100%;
+                    padding: 10px 14px;
+                    border: 2px solid #3b82f6;
+                    border-radius: 10px;
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #1e293b;
+                    outline: none;
+                    background: white;
+                    transition: box-shadow 0.2s;
+                    box-sizing: border-box;
+                }
+
+                .adj-amount-input:focus {
+                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+                }
+
+                .adj-diff {
+                    font-size: 12px;
+                    font-weight: 700;
+                    padding: 5px 10px;
+                    border-radius: 8px;
+                }
+
+                .adj-diff.reduced {
+                    background: #fef3c7;
+                    color: #b45309;
+                    border: 1px solid #fcd34d;
+                }
+
+                .adj-diff.increased {
+                    background: #dcfce7;
+                    color: #15803d;
+                    border: 1px solid #bbf7d0;
+                }
+
+                .adj-diff.same {
+                    background: #f1f5f9;
+                    color: #64748b;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .adj-hint {
+                    font-size: 12px;
+                    color: #94a3b8;
+                    font-style: italic;
+                    margin-top: 4px;
+                }
+
+                .adj-freq-group {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 6px;
+                    flex-wrap: nowrap;
                 }
             `}</style>
         </div>

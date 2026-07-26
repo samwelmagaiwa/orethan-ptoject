@@ -51,6 +51,9 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [branchReportRoles, setBranchReportRoles] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("branch_report_roles") || "null") || ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; } catch { return ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; }
   });
+  const [historicalLoanRoles, setHistoricalLoanRoles] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("historical_loan_roles") || "null") || ["loan_officer","loan_manager","admin"]; } catch { return ["loan_officer","loan_manager","admin"]; }
+  });
   const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
 
   useEffect(() => {
@@ -76,13 +79,16 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         approve:  ["loan_manager","admin"],
         delete:   ["admin"],
       };
+      const histRoles: string[] = data.historical_loan_roles || ["loan_officer","loan_manager","admin"];
       setComplianceRoles(compRoles);
       setPayrollRoles(payRoles);
       setBranchReportRoles(brRoles);
+      setHistoricalLoanRoles(histRoles);
       localStorage.setItem("compliance_roles", JSON.stringify(compRoles));
       localStorage.setItem("payroll_access_roles", JSON.stringify(payRoles));
       localStorage.setItem("branch_report_roles", JSON.stringify(brRoles));
       localStorage.setItem("branch_report_permissions", JSON.stringify(brPerms));
+      localStorage.setItem("historical_loan_roles", JSON.stringify(histRoles));
     } catch { /* keep cached values */ }
   };
 
@@ -95,9 +101,13 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
       });
       setUser(res.data);
       setHasEmployeeRecord(!!res.data.has_employee_record);
-    } catch (err) {
-      localStorage.removeItem("token");
-      navigate("/");
+    } catch (err: any) {
+      // Only log out on explicit 401 — network errors should not kill the session
+      if (err?.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/");
+      }
     }
   };
 
@@ -155,14 +165,17 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessApprovals = canAccessManagerReview || canAccessGmReview || canAccessMdAuth;
   const canAccessManagement = isAllowed("wateja", userRole === "admin" || userRole === "loan_manager" || userRole === "general_manager" || userRole === "managing_director");
   const canAccessAccounting = isAllowed("accounting", userRole === "admin" || userRole === "finance_officer" || userRole === "managing_director" || userRole === "general_manager");
-  const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin");
-  const canAccessCashTill = isAllowed("cash_till", userRole === "finance_officer" || userRole === "admin");
+  const hasDisbursePermission = user?.sidebar_permissions?.can_disburse === true || user?.full_sidebar_access === true;
+  const canAccessDisbursePayments = isAllowed("disburse_payments", userRole === "finance_officer" || userRole === "admin") || hasDisbursePermission;
+  const canAccessCashTill = isAllowed("cash_till", userRole === "finance_officer" || userRole === "admin") || hasDisbursePermission;
   const canAccessComplianceSection = !!userRole && complianceRoles.includes(userRole);
   const canAccessRegulatorReports = isAllowed("regulator_reports", canAccessComplianceSection);
   const canManageLoanLifecycle = isAllowed("loan_lifecycle", canAccessComplianceSection);
   const canAccessPayrollMgmt = !!userRole && (userRole === "admin" || payrollRoles.includes(userRole));
   const canSeePayroll = canAccessPayrollMgmt || hasEmployeeRecord;
   const canAccessBranchReport = isAllowed("branch_report", !!userRole && branchReportRoles.includes(userRole));
+  const canAccessHistoricalLoan = isAllowed("historical_loan", !!userRole && historicalLoanRoles.includes(userRole));
+  const canAccessStaffPerformance = isAllowed("staff_performance", !!userRole && ['loan_officer','loan_manager','general_manager','managing_director','admin'].includes(userRole));
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";
   const userDisplayRole = (user?.role && i18n.exists(`roles.${user.role}`))
@@ -278,7 +291,7 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <div className="sd-sub">
                       <div className={`sd-sub__link ${isActive("/overdue-management") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/overdue-management")}>{t("sidebar.overdueManagement")}</div>
                       {canAccessDisbursePayments && (
-                        <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate(userRole === "finance_officer" ? "/finance/customers" : "/customers")}>{t("sidebar.disbursePayments")}</div>
+                        <div className={`sd-sub__link ${(isActive("/finance/customers") || isActive("/customers")) ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/finance/customers")}>{t("sidebar.disbursePayments")}</div>
                       )}
                       {canAccessCashTill && (
                         <div className={`sd-sub__link ${isActive("/cash-till") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/cash-till")}>{t("sidebar.cashTill")}</div>
@@ -331,6 +344,38 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </div>
               )}
             </>
+          )}
+
+          {/* Historical Loan Import */}
+          {canAccessHistoricalLoan && (
+            <div
+              className={`sd-item ${isActive("/historical-loan") ? "sd-item--active" : ""}`}
+              onClick={() => navigate("/historical-loan")}
+              title="Mkopo wa Zamani"
+            >
+              <span className="sd-item__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </span>
+              {!isCollapsed && <span className="sd-item__text">Mikopo ya Zamani</span>}
+            </div>
+          )}
+
+          {/* Staff Performance Leaderboard */}
+          {canAccessStaffPerformance && (
+            <div
+              className={`sd-item ${isActive("/staff-performance") ? "sd-item--active" : ""}`}
+              onClick={() => navigate("/staff-performance")}
+              title="Staff Performance"
+            >
+              <span className="sd-item__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
+              {!isCollapsed && <span className="sd-item__text">Utendaji wa Maafisa</span>}
+            </div>
           )}
 
           {/* Management & Approvals */}
@@ -477,6 +522,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       🔍 Event Auditor
                     </div>
                   )}
+                  {(userRole === "admin" || userRole === "general_manager" || userRole === "managing_director") && (
+                    <div className={`sd-sub__link ${isActive("/branches") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/branches")}>
+                      🏢 Matawi / Mikoa
+                    </div>
+                  )}
                   {/* 🔏 Biometric -- commented out until hardware agent is ready
                   {(userRole === "admin" || userRole === "finance_officer") && (
                     <div className={`sd-sub__link ${isActive("/biometric") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/biometric")}>
@@ -527,6 +577,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   {canAccessAccounting && (
                     <>
                       <div className={`sd-sub__link ${isActive("/reports/risk") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/risk")}>{t("sidebar.riskReports")}</div>
+                      <div className={`sd-sub__link ${isActive("/reports/par-aging") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/par-aging")}>📊 PAR Aging Ladder</div>
+                      <div className={`sd-sub__link ${isActive("/reports/eod-cash") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/eod-cash")}>🏦 Ripoti ya Fedha (EOD)</div>
+                      {["loan_manager","general_manager","managing_director","admin"].includes(userRole ?? "") && (
+                        <div className={`sd-sub__link ${isActive("/escalations") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/escalations")}>⚠️ Mikopo Yenye Tatizo</div>
+                      )}
                       <div className={`sd-sub__link ${isActive("/reports/financial") ? "sd-sub__link--active" : ""}`} onClick={() => navigate("/reports/financial")}>{t("sidebar.financialReports")}</div>
                     </>
                   )}

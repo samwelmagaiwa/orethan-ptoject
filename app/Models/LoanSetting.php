@@ -9,10 +9,16 @@ use Illuminate\Support\Facades\Cache;
  * Single-row table of admin-configurable loan policy rates (penalty,
  * default interest, default processing fee). Every place in the app that
  * used to hardcode one of these reads it from here instead via current().
+ *
+ * Penalty is a FLAT daily amount in TZS (not a percentage).
+ * penalty_rate column stores the TZS amount, e.g. 1000 = TZS 1,000/day.
  */
 class LoanSetting extends Model
 {
     const CACHE_KEY = 'loan_settings.current';
+
+    // Flat daily penalty in TZS applied to any overdue installment.
+    const DEFAULT_DAILY_PENALTY = 1000.0;
 
     protected $fillable = [
         'penalty_rate',
@@ -44,6 +50,7 @@ class LoanSetting extends Model
         'fiscal_year_start_month',
         'brand_color',
         'session_timeout_minutes',
+        'historical_loan_roles',
         'updated_by',
     ];
 
@@ -55,6 +62,7 @@ class LoanSetting extends Model
         'payroll_access_roles'       => 'array',
         'branch_report_roles'        => 'array',
         'branch_report_permissions'  => 'array',
+        'historical_loan_roles'      => 'array',
     ];
 
     /** The active settings row, cached — creates the default row if the table is ever empty. */
@@ -62,9 +70,9 @@ class LoanSetting extends Model
     {
         return Cache::rememberForever(self::CACHE_KEY, function () {
             return self::query()->firstOrCreate([], [
-                'penalty_rate' => 4.00,
-                'default_interest_rate' => 3.00,
-                'default_processing_fee_rate' => 0.00,
+                'penalty_rate'               => self::DEFAULT_DAILY_PENALTY,
+                'default_interest_rate'      => 3.00,
+                'default_processing_fee_rate'=> 0.00,
             ]);
         });
     }
@@ -75,9 +83,23 @@ class LoanSetting extends Model
         Cache::forget(self::CACHE_KEY);
     }
 
+    /**
+     * Flat daily penalty in TZS (e.g. 1000.0).
+     * penalty_rate column stores the TZS amount directly — NOT a percentage.
+     */
+    public function dailyPenaltyAmount(): float
+    {
+        $val = (float) $this->penalty_rate;
+        return $val > 0 ? $val : self::DEFAULT_DAILY_PENALTY;
+    }
+
+    /** @deprecated Use dailyPenaltyAmount() — kept temporarily so old callers do not crash. */
     public function penaltyRateFraction(): float
     {
-        return (float) $this->penalty_rate / 100;
+        // Return the flat amount expressed as a multiplier of 1 (i.e. the amount itself).
+        // Callers that do  amount * penaltyRateFraction()  will get wrong results —
+        // they must be updated to use dailyPenaltyAmount() directly.
+        return $this->dailyPenaltyAmount();
     }
 
     public function defaultInterestRateFraction(): float

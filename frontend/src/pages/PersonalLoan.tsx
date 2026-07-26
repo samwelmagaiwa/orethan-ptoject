@@ -1071,12 +1071,19 @@ const PersonalLoan: React.FC = () => {
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={6}><strong>Umiliki wa makazi</strong><br />
+                      <td colSpan={6}><strong>Hali ya makazi ya mteja</strong><br />
                         <select name="umilikiWaMakazi" className={errors.umilikiWaMakazi ? "input-error" : ""} value={form.umilikiWaMakazi} onChange={handleChange}>
                           <option value="">Chagua</option>
-                          <option value="Kwake">Kwake</option>
-                          <option value="Amepanga">Amepanga</option>
-                          <option value="Mengine">Mengine (eleza)</option>
+                          <option value="MMILIKI">MMILIKI</option>
+                          <option value="NIMEPANGA">NIMEPANGA</option>
+                          <option value="Mengine">Nyingine (eleza)</option>
+                          {/* backward-compat: old stored values map to correct display */}
+                          {form.umilikiWaMakazi === "Kwake" && <option value="Kwake">MMILIKI</option>}
+                          {form.umilikiWaMakazi === "Amepanga" && <option value="Amepanga">NIMEPANGA</option>}
+                          {form.umilikiWaMakazi === "Umepanga" && <option value="Umepanga">NIMEPANGA</option>}
+                          {form.umilikiWaMakazi === "Anaishi na familia" && <option value="Anaishi na familia">Anaishi na familia / ndugu</option>}
+                          {form.umilikiWaMakazi === "Anamiliki" && <option value="Anamiliki">MMILIKI</option>}
+                          {form.umilikiWaMakazi === "Anapanga" && <option value="Anapanga">NIMEPANGA</option>}
                         </select>
                         {errors.umilikiWaMakazi && <span className="error-text">{errors.umilikiWaMakazi}</span>}
                         {form.umilikiWaMakazi === "Mengine" && <input type="text" name="umilikiWaMakaziMengine" value={form.umilikiWaMakaziMengine} onChange={handleChange} style={{ marginTop: "5px" }} placeholder="Eleza hapa..." />}

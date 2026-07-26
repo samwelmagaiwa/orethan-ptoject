@@ -32,6 +32,7 @@ class User extends Authenticatable
         'otp_expires_at',
         'first_login',
         'must_change_password',
+        'branch_id',
         'sidebar_permissions',
         'full_sidebar_access',
     ];
@@ -81,11 +82,17 @@ class User extends Authenticatable
         'loan_lifecycle',
         'disburse_payments',
         'cash_till',
+        'can_disburse',
         'profile',
         'logout',
     ];
 
     // Helper methods for role checking
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';
@@ -119,6 +126,33 @@ class User extends Authenticatable
     public function isFinanceOfficer()
     {
         return $this->role === 'finance_officer';
+    }
+
+    /**
+     * Returns true when the user may perform finance write operations:
+     * disbursing loans, recording repayments, and approving payment requests.
+     *
+     * Granted to: admin, finance_officer (by role), or ANY user whose admin
+     * has enabled the "can_disburse" permission in Sidebar Access Control.
+     */
+    public function canDisburse(): bool
+    {
+        if ($this->isAdmin() || $this->isFinanceOfficer()) return true;
+        if ($this->full_sidebar_access) return true;
+        $perms = $this->sidebar_permissions;
+        return is_array($perms) && !empty($perms['can_disburse']);
+    }
+
+    /**
+     * True when the user may approve/reject loans at the MD stage.
+     * Covers the MD role itself, admins, and any user granted md_auth sidebar access.
+     */
+    public function canActAsMd(): bool
+    {
+        if ($this->isManagingDirector() || $this->isAdmin()) return true;
+        if ($this->full_sidebar_access) return true;
+        $perms = $this->sidebar_permissions;
+        return is_array($perms) && !empty($perms['md_auth']);
     }
 
     /**

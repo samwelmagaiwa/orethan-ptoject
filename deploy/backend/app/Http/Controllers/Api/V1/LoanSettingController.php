@@ -59,6 +59,8 @@ class LoanSettingController extends Controller
             'branch_report_permissions.approve'            => 'nullable|array',
             'branch_report_permissions.delete'             => 'nullable|array',
             'branch_report_permissions.skip_approval'      => 'nullable|array',
+            'historical_loan_roles'                        => 'nullable|array',
+            'historical_loan_roles.*'                      => 'string',
             // Payroll GL accounts
             'salary_bank_account_code'     => 'nullable|string|max:20',
             'salary_cash_account_code'     => 'nullable|string|max:20',

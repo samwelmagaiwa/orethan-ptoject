@@ -41,8 +41,8 @@ class LoanSettingController extends Controller
         }
 
         $data = $request->validate([
-            // Loan policy
-            'penalty_rate'                 => 'required|numeric|min:0|max:100',
+            // Loan policy — penalty_rate is a flat TZS amount per day (not a percentage)
+            'penalty_rate'                 => 'required|numeric|min:0|max:9999999',
             'default_interest_rate'        => 'required|numeric|min:0|max:100',
             'default_processing_fee_rate'  => 'required|numeric|min:0|max:100',
             // Access control
@@ -59,6 +59,8 @@ class LoanSettingController extends Controller
             'branch_report_permissions.approve'            => 'nullable|array',
             'branch_report_permissions.delete'             => 'nullable|array',
             'branch_report_permissions.skip_approval'      => 'nullable|array',
+            'historical_loan_roles'                        => 'nullable|array',
+            'historical_loan_roles.*'                      => 'string',
             // Payroll GL accounts
             'salary_bank_account_code'     => 'nullable|string|max:20',
             'salary_cash_account_code'     => 'nullable|string|max:20',

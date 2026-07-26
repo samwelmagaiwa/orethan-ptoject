@@ -33,8 +33,8 @@ class SmsService
             phone: $this->resolvePhone($loan),
             message: SmsTemplates::disbursement(
                 $loan->name,
-                $loan->loan_account_number ?? ('LN-' . $loan->id),
-                (float) ($loan->disbursement?->net_amount ?? $loan->amount),
+                $loan->loan_account_number,
+                (float) $loan->amount,
                 $loan->next_payment_date,
             ),
             customerId: $loan->customer_id,
@@ -82,7 +82,7 @@ class SmsService
             phone: $this->resolvePhone($loan),
             message: SmsTemplates::paymentReminder(
                 $loan->name,
-                $loan->loan_account_number ?? ('LN-' . $loan->id),
+                $loan->loan_account_number,
                 $amountDue,
                 $dueDate,
             ),
@@ -100,7 +100,7 @@ class SmsService
             phone: $this->resolvePhone($loan),
             message: SmsTemplates::paymentOverdue(
                 $loan->name,
-                $loan->loan_account_number ?? ('LN-' . $loan->id),
+                $loan->loan_account_number,
                 $amountOverdue,
                 $daysOverdue,
             ),
@@ -142,7 +142,7 @@ class SmsService
     public function sendPaymentReminderPreDue(Loan $loan, \App\Models\LoanSchedule $schedule, int $daysLeft): SmsResult
     {
         $loan->loadMissing('customer');
-        $loanNo  = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $loanNo  = $loan->loan_account_number;
         $dueDate = $schedule->due_date instanceof \Carbon\Carbon
             ? $schedule->due_date->toDateString()
             : (string) $schedule->due_date;
@@ -168,7 +168,7 @@ class SmsService
     public function sendGuarantorPenaltyUpdate(Loan $loan, \App\Models\LoanSchedule $schedule): array
     {
         $loan->loadMissing('customer');
-        $loanNo        = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $loanNo        = $loan->loan_account_number;
         $overdueAmount = max(0.0, (float) $schedule->total_amount - (float) $schedule->amount_paid);
 
         $results = [];
@@ -335,6 +335,52 @@ class SmsService
     }
 
     /**
+     * Notify all staff roles (not the customer) that a historical loan has been
+     * imported into the system. Sends one SMS per staff user with a phone number.
+     *
+     * @return SmsResult[]
+     */
+    public function sendHistoricalLoanStaffNotice(Loan $loan, \App\Models\User $submitter): array
+    {
+        $loanNo      = $loan->loan_account_number;
+        $disbursedAt = $loan->disbursed_at instanceof \Carbon\Carbon
+            ? $loan->disbursed_at->toDateString()
+            : (string) $loan->disbursed_at;
+
+        $roleLabels = [
+            'loan_officer'      => 'Afisa Mikopo',
+            'loan_manager'      => 'Meneja wa Mikopo',
+            'general_manager'   => 'Mkurugenzi Mkuu',
+            'managing_director' => 'Mkurugenzi Mtendaji',
+            'admin'             => 'Msimamizi',
+        ];
+
+        $staffRoles = ['loan_officer', 'loan_manager', 'general_manager', 'managing_director', 'admin'];
+        $users      = \App\Models\User::whereIn('role', $staffRoles)->whereNotNull('phone')->get();
+
+        $results = [];
+        foreach ($users as $user) {
+            $staffLabel = $roleLabels[$user->role] ?? ucfirst(str_replace('_', ' ', $user->role));
+            $results[] = $this->dispatch(
+                type: 'historical_loan_import',
+                phone: $user->phone,
+                message: SmsTemplates::historicalLoanStaffNotice(
+                    $staffLabel,
+                    $loan->name,
+                    $loanNo,
+                    (float) $loan->amount,
+                    (float) $loan->remaining_balance,
+                    $disbursedAt,
+                    $roleLabels[$submitter->role] ?? ucfirst(str_replace('_', ' ', $submitter->role)),
+                ),
+                customerId: $loan->customer_id,
+                loanId: $loan->id,
+            );
+        }
+        return $results;
+    }
+
+    /**
      * Generic send for ad-hoc messages (user management, system notifications).
      * Uses type 'system' for logging.
      */
@@ -374,7 +420,7 @@ class SmsService
             phone: $this->resolvePhone($loan),
             message: SmsTemplates::loanApplicationReceived(
                 $loan->name,
-                $loan->loan_account_number ?? ('LN-' . $loan->id),
+                $loan->loan_account_number,
                 (float) $loan->amount,
             ),
             customerId: $loan->customer_id,
@@ -390,14 +436,25 @@ class SmsService
      */
     public function notifyRoleAboutLoan(string $role, Loan $loan, string $templateMethod): array
     {
-        $loanNo = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $loanNo = $loan->loan_account_number;
         $amount = (float) $loan->amount;
         $applicant = $loan->name;
+
+        $roleLabels = [
+            'loan_manager'      => 'Meneja wa Mikopo',
+            'general_manager'   => 'Mkurugenzi Mkuu',
+            'managing_director' => 'Mkurugenzi Mtendaji',
+            'admin'             => 'Msimamizi',
+            'loan_officer'      => 'Afisa Mikopo',
+            'accountant'        => 'Mhasibu',
+            'cashier'           => 'Kasisi',
+        ];
+        $roleLabel = $roleLabels[$role] ?? ucfirst(str_replace('_', ' ', $role));
 
         $results = [];
         $users = \App\Models\User::where('role', $role)->whereNotNull('phone')->get();
         foreach ($users as $user) {
-            $message = SmsTemplates::$templateMethod($user->name, $applicant, $amount, $loanNo);
+            $message = SmsTemplates::$templateMethod($roleLabel, $applicant, $amount, $loanNo);
             $results[] = $this->dispatch(
                 type: "loan_pending_{$role}",
                 phone: $user->phone,
@@ -418,7 +475,7 @@ class SmsService
             phone: $this->resolvePhone($loan),
             message: SmsTemplates::loanRejected(
                 $loan->name,
-                $loan->loan_account_number ?? ('LN-' . $loan->id),
+                $loan->loan_account_number,
                 $reason,
             ),
             customerId: $loan->customer_id,
@@ -436,7 +493,7 @@ class SmsService
     public function sendLoanReturnedToStaff(Loan $loan, string $statusBeforeReject, string $reason = ''): void
     {
         $loan->loadMissing('user');
-        $loanNo = $loan->loan_account_number ?? ('LN-' . $loan->id);
+        $loanNo = $loan->loan_account_number;
         $applicant = $loan->name;
 
         if ($statusBeforeReject === 'manager_review') {
@@ -584,5 +641,12 @@ class SmsService
         if (!$result->success) {
             Log::warning("SMS [{$type}] to {$phone} failed: " . ($result->error ?? 'unknown error'));
         }
+    }
+
+    /** Send a raw free-form message (used by escalation, admin notifications). */
+    public function sendRaw(string $phone, string $message): void
+    {
+        if (empty(trim($phone))) return;
+        $this->send($phone, $message);
     }
 }

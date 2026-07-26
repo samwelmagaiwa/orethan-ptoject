@@ -18,7 +18,7 @@
     "arrears": "Arrears",
     "status": "Status",
     "smsStatus": "SMS Status",
-    "accountNumber": "Account No",
+    "accountNumber": "Kitabu NO",
     "actions": "Actions",
     "activeCount": "{{count}} Active",
     "none": "None",
@@ -29,11 +29,11 @@
     "subtitle": "No pending applications to review"
   },
   "status": {
-    "pendingLm": "PENDING LOAN MANAGER",
-    "lmApproved": "LOAN MANAGER APPROVED",
-    "pendingGm": "PENDING GENERAL MANAGER",
-    "gmApproved": "GENERAL MANAGER APPROVED",
-    "pendingMd": "PENDING MANAGING DIRECTOR",
+    "pendingLm": "PENDING LM",
+    "lmApproved": "LM APPROVED",
+    "pendingGm": "PENDING GM",
+    "gmApproved": "GM APPROVED",
+    "pendingMd": "PENDING MD",
     "rejected": "REJECTED",
     "approved": "APPROVED",
     "disbursed": "DISBURSED"

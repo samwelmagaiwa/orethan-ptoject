@@ -20,6 +20,25 @@ const IconWallet = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="n
 const IconUsers = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
 const IconAlertTriangle = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
 
+function HealthScoreBadge({ score, grade }: { score?: number | null; grade?: string | null }) {
+    if (score == null) return null;
+    const cfg: Record<string, { bg: string; color: string; label: string }> = {
+        A: { bg: '#d1fae5', color: '#059669', label: 'A' },
+        B: { bg: '#dbeafe', color: '#2563eb', label: 'B' },
+        C: { bg: '#fef9c3', color: '#ca8a04', label: 'C' },
+        D: { bg: '#fee2e2', color: '#dc2626', label: 'D' },
+        E: { bg: '#f5f3ff', color: '#7c3aed', label: 'E' },
+    };
+    const g = grade ?? 'C';
+    const c = cfg[g] ?? { bg: '#f1f5f9', color: '#64748b', label: g };
+    return (
+        <span title={`Alama ya Afya: ${score}/100 (${g})`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: c.bg, color: c.color, borderRadius: 20, padding: '1px 7px 1px 5px', fontSize: 10, fontWeight: 700, border: `1px solid ${c.color}33`, marginLeft: 4, verticalAlign: 'middle', cursor: 'default', whiteSpace: 'nowrap' }}>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/><path d="M11 7h2v6h-2zm0 8h2v2h-2z" opacity=".3"/><circle cx="12" cy="12" r="3" opacity=".8"/></svg>
+            {score}
+        </span>
+    );
+}
+
 interface Customer {
     id: number;
     customer_number?: string | null;
@@ -31,12 +50,17 @@ interface Customer {
     total_loan_amount: number;
     total_remaining_balance: number;
     total_arrears: number;
+    risk_score?: number | null;
+    risk_grade?: string | null;
+    risk_scored_at?: string | null;
 }
 
 interface User {
     id: number;
     name: string;
     role: string;
+    sidebar_permissions?: { can_disburse?: boolean } | null;
+    full_sidebar_access?: boolean;
 }
 
 interface Loan {
@@ -55,8 +79,8 @@ interface Loan {
     remaining_balance?: number | null;
     monthly_payment?: number | null;
     disbursed_at?: string | null;
-    customer?: { customer_number?: string | null; nida_number?: string | null; email?: string | null } | null;
-    disbursement?: { transaction_reference?: string | null } | null;
+    customer?: { id?: number; customer_number?: string | null; nida_number?: string | null; email?: string | null } | null;
+    disbursement?: { transaction_reference?: string | null; voucher_number?: string | null } | null;
     sms_status?: string | null;
     sms_type?: string | null;
 }
@@ -66,6 +90,11 @@ const Customers: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loans, setLoans] = useState<Loan[]>([]);
+    const [pendingDisbursements, setPendingDisbursements] = useState<Loan[]>([]);
+    // Maps customer.id → first approved/disbursed loan for that customer (finance dropdown)
+    const [approvedLoanByCustomer, setApprovedLoanByCustomer] = useState<Record<number, Loan>>({});
+    const [disbursedLoanByCustomer, setDisbursedLoanByCustomer] = useState<Record<number, Loan>>({});
+    const [customerActionDropdown, setCustomerActionDropdown] = useState<number | null>(null);
     const [stats, setStats] = useState({
         total_loaned: 0,
         total_arrears: 0,
@@ -84,6 +113,7 @@ const Customers: React.FC = () => {
     const [modalType, setModalType] = useState<"success" | "error" | "info" | "warning">("info");
     const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [scoringAll, setScoringAll] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: 'info' as 'danger' | 'warning' | 'info' });
 
     useEffect(() => {
@@ -102,7 +132,10 @@ const Customers: React.FC = () => {
             const userData = userRes.data;
             setUser(userData);
 
-            if (userData.role === "admin" || userData.role === "finance_officer") {
+            const hasDisburse = userData.role === "admin" || userData.role === "finance_officer"
+                || userData.full_sidebar_access === true
+                || userData.sidebar_permissions?.can_disburse === true;
+            if (hasDisburse) {
                 await fetchCustomers();
             } else {
                 await fetchManagerLoans(userData.role);
@@ -119,11 +152,52 @@ const Customers: React.FC = () => {
 
     const fetchCustomers = async () => {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${API_BASE}/customers`, {
-            headers: { Authorization: token ? `Bearer ${token}` : "" }
+        const headers = { Authorization: token ? `Bearer ${token}` : "" };
+        const [custRes, loansRes] = await Promise.all([
+            axios.get(`${API_BASE}/customers`, { headers }),
+            axios.get(`${API_BASE}/loans/finance`, { headers }),
+        ]);
+        setStats(custRes.data.stats);
+
+        const financeLoans: Loan[] = loansRes.data || [];
+
+        // Build customer-id keyed maps for quick dropdown lookups
+        const approvedMap: Record<number, Loan> = {};
+        const disbursedMap: Record<number, Loan> = {};
+        const relevantCustomerIds = new Set<number>();
+        financeLoans.forEach((l: any) => {
+            const cid = l.customer?.id;
+            if (!cid) return;
+            relevantCustomerIds.add(cid);
+            if (l.status === 'approved' && !approvedMap[cid]) approvedMap[cid] = l;
+            if (l.status === 'disbursed' && !disbursedMap[cid]) disbursedMap[cid] = l;
         });
-        setCustomers(res.data.customers);
-        setStats(res.data.stats);
+        setApprovedLoanByCustomer(approvedMap);
+        setDisbursedLoanByCustomer(disbursedMap);
+        setPendingDisbursements(financeLoans.filter((l: any) => l.status === 'approved'));
+
+        // Only show customers that have at least one approved or disbursed loan
+        const allCustomers: Customer[] = custRes.data.customers || [];
+        setCustomers(allCustomers.filter(c => relevantCustomerIds.has(c.id)));
+    };
+
+    const handleScoreAll = async () => {
+        setScoringAll(true);
+        const token = localStorage.getItem("token");
+        try {
+            await axios.post(`${API_BASE}/risk/score-all`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            // Refresh customers to pick up new scores
+            await fetchCustomers();
+            setModalType("success");
+            setModalMessage("Alama za afya za wateja wote zimehesabiwa!");
+            setShowModal(true);
+        } catch {
+            setModalType("error");
+            setModalMessage("Hitilafu: Alama hazikuhesabiwa. Jaribu tena.");
+            setShowModal(true);
+        } finally {
+            setScoringAll(false);
+        }
     };
 
     const fetchManagerLoans = async (role: string) => {
@@ -166,7 +240,11 @@ const Customers: React.FC = () => {
         )
     );
 
-    const currentListLength = (user?.role === "admin" || user?.role === "finance_officer") ? filteredCustomers.length : filteredLoans.length;
+    const isFinanceView = user?.role === "admin" || user?.role === "finance_officer"
+        || user?.full_sidebar_access === true
+        || user?.sidebar_permissions?.can_disburse === true;
+
+    const currentListLength = isFinanceView ? filteredCustomers.length : filteredLoans.length;
     const totalPages = Math.max(1, Math.ceil(currentListLength / entriesPerPage));
     const pagedCustomers = filteredCustomers.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
     const pagedLoans = filteredLoans.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
@@ -186,20 +264,12 @@ const Customers: React.FC = () => {
             return (loan as any).rejection_metadata?.rejector_role === 'managing_director'
                 ? <span style={{ color: '#ef4444', fontWeight: '800' }}>{t("status.rejected")}</span>
                 : (
-                    <span>
-                        <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.lmApproved")}</span>
-                        <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                        <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
-                    </span>
+                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingGm")}</span>
                 );
         }
         if (loan.status === 'md_review') {
             return (
-                <span>
-                    <span style={{ color: '#16a34a', fontWeight: '700' }}>{t("status.gmApproved")}</span>
-                    <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                    <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
-                </span>
+                <span style={{ color: '#f59e0b', fontWeight: '700' }}>{t("status.pendingMd")}</span>
             );
         }
         if (loan.status === 'loan_officer' && (loan as any).rejection_metadata?.rejector_role === 'loan_manager') {
@@ -222,7 +292,7 @@ const Customers: React.FC = () => {
     const [disburseForm, setDisburseForm] = useState({ amount: "", method: "cash", disbursement_date: "", transaction_reference: "" });
 
     const getActionButtonCount = (loan: Loan) => {
-        const isFinance = user?.role === 'finance_officer';
+        const isFinance = isFinanceView;
         const canApproveHere = (user?.role === 'admin') ||
             (user?.role === 'loan_manager' && loan.status === 'manager_review') ||
             (user?.role === 'general_manager' && loan.status === 'gm_review') ||
@@ -260,6 +330,18 @@ const Customers: React.FC = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Close customer action dropdown on outside click (stopPropagation on the dropdown itself prevents premature close)
+    useEffect(() => {
+        const close = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('[data-customer-dropdown]')) {
+                setCustomerActionDropdown(null);
+            }
+        };
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, []);
+
     const viewDetails = (loan: Loan) => {
         setSelectedLoan(loan);
         setShowDetailsModal(true);
@@ -278,15 +360,15 @@ const Customers: React.FC = () => {
         setActiveDropdown(null);
     };
 
-    const submitApproval = async (comments: string) => {
+    const submitApproval = async (comments: string, adjustedAmount?: number) => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, {
-                comments: comments
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const headers = { Authorization: `Bearer ${token}` };
+            if (adjustedAmount && adjustedAmount !== Number(selectedLoan?.amount)) {
+                await axios.patch(`${API_BASE}/loans/${selectedLoan?.id}/adjust`, { amount: adjustedAmount }, { headers });
+            }
+            await axios.post(`${API_BASE}/loans/${selectedLoan?.id}/approve`, { comments }, { headers });
             setModalMessage(t("alerts.approveSuccess"));
             setModalType("success");
             setShowModal(true);
@@ -506,7 +588,7 @@ const Customers: React.FC = () => {
 
             {/* STICKY STATS ROW */}
             <div className="stats-row">
-                {(user?.role === "admin" || user?.role === "finance_officer") ? (
+                {isFinanceView ? (
                     <>
                         <div className="stat-box accent-blue">
                             <div className="stat-icon-circle"><IconWallet /></div>
@@ -576,24 +658,36 @@ const Customers: React.FC = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder={(user?.role === "admin" || user?.role === "finance_officer") ? t("filters.searchPlaceholderAdmin") : t("filters.searchPlaceholderManager")}
+                            placeholder={isFinanceView ? t("filters.searchPlaceholderAdmin") : t("filters.searchPlaceholderManager")}
                             title={t("filters.searchTitle")}
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />
                     </div>
+                    {['admin','general_manager','managing_director'].includes(user?.role ?? '') && (
+                        <button
+                            onClick={handleScoreAll}
+                            disabled={scoringAll}
+                            title="Hesabu alama ya afya kwa wateja wote"
+                            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', background: scoringAll ? '#e5e7eb' : 'linear-gradient(135deg,#059669,#0ea5e9)', color: scoringAll ? '#94a3b8' : '#fff', border:'none', borderRadius:8, fontWeight:700, fontSize:12, cursor: scoringAll ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', fontFamily:'inherit', boxShadow: scoringAll ? 'none' : '0 2px 8px rgba(5,150,105,.3)' }}
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            {scoringAll ? 'Inahesabu...' : 'Hesabu Alama'}
+                        </button>
+                    )}
                 </div>
 
                 <div className="table-wrapper">
                     <table>
                         <thead>
-                            {(user?.role === "admin" || user?.role === "finance_officer") ? (
+                            {isFinanceView ? (
                                 <tr>
                                     <th>{t("table.customer")}</th>
                                     <th>{t("table.phoneNumber")}</th>
                                     <th style={{ whiteSpace: 'nowrap' }}>{t("table.activeLoans")}</th>
                                     <th>{t("table.remainingBalance")}</th>
                                     <th>{t("table.arrears")}</th>
+                                    <th style={{ whiteSpace: 'nowrap' }}>Kitabu NO.</th>
                                     <th style={{ textAlign: 'right' }}>{t("table.actions")}</th>
                                 </tr>
                             ) : (
@@ -628,16 +722,16 @@ const Customers: React.FC = () => {
                                         <td style={{ textAlign: 'right' }}><div className="skeleton-bar" style={{ width: '40px', marginLeft: 'auto' }}></div></td>
                                     </tr>
                                 ))
-                            ) : (user?.role === "admin" || user?.role === "finance_officer") ? (
+                            ) : isFinanceView ? (
                                 filteredCustomers.length === 0 ? (
-                                    <tr><td colSpan={6} className="table-empty">{t("empty.noCustomers")}</td></tr>
+                                    <tr><td colSpan={7} className="table-empty">{t("empty.noCustomers")}</td></tr>
                                 ) : (
                                     pagedCustomers.map((customer) => (
                                         <tr key={customer.id}>
                                             <td>
                                                 <div className="client-info">
                                                     <div className="avatar">{customer.full_name.charAt(0)}</div>
-                                                    <span className="client-name">{customer.full_name}</span>
+                                                    <span className="client-name">{customer.full_name}<HealthScoreBadge score={customer.risk_score} grade={customer.risk_grade} /></span>
                                                 </div>
                                             </td>
                                             <td>{customer.phone_number}</td>
@@ -652,44 +746,105 @@ const Customers: React.FC = () => {
                                                     {Number(customer.total_arrears) > 0 ? `TZS ${Number(customer.total_arrears).toLocaleString()}` : t("table.none")}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div className="action-buttons-cell">
-                                                    <button
-                                                        className="btn-profile"
-                                                        onClick={() => {
-                                                            const prefix = user?.role === 'loan_manager' ? 'lm' :
-                                                                user?.role === 'general_manager' ? 'gm' :
-                                                                    user?.role === 'managing_director' ? 'md' :
-                                                                        user?.role === 'loan_officer' ? 'officer' :
-                                                                            user?.role === 'finance_officer' ? 'finance' : '';
-                                                            window.location.href = prefix ? `/${prefix}/customers/${customer.id}` : `/customers/${customer.id}`;
-                                                        }}
-                                                    >
-                                                        <IconEye size={16} /> {t("actions.profile")}
-                                                    </button>
-                                                    <button
-                                                        className="btn-repay"
-                                                        onClick={() => {
-                                                            const prefix = user?.role === 'loan_manager' ? 'lm' :
-                                                                user?.role === 'general_manager' ? 'gm' :
-                                                                    user?.role === 'managing_director' ? 'md' :
-                                                                        user?.role === 'loan_officer' ? 'officer' :
-                                                                            user?.role === 'finance_officer' ? 'finance' : '';
-                                                            window.location.href = prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`;
-                                                        }}
-                                                    >
-                                                        <IconCreditCard /> {t("actions.repay")}
-                                                    </button>
-                                                    {user?.role === 'admin' && (
+                                            <td>
+                                                {(() => {
+                                                    const vn = disbursedLoanByCustomer[customer.id]?.disbursement?.voucher_number;
+                                                    return vn
+                                                        ? <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#5c3d11', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{vn}</span>
+                                                        : <span style={{ color: '#cbd5e1', fontWeight: 500 }}>—</span>;
+                                                })()}
+                                            </td>
+                                            <td style={{ textAlign: 'right', position: 'relative' }}>
+                                                {isFinanceView ? (() => {
+                                                    const approvedLoan = approvedLoanByCustomer[customer.id];
+                                                    const disbursedLoan = disbursedLoanByCustomer[customer.id];
+                                                    const isOpen = customerActionDropdown === customer.id;
+                                                    return (
+                                                        <div data-customer-dropdown style={{ display: 'inline-block', position: 'relative' }}>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setCustomerActionDropdown(isOpen ? null : customer.id); }}
+                                                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, border: '1.5px solid #d4b896', background: '#fdf8f0', color: '#5c3d11', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.18s' }}
+                                                                onMouseEnter={e => { e.currentTarget.style.background = '#f5e6c8'; e.currentTarget.style.borderColor = '#b8902a'; }}
+                                                                onMouseLeave={e => { e.currentTarget.style.background = '#fdf8f0'; e.currentTarget.style.borderColor = '#d4b896'; }}
+                                                            >
+                                                                <IconEye size={15} />
+                                                                Actions
+                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+                                                            </button>
+                                                            {isOpen && (
+                                                                <div
+                                                                    style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', background: '#fff', border: '1.5px solid #e8dcc8', borderRadius: 12, boxShadow: '0 8px 24px -6px rgba(92,61,17,0.18)', zIndex: 9999, minWidth: 170, overflow: 'hidden' }}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                >
+                                                                    {approvedLoan && (
+                                                                        <button
+                                                                            onClick={() => { window.location.href = `/finance/disburse/${approvedLoan.id}`; }}
+                                                                            style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '11px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#15803d', borderBottom: '1px solid #f0e8d8' }}
+                                                                            onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
+                                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                                        >
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                                                                            Disburse Loan
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => { window.location.href = `/finance/customers/${customer.id}`; setCustomerActionDropdown(null); }}
+                                                                        style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '11px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151', borderBottom: '1px solid #f0e8d8' }}
+                                                                        onMouseEnter={e => e.currentTarget.style.background = '#fdf8f0'}
+                                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                                    >
+                                                                        <IconEye size={14} />
+                                                                        View Profile
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => { if (disbursedLoan) { window.location.href = `/finance/customers/${customer.id}/repayments`; setCustomerActionDropdown(null); } }}
+                                                                        disabled={!disbursedLoan}
+                                                                        title={!disbursedLoan ? 'Loan not yet disbursed' : undefined}
+                                                                        style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '11px 16px', border: 'none', background: 'transparent', cursor: disbursedLoan ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700, color: disbursedLoan ? '#1d4ed8' : '#94a3b8', opacity: disbursedLoan ? 1 : 0.5 }}
+                                                                        onMouseEnter={e => { if (disbursedLoan) e.currentTarget.style.background = '#eff6ff'; }}
+                                                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                                                    >
+                                                                        <IconCreditCard />
+                                                                        Record Repayment
+                                                                        {!disbursedLoan && <span style={{ fontSize: 10, fontWeight: 600, marginLeft: 'auto', color: '#cbd5e1' }}>Not disbursed</span>}
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })() : (
+                                                    <div className="action-buttons-cell">
                                                         <button
-                                                            className="btn-delete"
-                                                            onClick={() => handleDeleteCustomer(customer)}
-                                                            title="Futa mteja"
+                                                            className="btn-profile"
+                                                            onClick={() => {
+                                                                const prefix = user?.role === 'loan_manager' ? 'lm' : user?.role === 'general_manager' ? 'gm' : user?.role === 'managing_director' ? 'md' : user?.role === 'loan_officer' ? 'officer' : '';
+                                                                window.location.href = prefix ? `/${prefix}/customers/${customer.id}` : `/customers/${customer.id}`;
+                                                            }}
                                                         >
-                                                            🗑️
+                                                            <IconEye size={16} /> {t("actions.profile")}
                                                         </button>
-                                                    )}
-                                                </div>
+                                                        <button
+                                                            className="btn-repay"
+                                                            onClick={() => {
+                                                                const prefix = user?.role === 'loan_manager' ? 'lm' : user?.role === 'general_manager' ? 'gm' : user?.role === 'managing_director' ? 'md' : user?.role === 'loan_officer' ? 'officer' : '';
+                                                                window.location.href = prefix ? `/${prefix}/customers/${customer.id}/repayments` : `/customers/${customer.id}/repayments`;
+                                                            }}
+                                                        >
+                                                            <IconCreditCard /> {t("actions.repay")}
+                                                        </button>
+                                                        <button
+                                                            className="btn-profile"
+                                                            style={{ background: 'linear-gradient(135deg,#0ea5e9,#0284c7)', color: '#fff' }}
+                                                            onClick={() => window.location.href = `/customers/${customer.id}/statement`}
+                                                            title="Taarifa ya Mteja"
+                                                        >
+                                                            📄 Taarifa
+                                                        </button>
+                                                        {user?.role === 'admin' && (
+                                                            <button className="btn-delete" onClick={() => handleDeleteCustomer(customer)} title="Futa mteja">🗑️</button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))
@@ -746,7 +901,7 @@ const Customers: React.FC = () => {
                                                         style={{ top: dropdownCoords.top, left: dropdownCoords.left }}
                                                     >
                                                         {(() => {
-                                                            const isFinance = user?.role === 'finance_officer';
+                                                            const isFinance = isFinanceView;
                                                             const canApproveHere = (user?.role === 'admin') ||
                                                                 (user?.role === 'loan_manager' && loan.status === 'manager_review') ||
                                                                 (user?.role === 'general_manager' && loan.status === 'gm_review') ||
@@ -758,7 +913,7 @@ const Customers: React.FC = () => {
                                                                         {loan.status === 'approved' && (
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    const base = user?.role === 'finance_officer' ? '/finance/disburse/' : '/disburse/';
+                                                                                    const base = isFinanceView ? '/finance/disburse/' : '/disburse/';
                                                                                     window.location.href = base + loan.id;
                                                                                 }}
                                                                                 className={`approve-action ${submitting ? 'muted' : ''}`}
@@ -868,6 +1023,7 @@ const Customers: React.FC = () => {
                 onConfirm={submitApproval}
                 onCancel={() => setShowApproveModal(false)}
                 submitting={submitting}
+                canAdjustAmount={user?.role !== 'loan_officer'}
             />
 
             {/* Reject Modal */}

@@ -31,6 +31,7 @@ class Loan extends Model
         'next_payment_date',
         'customer_id',
         'user_id',
+        'is_historical',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Loan extends Model
         'approved_at' => 'datetime',
         'disbursed_at' => 'datetime',
         'next_payment_date' => 'date',
+        'is_historical' => 'boolean',
     ];
 
     // Fixed branch/institution code used in every account number
@@ -53,39 +55,42 @@ class Loan extends Model
      * Employment is the single source of truth: "employed" (Ndio) => EMPL,
      * "not employed" (hajaajiriwa) => the loan is for business, hence BSN.
      */
-    public function generateAccountNumber()
+    /**
+     * Generate the permanent loan account number at submission time.
+     * Always uses created_at so the number reflects the origination date
+     * and never changes throughout the loan lifecycle.
+     *
+     * Format by category:
+     *   Group loan        → GRP-ZKM-DD-MM-YYYY-00id
+     *   Employed (Ndio)   → EMPL-ZKM-DD-MM-YYYY-00id
+     *   Business (Hapana) → BSN-ZKM-DD-MM-YYYY-00id  (default)
+     */
+    public function generateAccountNumber(): string
     {
-        $date = $this->disbursed_at ?? $this->created_at ?? now();
-        $day = $date->format('d');
-        $month = $date->format('m');
-        $year = $date->format('Y');
-        $seq = str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+        if (!$this->id) {
+            throw new \LogicException('Loan must be persisted before generating an account number.');
+        }
 
-        $type = strtolower((string) $this->type);
+        // Always use origination (created_at) date — never disbursed_at — so the
+        // number is stable and set once at submission.
+        $date  = $this->created_at ?? now();
+        $day   = $date->format('d');
+        $month = $date->format('m');
+        $year  = $date->format('Y');
+        $seq   = str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+
+        $type       = strtolower((string) $this->type);
         $umeajiriwa = $this->details['umeajiriwa'] ?? null;
 
-        // Group loans: GRP-ZKM-d-m-year-00id
         if ($type === 'group') {
             return strtoupper('GRP-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
         }
 
-        // Employed applicant (Ndio): EMPL-ZKM-D-M-YEAR-00id
         if ($umeajiriwa === 'Ndio') {
             return strtoupper('EMPL-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
         }
 
-        // Self-employed / business (Hapana), and the safe default: BSN-ZKM-D-M-YEAR-00id
         return strtoupper('BSN-' . self::BRANCH_CODE . '-' . $day . '-' . $month . '-' . $year . '-' . $seq);
-    }
-
-    /**
-     * Human-readable loan/application reference (available before disbursement).
-     * Format: LN-YYYYMMDD-00id, e.g. LN-20260623-00015
-     */
-    public function getLoanNumberAttribute()
-    {
-        $date = $this->created_at ?? now();
-        return 'LN-' . $date->format('Ymd') . '-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -113,7 +118,10 @@ class Loan extends Model
 
     public function repaymentFrequency()
     {
-        return $this->details['repayment_frequency'] ?? 'Monthly';
+        // Form submits camelCase (repaymentFrequency); older records use snake_case — accept both.
+        return $this->details['repayment_frequency']
+            ?? $this->details['repaymentFrequency']
+            ?? 'Monthly';
     }
 
     // Relationships
@@ -198,15 +206,21 @@ class Loan extends Model
         };
 
         $totalInstallments = max(1, (int) round($months * $installmentsPerMonth));
+
+        // Flat-rate method: interest is computed once on the original principal
+        // for the full term, then divided equally across all installments.
+        // Formula: total_interest = principal × monthly_rate × months
+        $totalInterest = $this->amount * $interestRate * $months;
         $principalPerInstallment = $this->amount / $totalInstallments;
+        $interestPerInstallment = $totalInterest / $totalInstallments;
         $balance = $this->amount;
+
         $dueDate = $startDate
             ? \Carbon\Carbon::parse($startDate)
             : ($this->approved_at ? \Carbon\Carbon::parse($this->approved_at) : now());
 
         $rows = [];
         for ($i = 1; $i <= $totalInstallments; $i++) {
-            $interest = $balance * ($interestRate / $installmentsPerMonth);
             $balance -= $principalPerInstallment;
 
             $dueDate = match ($frequency) {
@@ -221,8 +235,8 @@ class Loan extends Model
                 'installment_number' => $i,
                 'due_date' => $dueDate->toDateString(),
                 'principal_amount' => round($principalPerInstallment, 2),
-                'interest_amount' => round($interest, 2),
-                'total_amount' => round($principalPerInstallment + $interest, 2),
+                'interest_amount' => round($interestPerInstallment, 2),
+                'total_amount' => round($principalPerInstallment + $interestPerInstallment, 2),
                 'balance_remaining' => round(max(0, $balance), 2),
                 'status' => 'pending',
             ];
@@ -308,13 +322,19 @@ class Loan extends Model
             });
     }
 
-    // Penalty on overdue arrears, at the admin-configured rate (Loan Settings)
+    // Flat daily penalty × number of overdue days (from Loan Settings)
     public function calculatePenalty()
     {
-        $arrears = $this->getArrearsAmount();
-        if ($arrears <= 0)
-            return 0;
+        $overdueSchedules = $this->schedules
+            ->filter(fn($s) => $s->status !== 'paid' && $s->due_date && $s->due_date->lt(now()));
 
-        return $arrears * LoanSetting::current()->penaltyRateFraction();
+        if ($overdueSchedules->isEmpty()) return 0;
+
+        $dailyPenalty = LoanSetting::current()->dailyPenaltyAmount();
+        $totalDays    = $overdueSchedules->sum(function ($s) {
+            return (int) \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
+        });
+
+        return round($dailyPenalty * max(1, $totalDays));
     }
 }

@@ -354,7 +354,7 @@ const OverdueManagement = () => {
                 );
               })}
               {loans.length === 0 && !loading && (
-                <tr><td colSpan={14} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Hakuna mikopo iliyochelewa ðŸŽ‰</td></tr>
+                <tr><td colSpan={14} style={{ textAlign: "center", padding: "3rem", color: "#94a3b8", fontWeight: 600 }}>Hakuna mikopo iliyochelewa 🎉</td></tr>
               )}
             </tbody>
           </table>
