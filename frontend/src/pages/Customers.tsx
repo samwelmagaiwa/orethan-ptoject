@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import AlertModal from "../components/AlertModal";
@@ -88,6 +89,10 @@ interface Loan {
 
 const Customers: React.FC = () => {
     const { t } = useTranslation("customers");
+    const location = useLocation();
+    // When GM clicks "LO Review" they land on /gm/customers — show the loan officer
+    // application pipeline view instead of the finance customer list.
+    const isGmLOReview = location.pathname === '/gm/customers';
     const [user, setUser] = useState<User | null>(null);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loans, setLoans] = useState<Loan[]>([]);
@@ -136,10 +141,10 @@ const Customers: React.FC = () => {
             const hasDisburse = userData.role === "admin" || userData.role === "finance_officer"
                 || userData.full_sidebar_access === true
                 || userData.sidebar_permissions?.can_disburse === true;
-            if (hasDisburse) {
+            if (hasDisburse && !isGmLOReview) {
                 await fetchCustomers();
             } else {
-                await fetchManagerLoans(userData.role);
+                await fetchManagerLoans(isGmLOReview ? 'loan_manager' : userData.role);
             }
         } catch (err) {
             console.error(err);
@@ -241,9 +246,11 @@ const Customers: React.FC = () => {
         )
     );
 
-    const isFinanceView = user?.role === "admin" || user?.role === "finance_officer"
+    const isFinanceView = !isGmLOReview && (
+        user?.role === "admin" || user?.role === "finance_officer"
         || user?.full_sidebar_access === true
-        || user?.sidebar_permissions?.can_disburse === true;
+        || user?.sidebar_permissions?.can_disburse === true
+    );
 
     const currentListLength = isFinanceView ? filteredCustomers.length : filteredLoans.length;
     const totalPages = Math.max(1, Math.ceil(currentListLength / entriesPerPage));
