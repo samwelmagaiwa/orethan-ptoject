@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { API_BASE } from "../lib/api";
 
@@ -18,9 +18,12 @@ interface Customer {
   customer_number?: string;
 }
 
-interface Payment {
-  date: string;
-  amount: string;
+interface Installment {
+  number: number;
+  due_date: string;
+  amount: number; // total per installment (principal + interest)
+  paid: boolean;
+  paid_date: string;
 }
 
 interface FieldErrors { [key: string]: string }
@@ -28,6 +31,48 @@ interface FieldErrors { [key: string]: string }
 function FErr({ msg }: { msg?: string }) {
   if (!msg) return null;
   return <p style={{ fontSize: 11, color: "#dc2626", margin: "4px 0 0 0", fontWeight: 600 }}>{msg}</p>;
+}
+
+// Mirror of backend buildScheduleRows — flat-rate method
+function buildSchedule(
+  principal: number,
+  monthlyRate: number,
+  months: number,
+  frequency: string,
+  disbursedAt: string
+): { number: number; due_date: string; amount: number }[] {
+  if (!principal || !months || !disbursedAt) return [];
+
+  const installmentsPerMonth =
+    frequency === "Weekly" ? 4.33
+    : frequency === "Bi-Weekly" ? 2.165
+    : frequency === "Daily" ? 30
+    : frequency === "Quarterly" ? 1 / 3
+    : 1.0;
+
+  const total = Math.max(1, Math.round(months * installmentsPerMonth));
+  const totalInterest = principal * monthlyRate * months;
+  const principalPer = principal / total;
+  const interestPer = totalInterest / total;
+  const amountPer = Math.round((principalPer + interestPer) * 100) / 100;
+
+  const rows: { number: number; due_date: string; amount: number }[] = [];
+  const date = new Date(disbursedAt + "T00:00:00");
+
+  for (let i = 1; i <= total; i++) {
+    if (frequency === "Weekly") date.setDate(date.getDate() + 7);
+    else if (frequency === "Bi-Weekly") date.setDate(date.getDate() + 14);
+    else if (frequency === "Daily") date.setDate(date.getDate() + 1);
+    else if (frequency === "Quarterly") date.setMonth(date.getMonth() + 3);
+    else date.setMonth(date.getMonth() + 1);
+
+    rows.push({
+      number: i,
+      due_date: date.toISOString().split("T")[0],
+      amount: amountPer,
+    });
+  }
+  return rows;
 }
 
 export default function HistoricalLoan() {
@@ -51,7 +96,8 @@ export default function HistoricalLoan() {
   const [g2Name, setG2Name] = useState("");
   const [g2Phone, setG2Phone] = useState("");
 
-  const [payments, setPayments] = useState<Payment[]>([{ date: "", amount: "" }]);
+  // Installment schedule state — each row tracks paid status + payment date
+  const [installments, setInstallments] = useState<Installment[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ loanNo: string; remaining: number } | null>(null);
@@ -78,15 +124,46 @@ export default function HistoricalLoan() {
     }, 500);
   }, [searchPhone, customerMode]);
 
-  const totalPaid = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-  const loanAmount = parseFloat(amount) || 0;
-  const remaining = Math.max(0, loanAmount - totalPaid);
+  // Recompute schedule whenever loan parameters change
+  useEffect(() => {
+    const principal = parseFloat(amount) || 0;
+    const rate = parseFloat(interestRate) / 100;
+    const months = parseInt(termMonths) || 0;
 
-  const addPayment = () => setPayments([...payments, { date: "", amount: "" }]);
-  const removePayment = (i: number) => { if (payments.length > 1) setPayments(payments.filter((_, idx) => idx !== i)); };
-  const updatePayment = (i: number, f: "date" | "amount", v: string) => {
-    const c = [...payments]; c[i] = { ...c[i], [f]: v }; setPayments(c);
+    if (!principal || isNaN(rate) || !months || !disbursedAt) {
+      setInstallments([]);
+      return;
+    }
+
+    const rows = buildSchedule(principal, rate, months, frequency, disbursedAt);
+    setInstallments(prev => rows.map(r => {
+      const existing = prev.find(p => p.number === r.number);
+      return {
+        number: r.number,
+        due_date: r.due_date,
+        amount: r.amount,
+        paid: existing?.paid ?? false,
+        paid_date: existing?.paid_date ?? "",
+      };
+    }));
+  }, [amount, interestRate, termMonths, frequency, disbursedAt]);
+
+  const togglePaid = (i: number) => {
+    setInstallments(prev => prev.map((inst, idx) =>
+      idx === i ? { ...inst, paid: !inst.paid, paid_date: inst.paid ? "" : inst.paid_date } : inst
+    ));
   };
+
+  const setPaidDate = (i: number, date: string) => {
+    setInstallments(prev => prev.map((inst, idx) =>
+      idx === i ? { ...inst, paid_date: date } : inst
+    ));
+  };
+
+  const paidCount = installments.filter(i => i.paid).length;
+  const totalPaid = installments.filter(i => i.paid).reduce((s, i) => s + i.amount, 0);
+  const totalLoan = installments.reduce((s, i) => s + i.amount, 0);
+  const remaining = Math.max(0, totalLoan - totalPaid);
 
   const validate = (): boolean => {
     const errs: FieldErrors = {};
@@ -107,14 +184,25 @@ export default function HistoricalLoan() {
     if (g1Phone.trim() && !/^0[0-9]{9}$/.test(g1Phone.replace(/\s/g, ""))) errs.g1Phone = "Simu ya Mdhamini 1 sio sahihi.";
     if ((g2Name.trim() && !g2Phone.trim()) || (!g2Name.trim() && g2Phone.trim())) errs.g2 = "Jina na simu ya Mdhamini 2 lazima vijazwe vyote.";
     if (g2Phone.trim() && !/^0[0-9]{9}$/.test(g2Phone.replace(/\s/g, ""))) errs.g2Phone = "Simu ya Mdhamini 2 sio sahihi.";
-    const filledPayments = payments.filter(p => p.date || p.amount);
-    filledPayments.forEach((p, i) => {
-      if (!p.date) errs[`pay_date_${i}`] = "Tarehe ya malipo inahitajika.";
-      else if (disbursedAt && p.date < disbursedAt) errs[`pay_date_${i}`] = "Tarehe haiwezi kuwa kabla ya kutolewa mkopo.";
-      else if (p.date > today) errs[`pay_date_${i}`] = "Tarehe haiwezi kuwa siku zijazo.";
-      if (!p.amount || parseFloat(p.amount) <= 0) errs[`pay_amt_${i}`] = "Kiasi lazima kiwe zaidi ya sifuri.";
+
+    // Validate installment paid dates
+    installments.forEach((inst, i) => {
+      if (inst.paid) {
+        if (!inst.paid_date) {
+          errs[`inst_date_${i}`] = "Tarehe ya malipo inahitajika kwa awamu hii.";
+        } else if (disbursedAt && inst.paid_date < disbursedAt) {
+          errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa kabla ya kutolewa mkopo.";
+        } else if (inst.paid_date > today) {
+          errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa siku zijazo.";
+        }
+      }
     });
-    if (loanAmount > 0 && totalPaid > loanAmount) errs.payments_total = "Jumla ya malipo inazidi kiasi cha mkopo.";
+
+    // Must have schedule generated before submitting
+    if (installments.length === 0 && parseFloat(amount) > 0 && parseInt(termMonths) > 0 && disbursedAt) {
+      errs.schedule = "Ratiba ya malipo haijatengenezwa. Jaza maelezo ya mkopo kwanza.";
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -123,7 +211,7 @@ export default function HistoricalLoan() {
     setSearchPhone(""); setFoundCustomer(null); setNewName(""); setNewPhone("");
     setAmount(""); setInterestRate(""); setTermMonths(""); setDisbursedAt("");
     setEmployment("Hapana"); setG1Name(""); setG1Phone(""); setG2Name(""); setG2Phone("");
-    setPayments([{ date: "", amount: "" }]); setFieldErrors({});
+    setInstallments([]); setFieldErrors({});
   };
 
   const handleSubmit = async () => {
@@ -135,7 +223,12 @@ export default function HistoricalLoan() {
     }
     const phone = (customerMode === "existing" ? searchPhone : newPhone).replace(/\s/g, "");
     const name  = customerMode === "existing" ? foundCustomer?.full_name : newName;
-    const validPayments = payments.filter(p => p.date && parseFloat(p.amount) > 0);
+
+    // Convert paid installments to payments array
+    const payments = installments
+      .filter(inst => inst.paid && inst.paid_date)
+      .map(inst => ({ date: inst.paid_date, amount: inst.amount }));
+
     const payload: Record<string, unknown> = {
       customer_phone: phone, customer_name: name,
       customer_id: foundCustomer?.id ?? undefined,
@@ -144,7 +237,7 @@ export default function HistoricalLoan() {
       disbursed_at: disbursedAt, employment,
       guarantor_1_name: g1Name.trim() || undefined, guarantor_1_phone: g1Phone.trim() || undefined,
       guarantor_2_name: g2Name.trim() || undefined, guarantor_2_phone: g2Phone.trim() || undefined,
-      payments: validPayments.map(p => ({ date: p.date, amount: parseFloat(p.amount) })),
+      payments,
     };
     setSubmitting(true);
     try {
@@ -161,7 +254,6 @@ export default function HistoricalLoan() {
     } finally { setSubmitting(false); }
   };
 
-  // Shared input class helper
   const inp = (err?: string) => `hl-input${err ? " hl-err" : ""}`;
 
   return (
@@ -171,81 +263,62 @@ export default function HistoricalLoan() {
         .hl-title { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
         .hl-subtitle { font-size: 13px; color: #64748b; margin: 0 0 24px; }
         .hl-badge { background: #fef9c3; color: #854d0e; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
-
-        /* Section divider — same style as PersonalLoan */
-        .hl-section {
-          background: #102a43; color: #fff; padding: 8px 16px;
-          border-radius: 6px; font-weight: 700; font-size: 13px;
-          margin-bottom: 18px; margin-top: 8px;
-        }
-
-        /* Form body (no card boxes, no gaps) */
+        .hl-section { background: #102a43; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 13px; margin-bottom: 18px; margin-top: 8px; }
         .hl-body { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; }
-
         .hl-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .hl-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .hl-field { display: flex; flex-direction: column; }
         .hl-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .hl-input {
-          width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
-          font-size: 13px; color: #1e293b; background: #fff; box-sizing: border-box;
-          transition: border-color 0.15s; outline: none;
-        }
+        .hl-input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; background: #fff; box-sizing: border-box; transition: border-color 0.15s; outline: none; }
         .hl-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.08); }
         .hl-input.hl-err { border-color: #f87171; background: #fff8f8; }
-
-        /* Toggle */
         .hl-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
-        .hl-toggle-btn {
-          flex: 1; padding: 9px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;
-          cursor: pointer; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #64748b; transition: all 0.15s;
-        }
+        .hl-toggle-btn { flex: 1; padding: 9px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #64748b; transition: all 0.15s; }
         .hl-toggle-btn.active { background: #102a43; border-color: #102a43; color: #fff; }
-
         .hl-found { background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #16a34a; font-weight: 600; margin-top: 8px; }
-
-        /* Payment rows */
-        .hl-pay-row { display: grid; grid-template-columns: 1fr 1fr 36px; gap: 12px; align-items: end; margin-bottom: 12px; }
-        .hl-rm {
-          width: 36px; height: 36px; border-radius: 6px; background: #fee2e2; border: none;
-          color: #dc2626; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
-        .hl-rm:disabled { opacity: 0.3; cursor: not-allowed; }
-        .hl-add {
-          padding: 7px 16px; border: 1.5px dashed #cbd5e1; border-radius: 6px;
-          background: transparent; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 4px;
-        }
-        .hl-add:hover { background: #f1f5f9; }
-
-        /* Totals summary */
         .hl-totals { display: flex; background: #f1f5f9; border-radius: 8px; padding: 14px 20px; margin-top: 16px; }
         .hl-totals-col { flex: 1; text-align: center; padding: 0 10px; border-right: 1px solid #e2e8f0; }
         .hl-totals-col:last-child { border-right: none; }
         .hl-totals-col .tv { font-size: 17px; font-weight: 800; color: #1e293b; }
         .hl-totals-col .tl { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
-
-        /* Error / success banners */
         .hl-global-err { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px; color: #dc2626; font-size: 13px; margin-bottom: 18px; }
         .hl-field-err { font-size: 11px; color: #dc2626; margin: 4px 0 0; font-weight: 600; }
         .hl-section-err { background: #fef2f2; border-radius: 6px; padding: 8px 12px; color: #dc2626; font-size: 11px; margin-top: 8px; font-weight: 600; }
         .hl-success { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 24px 28px; text-align: center; margin-bottom: 24px; }
         .hl-success h2 { color: #16a34a; font-size: 17px; margin: 0 0 10px; }
         .hl-success p { color: #4d7c0f; font-size: 13px; margin: 4px 0; }
-
-        /* Submit */
-        .hl-submit {
-          width: 100%; padding: 14px; border-radius: 8px; background: #102a43;
-          color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.15s;
-        }
+        .hl-submit { width: 100%; padding: 14px; border-radius: 8px; background: #102a43; color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.15s; }
         .hl-submit:hover:not(:disabled) { background: #1e3a5f; }
         .hl-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* Note/hint */
         .hl-hint { font-size: 12px; color: #64748b; margin: -8px 0 16px; }
+
+        /* Schedule table */
+        .hl-sched-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .hl-sched-table th { background: #f8fafc; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 8px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .hl-sched-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .hl-sched-table tr:last-child td { border-bottom: none; }
+        .hl-sched-row-paid { background: #f0fdf4; }
+        .hl-sched-row-pending { background: #fff; }
+        .hl-sched-row-overdue { background: #fff7ed; }
+
+        .hl-paid-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+        .hl-paid-toggle input[type=checkbox] { width: 16px; height: 16px; accent-color: #16a34a; cursor: pointer; }
+
+        .hl-date-input { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 12px; color: #1e293b; width: 140px; box-sizing: border-box; }
+        .hl-date-input:focus { border-color: #3b82f6; outline: none; }
+        .hl-date-input.err { border-color: #f87171; background: #fff8f8; }
+
+        .hl-status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .hl-badge-paid { background: #dcfce7; color: #16a34a; }
+        .hl-badge-pending { background: #fef9c3; color: #854d0e; }
+        .hl-badge-overdue { background: #fee2e2; color: #dc2626; }
+
+        .hl-empty-sched { text-align: center; padding: 28px 0; color: #94a3b8; font-size: 13px; }
 
         @media (max-width: 700px) {
           .hl-grid2, .hl-grid3 { grid-template-columns: 1fr; }
-          .hl-pay-row { grid-template-columns: 1fr 1fr 36px; }
+          .hl-sched-table { font-size: 11px; }
+          .hl-date-input { width: 120px; }
         }
       `}</style>
 
@@ -254,7 +327,7 @@ export default function HistoricalLoan() {
         <span className="hl-badge">KIHISTORIA</span>
       </h1>
       <p className="hl-subtitle">
-        Rekodi mkopo ulioidhinishwa kabla ya mfumo — mfumo utatengeneza ratiba sahihi na namba ya akaunti kulingana na tarehe halisi ya mkopo.
+        Rekodi mkopo ulioidhinishwa kabla ya mfumo — jaza maelezo na onyesha awamu zilizolipwa ili mfumo uhesabu deni sahihi.
       </p>
 
       {globalError && <div className="hl-global-err">⚠ {globalError}</div>}
@@ -403,50 +476,111 @@ export default function HistoricalLoan() {
         </div>
         {(fieldErrors.g2 || fieldErrors.g2Phone) && <div className="hl-section-err">{fieldErrors.g2 || fieldErrors.g2Phone}</div>}
 
-        {/* ── SEHEMU 4: HISTORIA YA MALIPO ────────────────────────────────── */}
-        <div className="hl-section" style={{ marginTop: 24 }}>SEHEMU 4: HISTORIA YA MALIPO YALIYOFANYWA</div>
+        {/* ── SEHEMU 4: HALI YA MALIPO KWA KILA AWAMU ────────────────────── */}
+        <div className="hl-section" style={{ marginTop: 24 }}>SEHEMU 4: HALI YA MALIPO — AMELIPA LINI?</div>
         <p className="hl-hint">
-          Ingiza kila malipo yaliyolipwa tangu mkopo ulitolewa. Tarehe lazima iwe baada ya tarehe ya kutolewa mkopo.
-          Ratiba itatengenezwa kulingana na tarehe halisi.
+          Mfumo umehesabu awamu zote za mkopo huu. Bonyeza kisanduku cha "Amelipa" kwa kila awamu iliyolipwa na ingiza tarehe halisi ya malipo.
+          Awamu ambazo hazijalipwa zinabaki kama "Bado" — mfumo utatumia tarehe hizi kuhesabu deni na mwaka unaofuata wa malipo.
         </p>
 
-        {payments.map((p, i) => (
-          <div key={i} className="hl-pay-row">
-            <div className="hl-field">
-              <label className="hl-label">Tarehe ya Malipo</label>
-              <input className={inp(fieldErrors[`pay_date_${i}`])} type="date"
-                value={p.date} min={disbursedAt || undefined} max={today}
-                onChange={e => updatePayment(i, "date", e.target.value)} />
-              {fieldErrors[`pay_date_${i}`] && <p className="hl-field-err">{fieldErrors[`pay_date_${i}`]}</p>}
+        {fieldErrors.schedule && <div className="hl-section-err">⚠ {fieldErrors.schedule}</div>}
+
+        {installments.length === 0 ? (
+          <div className="hl-empty-sched">
+            📋 Jaza kiasi, riba, muda na tarehe ya kutolewa mkopo ili ratiba ionekane hapa.
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="hl-sched-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tarehe ya Kulipa (Ratiba)</th>
+                  <th style={{ textAlign: "right" }}>Kiasi (TZS)</th>
+                  <th style={{ textAlign: "center" }}>Amelipa?</th>
+                  <th>Tarehe Halisi ya Malipo <span style={{ color: "#ef4444" }}>*</span></th>
+                  <th>Hali</th>
+                </tr>
+              </thead>
+              <tbody>
+                {installments.map((inst, i) => {
+                  const isOverdue = !inst.paid && inst.due_date < today;
+                  const rowClass = inst.paid ? "hl-sched-row-paid" : isOverdue ? "hl-sched-row-overdue" : "hl-sched-row-pending";
+                  const badgeClass = inst.paid ? "hl-badge-paid" : isOverdue ? "hl-badge-overdue" : "hl-badge-pending";
+                  const badgeLabel = inst.paid ? "✓ Amelipa" : isOverdue ? "⚠ Chelewa" : "Bado";
+                  return (
+                    <tr key={inst.number} className={rowClass}>
+                      <td>
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 28, height: 22, padding: "0 7px", borderRadius: 6, background: "#102a43", color: "#e2bc8a", fontWeight: 800, fontSize: "0.72rem" }}>
+                          #{inst.number}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 600, color: "#475569" }}>
+                        {new Date(inst.due_date + "T00:00:00").toLocaleDateString("en-GB")}
+                      </td>
+                      <td style={{ textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
+                        {fmt(inst.amount)}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <label className="hl-paid-toggle">
+                          <input
+                            type="checkbox"
+                            checked={inst.paid}
+                            onChange={() => togglePaid(i)}
+                          />
+                        </label>
+                      </td>
+                      <td>
+                        {inst.paid ? (
+                          <div>
+                            <input
+                              type="date"
+                              className={`hl-date-input${fieldErrors[`inst_date_${i}`] ? " err" : ""}`}
+                              value={inst.paid_date}
+                              min={disbursedAt || undefined}
+                              max={today}
+                              onChange={e => setPaidDate(i, e.target.value)}
+                            />
+                            {fieldErrors[`inst_date_${i}`] && (
+                              <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600 }}>
+                                {fieldErrors[`inst_date_${i}`]}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`hl-status-badge ${badgeClass}`}>
+                          {badgeLabel}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Totals summary */}
+        {installments.length > 0 && (
+          <div className="hl-totals" style={{ marginTop: 16 }}>
+            <div className="hl-totals-col">
+              <div className="tv">TZS {fmt(totalLoan)}</div>
+              <div className="tl">Jumla ya Mkopo</div>
             </div>
-            <div className="hl-field">
-              <label className="hl-label">Kiasi (TZS)</label>
-              <input className={inp(fieldErrors[`pay_amt_${i}`])} type="number" min="1"
-                value={p.amount} onChange={e => updatePayment(i, "amount", e.target.value)} placeholder="50000" />
-              {fieldErrors[`pay_amt_${i}`] && <p className="hl-field-err">{fieldErrors[`pay_amt_${i}`]}</p>}
+            <div className="hl-totals-col">
+              <div className="tv" style={{ color: "#16a34a" }}>TZS {fmt(totalPaid)}</div>
+              <div className="tl">Jumla Imelipwa ({paidCount} awamu)</div>
             </div>
-            <button className="hl-rm" onClick={() => removePayment(i)} disabled={payments.length === 1} title="Ondoa">×</button>
+            <div className="hl-totals-col">
+              <div className="tv" style={{ color: remaining > 0 ? "#ef4444" : "#16a34a" }}>TZS {fmt(remaining)}</div>
+              <div className="tl">Salio Linalobaki</div>
+            </div>
           </div>
-        ))}
-
-        <button className="hl-add" onClick={addPayment}>+ Ongeza Malipo</button>
-
-        {fieldErrors.payments_total && <div className="hl-section-err">⚠ {fieldErrors.payments_total}</div>}
-
-        <div className="hl-totals">
-          <div className="hl-totals-col">
-            <div className="tv">TZS {fmt(loanAmount)}</div>
-            <div className="tl">Kiasi cha Mkopo</div>
-          </div>
-          <div className="hl-totals-col">
-            <div className="tv" style={{ color: "#16a34a" }}>TZS {fmt(totalPaid)}</div>
-            <div className="tl">Jumla Imelipwa</div>
-          </div>
-          <div className="hl-totals-col">
-            <div className="tv" style={{ color: remaining > 0 ? "#ef4444" : "#16a34a" }}>TZS {fmt(remaining)}</div>
-            <div className="tl">Salio Linalobaki</div>
-          </div>
-        </div>
+        )}
 
         {/* Submit */}
         <button className="hl-submit" style={{ marginTop: 28 }} onClick={handleSubmit} disabled={submitting}>
