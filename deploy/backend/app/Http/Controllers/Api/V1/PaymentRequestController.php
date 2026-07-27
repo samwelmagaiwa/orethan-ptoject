@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
+use Illuminate\Support\Facades\DB;
 use App\Models\AuditLog;
 use App\Models\SmsLog;
 use App\Services\AccountingService;
@@ -17,6 +18,21 @@ use Illuminate\Support\Facades\Storage;
 class PaymentRequestController extends Controller
 {
     use ApiResponse;
+
+    /**
+     * Atomically grab the next voucher number from the shared counter.
+     * Returns a zero-padded string like "0205".
+     */
+    private function nextVoucherNumber(): string
+    {
+        $number = DB::transaction(function () {
+            $row     = DB::table('voucher_counter')->where('id', 1)->lockForUpdate()->first();
+            $current = (int) $row->next_number;
+            DB::table('voucher_counter')->where('id', 1)->update(['next_number' => $current + 1]);
+            return $current;
+        });
+        return str_pad((string) $number, 4, '0', STR_PAD_LEFT);
+    }
 
     /**
      * Hatua inayofuata baada ya idhini kwenye hatua ya sasa.
@@ -106,6 +122,8 @@ class PaymentRequestController extends Controller
                 $data['md_comments'] = 'Auto-authorised — submitted by ' . ucwords(str_replace('_', ' ', $user->role));
                 $data['md_date'] = now();
                 $data['md_signature_img'] = $data['applicant_signature_img'] ?? $user->signature ?? null;
+                // Auto-assign serial voucher number since it bypasses the normal approval chain
+                $data['voucher_number'] = $this->nextVoucherNumber();
             }
 
             $pr = PaymentRequest::create($data);
@@ -265,11 +283,16 @@ class PaymentRequestController extends Controller
                 $pr->md_comments = $data['comments'] ?? null;
                 $pr->md_date = now();
                 $pr->md_signature_img = $sig;
+                // Auto-assign voucher number when MD approves (request moves to cashier)
+                if (!$pr->voucher_number) {
+                    $pr->voucher_number = $this->nextVoucherNumber();
+                }
             } elseif ($stage === 'awaiting_disbursement') {
                 // Keshia/Finance anatoa malipo kwa mwombaji
                 $pr->cashier_name = $user->name;
                 $pr->cashier_comments = $data['comments'] ?? null;
-                $pr->cashier_reference = $data['cashier_reference'] ?? null;
+                // Use the pre-assigned voucher number as the transaction reference if not manually overridden
+                $pr->cashier_reference = $data['cashier_reference'] ?? $pr->voucher_number ?? null;
                 $pr->cashier_date = now();
                 $pr->cashier_signature_img = $sig;
             }

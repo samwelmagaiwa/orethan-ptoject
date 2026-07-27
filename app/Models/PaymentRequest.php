@@ -14,7 +14,7 @@ class PaymentRequest extends Model
         'manager_name', 'manager_decision', 'manager_adjusted_amount', 'manager_comments', 'manager_date',
         'gm_name', 'gm_decision', 'gm_adjusted_amount', 'gm_comments', 'gm_date',
         'md_name', 'md_comments', 'md_date',
-        'cashier_name', 'cashier_comments', 'cashier_reference', 'cashier_date',
+        'cashier_name', 'cashier_comments', 'cashier_reference', 'cashier_date', 'voucher_number',
         'applicant_signature_img', 'manager_signature_img', 'gm_signature_img', 'md_signature_img', 'cashier_signature_img',
         'rejection_reason', 'created_by',
         'gl_journal_entry_id',
