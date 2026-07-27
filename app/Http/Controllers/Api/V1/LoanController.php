@@ -673,7 +673,7 @@ class LoanController extends Controller
     public function recordRepayment(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->canDisburse() && !$user->isLoanOfficer() && !$user->isLoanManager()) {
+        if (!$user->canDisburse()) {
             return $this->error('You do not have permission to record payments', 403);
         }
 
