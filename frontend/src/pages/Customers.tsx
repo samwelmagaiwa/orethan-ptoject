@@ -9,6 +9,7 @@ import ApproveModal from "../components/ApproveModal";
 import HistoryModal from "../components/HistoryModal";
 import SmsStatusBadge, { smsStatusBadgeStyles } from "../components/SmsStatusBadge";
 import { printDocument } from "../utils/printDoc";
+import { printDisbursementDoc } from "../utils/disbursementPrint";
 import { API_BASE, fmtLoanId } from "../lib/api";
 
 // INLINE SVG ICONS FOR PREMIUM LOOK
@@ -924,10 +925,16 @@ const Customers: React.FC = () => {
                                                                             </button>
                                                                         )}
                                                                         {loan.status === 'disbursed' && (
-                                                                            <button onClick={() => printVoucher(loan)} disabled={submitting}>
-                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
-                                                                                {t("actions.printVoucher")}
-                                                                            </button>
+                                                                            <>
+                                                                                <button onClick={() => printDisbursementDoc(loan.id, 'voucher')} disabled={submitting} style={{ color: '#4338ca' }}>
+                                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                                                                                    Print Voucher
+                                                                                </button>
+                                                                                <button onClick={() => printDisbursementDoc(loan.id, 'agreement')} disabled={submitting} style={{ color: '#15803d' }}>
+                                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                                                    Print Agreement
+                                                                                </button>
+                                                                            </>
                                                                         )}
                                                                         <button onClick={() => viewDetails(loan)} disabled={submitting}>
                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -983,6 +990,18 @@ const Customers: React.FC = () => {
                                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                                                                         {t("actions.viewHistory")}
                                                                     </button>
+                                                                    {loan.status === 'disbursed' && (
+                                                                        <>
+                                                                            <button onClick={() => printDisbursementDoc(loan.id, 'voucher')} style={{ color: '#4338ca' }}>
+                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                                                                                Print Voucher
+                                                                            </button>
+                                                                            <button onClick={() => printDisbursementDoc(loan.id, 'agreement')} style={{ color: '#15803d' }}>
+                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                                                Print Agreement
+                                                                            </button>
+                                                                        </>
+                                                                    )}
                                                                 </>
                                                             );
                                                         })()}
