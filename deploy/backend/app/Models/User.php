@@ -32,6 +32,7 @@ class User extends Authenticatable
         'otp_expires_at',
         'first_login',
         'must_change_password',
+        'branch_id',
         'sidebar_permissions',
         'full_sidebar_access',
     ];
@@ -87,6 +88,11 @@ class User extends Authenticatable
     ];
 
     // Helper methods for role checking
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';
@@ -132,6 +138,7 @@ class User extends Authenticatable
     public function canDisburse(): bool
     {
         if ($this->isAdmin() || $this->isFinanceOfficer()) return true;
+        if ($this->isGeneralManager() || $this->isManagingDirector()) return true;
         if ($this->full_sidebar_access) return true;
         $perms = $this->sidebar_permissions;
         return is_array($perms) && !empty($perms['can_disburse']);
