@@ -319,7 +319,12 @@ class LoanController extends Controller
     public function disbursementPreview(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->canDisburse()) {
+        $canView = $user->canDisburse()
+            || $user->isLoanManager()
+            || $user->isLoanOfficer()
+            || $user->isGeneralManager()
+            || $user->isManagingDirector();
+        if (!$canView) {
             return $this->error('You do not have permission to access disbursement', 403);
         }
 

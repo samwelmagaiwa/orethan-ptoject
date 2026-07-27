@@ -319,7 +319,12 @@ class LoanController extends Controller
     public function disbursementPreview(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->canDisburse()) {
+        $canView = $user->canDisburse()
+            || $user->isLoanManager()
+            || $user->isLoanOfficer()
+            || $user->isGeneralManager()
+            || $user->isManagingDirector();
+        if (!$canView) {
             return $this->error('You do not have permission to access disbursement', 403);
         }
 
@@ -553,14 +558,29 @@ class LoanController extends Controller
         $overdueAmount  = (int) Loan::whereIn('id', $overdueLoanIds)->sum('remaining_balance');
         $totalPortfolio = (int) Loan::whereNotNull('disbursed_at')->where('status', 'disbursed')->sum('remaining_balance');
 
+        $customersCount = \App\Models\Customer::count();
+
+        // Customers with a pending (not yet disbursed) loan application
+        $pendingCustomers = \App\Models\Customer::whereHas('loans', function ($q) {
+            $q->whereIn('status', ['pending', 'manager_review', 'gm_review', 'md_review', 'approved']);
+        })->count();
+
+        // Customers with at least one currently active (disbursed) loan
+        $disbursedCustomers = \App\Models\Customer::whereHas('loans', function ($q) {
+            $q->where('status', 'disbursed');
+        })->count();
+
         return response()->json(array_merge($counts, [
-            'total'           => array_sum($counts),
-            'active_loans'    => $activeLoans,
-            'completed_loans' => $completedLoans,
-            'historical_loans'=> $historicalLoans,
-            'overdue_loans'   => $overdueLoans,
-            'overdue_amount'  => $overdueAmount,
-            'total_portfolio' => $totalPortfolio,
+            'total'               => array_sum($counts),
+            'active_loans'        => $activeLoans,
+            'completed_loans'     => $completedLoans,
+            'historical_loans'    => $historicalLoans,
+            'overdue_loans'       => $overdueLoans,
+            'overdue_amount'      => $overdueAmount,
+            'total_portfolio'     => $totalPortfolio,
+            'customers_count'     => $customersCount,
+            'pending_customers'   => $pendingCustomers,
+            'disbursed_customers' => $disbursedCustomers,
         ]));
     }
 
@@ -832,21 +852,21 @@ class LoanController extends Controller
             ->orderBy('due_date')
             ->get();
 
-        $penaltyRate = \App\Models\LoanSetting::current()->penaltyRateFraction();
+        $dailyPenalty = \App\Models\LoanSetting::current()->dailyPenaltyAmount();
 
-        return $schedules->map(function ($s) use ($penaltyRate) {
+        return $schedules->map(function ($s) use ($dailyPenalty) {
             $loan = $s->loan;
-            $amount = round((float) $s->total_amount - (float) ($s->amount_paid ?? 0));
+            $amount   = round((float) $s->total_amount - (float) ($s->amount_paid ?? 0));
             $daysLate = \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
             return [
-                'loan_id' => $loan?->id,
-                'schedule_id' => $s->id,
-                'customer' => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
-                'loan_number' => $loan?->loan_account_number,
-                'days_late' => $daysLate,
-                'amount' => $amount,
-                'penalty' => round($amount * $penaltyRate),
-                'due_date' => $s->due_date?->toDateString(),
+                'loan_id'      => $loan?->id,
+                'schedule_id'  => $s->id,
+                'customer'     => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
+                'loan_number'  => $loan?->loan_account_number,
+                'days_late'    => $daysLate,
+                'amount'       => $amount,
+                'penalty'      => round($dailyPenalty * $daysLate),
+                'due_date'     => $s->due_date?->toDateString(),
             ];
         })->toArray();
     }
@@ -990,5 +1010,60 @@ class LoanController extends Controller
             'name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
         ]);
+    }
+
+    /**
+     * GET /loans/{id}/renewal-prefill
+     * Returns pre-fill data for a repeat/renewal loan application from a closed loan.
+     * Only allowed on fully_paid, closed, or completed status loans.
+     */
+    public function renewalPrefill(Request $request, int $id)
+    {
+        $loan = Loan::with(['customer', 'guarantors'])->findOrFail($id);
+
+        $allowedStatuses = ['fully_paid', 'closed', 'completed'];
+        if (!in_array($loan->status, $allowedStatuses)) {
+            return $this->error('Mkopo huu hauhitimu kufanywa upya. Lazima uwe umekamilika.', 422);
+        }
+
+        $details = is_array($loan->details) ? $loan->details : (json_decode($loan->details, true) ?? []);
+
+        // Suggest a 10% higher amount as a reward for good repayment history
+        $suggestedAmount = round((float)$loan->amount * 1.1);
+
+        $prefill = [
+            'loan_id'           => $loan->id,
+            'loan_number'       => $loan->loan_account_number,
+            'customer_id'       => $loan->customer_id,
+            'name'              => $loan->name,
+            'phone'             => $loan->phone,
+            'type'              => $loan->type,
+            'previous_amount'   => (float) $loan->amount,
+            'suggested_amount'  => $suggestedAmount,
+            'interest_rate'     => $details['interest_rate'] ?? null,
+            'loan_term'         => $details['loan_term'] ?? null,
+            'repayment_period'  => $details['repayment_period'] ?? null,
+            'purpose'           => $details['purpose'] ?? null,
+            'employment_status' => $details['employment_status'] ?? null,
+            'customer'          => $loan->customer ? [
+                'id'          => $loan->customer->id,
+                'full_name'   => $loan->customer->full_name,
+                'phone'       => $loan->customer->phone_number,
+                'national_id' => $loan->customer->national_id ?? null,
+            ] : null,
+            'guarantors'        => $loan->guarantors->map(fn($g) => [
+                'name'    => $g->name,
+                'phone'   => $g->phone,
+                'id_no'   => $g->id_number ?? null,
+                'address' => $g->address ?? null,
+            ])->values(),
+            'repayment_history' => [
+                'total_paid'   => (float) $loan->total_paid,
+                'on_time'      => true, // simplified — no late penalties recorded means good history
+                'completed_at' => $loan->updated_at?->toDateString(),
+            ],
+        ];
+
+        return $this->success($prefill);
     }
 }
