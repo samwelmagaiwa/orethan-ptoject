@@ -172,6 +172,10 @@ const RepaymentTracker = () => {
 
   const { t } = useTranslation(["repaymentTracker", "common"]);
 
+  // LO and LM can view schedules and info but cannot collect repayments
+  const _userRole = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; } catch { return ""; } })();
+  const canCollect = !["loan_officer", "loan_manager"].includes(_userRole);
+
   const tc = (key: string) => t(key, { ns: "common" });
 
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
@@ -873,7 +877,7 @@ const RepaymentTracker = () => {
                       <td style={{ padding: "0.7rem 0.75rem", fontSize: "0.75rem", color: "#475569", whiteSpace: "nowrap" }}>{new Date(row.due_date).toLocaleDateString("en-GB")}</td>
                       <td style={{ padding: "0.7rem 0.75rem" }}>
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
-                          <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#1e5fae", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>
+                          {canCollect && <button onClick={() => openCollect(row.loan_id, row.customer, row.due_amount, row.due_amount)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#1e5fae", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>}
                           <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ padding: "0.3rem 0.4rem", borderRadius: 7, background: "#dbeafe", border: "1px solid #93c5fd", cursor: "pointer", color: "#1d4ed8", display: "flex", alignItems: "center", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Send size={12} /></button>
                           <button onClick={() => viewSchedule(row.loan_id)} style={{ padding: "0.3rem 0.4rem", borderRadius: 7, background: "#f0f9ff", border: "1px solid #7dd3fc", cursor: "pointer", color: "#0369a1", display: "flex", alignItems: "center" }}><Eye size={12} /></button>
                         </div>
@@ -918,7 +922,7 @@ const RepaymentTracker = () => {
                       <td style={{ padding: "0.7rem 0.75rem" }}>
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
                           <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.3rem 0.7rem", borderRadius: 7, background: "#fee2e2", border: "1px solid #fca5a5", color: "#991b1b", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Phone size={12} />{t("actions.contact")}</button>
-                          <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#dc2626", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>
+                          {canCollect && <button onClick={() => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty)} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: "#dc2626", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: "pointer" }}>{t("actions.collect")}</button>}
                         </div>
                       </td>
                     </tr>
@@ -1116,7 +1120,7 @@ const RepaymentTracker = () => {
                             {openRowDropdown === loan.id && dropdownPos && (
                               <div style={{ position: "fixed", top: dropdownPos.top, bottom: dropdownPos.bottom, right: dropdownPos.right, background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(0,0,0,0.15)", zIndex: 9999, minWidth: 160, overflow: "hidden" }}>
 
-                                {activeTab === "active" && (
+                                {activeTab === "active" && canCollect && (
                                   <button
                                     onClick={() => {
                                       const due = loan.next_installment ? Math.min(loan.next_installment.total_amount, loan.remaining_balance) : loan.remaining_balance;

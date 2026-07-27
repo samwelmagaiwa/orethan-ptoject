@@ -62,16 +62,7 @@ function Login() {
 
   const reset = () => { setError(null); setInfo(null); };
 
-  const roleHomePath = (role?: string): string => {
-    switch (role) {
-      case "loan_manager":      return "/loan-manager";
-      case "general_manager":   return "/general-manager";
-      case "managing_director": return "/managing-director";
-      case "cashier":           return "/cashier";
-      case "accountant":        return "/accounting";
-      default:                  return "/repayment-tracker";
-    }
-  };
+  const roleHomePath = (_role?: string): string => "/repayment-tracker";
 
   const finalize = (data: any) => {
     if (data.token) localStorage.setItem("token", data.token);
