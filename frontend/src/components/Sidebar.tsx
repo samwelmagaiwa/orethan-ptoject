@@ -425,6 +425,13 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </>
               ) : (
                 <>
+                  {/* LO Review — only for GM, shows the loan officer customer list */}
+                  {canAccessGmReview && !canAccessMdAuth && (
+                    <div className={`sd-item ${location.pathname.includes("/customers") ? "sd-item--active" : ""}`} onClick={() => navigate("/gm/customers")} title="LO Review">
+                      <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
+                      {!isCollapsed && <span className="sd-item__text">LO Review</span>}
+                    </div>
+                  )}
                   {canAccessGmReview && (
                     <div className={`sd-item ${isActive("/general-manager") ? "sd-item--active" : ""}`} onClick={() => navigate("/general-manager")} title={t("sidebar.gmReview")}>
                       <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></span>
@@ -435,17 +442,6 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <div className={`sd-item ${isActive("/managing-director") ? "sd-item--active" : ""}`} onClick={() => navigate("/managing-director")} title={t("sidebar.mdAuth")}>
                       <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M12 11h.01" /><path d="M10 13l2 2 4-4" /></svg></span>
                       {!isCollapsed && <span className="sd-item__text">{t("sidebar.mdAuth")}</span>}
-                    </div>
-                  )}
-                  {/* Customers link for GM / MD who have approval pages but also need customer access */}
-                  {(canAccessGmReview || canAccessMdAuth) && (
-                    <div
-                      className={`sd-item ${location.pathname.includes("/customers") ? "sd-item--active" : ""}`}
-                      onClick={() => navigate(userRole === "managing_director" ? "/md/customers" : "/gm/customers")}
-                      title={t("sidebar.customers")}
-                    >
-                      <span className="sd-item__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg></span>
-                      {!isCollapsed && <span className="sd-item__text">{t("sidebar.customers")}</span>}
                     </div>
                   )}
                 </>
