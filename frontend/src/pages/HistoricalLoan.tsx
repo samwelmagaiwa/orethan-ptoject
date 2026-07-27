@@ -21,9 +21,11 @@ interface Customer {
 interface Installment {
   number: number;
   due_date: string;
-  amount: number; // total per installment (principal + interest)
+  amount: number; // scheduled installment amount
   paid: boolean;
   paid_date: string;
+  normal_paid: string;  // actual normal/principal amount paid
+  penalty_paid: string; // penalty amount paid (if any)
 }
 
 interface FieldErrors { [key: string]: string }
@@ -144,26 +146,32 @@ export default function HistoricalLoan() {
         amount: r.amount,
         paid: existing?.paid ?? false,
         paid_date: existing?.paid_date ?? "",
+        normal_paid: existing?.normal_paid ?? String(r.amount),
+        penalty_paid: existing?.penalty_paid ?? "0",
       };
     }));
   }, [amount, interestRate, termMonths, frequency, disbursedAt]);
 
   const togglePaid = (i: number) => {
     setInstallments(prev => prev.map((inst, idx) =>
-      idx === i ? { ...inst, paid: !inst.paid, paid_date: inst.paid ? "" : inst.paid_date } : inst
+      idx === i
+        ? { ...inst, paid: !inst.paid, paid_date: inst.paid ? "" : inst.paid_date,
+            normal_paid: inst.paid ? String(inst.amount) : inst.normal_paid,
+            penalty_paid: inst.paid ? "0" : inst.penalty_paid }
+        : inst
     ));
   };
 
-  const setPaidDate = (i: number, date: string) => {
-    setInstallments(prev => prev.map((inst, idx) =>
-      idx === i ? { ...inst, paid_date: date } : inst
-    ));
+  const setInstField = (i: number, field: "paid_date" | "normal_paid" | "penalty_paid", val: string) => {
+    setInstallments(prev => prev.map((inst, idx) => idx === i ? { ...inst, [field]: val } : inst));
   };
 
   const paidCount = installments.filter(i => i.paid).length;
-  const totalPaid = installments.filter(i => i.paid).reduce((s, i) => s + i.amount, 0);
+  const totalNormalPaid = installments.filter(i => i.paid).reduce((s, i) => s + (parseFloat(i.normal_paid) || 0), 0);
+  const totalPenaltyPaid = installments.filter(i => i.paid).reduce((s, i) => s + (parseFloat(i.penalty_paid) || 0), 0);
+  const totalPaid = totalNormalPaid + totalPenaltyPaid;
   const totalLoan = installments.reduce((s, i) => s + i.amount, 0);
-  const remaining = Math.max(0, totalLoan - totalPaid);
+  const remaining = Math.max(0, totalLoan - totalNormalPaid);
 
   const validate = (): boolean => {
     const errs: FieldErrors = {};
@@ -185,17 +193,20 @@ export default function HistoricalLoan() {
     if ((g2Name.trim() && !g2Phone.trim()) || (!g2Name.trim() && g2Phone.trim())) errs.g2 = "Jina na simu ya Mdhamini 2 lazima vijazwe vyote.";
     if (g2Phone.trim() && !/^0[0-9]{9}$/.test(g2Phone.replace(/\s/g, ""))) errs.g2Phone = "Simu ya Mdhamini 2 sio sahihi.";
 
-    // Validate installment paid dates
+    // Validate each paid installment
     installments.forEach((inst, i) => {
-      if (inst.paid) {
-        if (!inst.paid_date) {
-          errs[`inst_date_${i}`] = "Tarehe ya malipo inahitajika kwa awamu hii.";
-        } else if (disbursedAt && inst.paid_date < disbursedAt) {
-          errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa kabla ya kutolewa mkopo.";
-        } else if (inst.paid_date > today) {
-          errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa siku zijazo.";
-        }
+      if (!inst.paid) return;
+      if (!inst.paid_date) {
+        errs[`inst_date_${i}`] = "Tarehe ya malipo inahitajika.";
+      } else if (disbursedAt && inst.paid_date < disbursedAt) {
+        errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa kabla ya kutolewa mkopo.";
+      } else if (inst.paid_date > today) {
+        errs[`inst_date_${i}`] = "Tarehe haiwezi kuwa siku zijazo.";
       }
+      const norm = parseFloat(inst.normal_paid) || 0;
+      if (norm <= 0) errs[`inst_norm_${i}`] = "Malipo ya kawaida lazima yawe zaidi ya sifuri.";
+      const pen = parseFloat(inst.penalty_paid) || 0;
+      if (pen < 0) errs[`inst_pen_${i}`] = "Penati haiwezi kuwa chini ya sifuri.";
     });
 
     // Must have schedule generated before submitting
@@ -224,10 +235,14 @@ export default function HistoricalLoan() {
     const phone = (customerMode === "existing" ? searchPhone : newPhone).replace(/\s/g, "");
     const name  = customerMode === "existing" ? foundCustomer?.full_name : newName;
 
-    // Convert paid installments to payments array
+    // Convert paid installments to payments array (normal + penalty per installment)
     const payments = installments
       .filter(inst => inst.paid && inst.paid_date)
-      .map(inst => ({ date: inst.paid_date, amount: inst.amount }));
+      .map(inst => ({
+        date: inst.paid_date,
+        amount: parseFloat(inst.normal_paid) || 0,
+        penalty: parseFloat(inst.penalty_paid) || 0,
+      }));
 
     const payload: Record<string, unknown> = {
       customer_phone: phone, customer_name: name,
@@ -495,10 +510,12 @@ export default function HistoricalLoan() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Tarehe ya Kulipa (Ratiba)</th>
-                  <th style={{ textAlign: "right" }}>Kiasi (TZS)</th>
+                  <th>Tarehe ya Ratiba</th>
+                  <th style={{ textAlign: "right" }}>Kiasi Ratiba</th>
                   <th style={{ textAlign: "center" }}>Amelipa?</th>
-                  <th>Tarehe Halisi ya Malipo <span style={{ color: "#ef4444" }}>*</span></th>
+                  <th>Malipo ya Kawaida (TZS) <span style={{ color: "#ef4444" }}>*</span></th>
+                  <th>Penati Iliyolipwa (TZS)</th>
+                  <th>Tarehe Halisi <span style={{ color: "#ef4444" }}>*</span></th>
                   <th>Hali</th>
                 </tr>
               </thead>
@@ -508,6 +525,7 @@ export default function HistoricalLoan() {
                   const rowClass = inst.paid ? "hl-sched-row-paid" : isOverdue ? "hl-sched-row-overdue" : "hl-sched-row-pending";
                   const badgeClass = inst.paid ? "hl-badge-paid" : isOverdue ? "hl-badge-overdue" : "hl-badge-pending";
                   const badgeLabel = inst.paid ? "✓ Amelipa" : isOverdue ? "⚠ Chelewa" : "Bado";
+                  const totalThisInst = (parseFloat(inst.normal_paid) || 0) + (parseFloat(inst.penalty_paid) || 0);
                   return (
                     <tr key={inst.number} className={rowClass}>
                       <td>
@@ -523,13 +541,51 @@ export default function HistoricalLoan() {
                       </td>
                       <td style={{ textAlign: "center" }}>
                         <label className="hl-paid-toggle">
-                          <input
-                            type="checkbox"
-                            checked={inst.paid}
-                            onChange={() => togglePaid(i)}
-                          />
+                          <input type="checkbox" checked={inst.paid} onChange={() => togglePaid(i)} />
                         </label>
                       </td>
+
+                      {/* Malipo ya kawaida */}
+                      <td>
+                        {inst.paid ? (
+                          <div>
+                            <input
+                              type="number" min="0"
+                              className={`hl-date-input${fieldErrors[`inst_norm_${i}`] ? " err" : ""}`}
+                              style={{ width: 110 }}
+                              value={inst.normal_paid}
+                              onChange={e => setInstField(i, "normal_paid", e.target.value)}
+                            />
+                            {fieldErrors[`inst_norm_${i}`] && (
+                              <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600 }}>{fieldErrors[`inst_norm_${i}`]}</p>
+                            )}
+                          </div>
+                        ) : <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
+                      </td>
+
+                      {/* Penati */}
+                      <td>
+                        {inst.paid ? (
+                          <div>
+                            <input
+                              type="number" min="0"
+                              className={`hl-date-input${fieldErrors[`inst_pen_${i}`] ? " err" : ""}`}
+                              style={{ width: 90 }}
+                              value={inst.penalty_paid}
+                              onChange={e => setInstField(i, "penalty_paid", e.target.value)}
+                              placeholder="0"
+                            />
+                            {fieldErrors[`inst_pen_${i}`] && (
+                              <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600 }}>{fieldErrors[`inst_pen_${i}`]}</p>
+                            )}
+                            {totalThisInst > 0 && (
+                              <p style={{ fontSize: 10, color: "#64748b", margin: "2px 0 0" }}>Jumla: {fmt(totalThisInst)}</p>
+                            )}
+                          </div>
+                        ) : <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
+                      </td>
+
+                      {/* Tarehe halisi */}
                       <td>
                         {inst.paid ? (
                           <div>
@@ -539,22 +595,17 @@ export default function HistoricalLoan() {
                               value={inst.paid_date}
                               min={disbursedAt || undefined}
                               max={today}
-                              onChange={e => setPaidDate(i, e.target.value)}
+                              onChange={e => setInstField(i, "paid_date", e.target.value)}
                             />
                             {fieldErrors[`inst_date_${i}`] && (
-                              <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600 }}>
-                                {fieldErrors[`inst_date_${i}`]}
-                              </p>
+                              <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600 }}>{fieldErrors[`inst_date_${i}`]}</p>
                             )}
                           </div>
-                        ) : (
-                          <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>
-                        )}
+                        ) : <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
                       </td>
+
                       <td>
-                        <span className={`hl-status-badge ${badgeClass}`}>
-                          {badgeLabel}
-                        </span>
+                        <span className={`hl-status-badge ${badgeClass}`}>{badgeLabel}</span>
                       </td>
                     </tr>
                   );
@@ -572,8 +623,12 @@ export default function HistoricalLoan() {
               <div className="tl">Jumla ya Mkopo</div>
             </div>
             <div className="hl-totals-col">
-              <div className="tv" style={{ color: "#16a34a" }}>TZS {fmt(totalPaid)}</div>
-              <div className="tl">Jumla Imelipwa ({paidCount} awamu)</div>
+              <div className="tv" style={{ color: "#16a34a" }}>TZS {fmt(totalNormalPaid)}</div>
+              <div className="tl">Malipo ya Kawaida ({paidCount} awamu)</div>
+            </div>
+            <div className="hl-totals-col">
+              <div className="tv" style={{ color: totalPenaltyPaid > 0 ? "#b45309" : "#94a3b8" }}>TZS {fmt(totalPenaltyPaid)}</div>
+              <div className="tl">Penati Zilizolipwa</div>
             </div>
             <div className="hl-totals-col">
               <div className="tv" style={{ color: remaining > 0 ? "#ef4444" : "#16a34a" }}>TZS {fmt(remaining)}</div>

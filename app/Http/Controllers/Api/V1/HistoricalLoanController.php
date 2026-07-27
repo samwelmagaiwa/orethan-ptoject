@@ -45,6 +45,7 @@ class HistoricalLoanController extends Controller
             'payments'             => 'nullable|array',
             'payments.*.date'      => 'required|date',
             'payments.*.amount'    => 'required|numeric|min:1',
+            'payments.*.penalty'   => 'nullable|numeric|min:0',
         ]);
 
         // Resolve customer_name from existing record if not supplied
@@ -57,7 +58,7 @@ class HistoricalLoanController extends Controller
 
         $validated['payments'] = $validated['payments'] ?? [];
 
-        // Guard: total payments must not exceed the principal
+        // Guard: total normal payments (excluding penalty) must not exceed the principal
         $totalPayments = collect($validated['payments'])->sum('amount');
         if ($totalPayments > (float) $validated['amount']) {
             return response()->json([

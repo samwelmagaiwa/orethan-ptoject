@@ -114,10 +114,11 @@ class HistoricalLoanService
             //    No GL posting here — the opening balance entry (step 8) covers the net balance.
             $totalPaid = 0.0;
             foreach (($data['payments'] ?? []) as $payment) {
-                $amount = (float) $payment['amount'];
+                $amount  = (float) $payment['amount'];
+                $penalty = (float) ($payment['penalty'] ?? 0);
                 if ($amount <= 0) continue;
-                $this->applyHistoricalPayment($loan, $payment['date'], $amount, $submitter);
-                $totalPaid += $amount;
+                $this->applyHistoricalPayment($loan, $payment['date'], $amount, $penalty, $submitter);
+                $totalPaid += $amount; // total_paid tracks principal only; penalties are on the schedule row
             }
 
             // 7. Recalculate loan totals from actual unpaid schedule balances
@@ -174,17 +175,20 @@ class HistoricalLoanService
      * schedule installments paid in due-date order.
      * No GL entry — the opening-balance post already reflects the net balance.
      */
-    protected function applyHistoricalPayment(Loan $loan, string $paymentDate, float $amount, User $submitter): void
+    protected function applyHistoricalPayment(Loan $loan, string $paymentDate, float $amount, float $penalty, User $submitter): void
     {
         $stamp = Carbon::parse($paymentDate)->format('Ymd');
 
         $repayment = Repayment::create([
             'loan_id'        => $loan->id,
-            'amount'         => round($amount),
+            'amount'         => round($amount + $penalty),
+            'penalty_amount' => round($penalty),
             'payment_date'   => $paymentDate,
             'payment_method' => 'historical',
             'collector_name' => $submitter->name,
-            'notes'          => 'Historical payment imported',
+            'notes'          => $penalty > 0
+                ? 'Historical payment imported (kawaida: ' . number_format($amount) . ', penati: ' . number_format($penalty) . ')'
+                : 'Historical payment imported',
             'status'         => 'completed',
             'recorded_by'    => $submitter->id,
         ]);
@@ -197,6 +201,7 @@ class HistoricalLoanService
         $principalApplied = 0.0;
 
         $schedules = $loan->schedules()->where('status', '!=', 'paid')->orderBy('due_date')->get();
+        $penaltyApplied = false;
         foreach ($schedules as $schedule) {
             if ($remaining <= 0) break;
 
@@ -210,6 +215,11 @@ class HistoricalLoanService
             $schedule->amount_paid = ($schedule->amount_paid ?? 0) + $apply;
             if ($schedule->amount_paid >= $schedule->total_amount) {
                 $schedule->status = 'paid';
+                // Record historical penalty on the first schedule row that gets fully paid
+                if (!$penaltyApplied && $penalty > 0) {
+                    $schedule->penalty_amount = round($penalty);
+                    $penaltyApplied = true;
+                }
             }
             $schedule->save();
             $remaining -= $apply;
