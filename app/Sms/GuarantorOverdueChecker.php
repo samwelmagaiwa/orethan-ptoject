@@ -26,17 +26,35 @@ class GuarantorOverdueChecker
     {
         $today = now()->toDateString();
 
+        // Fast non-locking check — avoids acquiring the lock on the common path
+        // (already ran today).
         if (Cache::get(self::CACHE_KEY) === $today) {
             return;
         }
 
-        try {
-            self::run($sms);
-        } catch (\Throwable $e) {
-            Log::error('GuarantorOverdueChecker::runIfDue failed: ' . $e->getMessage());
+        // Atomic lock — only one process (cron or page-load) may execute run() at
+        // a time.  300 s TTL auto-releases the lock if the process crashes mid-run.
+        $lock = Cache::lock('guarantor_overdue_checker_lock', 300);
+
+        if (!$lock->get()) {
+            // Another process is already inside run(); let it finish.
+            return;
         }
 
-        Cache::put(self::CACHE_KEY, $today, now()->addDays(2));
+        try {
+            // Re-check after acquiring the lock — a concurrent process may have
+            // completed run() between our fast check and lock acquisition.
+            if (Cache::get(self::CACHE_KEY) === $today) {
+                return;
+            }
+
+            self::run($sms);
+            Cache::put(self::CACHE_KEY, $today, now()->addDays(2));
+        } catch (\Throwable $e) {
+            Log::error('GuarantorOverdueChecker::runIfDue failed: ' . $e->getMessage());
+        } finally {
+            $lock->release();
+        }
     }
 
     /** @return int Number of overdue installments processed. */
