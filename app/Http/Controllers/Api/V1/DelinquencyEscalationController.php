@@ -26,8 +26,16 @@ class DelinquencyEscalationController extends Controller
         $query = DelinquencyEscalation::with(['loan:id,loan_account_number,name,phone,status,amount,remaining_balance', 'recipient:id,name,role'])
             ->orderByDesc('escalated_at');
 
-        // Non-admins see only escalations directed at them
-        if ($user->role !== 'admin') {
+        // Visibility by role hierarchy:
+        //   admin / managing_director → all levels
+        //   general_manager           → loan_manager + general_manager levels
+        //   loan_manager              → only escalations directed at them personally
+        if (in_array($user->role, ['admin', 'managing_director'])) {
+            // no extra filter — see everything
+        } elseif ($user->role === 'general_manager') {
+            $query->whereIn('escalation_level', ['loan_manager', 'general_manager']);
+        } else {
+            // loan_manager: only records assigned to them
             $query->where('escalated_to', $user->id);
         }
 

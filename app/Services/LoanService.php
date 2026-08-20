@@ -417,6 +417,7 @@ class LoanService
 
         // Sent after commit so a gateway hiccup never rolls back the repayment.
         $this->sms->sendRepaymentReceipt($result['receipt']);
+        $this->sms->sendRepaymentNoticeToStaff($result['receipt']);
 
         return $result;
     }

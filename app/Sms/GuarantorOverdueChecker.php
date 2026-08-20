@@ -65,7 +65,7 @@ class GuarantorOverdueChecker
             // ── 1. FIRST-TIME GUARANTOR OVERDUE NOTICE (fires after 3 days overdue) ──
             $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($today);
             if (is_null($schedule->guarantor_notified_at) && $daysOverdue >= 3) {
-                $sms->sendGuarantorOverdueNotices($loan, $penaltyPercent);
+                $sms->sendGuarantorOverdueNotices($loan, $dailyPenaltyFlat);
                 $schedule->guarantor_notified_at = now();
             }
 

@@ -165,17 +165,27 @@ const PaymentRequests = () => {
     setEditingId(r.id); setSelected(null); setTab("new");
   };
 
-  const openDetail = (r: any) => {
+  const openDetail = async (r: any) => {
     setSelected(r); setAdjustedAmount(""); setComments(""); setPin("");
+    // If the record already has a voucher_number (e.g. a re-opened disbursement), use it.
+    // Otherwise, peek at the upcoming counter value so the cashier can see what they'll get —
+    // peek does NOT consume the counter; the backend assigns the real number atomically on submit.
     if (r.status === "awaiting_disbursement") {
-      setCashierRef("");
-      setVoucherLoading(true);
-      axios.get(`${API_BASE}/vouchers/next?context=payreq_${r.id}`, { headers: headers() })
-        .then(res => { setCashierRef(res.data.voucher_number); })
-        .catch(() => {/* silent */})
-        .finally(() => setVoucherLoading(false));
+      if (r.voucher_number) {
+        setCashierRef(r.voucher_number);
+        setVoucherLoading(false);
+      } else {
+        setVoucherLoading(true);
+        setCashierRef("");
+        try {
+          const res = await axios.get(`${API_BASE}/vouchers/peek`, { headers: headers() });
+          setCashierRef(res.data.voucher_number ?? "");
+        } catch { setCashierRef(""); }
+        finally { setVoucherLoading(false); }
+      }
     } else {
       setCashierRef("");
+      setVoucherLoading(false);
     }
   };
 
@@ -218,8 +228,6 @@ const PaymentRequests = () => {
       await axios.post(`${API_BASE}/payment-requests/${selected.id}/approve`, {
         adjusted_amount: adjustedAmount ? Number(adjustedAmount) : null, comments, cashier_reference: cashierRef || null, password: pin,
       }, { headers: headers() });
-      // Release reservation so re-opening this (now-disbursed) record doesn't reuse the number
-      axios.post(`${API_BASE}/vouchers/release`, { context: `payreq_${selected.id}` }, { headers: headers() }).catch(() => {});
       setSelected(null); setPin(""); await load();
     } catch (e: any) { alert(e?.response?.data?.message || "Action failed"); } finally { setActing(false); }
   };
@@ -519,7 +527,7 @@ const PaymentRequests = () => {
                             placeholder="Namba ya Vocha..."
                           />
                           <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }}>🔖</span>
-                          <span style={{ position: "absolute", top: -22, right: 0, fontSize: "0.6rem", fontWeight: 800, background: "#102a43", color: "#e2bc8a", padding: "2px 7px", borderRadius: 20 }}>AUTO — Namba ya Vocha</span>
+                          <span style={{ position: "absolute", top: -22, right: 0, fontSize: "0.6rem", fontWeight: 800, background: "#102a43", color: "#e2bc8a", padding: "2px 7px", borderRadius: 20 }}>{voucherLoading ? "Inapata..." : (cashierRef ? "HAKIKI — Namba itapewa uwasilishapo" : "AUTO — Namba ya Vocha")}</span>
                         </div>
                         <textarea style={{ ...inp, resize: "vertical", marginBottom: "0.5rem" }} rows={2} placeholder="Disbursement notes..." value={comments} onChange={(e) => setComments(e.target.value)} />
                         <div style={{ position: "relative" }}>

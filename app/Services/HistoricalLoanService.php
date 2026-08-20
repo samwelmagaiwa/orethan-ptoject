@@ -83,17 +83,22 @@ class HistoricalLoanService
             $loan->save();
 
             // 4. Create disbursement record (required by finance/repayment pages)
-            $seq   = str_pad((string) $loan->id, 5, '0', STR_PAD_LEFT);
-            $stamp = $disbursedAt->format('Ymd');
+            $seq            = str_pad((string) $loan->id, 5, '0', STR_PAD_LEFT);
+            $stamp          = $disbursedAt->format('Ymd');
+            $processingFee  = (float) ($data['processing_fee'] ?? 0);
+            $insuranceFee   = (float) ($data['insurance_fee']  ?? 0);
+            $otherCharges   = (float) ($data['other_charges']  ?? 0);
+            $totalCharges   = $processingFee + $insuranceFee + $otherCharges;
+            $netAmount      = max(0, (float) $data['amount'] - $totalCharges);
             LoanDisbursement::create([
                 'loan_id'           => $loan->id,
                 'disbursement_date' => $disbursedAt->toDateString(),
                 'amount'            => $data['amount'],
-                'net_amount'        => $data['amount'],
-                'total_charges'     => 0,
-                'processing_fee'    => 0,
-                'insurance_fee'     => 0,
-                'other_charges'     => 0,
+                'net_amount'        => $netAmount,
+                'total_charges'     => $totalCharges,
+                'processing_fee'    => $processingFee,
+                'insurance_fee'     => $insuranceFee,
+                'other_charges'     => $otherCharges,
                 'method'            => 'historical',
                 'voucher_number'    => 'HIST-' . $stamp . '-' . $seq,
                 'receipt_number'    => 'HIST-RCP-' . $stamp . '-' . $seq,

@@ -21,10 +21,7 @@ class HistoricalLoanController extends Controller
     {
         $user = $request->user();
 
-        $allowedRoles = LoanSetting::current()->historical_loan_roles
-            ?? ['loan_officer', 'loan_manager', 'admin'];
-
-        if (!in_array($user->role, (array) $allowedRoles)) {
+        if (!$user->canAddHistoricalLoan()) {
             return response()->json(['message' => 'Hauna ruhusa ya kuingiza mkopo wa kihistoria.'], 403);
         }
 
@@ -46,6 +43,9 @@ class HistoricalLoanController extends Controller
             'payments.*.date'      => 'required|date',
             'payments.*.amount'    => 'required|numeric|min:1',
             'payments.*.penalty'   => 'nullable|numeric|min:0',
+            'processing_fee'       => 'nullable|numeric|min:0',
+            'insurance_fee'        => 'nullable|numeric|min:0',
+            'other_charges'        => 'nullable|numeric|min:0',
         ]);
 
         // Resolve customer_name from existing record if not supplied
@@ -58,12 +58,40 @@ class HistoricalLoanController extends Controller
 
         $validated['payments'] = $validated['payments'] ?? [];
 
-        // Guard: total normal payments (excluding penalty) must not exceed the principal
+        $principal      = (float) $validated['amount'];
+        $monthlyRate    = (float) $validated['interest_rate'] / 100;
+        $months         = (int) $validated['term_months'];
+        $totalInterest  = $principal * $monthlyRate * $months;
+        $totalRepayable = round($principal + $totalInterest, 2);
+
+        // Guard: total normal payments (excluding penalty) must not exceed principal + interest
         $totalPayments = collect($validated['payments'])->sum('amount');
-        if ($totalPayments > (float) $validated['amount']) {
+        if ($totalPayments > $totalRepayable + 1) { // +1 TZS tolerance for rounding
             return response()->json([
                 'message' => 'Jumla ya malipo (' . number_format($totalPayments)
-                    . ') inazidi kiasi cha mkopo (' . number_format($validated['amount']) . ').',
+                    . ') inazidi jumla ya mkopo na riba (' . number_format($totalRepayable) . ').',
+            ], 422);
+        }
+
+        // Guard: payment dates must be on or after disbursement date
+        $disbursedAt = $validated['disbursed_at'];
+        foreach ($validated['payments'] as $idx => $payment) {
+            if ($payment['date'] < $disbursedAt) {
+                return response()->json([
+                    'message' => 'Malipo #' . ($idx + 1) . ' yana tarehe (' . $payment['date']
+                        . ') ambayo ni kabla ya mkopo kutolewa (' . $disbursedAt . ').',
+                ], 422);
+            }
+        }
+
+        // Guard: total fees must be less than principal
+        $totalFees = (float) ($validated['processing_fee'] ?? 0)
+                   + (float) ($validated['insurance_fee'] ?? 0)
+                   + (float) ($validated['other_charges'] ?? 0);
+        if ($totalFees >= $principal) {
+            return response()->json([
+                'message' => 'Jumla ya ada (' . number_format($totalFees)
+                    . ') haiwezi kuwa sawa au zaidi ya kiasi cha mkopo (' . number_format($principal) . ').',
             ], 422);
         }
 

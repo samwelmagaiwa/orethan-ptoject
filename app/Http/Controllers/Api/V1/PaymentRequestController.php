@@ -62,7 +62,7 @@ class PaymentRequestController extends Controller
             'gm_review' => $user->isGeneralManager(),
             'md_review' => $user->isManagingDirector(),
             // Finance Officer, Cashier, or any user with the can_disburse permission
-            'awaiting_disbursement' => $user->canDisburse(),
+            'awaiting_disbursement' => $user->canApprovePayment(),
             default => false,
         };
     }
@@ -122,8 +122,8 @@ class PaymentRequestController extends Controller
                 $data['md_comments'] = 'Auto-authorised — submitted by ' . ucwords(str_replace('_', ' ', $user->role));
                 $data['md_date'] = now();
                 $data['md_signature_img'] = $data['applicant_signature_img'] ?? $user->signature ?? null;
-                // Auto-assign serial voucher number since it bypasses the normal approval chain
-                $data['voucher_number'] = $this->nextVoucherNumber();
+                // Do NOT assign voucher_number here — assign it at actual cashier disbursement
+                // so no counter values are wasted if the request is rejected or modified.
             }
 
             $pr = PaymentRequest::create($data);
@@ -283,16 +283,20 @@ class PaymentRequestController extends Controller
                 $pr->md_comments = $data['comments'] ?? null;
                 $pr->md_date = now();
                 $pr->md_signature_img = $sig;
-                // Auto-assign voucher number when MD approves (request moves to cashier)
+                // Do NOT assign voucher here — assign at actual cashier disbursement so no
+                // counter values are consumed between MD approval and cashier processing.
+            } elseif ($stage === 'awaiting_disbursement') {
+                // Assign the voucher number NOW — at the moment of actual disbursement —
+                // so the counter is consumed exactly once, atomically, per paid voucher.
                 if (!$pr->voucher_number) {
                     $pr->voucher_number = $this->nextVoucherNumber();
                 }
-            } elseif ($stage === 'awaiting_disbursement') {
-                // Keshia/Finance anatoa malipo kwa mwombaji
                 $pr->cashier_name = $user->name;
                 $pr->cashier_comments = $data['comments'] ?? null;
-                // Use the pre-assigned voucher number as the transaction reference if not manually overridden
-                $pr->cashier_reference = $data['cashier_reference'] ?? $pr->voucher_number ?? null;
+                // Honour a manually-entered reference from the cashier; fall back to the auto-assigned number.
+                $pr->cashier_reference = ($data['cashier_reference'] && trim($data['cashier_reference']) !== '')
+                    ? $data['cashier_reference']
+                    : $pr->voucher_number;
                 $pr->cashier_date = now();
                 $pr->cashier_signature_img = $sig;
             }
@@ -323,16 +327,34 @@ class PaymentRequestController extends Controller
             // Arifa hatua inayofuata / mwombaji
             $sms = app(SmsService::class);
             if ($pr->status === 'disbursed') {
+                $amount      = number_format((float) $pr->final_amount, 0, '.', ',');
+                $voucherInfo = $pr->voucher_number ? " (Vocha #" . $pr->voucher_number . ")" : "";
                 Notifier::toUsers(
                     [$pr->created_by],
                     'payment_request',
-                    'Payment disbursed',
-                    'Your payment request payable to ' . $pr->payable_to . ' has been disbursed.',
+                    '✅ Malipo Yametolewa — Unaweza Kuendelea',
+                    "Malipo ya TZS {$amount} kwa {$pr->payable_to} yametolewa na {$pr->cashier_name}{$voucherInfo}. Unaweza kuendelea na shughuli yako.",
                     '/payment-requests',
                     ['id' => $pr->id]
                 );
+                // Send SMS — try the account owner first, then fall back to a user
+                // whose name matches the applicant_name (covers cases where the
+                // requester submitted on behalf of a colleague with no system account).
                 $applicant = \App\Models\User::find($pr->created_by);
-                if ($applicant) $sms->sendPaymentRequestDisbursed($applicant, $pr);
+                if ($applicant?->phone) {
+                    $sms->sendPaymentRequestDisbursed($applicant, $pr);
+                } elseif ($applicant && !$applicant->phone) {
+                    // Account exists but no phone — still call it so the SMS log entry is created
+                    $sms->sendPaymentRequestDisbursed($applicant, $pr);
+                }
+                // Also notify the loan officer who manages the loan applicant (if set)
+                if ($pr->loan_applicant_name) {
+                    $loanApplicantUser = \App\Models\User::where('name', 'like', '%' . $pr->loan_applicant_name . '%')
+                        ->whereNotNull('phone')->first();
+                    if ($loanApplicantUser && $loanApplicantUser->id !== ($pr->created_by ?? null)) {
+                        $sms->sendPaymentRequestDisbursed($loanApplicantUser, $pr);
+                    }
+                }
             } elseif ($nextRole = Notifier::roleForStatus($pr->status)) {
                 Notifier::toRoles(
                     $nextRole,
@@ -406,7 +428,8 @@ class PaymentRequestController extends Controller
             $isHighAuthority = $user->isManagingDirector() || $user->isAdmin();
             $pr->status = $isHighAuthority ? 'awaiting_disbursement' : 'manager_review';
 
-            // Clear all approval fields
+            // Clear all approval fields AND the stale voucher_number so a fresh one
+            // is assigned at actual cashier disbursement.
             foreach ([
                 'manager_name',
                 'manager_decision',
@@ -425,6 +448,7 @@ class PaymentRequestController extends Controller
                 'cashier_comments',
                 'cashier_reference',
                 'cashier_date',
+                'voucher_number',
             ] as $f) {
                 $pr->{$f} = null;
             }

@@ -1056,6 +1056,52 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Route guard specifically for the Historical Loan page.
+// Reads the allowed roles from localStorage (synced from server by Sidebar on every load).
+// Admin always passes. Empty array = admin explicitly locked it = 403 for everyone else.
+function HistoricalLoanRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/" replace />;
+
+  const userRaw = localStorage.getItem("user");
+  let role = "";
+  try { role = userRaw ? (JSON.parse(userRaw)?.role ?? "") : ""; } catch { role = ""; }
+
+  if (role === "admin") return <>{children}</>;
+
+  let allowedRoles: string[] = [];
+  try {
+    const stored = localStorage.getItem("historical_loan_roles");
+    if (stored !== null) {
+      const parsed = JSON.parse(stored);
+      allowedRoles = Array.isArray(parsed) ? parsed : [];
+    } else {
+      // Not yet synced from server — allow the default roles through
+      allowedRoles = ["loan_officer", "loan_manager", "admin"];
+    }
+  } catch { allowedRoles = []; }
+
+  if (!role || !allowedRoles.includes(role)) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 16, fontFamily: "system-ui, sans-serif" }}>
+        <div style={{ fontSize: 48 }}>🔒</div>
+        <h2 style={{ margin: 0, color: "#102a43", fontSize: 20, fontWeight: 800 }}>Upatikanaji Umezuiwa</h2>
+        <p style={{ margin: 0, color: "#64748b", fontSize: 14, textAlign: "center", maxWidth: 380 }}>
+          Ukurasa wa Mikopo ya Zamani umefungwa na msimamizi. Wasiliana na Admin kwa maelezo zaidi.
+        </p>
+        <button
+          onClick={() => window.history.back()}
+          style={{ marginTop: 8, padding: "10px 24px", borderRadius: 8, background: "#102a43", color: "#fff", border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+        >
+          Rudi Nyuma
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 // =========================
 // MAIN LAYOUT
 // =========================
@@ -1518,7 +1564,7 @@ function App() {
           <Route path="/configurations" element={<ProtectedRoute><MainLayout><Configurations /></MainLayout></ProtectedRoute>} />
           <Route path="/audit-log" element={<ProtectedRoute><MainLayout><AuditLog /></MainLayout></ProtectedRoute>} />
           <Route path="/biometric" element={<ProtectedRoute><MainLayout><Biometric /></MainLayout></ProtectedRoute>} />
-          <Route path="/historical-loan" element={<ProtectedRoute><MainLayout><HistoricalLoan /></MainLayout></ProtectedRoute>} />
+          <Route path="/historical-loan" element={<HistoricalLoanRoute><MainLayout><HistoricalLoan /></MainLayout></HistoricalLoanRoute>} />
           <Route path="/staff-performance" element={<ProtectedRoute><MainLayout><StaffPerformance /></MainLayout></ProtectedRoute>} />
 
           {/* FALLBACK */}

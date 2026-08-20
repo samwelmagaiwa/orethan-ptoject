@@ -9,6 +9,22 @@ namespace App\Sms;
  */
 class SmsTemplates
 {
+    /** Map a role slug to a human-readable Swahili label for SMS greetings. */
+    public static function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'loan_officer'      => 'Afisa Mikopo',
+            'loan_manager'      => 'Meneja wa Mikopo',
+            'general_manager'   => 'Mkurugenzi Mkuu',
+            'managing_director' => 'Mkurugenzi Mtendaji',
+            'finance_officer'   => 'Afisa Fedha',
+            'accountant'        => 'Mhasibu',
+            'cashier'           => 'Kasisi',
+            'admin'             => 'Msimamizi',
+            default             => ucwords(str_replace('_', ' ', $role)),
+        };
+    }
+
     private static function money(float $amount): string
     {
         return number_format($amount, 0, '.', ',');
@@ -45,6 +61,17 @@ class SmsTemplates
             . " kwa mkopo (Akaunti: {$loanAccountNumber}). {$balanceLine} Asante - Orethan Microfinance.";
     }
 
+    /** Staff notification: a repayment has been recorded (sent to LM/GM/MD). */
+    public static function repaymentRecordedStaff(string $roleLabel, string $customerName, string $loanNumber, float $amountPaid, float $balanceAfter, bool $fullyPaid): string
+    {
+        $statusLine = $fullyPaid
+            ? 'Mkopo umelipwa KIKAMILIFU.'
+            : 'Salio: TZS ' . self::money($balanceAfter) . '.';
+
+        return "{$roleLabel}, malipo ya TZS " . self::money($amountPaid)
+            . " yamerekodiwa kwa {$customerName} (Mkopo: {$loanNumber}). {$statusLine} - Orethan Microfinance.";
+    }
+
     /** Loan has cleared every approval stage and is ready for disbursement. */
     public static function loanApproved(string $customerName, float $amount): string
     {
@@ -68,13 +95,15 @@ class SmsTemplates
     }
 
     /** Sent to a loan's guarantor(s) once the client misses a repayment due date. */
-    public static function guarantorOverdueNotice(string $guarantorName, string $clientName, float $penaltyPercentage): string
+    public static function guarantorOverdueNotice(string $guarantorName, string $clientName, float $dailyPenaltyAmount, float $remainingBalance): string
     {
-        $percentage = rtrim(rtrim(number_format($penaltyPercentage, 1), '0'), '.');
+        $penalty = self::money($dailyPenaltyAmount);
+        $balance = self::money($remainingBalance);
 
         return "Mpendwa {$guarantorName}, {$clientName} ambaye ulimdhamini hajafanya marejesho ya mkopo wake, "
-            . "hivyo deni limeongezeka kwa asilimia {$percentage}% kama sera inavyosema. Tunakuomba umkumbushe "
-            . "kufanya marejesho ili kuepuka usumbufu. Asante - Orethan Microfinance.";
+            . "hivyo adhabu ya TZS {$penalty}/siku inaendelea kuongezwa kama sera inavyosema. "
+            . "Deni la sasa ni TZS {$balance}. Tunakuomba umkumbushe kufanya marejesho ili kuepuka usumbufu. "
+            . "Asante - Orethan Microfinance.";
     }
 
     /** Pre-due reminder sent 3 days before the installment due date. */
@@ -152,38 +181,38 @@ class SmsTemplates
     }
 
     /** Sent to the staff member whose loan submission was returned for corrections. */
-    public static function loanReturnedToStaff(string $staffName, string $applicantName, string $loanNo, string $reason = ''): string
+    public static function loanReturnedToStaff(string $staffRoleLabel, string $applicantName, string $loanNo, string $reason = ''): string
     {
         $reasonLine = $reason ? " Sababu: {$reason}." : '';
-        return "Mpendwa {$staffName}, ombi la mkopo ({$loanNo}, {$applicantName}) "
+        return "Mpendwa {$staffRoleLabel}, ombi la mkopo ({$loanNo}, {$applicantName}) "
             . "limerudishwa kwako kwa marekebisho.{$reasonLine} Tafadhali rekebisha na utume tena. - Orethan Microfinance.";
     }
 
     /** Sent to the staff member whose loan submission was returned for corrections. */
-    public static function loanApplicationPendingReview(string $managerName, string $applicantName, float $amount, string $loanNo): string
+    public static function loanApplicationPendingReview(string $managerRoleLabel, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$managerName}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia kwenye mfumo kuendelea. - Orethan";
+        return "Mpendwa {$managerRoleLabel}, mkopo mpya TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unasubiri ukaguzi wako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to General Manager(s) when Loan Manager approves and escalates to GM stage. */
-    public static function loanPendingGmReview(string $gmName, string $applicantName, float $amount, string $loanNo): string
+    public static function loanPendingGmReview(string $gmRoleLabel, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$gmName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
+        return "Mpendwa {$gmRoleLabel}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to Managing Director(s) when GM approves and escalates to MD stage. */
-    public static function loanPendingMdReview(string $mdName, string $applicantName, float $amount, string $loanNo): string
+    public static function loanPendingMdReview(string $mdRoleLabel, string $applicantName, float $amount, string $loanNo): string
     {
-        return "Mpendwa {$mdName}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako ya mwisho. Ingia kwenye mfumo kuendelea. - Orethan";
+        return "Mpendwa {$mdRoleLabel}, mkopo TZS " . self::money($amount) . " ({$loanNo}, {$applicantName}) unahitaji idhini yako ya mwisho. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** Sent to the original submitter when the Loan Manager approves their Branch Report. */
     public static function branchReportApproved(
-        string $officerName,
+        string $officerRoleLabel,
         string $branch,
         string $reportType,
         string $period,
-        string $approverName
+        string $approverRoleLabel
     ): string {
         $typeLabel = match ($reportType) {
             'daily'   => 'ya Kila Siku',
@@ -191,56 +220,58 @@ class SmsTemplates
             'monthly' => 'ya Mwezi',
             default   => $reportType,
         };
-        return "Mpendwa {$officerName}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
-            . "cha {$period} imeidhinishwa na {$approverName}. Asante kwa kazi nzuri - Orethan Microfinance.";
+        return "Mpendwa {$officerRoleLabel}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
+            . "cha {$period} imeidhinishwa na {$approverRoleLabel}. Asante kwa kazi nzuri - Orethan Microfinance.";
     }
 
     /** SMS to the next approver when a payment request is submitted or advanced. */
-    public static function paymentRequestPending(string $approverName, string $applicantName, float $amount, string $payableTo): string
+    public static function paymentRequestPending(string $approverRoleLabel, string $applicantRoleLabel, float $amount, string $payableTo): string
     {
-        return "Mpendwa {$approverName}, ombi la malipo TZS " . self::money($amount) . " ({$applicantName}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
+        return "Mpendwa {$approverRoleLabel}, ombi la malipo TZS " . self::money($amount) . " ({$applicantRoleLabel}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** SMS to the applicant when their payment request is fully disbursed. */
-    public static function paymentRequestDisbursed(string $applicantName, float $amount, string $payableTo): string
+    public static function paymentRequestDisbursed(string $applicantRoleLabel, float $amount, string $payableTo, ?string $voucherNumber = null, ?string $cashierName = null): string
     {
-        return "Mpendwa {$applicantName}, ombi lako la malipo la TZS " . self::money($amount)
-            . " kwa {$payableTo} limeidhinishwa na kulipwa. Asante - Orethan Microfinance.";
+        $ref      = $voucherNumber ? " (Vocha: {$voucherNumber})" : "";
+        $cashier  = $cashierName   ? " na {$cashierName}"         : "";
+        return "Mpendwa {$applicantRoleLabel}, malipo ya TZS " . self::money($amount)
+            . " kwa {$payableTo} yamelipwa{$cashier}{$ref}. Unaweza kuendelea. Asante - Orethan Microfinance.";
     }
 
     /** SMS to the applicant when their payment request is rejected. */
-    public static function paymentRequestRejected(string $applicantName, float $amount, string $reason): string
+    public static function paymentRequestRejected(string $applicantRoleLabel, float $amount, string $reason): string
     {
-        return "Mpendwa {$applicantName}, ombi lako la malipo la TZS " . self::money($amount)
+        return "Mpendwa {$applicantRoleLabel}, ombi lako la malipo la TZS " . self::money($amount)
             . " limekataliwa. Sababu: {$reason}. Unaweza kuhariri na kuliwasilisha tena. Asante - Orethan Microfinance.";
     }
 
     /** SMS to the next approver when a leave request is submitted or advanced. */
-    public static function leaveRequestPending(string $approverName, string $employeeName, string $absenceType, string $from, string $to): string
+    public static function leaveRequestPending(string $approverRoleLabel, string $employeeRoleLabel, string $absenceType, string $from, string $to): string
     {
-        return "Mpendwa {$approverName}, ombi la likizo ({$absenceType}) kutoka {$employeeName} ({$from}-{$to}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
+        return "Mpendwa {$approverRoleLabel}, ombi la likizo ({$absenceType}) kutoka {$employeeRoleLabel} ({$from}-{$to}) linasubiri idhini yako. Ingia kwenye mfumo kuendelea. - Orethan";
     }
 
     /** SMS to the applicant when their leave request is fully authorized. */
-    public static function leaveRequestAuthorized(string $employeeName, string $from, string $to): string
+    public static function leaveRequestAuthorized(string $employeeRoleLabel, string $from, string $to): string
     {
-        return "Mpendwa {$employeeName}, ombi lako la likizo kuanzia {$from} hadi {$to} "
+        return "Mpendwa {$employeeRoleLabel}, ombi lako la likizo kuanzia {$from} hadi {$to} "
             . "limeidhinishwa kikamilifu. Likizo njema! Asante - Orethan Microfinance.";
     }
 
     /** SMS to the applicant when their leave request is rejected. */
-    public static function leaveRequestRejected(string $employeeName, string $reason): string
+    public static function leaveRequestRejected(string $employeeRoleLabel, string $reason): string
     {
-        return "Mpendwa {$employeeName}, ombi lako la likizo limekataliwa. "
+        return "Mpendwa {$employeeRoleLabel}, ombi lako la likizo limekataliwa. "
             . "Sababu: {$reason}. Unaweza kuhariri na kuliwasilisha tena. Asante - Orethan Microfinance.";
     }
 
     public static function branchReportRejected(
-        string $officerName,
+        string $officerRoleLabel,
         string $branch,
         string $reportType,
         string $period,
-        string $rejectorName,
+        string $rejectorRoleLabel,
         string $reason
     ): string {
         $typeLabel = match ($reportType) {
@@ -249,8 +280,29 @@ class SmsTemplates
             'monthly' => 'ya Mwezi',
             default   => $reportType,
         };
-        return "Mpendwa {$officerName}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
-            . "cha {$period} imekataliwa na {$rejectorName}. Sababu: {$reason}. Tafadhali ihariri na uiwasilishe tena - Orethan Microfinance.";
+        return "Mpendwa {$officerRoleLabel}, ripoti yako {$typeLabel} ya tawi la {$branch} kwa kipindi "
+            . "cha {$period} imekataliwa na {$rejectorRoleLabel}. Sababu: {$reason}. Tafadhali ihariri na uiwasilishe tena - Orethan Microfinance.";
+    }
+
+    /** Sent to LM or LO when GM/MD returns an approved branch report for rework. */
+    public static function branchReportReturned(
+        string $recipientRoleLabel,
+        string $branch,
+        string $reportType,
+        string $period,
+        string $returnerRoleLabel,
+        string $stageLabel,
+        string $reason
+    ): string {
+        $typeLabel = match ($reportType) {
+            'daily'   => 'ya Kila Siku',
+            'weekly'  => 'ya Wiki',
+            'monthly' => 'ya Mwezi',
+            default   => $reportType,
+        };
+        return "Mpendwa {$recipientRoleLabel}, ripoti {$typeLabel} ya tawi la {$branch} ({$period}) "
+            . "imerudishwa na {$returnerRoleLabel} kwa {$stageLabel} kwa marekebisho. "
+            . "Sababu: {$reason}. - Orethan Microfinance.";
     }
 
     /**

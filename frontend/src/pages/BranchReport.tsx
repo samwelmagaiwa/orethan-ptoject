@@ -201,6 +201,80 @@ export default function BranchReport() {
   const [sigLoading, setSigLoading]   = useState(false);
   const [sigError, setSigError]       = useState("");
   const [approveTarget, setApproveTarget] = useState<any>(null);
+  // Return modal state (multi-step)
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnStep, setReturnStep]   = useState<1|2|3>(1);
+  const [returnStage, setReturnStage] = useState<"lm"|"lo"|null>(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnPassword, setReturnPassword] = useState("");
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnError, setReturnError]   = useState("");
+  const canReturn = ["general_manager", "managing_director", "admin"].includes(userRole);
+  // Daily report summary cards (live snapshot for LM/GM/MD/Admin)
+  const [dailySummary, setDailySummary] = useState<any>(null);
+  const [summaryDate, setSummaryDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [summaryExpanded, setSummaryExpanded] = useState<string | null>(null);
+  const [autoFillLoading, setAutoFillLoading] = useState(false);
+
+  // Fetch summary whenever date changes (all roles — LO uses it for form auto-fill too)
+  useEffect(() => {
+    axios.get(`${API}/daily-report-summary`, {
+      params: { date: summaryDate },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    }).then(res => setDailySummary(res.data?.data ?? null)).catch(() => {});
+  }, [summaryDate]);
+
+  // When a specific report is opened for viewing, sync cards to that report's date
+  useEffect(() => {
+    if (detail?.period_start) {
+      setSummaryDate(detail.period_start.toString().slice(0, 10));
+    } else {
+      setSummaryDate(new Date().toISOString().slice(0, 10));
+    }
+  }, [detail]);
+
+  // Auto-fill form fields from live summary data
+  const autoFillFromSummary = async () => {
+    if (!form.period_start) { showToast("Chagua tarehe ya ripoti kwanza", false); return; }
+    setAutoFillLoading(true);
+    try {
+      const res = await axios.get(`${API}/daily-report-summary`, {
+        params: { date: form.period_start },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const s = res.data?.data;
+      if (!s) return;
+
+      setForm(f => {
+        // Update financial rows for the period_start date
+        const updatedFins = f.financials.map(row => {
+          if (row.date !== f.period_start) return row;
+          return {
+            ...row,
+            mapato:           row.mapato || String(s.today_collections?.total || ""),
+            mapato_maelezo:   row.mapato_maelezo || (s.today_collections?.description || ""),
+          };
+        });
+        return {
+          ...f,
+          financials: updatedFins,
+          balances: {
+            ...f.balances,
+            cash:   f.balances.cash   || String(s.cash_balance?.closing   || ""),
+            mobile: f.balances.mobile || String(s.mobile_balance?.closing  || ""),
+          },
+          operations: {
+            ...f.operations,
+            loans_disbursed: f.operations.loans_disbursed || String(s.loans_disbursed?.count || ""),
+            sms_sent:        f.operations.sms_sent        || String(s.sms_sent || ""),
+          },
+        };
+      });
+      showToast(`✓ Takwimu zimejazwa moja kwa moja kutoka kwenye mfumo`);
+    } catch { showToast("Imeshindwa kupata takwimu", false); }
+    finally { setAutoFillLoading(false); }
+  };
+
   // accounting GL snapshot pulled for reconciliation
   const [glSnapshot, setGlSnapshot] = useState<{
     daily: Record<string, { mapato:number; matumizi:number; mkopo:number; kutoka_benki:number; kwenda_benki:number }>;
@@ -541,6 +615,33 @@ export default function BranchReport() {
       const msg = err?.response?.data?.message || "Hitilafu -- jaribu tena";
       setSigError(msg);
     } finally { setSigLoading(false); }
+  };
+
+  const openReturnModal = () => {
+    setReturnStep(1); setReturnStage(null); setReturnReason("");
+    setReturnPassword(""); setReturnError(""); setReturnModal(true);
+  };
+
+  const doReturn = async () => {
+    if (!detail || !returnStage) return;
+    if (returnReason.trim().length < 10) { setReturnError("Sababu lazima iwe na angalau herufi 10"); return; }
+    if (!returnPassword.trim()) { setReturnError("Tafadhali ingiza nywila yako"); return; }
+    setReturnLoading(true); setReturnError("");
+    try {
+      const res = await axios.post(`${API}/branch-reports/${detail.id}/return`, {
+        return_to: returnStage,
+        reason: returnReason,
+        signature_password: returnPassword,
+      });
+      const updated = res.data.data;
+      setReturnModal(false);
+      setDetail(updated);
+      setReports(rs => rs.map(r => r.id === updated.id ? updated : r));
+      const stageLabel = returnStage === "lm" ? "Meneja wa Mikopo" : "Mwasilishaji";
+      showToast(`🔄 Ripoti imerudishwa kwa ${stageLabel} — wamearifiwa`);
+    } catch (err: any) {
+      setReturnError(err?.response?.data?.message || "Hitilafu — jaribu tena");
+    } finally { setReturnLoading(false); }
   };
 
   const fetchReports = useCallback(async () => {
@@ -1072,23 +1173,43 @@ export default function BranchReport() {
           <div style={S.secPanel(true)}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
               <p style={{ ...S.sectionTitle("#059669"), margin:0 }}><DollarSign size={14} /> {t("fin.sectionTitle")}</p>
-              <button
-                onClick={pullFromAccounting}
-                disabled={loadingGL || !form.period_start}
-                title="Vuta takwimu za mapato, matumizi na mikopo moja kwa moja kutoka kwenye mfumo wa hesabu (General Ledger)"
-                style={{
-                  display:"flex", alignItems:"center", gap:7,
-                  padding:"8px 16px", border:"1.5px solid #059669",
-                  borderRadius:"9px", fontSize:"12px", fontWeight:800,
-                  color: loadingGL ? "#94a3b8" : "#059669",
-                  background: loadingGL ? "#f8fafc" : "#f0fdf4",
-                  cursor: loadingGL || !form.period_start ? "not-allowed" : "pointer",
-                  transition:"all .15s",
-                  whiteSpace:"nowrap",
-                }}
-              >
-                {loadingGL ? t("fin.pulling") : t("fin.pullBtn")}
-              </button>
+              <div style={{ display:"flex", gap:8 }}>
+                {form.report_type === "daily" && (
+                  <button
+                    onClick={autoFillFromSummary}
+                    disabled={autoFillLoading || !form.period_start}
+                    title="Jaza moja kwa moja: mapato, salio la cash/simu, mikopo iliyotolewa na SMS"
+                    style={{
+                      display:"flex", alignItems:"center", gap:6,
+                      padding:"8px 14px", border:"1.5px solid #7c3aed",
+                      borderRadius:"9px", fontSize:"12px", fontWeight:800,
+                      color: autoFillLoading || !form.period_start ? "#94a3b8" : "#7c3aed",
+                      background: autoFillLoading || !form.period_start ? "#f8fafc" : "#f5f3ff",
+                      cursor: autoFillLoading || !form.period_start ? "not-allowed" : "pointer",
+                      transition:"all .15s", whiteSpace:"nowrap",
+                    }}
+                  >
+                    {autoFillLoading ? "Inapakia..." : "🔄 Vuta Takwimu za Leo"}
+                  </button>
+                )}
+                <button
+                  onClick={pullFromAccounting}
+                  disabled={loadingGL || !form.period_start}
+                  title="Vuta takwimu za mapato, matumizi na mikopo moja kwa moja kutoka kwenye mfumo wa hesabu (General Ledger)"
+                  style={{
+                    display:"flex", alignItems:"center", gap:7,
+                    padding:"8px 16px", border:"1.5px solid #059669",
+                    borderRadius:"9px", fontSize:"12px", fontWeight:800,
+                    color: loadingGL ? "#94a3b8" : "#059669",
+                    background: loadingGL ? "#f8fafc" : "#f0fdf4",
+                    cursor: loadingGL || !form.period_start ? "not-allowed" : "pointer",
+                    transition:"all .15s",
+                    whiteSpace:"nowrap",
+                  }}
+                >
+                  {loadingGL ? t("fin.pulling") : t("fin.pullBtn")}
+                </button>
+              </div>
             </div>
             {/* GL reconciliation info banner */}
             {glSnapshot && (
@@ -1669,6 +1790,25 @@ export default function BranchReport() {
                 </div>
               )}
 
+              {/* Return-info card — shown when GM/MD has returned this report */}
+              {r.returned_at && (
+                <div style={{ border:"2px solid #fed7aa", borderRadius:"12px", padding:"14px 18px", background:"#fff7ed", display:"flex", flexDirection:"column", gap:"8px" }}>
+                  <div style={{ fontSize:"9px", fontWeight:800, color:"#b45309", textTransform:"uppercase", letterSpacing:"1px" }}>🔄 Imerudishwa</div>
+                  <div style={{ fontSize:"12px", fontWeight:700, color:"#92400e" }}>
+                    Imerudishwa na <strong>{r.returned_by_name}</strong> kwa{" "}
+                    <strong>{r.returned_to_stage === "lm" ? "Meneja wa Mikopo" : "Mwasilishaji"}</strong>
+                  </div>
+                  {r.return_reason && (
+                    <div style={{ fontSize:"12px", color:"#7c4600", fontStyle:"italic", borderLeft:"3px solid #f59e0b", paddingLeft:10, lineHeight:1.5 }}>
+                      "{r.return_reason}"
+                    </div>
+                  )}
+                  <div style={{ fontSize:"10px", color:"#b45309" }}>
+                    {r.returned_at ? new Date(r.returned_at).toLocaleString("sw-TZ") : ""}
+                  </div>
+                </div>
+              )}
+
               {/* LO resubmit card — shown when report is rejected and viewer is the submitter */}
               {r.approval_status === "rejected" && r.submitted_by === JSON.parse(localStorage.getItem("user")||"{}").id && (
                 <div style={{ border:"2px solid #fecaca", borderRadius:"12px", padding:"14px 18px", background:"#fff1f2", display:"flex", flexDirection:"column", justifyContent:"space-between", gap:"10px" }}>
@@ -1701,6 +1841,148 @@ export default function BranchReport() {
         </div>
       )}
 
+      {/* ── Sticky header block: cards + tab bar stick together ── */}
+      <div style={{ position:"sticky", top:0, zIndex:100 }}>
+
+      {/* ── Daily Report Summary Cards (LM / GM / MD / Admin) ── */}
+      {["loan_manager","general_manager","managing_director","admin"].includes(userRole) && (
+        <div style={{ background:"#fff", borderBottom:"2px solid #e2e8f0", padding:"10px 20px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"1px" }}>📊 Ripoti ya Kila Siku</span>
+            <input
+              type="date"
+              value={summaryDate}
+              onChange={e => setSummaryDate(e.target.value)}
+              style={{ marginLeft:"auto", padding:"3px 8px", border:"1px solid #e2e8f0", borderRadius:6, fontSize:11, fontWeight:700, color:"#334155", background:"#f8fafc", outline:"none" }}
+            />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8 }}>
+
+            {/* Card 1 — Mapato ya Leo */}
+            {(() => {
+              const d = dailySummary?.today_collections;
+              const open = summaryExpanded === "today";
+              return (
+                <div
+                  onClick={() => d?.count && setSummaryExpanded(open ? null : "today")}
+                  style={{ background:"#f0fdf4", borderRadius:10, padding:"10px 14px", border:`1.5px solid ${open ? "#22c55e" : "#86efac"}`, cursor: d?.count ? "pointer" : "default", userSelect:"none" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#15803d", textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>💰 Mapato ya Leo</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#14532d", lineHeight:1 }}>
+                    {d ? `${d.total.toLocaleString()}/=` : "—"}
+                  </div>
+                  <div style={{ fontSize:11, color:"#166534", marginTop:3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span>Malipo {d?.count ?? 0} yaliyopokelewa</span>
+                    {d?.count > 0 && <span style={{ fontSize:10, color:"#15803d" }}>{open ? "▲" : "▼"}</span>}
+                  </div>
+                  {open && d?.items?.length > 0 && (
+                    <div style={{ marginTop:6, borderTop:"1px solid #bbf7d0", paddingTop:5 }}>
+                      {d.items.map((it: any, i: number) => (
+                        <div key={i} style={{ fontSize:10, color:"#166534", fontWeight:700, display:"flex", justifyContent:"space-between", padding:"2px 0" }}>
+                          <span>{it.customer}</span><span>{it.amount.toLocaleString()}/=</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Card 2 — Jana Usiku (Simu) */}
+            {(() => {
+              const d = dailySummary?.last_night_mobile;
+              const open = summaryExpanded === "night";
+              return (
+                <div
+                  onClick={() => d?.count && setSummaryExpanded(open ? null : "night")}
+                  style={{ background:"#faf5ff", borderRadius:10, padding:"10px 14px", border:`1.5px solid ${open ? "#a855f7" : "#d8b4fe"}`, cursor: d?.count ? "pointer" : "default", userSelect:"none" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#7c3aed", textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>📱 Jana Usiku (Simu)</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#4c1d95", lineHeight:1 }}>
+                    {d ? `${d.total.toLocaleString()}/=` : "—"}
+                  </div>
+                  <div style={{ fontSize:11, color:"#6d28d9", marginTop:3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span>Malipo {d?.count ?? 0} ya mobile money</span>
+                    {d?.count > 0 && <span style={{ fontSize:10, color:"#7c3aed" }}>{open ? "▲" : "▼"}</span>}
+                  </div>
+                  {open && d?.items?.length > 0 && (
+                    <div style={{ marginTop:6, borderTop:"1px solid #e9d5ff", paddingTop:5 }}>
+                      {d.items.map((it: any, i: number) => (
+                        <div key={i} style={{ fontSize:10, color:"#5b21b6", fontWeight:700, display:"flex", justifyContent:"space-between", padding:"2px 0" }}>
+                          <span>{it.customer}</span><span>{it.amount.toLocaleString()}/=</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Card 3 — Hawajalipa Leo */}
+            {(() => {
+              const d = dailySummary?.unpaid_today;
+              const open = summaryExpanded === "unpaid";
+              return (
+                <div
+                  onClick={() => d?.count && setSummaryExpanded(open ? null : "unpaid")}
+                  style={{ background:"#fff1f2", borderRadius:10, padding:"10px 14px", border:`1.5px solid ${open ? "#f87171" : "#fca5a5"}`, cursor: d?.count ? "pointer" : "default", userSelect:"none" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#b91c1c", textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>⚠️ Hawajalipa Leo</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#7f1d1d", lineHeight:1 }}>
+                    {d ? `${d.count} Wateja` : "—"}
+                  </div>
+                  <div style={{ fontSize:11, color:"#991b1b", marginTop:3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span>Deni: TZS {d ? d.total_owed.toLocaleString() : 0}/=</span>
+                    {d?.count > 0 && <span style={{ fontSize:10, color:"#b91c1c" }}>{open ? "▲" : "▼"}</span>}
+                  </div>
+                  {open && d?.items?.length > 0 && (
+                    <div style={{ marginTop:6, borderTop:"1px solid #fecaca", paddingTop:5 }}>
+                      {d.items.map((it: any, i: number) => (
+                        <div key={i} style={{ fontSize:10, color:"#991b1b", fontWeight:700, display:"flex", justifyContent:"space-between", padding:"2px 0" }}>
+                          <span>{it.customer}</span><span>{it.amount_due.toLocaleString()}/=</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Card 4 — Salio la Cash */}
+            {(() => {
+              const d = dailySummary?.cash_balance;
+              return (
+                <div style={{ background:"#eff6ff", borderRadius:10, padding:"10px 14px", border:"1.5px solid #93c5fd" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#1d4ed8", textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>💵 Salio la Cash</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#1e3a8a", lineHeight:1 }}>
+                    {d ? `${d.closing.toLocaleString()}/=` : "—"}
+                  </div>
+                  <div style={{ fontSize:10, color:"#1e40af", marginTop:4, display:"flex", flexDirection:"column" as const, gap:1 }}>
+                    <span>Jana: {d ? d.opening.toLocaleString() : 0}/=</span>
+                    <span>+ Leo: {d ? d.collected_today.toLocaleString() : 0}/=</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Card 5 — Salio la Simu */}
+            {(() => {
+              const d = dailySummary?.mobile_balance;
+              return (
+                <div style={{ background:"#eef2ff", borderRadius:10, padding:"10px 14px", border:"1.5px solid #a5b4fc" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#4338ca", textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>📲 Salio la Simu</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#312e81", lineHeight:1 }}>
+                    {d ? `${d.closing.toLocaleString()}/=` : "—"}
+                  </div>
+                  <div style={{ fontSize:10, color:"#3730a3", marginTop:4, display:"flex", flexDirection:"column" as const, gap:1 }}>
+                    <span>Jana: {d ? d.opening.toLocaleString() : 0}/=</span>
+                    <span>+ Jana usiku: {d ? d.received.toLocaleString() : 0}/=</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+          </div>
+        </div>
+      )}
+
       {/* ── Sticky tab bar -- matches AccountingTabBar design ── */}
       <div className="br-tab-bar">
         <div className="br-tab-scroll">
@@ -1722,6 +2004,31 @@ export default function BranchReport() {
               onClick={() => { setDetail(null); setTab("view"); }}>
               <Eye size={12}/> {t("header.viewTab")}
             </button>
+          )}
+          {/* Detail controls inline — shown when a report is open */}
+          {tab === "view" && detail && (
+            <>
+              <div className="br-divider" />
+              <button className="br-back-btn" onClick={() => setDetail(null)}>
+                <ChevronLeft size={15}/> {t("detail.backBtn")}
+              </button>
+              <div className="br-sub-title">
+                {t("detail.titlePrefix")} {typeLabels[detail.report_type as keyof typeof typeLabels] || detail.report_type}
+                {" — "}
+                {fmtDate(detail.period_start)}
+                {detail.report_type !== "daily" ? ` — ${fmtDate(detail.period_end)}` : ""}
+              </div>
+              {canReturn && detail?.approval_status === "approved" && (
+                <button className="br-return-btn" onClick={openReturnModal}>
+                  ↩ Rejesha Ripoti
+                </button>
+              )}
+              {canPrint && (
+                <button className="br-print-btn" onClick={() => printReport(detail)}>
+                  <Printer size={13}/> {t("detail.printBtn")}
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -1778,25 +2085,8 @@ export default function BranchReport() {
         </div>
       </div>
 
-      {/* Detail sub-bar -- shown when a report is open in the view tab */}
-      {tab === "view" && detail && (
-        <div className="br-sub-bar">
-          <button className="br-back-btn" onClick={() => setDetail(null)}>
-            <ChevronLeft size={15}/> {t("detail.backBtn")}
-          </button>
-          <div className="br-sub-title">
-            {t("detail.titlePrefix")} {typeLabels[detail.report_type as keyof typeof typeLabels] || detail.report_type}
-            {" -- "}
-            {fmtDate(detail.period_start)}
-            {detail.report_type !== "daily" ? ` -- ${fmtDate(detail.period_end)}` : ""}
-          </div>
-          {canPrint && (
-            <button className="br-print-btn" onClick={() => printReport(detail)}>
-              <Printer size={13}/> {t("detail.printBtn")}
-            </button>
-          )}
-        </div>
-      )}
+      {/* close sticky header block */}
+      </div>
 
       {/* CSS for the tab bar */}
       <style>{`
@@ -1805,9 +2095,6 @@ export default function BranchReport() {
           display: flex;
           align-items: stretch;
           background: #f1f5f9;
-          position: sticky;
-          top: 0;
-          z-index: 100;
           border-bottom: 2px solid #e2e8f0;
           min-height: 50px;
         }
@@ -2092,6 +2379,115 @@ export default function BranchReport() {
         }
         .br-sig-ok:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; }
         .br-approve-ok { background: linear-gradient(135deg,#059669,#047857); box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        /* Return button */
+        .br-return-btn {
+          display: flex; align-items: center; gap: 6px;
+          background: #fff7ed; border: 1.5px solid #f59e0b;
+          border-radius: 8px; padding: 7px 16px;
+          font-size: 12.5px; font-weight: 800; color: #b45309;
+          cursor: pointer; flex-shrink: 0; transition: all .15s;
+        }
+        .br-return-btn:hover { background: #fef3c7; border-color: #d97706; color: #92400e; }
+        /* Return modal overlay */
+        .br-ret-overlay {
+          position: fixed; inset: 0; z-index: 9100;
+          background: rgba(0,0,0,0.6);
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px;
+        }
+        .br-ret-box {
+          background: #fff; border-radius: 20px;
+          width: 100%; max-width: 520px;
+          box-shadow: 0 32px 100px rgba(0,0,0,0.3);
+          overflow: hidden;
+        }
+        .br-ret-header {
+          background: linear-gradient(135deg,#b45309,#d97706);
+          padding: 22px 28px 18px;
+        }
+        .br-ret-steps {
+          display: flex; gap: 0; align-items: center;
+          margin-bottom: 14px;
+        }
+        .br-ret-step {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.55);
+          text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        .br-ret-step--active { color: #fff; }
+        .br-ret-step-num {
+          width: 22px; height: 22px; border-radius: 50%;
+          background: rgba(255,255,255,0.2); display: flex;
+          align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 900; flex-shrink: 0;
+        }
+        .br-ret-step-num--active { background: #fff; color: #b45309; }
+        .br-ret-step-num--done { background: rgba(255,255,255,0.9); color: #059669; }
+        .br-ret-step-line {
+          flex: 1; height: 2px; background: rgba(255,255,255,0.2);
+          margin: 0 6px; min-width: 24px;
+        }
+        .br-ret-step-line--done { background: rgba(255,255,255,0.7); }
+        .br-ret-title { font-size: 18px; font-weight: 900; color: #fff; }
+        .br-ret-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 3px; line-height: 1.5; }
+        .br-ret-body { padding: 24px 28px; }
+        /* Stage selection cards */
+        .br-stage-cards { display: flex; flex-direction: column; gap: 12px; }
+        .br-stage-card {
+          display: flex; align-items: flex-start; gap: 14px;
+          padding: 16px 18px; border: 2px solid #e2e8f0;
+          border-radius: 14px; cursor: pointer;
+          transition: all .18s; background: #fff;
+        }
+        .br-stage-card:hover { border-color: #f59e0b; background: #fffbeb; }
+        .br-stage-card--active { border-color: #f59e0b; background: #fff7ed; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+        .br-stage-icon {
+          width: 44px; height: 44px; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 22px; flex-shrink: 0;
+        }
+        .br-stage-title { font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
+        .br-stage-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+        .br-stage-radio {
+          width: 18px; height: 18px; border-radius: 50%;
+          border: 2px solid #e2e8f0; margin-left: auto; flex-shrink: 0;
+          margin-top: 2px; transition: all .15s;
+        }
+        .br-stage-radio--checked { border-color: #f59e0b; background: #f59e0b; }
+        /* Reason textarea */
+        .br-ret-textarea {
+          width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0;
+          border-radius: 12px; font-size: 13.5px; font-weight: 500;
+          color: #0f172a; outline: none; resize: vertical;
+          min-height: 110px; box-sizing: border-box; line-height: 1.6;
+          font-family: inherit; transition: border-color .15s;
+        }
+        .br-ret-textarea:focus { border-color: #f59e0b; }
+        /* Password field */
+        .br-ret-input {
+          width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0;
+          border-radius: 12px; font-size: 14px; font-weight: 600;
+          color: #0f172a; outline: none; box-sizing: border-box;
+          background: #f8fafc; transition: border-color .15s;
+        }
+        .br-ret-input:focus { border-color: #f59e0b; background: #fff; }
+        /* Summary card inside step 3 */
+        .br-ret-summary {
+          background: #fff7ed; border: 1.5px solid #fed7aa;
+          border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;
+        }
+        .br-ret-summary-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+        .br-ret-summary-label { font-weight: 800; color: #92400e; min-width: 70px; }
+        .br-ret-summary-val { color: #431407; font-weight: 600; }
+        /* Footer buttons */
+        .br-ret-footer { display: flex; gap: 10px; padding: 0 28px 24px; }
+        .br-ret-back { flex: 1; padding: 11px; border: 2px solid #e2e8f0; border-radius: 11px; font-size: 13px; font-weight: 700; color: #64748b; background: #fff; cursor: pointer; }
+        .br-ret-back:hover { border-color: #94a3b8; }
+        .br-ret-next { flex: 2; padding: 11px; border: none; border-radius: 11px; font-size: 13px; font-weight: 800; color: #fff; cursor: pointer; background: linear-gradient(135deg,#b45309,#d97706); box-shadow: 0 4px 14px rgba(180,83,9,0.35); transition: opacity .15s; }
+        .br-ret-next:disabled { opacity: 0.45; cursor: not-allowed; }
+        .br-ret-err { font-size: 12px; font-weight: 700; color: #dc2626; min-height: 18px; margin-top: 8px; }
+        .br-ret-label { font-size: 10.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px; display: block; }
+        .br-char-count { font-size: 10.5px; color: #94a3b8; text-align: right; margin-top: 4px; }
       `}</style>
 
       {/* ── Signature / Approval modal ── */}
@@ -2144,6 +2540,158 @@ export default function BranchReport() {
               >
                 {sigLoading ? "Inatuma..." : sigModal === "submit" ? "✓ Saini & Wasilisha" : sigModal === "reject" ? "❌ Kataa Ripoti" : "✅ Saini & Idhinisha"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Return modal (multi-step) ── */}
+      {returnModal && (
+        <div className="br-ret-overlay" onClick={e => { if (e.target === e.currentTarget) setReturnModal(false); }}>
+          <div className="br-ret-box">
+            {/* Amber gradient header */}
+            <div className="br-ret-header">
+              {/* Step indicators */}
+              <div className="br-ret-steps">
+                {[
+                  { n: 1, label: "Ngazi" },
+                  { n: 2, label: "Sababu" },
+                  { n: 3, label: "Thibitisha" },
+                ].map((s, i, arr) => (
+                  <div key={s.n} style={{ display:"flex", alignItems:"center", flex: i < arr.length-1 ? 1 : undefined }}>
+                    <div className={`br-ret-step ${returnStep >= s.n ? "br-ret-step--active" : ""}`}>
+                      <div className={`br-ret-step-num ${returnStep > s.n ? "br-ret-step-num--done" : returnStep === s.n ? "br-ret-step-num--active" : ""}`}>
+                        {returnStep > s.n ? "✓" : s.n}
+                      </div>
+                      <span>{s.label}</span>
+                    </div>
+                    {i < arr.length-1 && <div className={`br-ret-step-line ${returnStep > s.n ? "br-ret-step-line--done" : ""}`} />}
+                  </div>
+                ))}
+              </div>
+              <div className="br-ret-title">
+                {returnStep === 1 ? "↩ Rejesha Ripoti kwa Ngazi Gani?" : returnStep === 2 ? "📝 Toa Sababu ya Kurudisha" : "🔐 Thibitisha kwa Saini"}
+              </div>
+              <div className="br-ret-sub">
+                {returnStep === 1
+                  ? `Ripoti ya ${detail?.branch || "--"} · ${fmtDate(detail?.period_start)} — ${fmtDate(detail?.period_end)}`
+                  : returnStep === 2
+                  ? "Sababu lazima iwe wazi na ya kutosha ili mpokeaji aweze kufanya marekebisho sahihi."
+                  : "Ingiza nywila yako ili kuthibitisha — hatua hii haiwezi kutenduliwa."}
+              </div>
+            </div>
+
+            {/* Step 1 — choose stage */}
+            {returnStep === 1 && (
+              <div className="br-ret-body">
+                <div className="br-stage-cards">
+                  <div className={`br-stage-card ${returnStage === "lm" ? "br-stage-card--active" : ""}`}
+                    onClick={() => setReturnStage("lm")}>
+                    <div className="br-stage-icon" style={{ background:"#dbeafe" }}>🧑‍💼</div>
+                    <div style={{ flex:1 }}>
+                      <div className="br-stage-title">Rejesha kwa Meneja wa Mikopo (LM)</div>
+                      <div className="br-stage-desc">
+                        Ripoti itarudi kwenye foleni ya LM kwa ukaguzi upya. LM atalazimika kuisaini tena na kuiwasilisha kwa GM/MD.
+                      </div>
+                    </div>
+                    <div className={`br-stage-radio ${returnStage === "lm" ? "br-stage-radio--checked" : ""}`} />
+                  </div>
+                  <div className={`br-stage-card ${returnStage === "lo" ? "br-stage-card--active" : ""}`}
+                    onClick={() => setReturnStage("lo")}>
+                    <div className="br-stage-icon" style={{ background:"#fef3c7" }}>📋</div>
+                    <div style={{ flex:1 }}>
+                      <div className="br-stage-title">Rejesha kwa Mwasilishaji (LO)</div>
+                      <div className="br-stage-desc">
+                        Ripoti itarudi kwa afisa aliyewasilisha. Ataweza kuihariri na kuiwasilisha tena kupitia LM.
+                      </div>
+                    </div>
+                    <div className={`br-stage-radio ${returnStage === "lo" ? "br-stage-radio--checked" : ""}`} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 — write reason */}
+            {returnStep === 2 && (
+              <div className="br-ret-body">
+                {/* Context reminder */}
+                <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12, color:"#475569", display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ fontSize:16 }}>{returnStage === "lm" ? "🧑‍💼" : "📋"}</span>
+                  <span>Inarudishwa kwa: <strong style={{ color:"#0f172a" }}>{returnStage === "lm" ? "Meneja wa Mikopo" : "Mwasilishaji"}</strong></span>
+                </div>
+                <label className="br-ret-label">Sababu ya Kurudisha <span style={{ color:"#dc2626" }}>*</span></label>
+                <textarea
+                  className="br-ret-textarea"
+                  placeholder="Eleza kwa undani makosa yaliyopatikana, vipengele vinavyohitaji marekebisho, au taarifa zinazokataliwa..."
+                  value={returnReason}
+                  onChange={e => { setReturnReason(e.target.value); setReturnError(""); }}
+                  autoFocus
+                />
+                <div className="br-char-count" style={{ color: returnReason.length < 10 ? "#dc2626" : "#94a3b8" }}>
+                  {returnReason.length} herufi {returnReason.length < 10 ? `(lazima angalau 10)` : "✓"}
+                </div>
+                {returnError && <div className="br-ret-err">⚠ {returnError}</div>}
+              </div>
+            )}
+
+            {/* Step 3 — password confirmation */}
+            {returnStep === 3 && (
+              <div className="br-ret-body">
+                {/* Summary card */}
+                <div className="br-ret-summary">
+                  <div className="br-ret-summary-row">
+                    <span className="br-ret-summary-label">Ripoti:</span>
+                    <span className="br-ret-summary-val">{detail?.branch} · {fmtDate(detail?.period_start)}</span>
+                  </div>
+                  <div className="br-ret-summary-row">
+                    <span className="br-ret-summary-label">Rejesha kwa:</span>
+                    <span className="br-ret-summary-val">{returnStage === "lm" ? "Meneja wa Mikopo (LM)" : "Mwasilishaji (LO)"}</span>
+                  </div>
+                  <div className="br-ret-summary-row" style={{ marginBottom:0 }}>
+                    <span className="br-ret-summary-label">Sababu:</span>
+                    <span className="br-ret-summary-val" style={{ fontStyle:"italic" }}>"{returnReason}"</span>
+                  </div>
+                </div>
+                <label className="br-ret-label">Thibitisha kwa Nywila Yako <span style={{ color:"#dc2626" }}>*</span></label>
+                <input
+                  type="password"
+                  className="br-ret-input"
+                  placeholder="••••••••"
+                  value={returnPassword}
+                  onChange={e => { setReturnPassword(e.target.value); setReturnError(""); }}
+                  onKeyDown={e => e.key === "Enter" && doReturn()}
+                  autoFocus
+                />
+                {returnError && <div className="br-ret-err">⚠ {returnError}</div>}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="br-ret-footer">
+              <button className="br-ret-back" onClick={() => {
+                if (returnStep === 1) { setReturnModal(false); }
+                else setReturnStep(s => (s - 1) as 1|2|3);
+              }}>
+                {returnStep === 1 ? "Ghairi" : "← Rudi"}
+              </button>
+              {returnStep < 3 ? (
+                <button
+                  className="br-ret-next"
+                  disabled={returnStep === 1 ? !returnStage : returnReason.trim().length < 10}
+                  onClick={() => setReturnStep(s => (s + 1) as 1|2|3)}
+                >
+                  Endelea →
+                </button>
+              ) : (
+                <button
+                  className="br-ret-next"
+                  disabled={returnLoading || !returnPassword.trim()}
+                  onClick={doReturn}
+                  style={{ background: returnLoading ? undefined : "linear-gradient(135deg,#b45309,#d97706)" }}
+                >
+                  {returnLoading ? "Inatuma..." : "↩ Thibitisha & Rejesha"}
+                </button>
+              )}
             </div>
           </div>
         </div>

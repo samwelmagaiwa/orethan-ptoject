@@ -17,6 +17,7 @@ class BranchReport extends Model
         'approval_status', 'approved_by', 'approved_by_name', 'approved_at',
         'lo_signed', 'lm_signed',
         'gl_journal_entry_id',
+        'returned_to_stage', 'returned_by_name', 'return_reason', 'returned_at',
     ];
 
     protected $casts = [
@@ -30,5 +31,6 @@ class BranchReport extends Model
         'approved_at'    => 'datetime',
         'lo_signed'      => 'boolean',
         'lm_signed'      => 'boolean',
+        'returned_at'    => 'datetime',
     ];
 }

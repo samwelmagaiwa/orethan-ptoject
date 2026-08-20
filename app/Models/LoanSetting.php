@@ -51,6 +51,18 @@ class LoanSetting extends Model
         'brand_color',
         'session_timeout_minutes',
         'historical_loan_roles',
+        'disburse_loan_roles',
+        'record_repayment_roles',
+        'approve_payment_roles',
+        'reschedule_loan_roles',
+        'writeoff_loan_roles',
+        'topup_loan_roles',
+        'manage_users_roles',
+        'lock_users_roles',
+        'edit_loan_rates_roles',
+        'edit_access_control_roles',
+        'manage_till_roles',
+        'add_historical_loan_roles',
         'updated_by',
     ];
 
@@ -63,6 +75,18 @@ class LoanSetting extends Model
         'branch_report_roles'        => 'array',
         'branch_report_permissions'  => 'array',
         'historical_loan_roles'      => 'array',
+        'disburse_loan_roles'        => 'array',
+        'record_repayment_roles'     => 'array',
+        'approve_payment_roles'      => 'array',
+        'reschedule_loan_roles'      => 'array',
+        'writeoff_loan_roles'        => 'array',
+        'topup_loan_roles'           => 'array',
+        'manage_users_roles'         => 'array',
+        'lock_users_roles'           => 'array',
+        'edit_loan_rates_roles'      => 'array',
+        'edit_access_control_roles'  => 'array',
+        'manage_till_roles'          => 'array',
+        'add_historical_loan_roles'  => 'array',
     ];
 
     /** The active settings row, cached — creates the default row if the table is ever empty. */

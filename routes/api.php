@@ -221,11 +221,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('/biometrics/{id}',                               [CustomerBiometricController::class, 'destroy']);
 
         // Branch weekly/daily/monthly reports
+        Route::get('/daily-report-summary',          [BranchReportController::class, 'dailyReportSummary']);
         Route::get('/branch-reports',                [BranchReportController::class, 'index']);
         Route::get('/branch-reports/{id}',          [BranchReportController::class, 'show']);
         Route::post('/branch-reports',              [BranchReportController::class, 'store']);
         Route::post('/branch-reports/{id}/approve', [BranchReportController::class, 'approve']);
         Route::post('/branch-reports/{id}/reject',  [BranchReportController::class, 'reject']);
+        Route::post('/branch-reports/{id}/return',  [BranchReportController::class, 'return']);
         Route::put('/branch-reports/{id}',          [BranchReportController::class, 'update']);
         Route::delete('/branch-reports/{id}',       [BranchReportController::class, 'destroy']);
 

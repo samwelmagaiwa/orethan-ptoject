@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { API_BASE } from "../lib/api";
 
@@ -87,11 +87,14 @@ export default function HistoricalLoan() {
   const [newPhone, setNewPhone] = useState("");
 
   const [amount, setAmount] = useState("");
-  const [interestRate, setInterestRate] = useState("");
+  const [totalRepayable, setTotalRepayable] = useState(""); // "Riba" as written on paper = total to repay
   const [termMonths, setTermMonths] = useState("");
   const [frequency, setFrequency] = useState("Monthly");
   const [disbursedAt, setDisbursedAt] = useState("");
   const [employment, setEmployment] = useState("Hapana");
+  const [processingFee, setProcessingFee] = useState("0");
+  const [insuranceFee, setInsuranceFee] = useState("0");
+  const [otherCharges, setOtherCharges] = useState("0");
 
   const [g1Name, setG1Name] = useState("");
   const [g1Phone, setG1Phone] = useState("");
@@ -126,31 +129,45 @@ export default function HistoricalLoan() {
     }, 500);
   }, [searchPhone, customerMode]);
 
-  // Recompute schedule whenever loan parameters change
+  // Derive monthly interest rate from (totalRepayable - principal) / (principal × months)
+  const derivedRate = useMemo(() => {
+    const p = parseFloat(amount) || 0;
+    const t = parseFloat(totalRepayable) || 0;
+    const m = parseInt(termMonths) || 0;
+    if (!p || !m || t <= p) return 0;
+    return (t - p) / (p * m) * 100;
+  }, [amount, totalRepayable, termMonths]);
+
+  // Recompute schedule whenever loan parameters change.
+  // When the scheduled amount for an installment changes (loan params changed),
+  // reset normal_paid to the new amount so stale user-entered values don't persist.
   useEffect(() => {
     const principal = parseFloat(amount) || 0;
-    const rate = parseFloat(interestRate) / 100;
+    const rate = derivedRate / 100;
     const months = parseInt(termMonths) || 0;
 
-    if (!principal || isNaN(rate) || !months || !disbursedAt) {
+    if (!principal || !rate || !months || !disbursedAt) {
       setInstallments([]);
       return;
     }
 
     const rows = buildSchedule(principal, rate, months, frequency, disbursedAt);
+    if (rows.length === 0) { setInstallments([]); return; }
     setInstallments(prev => rows.map(r => {
       const existing = prev.find(p => p.number === r.number);
+      // If the scheduled amount changed (loan params were edited), reset normal_paid.
+      const amountChanged = existing && existing.amount !== r.amount;
       return {
         number: r.number,
         due_date: r.due_date,
         amount: r.amount,
         paid: existing?.paid ?? false,
         paid_date: existing?.paid_date ?? "",
-        normal_paid: existing?.normal_paid ?? String(r.amount),
-        penalty_paid: existing?.penalty_paid ?? "0",
+        normal_paid: (amountChanged || !existing) ? String(r.amount) : existing.normal_paid,
+        penalty_paid: (amountChanged || !existing) ? "0" : existing.penalty_paid,
       };
     }));
-  }, [amount, interestRate, termMonths, frequency, disbursedAt]);
+  }, [amount, derivedRate, termMonths, frequency, disbursedAt]);
 
   const togglePaid = (i: number) => {
     setInstallments(prev => prev.map((inst, idx) =>
@@ -184,7 +201,11 @@ export default function HistoricalLoan() {
       else if (!/^0[0-9]{9}$/.test(newPhone.replace(/\s/g, ""))) errs.newPhone = "Namba ya simu sio sahihi (mfano: 0712345678).";
     }
     if (!amount || parseFloat(amount) <= 0) errs.amount = "Kiasi cha mkopo lazima kiwe zaidi ya sifuri.";
-    if (!interestRate || parseFloat(interestRate) < 0 || parseFloat(interestRate) > 100) errs.interestRate = "Riba lazima iwe kati ya 0% na 100%.";
+    const riba = parseFloat(totalRepayable) || 0;
+    const principal = parseFloat(amount) || 0;
+    if (!totalRepayable || riba <= 0) errs.totalRepayable = "Jumla ya kulipa (Riba) inahitajika.";
+    else if (riba < principal) errs.totalRepayable = "Jumla ya kulipa lazima iwe sawa au zaidi ya kiasi cha mkopo.";
+    else if (riba === principal) errs.totalRepayable = "Riba ni 0% — hakuna faida. Thibitisha tena.";
     if (!termMonths || parseInt(termMonths) < 1 || !Number.isInteger(parseFloat(termMonths))) errs.termMonths = "Muda lazima uwe namba nzima zaidi ya sifuri.";
     if (!disbursedAt) errs.disbursedAt = "Tarehe ya kutolewa inahitajika.";
     else if (disbursedAt > today) errs.disbursedAt = "Tarehe ya kutolewa haiwezi kuwa siku zijazo.";
@@ -192,6 +213,19 @@ export default function HistoricalLoan() {
     if (g1Phone.trim() && !/^0[0-9]{9}$/.test(g1Phone.replace(/\s/g, ""))) errs.g1Phone = "Simu ya Mdhamini 1 sio sahihi.";
     if ((g2Name.trim() && !g2Phone.trim()) || (!g2Name.trim() && g2Phone.trim())) errs.g2 = "Jina na simu ya Mdhamini 2 lazima vijazwe vyote.";
     if (g2Phone.trim() && !/^0[0-9]{9}$/.test(g2Phone.replace(/\s/g, ""))) errs.g2Phone = "Simu ya Mdhamini 2 sio sahihi.";
+
+    // Fee validation
+    const pf = parseFloat(processingFee) || 0;
+    const ins = parseFloat(insuranceFee) || 0;
+    const oc = parseFloat(otherCharges) || 0;
+    if (pf < 0) errs.processingFee = "Ada ya usindikaji haiwezi kuwa chini ya sifuri.";
+    if (ins < 0) errs.insuranceFee = "Ada ya bima haiwezi kuwa chini ya sifuri.";
+    if (oc < 0) errs.otherCharges = "Gharama nyingine haiwezi kuwa chini ya sifuri.";
+    const totalFees = pf + ins + oc;
+    const loanAmt = parseFloat(amount) || 0;
+    if (loanAmt > 0 && totalFees >= loanAmt) {
+      errs.fees = "Jumla ya ada haiwezi kuwa sawa au zaidi ya kiasi cha mkopo.";
+    }
 
     // Validate each paid installment
     installments.forEach((inst, i) => {
@@ -209,6 +243,20 @@ export default function HistoricalLoan() {
       if (pen < 0) errs[`inst_pen_${i}`] = "Penati haiwezi kuwa chini ya sifuri.";
     });
 
+    // Gap detection: cannot mark a later installment paid if an earlier one is unpaid
+    for (let i = 1; i < installments.length; i++) {
+      if (installments[i].paid && !installments[i - 1].paid) {
+        errs[`inst_gap_${i}`] = `Awamu #${installments[i - 1].number} bado haijatiwa alama ya "Amelipa" — lazima ulipie kwa mpangilio.`;
+      }
+    }
+
+    // Total normal payments must not exceed total scheduled (principal + interest)
+    const totalNorm = installments.filter(i => i.paid).reduce((s, i) => s + (parseFloat(i.normal_paid) || 0), 0);
+    const totalSched = installments.reduce((s, i) => s + i.amount, 0);
+    if (totalNorm > totalSched + 1) { // +1 TZS rounding tolerance
+      errs.totalPayments = `Jumla ya malipo ya kawaida (TZS ${fmt(totalNorm)}) inazidi jumla ya mkopo na riba (TZS ${fmt(totalSched)}).`;
+    }
+
     // Must have schedule generated before submitting
     if (installments.length === 0 && parseFloat(amount) > 0 && parseInt(termMonths) > 0 && disbursedAt) {
       errs.schedule = "Ratiba ya malipo haijatengenezwa. Jaza maelezo ya mkopo kwanza.";
@@ -220,8 +268,9 @@ export default function HistoricalLoan() {
 
   const resetForm = () => {
     setSearchPhone(""); setFoundCustomer(null); setNewName(""); setNewPhone("");
-    setAmount(""); setInterestRate(""); setTermMonths(""); setDisbursedAt("");
-    setEmployment("Hapana"); setG1Name(""); setG1Phone(""); setG2Name(""); setG2Phone("");
+    setAmount(""); setTotalRepayable(""); setTermMonths(""); setDisbursedAt("");
+    setEmployment("Hapana"); setProcessingFee("0"); setInsuranceFee("0"); setOtherCharges("0");
+    setG1Name(""); setG1Phone(""); setG2Name(""); setG2Phone("");
     setInstallments([]); setFieldErrors({});
   };
 
@@ -247,9 +296,12 @@ export default function HistoricalLoan() {
     const payload: Record<string, unknown> = {
       customer_phone: phone, customer_name: name,
       customer_id: foundCustomer?.id ?? undefined,
-      amount: parseFloat(amount), interest_rate: parseFloat(interestRate),
+      amount: parseFloat(amount), interest_rate: parseFloat(derivedRate.toFixed(6)),
       term_months: parseInt(termMonths), repayment_frequency: frequency,
       disbursed_at: disbursedAt, employment,
+      processing_fee: parseFloat(processingFee) || 0,
+      insurance_fee: parseFloat(insuranceFee) || 0,
+      other_charges: parseFloat(otherCharges) || 0,
       guarantor_1_name: g1Name.trim() || undefined, guarantor_1_phone: g1Phone.trim() || undefined,
       guarantor_2_name: g2Name.trim() || undefined, guarantor_2_phone: g2Phone.trim() || undefined,
       payments,
@@ -415,16 +467,21 @@ export default function HistoricalLoan() {
 
         <div className="hl-grid2">
           <div className="hl-field">
-            <label className="hl-label">Kiasi cha Mkopo (TZS)</label>
+            <label className="hl-label">Mkopo — Kiasi Kilichotolewa (TZS)</label>
             <input className={inp(fieldErrors.amount)} type="number" min="1" value={amount}
-              onChange={e => setAmount(e.target.value)} placeholder="1000000" />
+              onChange={e => setAmount(e.target.value)} placeholder="200000" />
             {fieldErrors.amount && <p className="hl-field-err">{fieldErrors.amount}</p>}
           </div>
           <div className="hl-field">
-            <label className="hl-label">Riba ya Kila Mwezi (%)</label>
-            <input className={inp(fieldErrors.interestRate)} type="number" min="0" step="0.1" max="100"
-              value={interestRate} onChange={e => setInterestRate(e.target.value)} placeholder="3.0" />
-            {fieldErrors.interestRate && <p className="hl-field-err">{fieldErrors.interestRate}</p>}
+            <label className="hl-label">Riba — Jumla ya Kulipa (TZS)</label>
+            <input className={inp(fieldErrors.totalRepayable)} type="number" min="1" value={totalRepayable}
+              onChange={e => setTotalRepayable(e.target.value)} placeholder="280000" />
+            <p style={{ fontSize: 11, color: "#64748b", margin: "3px 0 0" }}>
+              {derivedRate > 0
+                ? `≈ ${derivedRate.toFixed(1)}% kwa mwezi`
+                : "Jumla ya kulipa kama inavyoandikwa karatasi (Mkopo + Riba)"}
+            </p>
+            {fieldErrors.totalRepayable && <p className="hl-field-err">{fieldErrors.totalRepayable}</p>}
           </div>
         </div>
         <div className="hl-grid2">
@@ -460,6 +517,54 @@ export default function HistoricalLoan() {
             </select>
           </div>
         </div>
+
+        {/* Fees row */}
+        <div className="hl-grid3" style={{ marginTop: 0 }}>
+          <div className="hl-field">
+            <label className="hl-label">Ada ya Usindikaji / Processing Fee (TZS)</label>
+            <input className={inp(fieldErrors.processingFee)} type="number" min="0" value={processingFee}
+              onChange={e => setProcessingFee(e.target.value)} placeholder="0" />
+            <FErr msg={fieldErrors.processingFee} />
+          </div>
+          <div className="hl-field">
+            <label className="hl-label">Ada ya Bima / Insurance Fee (TZS)</label>
+            <input className={inp(fieldErrors.insuranceFee)} type="number" min="0" value={insuranceFee}
+              onChange={e => setInsuranceFee(e.target.value)} placeholder="0" />
+            <FErr msg={fieldErrors.insuranceFee} />
+          </div>
+          <div className="hl-field">
+            <label className="hl-label">Gharama Nyingine / Other Charges (TZS)</label>
+            <input className={inp(fieldErrors.otherCharges)} type="number" min="0" value={otherCharges}
+              onChange={e => setOtherCharges(e.target.value)} placeholder="0" />
+            <FErr msg={fieldErrors.otherCharges} />
+          </div>
+        </div>
+        {fieldErrors.fees && <div className="hl-section-err">⚠ {fieldErrors.fees}</div>}
+
+        {/* Disbursement breakdown — always visible when amount is entered */}
+        {(parseFloat(amount) || 0) > 0 && (() => {
+          const a = parseFloat(amount) || 0;
+          const tr = parseFloat(totalRepayable) || 0;
+          const pf = parseFloat(processingFee) || 0;
+          const ins = parseFloat(insuranceFee) || 0;
+          const oc = parseFloat(otherCharges) || 0;
+          const totalF = pf + ins + oc;
+          const net = Math.max(0, a - totalF);
+          const totalInt = tr > a ? tr - a : 0;
+          const hasBreakdown = tr > a && parseInt(termMonths) > 0;
+          return (
+            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 12 }}>
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
+                <div><span style={{ color: "#64748b" }}>Mkopo:</span> <strong style={{ color: "#1e293b" }}>TZS {fmt(a)}</strong></div>
+                {totalF > 0 && <div><span style={{ color: "#64748b" }}>Ada zote:</span> <strong style={{ color: "#b45309" }}>−TZS {fmt(totalF)}</strong></div>}
+                <div><span style={{ color: "#64748b" }}>Mteja alipokea:</span> <strong style={{ color: "#1d4ed8" }}>TZS {fmt(net)}</strong></div>
+                {hasBreakdown && <div><span style={{ color: "#64748b" }}>Faida (Riba):</span> <strong style={{ color: "#7c3aed" }}>TZS {fmt(Math.round(totalInt))}</strong></div>}
+                {hasBreakdown && <div><span style={{ color: "#64748b" }}>Jumla ya kulipa:</span> <strong style={{ color: "#dc2626" }}>TZS {fmt(Math.round(tr))}</strong></div>}
+                {hasBreakdown && <div><span style={{ color: "#64748b" }}>Kiwango:</span> <strong style={{ color: "#059669" }}>{derivedRate.toFixed(1)}%/mwezi</strong></div>}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── SEHEMU 3: WADHAMINI ─────────────────────────────────────────── */}
         <div className="hl-section" style={{ marginTop: 24 }}>SEHEMU 3: WADHAMINI (HIARI)</div>
@@ -499,6 +604,7 @@ export default function HistoricalLoan() {
         </p>
 
         {fieldErrors.schedule && <div className="hl-section-err">⚠ {fieldErrors.schedule}</div>}
+        {fieldErrors.totalPayments && <div className="hl-section-err">⚠ {fieldErrors.totalPayments}</div>}
 
         {installments.length === 0 ? (
           <div className="hl-empty-sched">
@@ -527,7 +633,8 @@ export default function HistoricalLoan() {
                   const badgeLabel = inst.paid ? "✓ Amelipa" : isOverdue ? "⚠ Chelewa" : "Bado";
                   const totalThisInst = (parseFloat(inst.normal_paid) || 0) + (parseFloat(inst.penalty_paid) || 0);
                   return (
-                    <tr key={inst.number} className={rowClass}>
+                    <React.Fragment key={inst.number}>
+                    <tr className={rowClass}>
                       <td>
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 28, height: 22, padding: "0 7px", borderRadius: 6, background: "#102a43", color: "#e2bc8a", fontWeight: 800, fontSize: "0.72rem" }}>
                           #{inst.number}
@@ -606,8 +713,23 @@ export default function HistoricalLoan() {
 
                       <td>
                         <span className={`hl-status-badge ${badgeClass}`}>{badgeLabel}</span>
+                        {fieldErrors[`inst_gap_${i}`] && (
+                          <p style={{ fontSize: 10, color: "#dc2626", margin: "3px 0 0", fontWeight: 600, whiteSpace: "nowrap" }}>
+                            ⚠ Mpangilio!
+                          </p>
+                        )}
                       </td>
                     </tr>
+                    {fieldErrors[`inst_gap_${i}`] && (
+                      <tr>
+                        <td colSpan={8} style={{ padding: "4px 10px", background: "#fef2f2" }}>
+                          <p style={{ fontSize: 11, color: "#dc2626", margin: 0, fontWeight: 600 }}>
+                            ⚠ {fieldErrors[`inst_gap_${i}`]}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

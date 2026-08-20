@@ -25,6 +25,7 @@ interface Settings {
   payroll_access_roles?: string[];
   branch_report_roles?: string[];
   branch_report_permissions?: BranchPerms;
+  historical_loan_roles?: string[];
 }
 
 const DEFAULT_BR_PERMS: BranchPerms = {
@@ -56,7 +57,7 @@ const ALL_STAFF_ROLES = [
 
 const LoanSettings = () => {
   const { t } = useTranslation("common");
-  const [form, setForm] = useState<Settings>({ penalty_rate: "", default_interest_rate: "", default_processing_fee_rate: "", compliance_roles: ["admin", "general_manager", "managing_director"], payroll_access_roles: ["admin", "finance_officer", "general_manager", "managing_director"], branch_report_roles: ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"], branch_report_permissions: { ...DEFAULT_BR_PERMS } });
+  const [form, setForm] = useState<Settings>({ penalty_rate: "", default_interest_rate: "", default_processing_fee_rate: "", compliance_roles: ["admin", "general_manager", "managing_director"], payroll_access_roles: ["admin", "finance_officer", "general_manager", "managing_director"], branch_report_roles: ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"], branch_report_permissions: { ...DEFAULT_BR_PERMS }, historical_loan_roles: ["loan_officer","loan_manager","admin"] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info" as any });
@@ -76,6 +77,11 @@ const LoanSettings = () => {
         branch_report_permissions: d.branch_report_permissions
           ? { ...DEFAULT_BR_PERMS, ...d.branch_report_permissions }
           : { ...DEFAULT_BR_PERMS },
+        // Preserve null/empty array exactly — null means "never been set" (use default),
+        // [] means "admin explicitly locked it". We distinguish by checking for null.
+        historical_loan_roles: Array.isArray(d.historical_loan_roles)
+          ? d.historical_loan_roles
+          : ["loan_officer", "loan_manager", "admin"],
       });
     } catch (err: any) {
       setModal({ isOpen: true, title: t("loanSettings.page.errorTitle"), message: err.response?.data?.message || t("loanSettings.page.errorLoad"), type: "error" });
@@ -97,11 +103,13 @@ const LoanSettings = () => {
         payroll_access_roles: form.payroll_access_roles,
         branch_report_roles: form.branch_report_roles,
         branch_report_permissions: form.branch_report_permissions,
+        historical_loan_roles: form.historical_loan_roles,
       }, { headers: authHeaders() });
       localStorage.setItem("compliance_roles", JSON.stringify(form.compliance_roles));
       localStorage.setItem("payroll_access_roles", JSON.stringify(form.payroll_access_roles));
       localStorage.setItem("branch_report_roles", JSON.stringify(form.branch_report_roles));
       localStorage.setItem("branch_report_permissions", JSON.stringify(form.branch_report_permissions));
+      localStorage.setItem("historical_loan_roles", JSON.stringify(form.historical_loan_roles));
       const d = res.data.data || {};
       setForm({
         ...d,
@@ -287,6 +295,85 @@ const LoanSettings = () => {
               )}
             </div>
 
+            {/* ── Mikopo ya Zamani access control ─────────────────────────── */}
+            <div className="ls-section">
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <h2 className="ls-section-title">🔒 Udhibiti wa Mikopo ya Zamani</h2>
+                  <p className="ls-section-desc">
+                    Funga au fungua ukurasa wa "Mikopo ya Zamani" kwa kila jukumu. Ukifunga, hakuna mtumiaji (isipokuwa Admin) atakayeona kiungo hicho kwenye menyu wala kufikia ukurasa huo moja kwa moja.
+                  </p>
+                </div>
+                {/* Lock / Unlock master toggle */}
+                <button
+                  onClick={() => setForm(f => ({
+                    ...f,
+                    historical_loan_roles: (f.historical_loan_roles || []).length === 0
+                      ? ["loan_officer", "loan_manager", "admin"]   // unlock with sensible defaults
+                      : [],                                          // lock = empty array
+                  }))}
+                  style={{
+                    flexShrink: 0,
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer",
+                    fontWeight: 800, fontSize: 13,
+                    background: (form.historical_loan_roles || []).length === 0 ? "#fef2f2" : "#f0fdf4",
+                    color:      (form.historical_loan_roles || []).length === 0 ? "#dc2626"  : "#16a34a",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  {(form.historical_loan_roles || []).length === 0
+                    ? <>🔒 Imefungwa — Bonyeza Kufungua</>
+                    : <>🔓 Imefunguliwa — Bonyeza Kufunga</>}
+                </button>
+              </div>
+
+              {(form.historical_loan_roles || []).length === 0 ? (
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 18px", marginTop: 4 }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: "#dc2626", fontSize: 13 }}>
+                    🔒 Ukurasa wa Mikopo ya Zamani umefungwa. Hakuna jukumu lolote (isipokuwa Admin) linaweza kuona au kufikia ukurasa huu.
+                  </p>
+                  <p style={{ margin: "6px 0 0", color: "#b91c1c", fontSize: 11.5 }}>
+                    Hata kama mtumiaji akijaribu kwenda moja kwa moja kwa URL "/historical-loan", ataelekezwa kurasa ya makosa.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: 12, color: "#475569", margin: "4px 0 10px", fontWeight: 600 }}>
+                    Chagua majukumu yanayoweza kuona na kutumia ukurasa huu:
+                  </p>
+                  <div className="ls-roles-grid">
+                    {ALL_STAFF_ROLES.filter(r => r.value !== "admin").map(r => (
+                      <label key={r.value} className="ls-role-check ls-role-check--hist">
+                        <input
+                          type="checkbox"
+                          checked={(form.historical_loan_roles || []).includes(r.value)}
+                          onChange={e => {
+                            const cur = form.historical_loan_roles || [];
+                            setForm({
+                              ...form,
+                              historical_loan_roles: e.target.checked
+                                ? [...cur, r.value]
+                                : cur.filter(v => v !== r.value),
+                            });
+                          }}
+                        />
+                        {r.label}
+                      </label>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: "#64748b", marginTop: 10 }}>
+                    ℹ Admin daima ana upatikanaji bila kujali mipangilio hii.
+                  </p>
+                  {(form.historical_loan_roles || []).filter(r => r !== "admin").length === 0 && (
+                    <p style={{ fontSize: 11.5, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>
+                      ⚠ Hakuna jukumu lingine lililochaguliwa — watumiaji wasio Admin hawataona ukurasa huu. Bonyeza kitufe cha kufunga hapo juu ili kufunga rasmi.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
             <button className="ls-save-btn" onClick={save} disabled={saving}>
               {saving ? t("loanSettings.page.saving") : t("loanSettings.page.saveBtn")}
             </button>
@@ -323,6 +410,8 @@ const LoanSettings = () => {
         .ls-role-check input { accent-color: #1e5fae; width: 16px; height: 16px; cursor: pointer; }
         .ls-role-check--branch input { accent-color: #059669; }
         .ls-role-check--branch { border-color: #bbf7d0; background: #f0fdf4; color: #065f46; }
+        .ls-role-check--hist input { accent-color: #7c3aed; }
+        .ls-role-check--hist { border-color: #ddd6fe; background: #faf5ff; color: #4c1d95; }
 
         /* Permissions matrix table */
         .ls-perm-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 8px; }

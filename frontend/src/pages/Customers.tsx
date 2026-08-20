@@ -85,6 +85,7 @@ interface Loan {
     disbursement?: { transaction_reference?: string | null; voucher_number?: string | null } | null;
     sms_status?: string | null;
     sms_type?: string | null;
+    is_historical?: boolean | null;
 }
 
 const Customers: React.FC = () => {
@@ -100,6 +101,7 @@ const Customers: React.FC = () => {
     // Maps customer.id → first approved/disbursed loan for that customer (finance dropdown)
     const [approvedLoanByCustomer, setApprovedLoanByCustomer] = useState<Record<number, Loan>>({});
     const [disbursedLoanByCustomer, setDisbursedLoanByCustomer] = useState<Record<number, Loan>>({});
+    const [historicalCustomerIds, setHistoricalCustomerIds] = useState<Set<number>>(new Set());
     const [customerActionDropdown, setCustomerActionDropdown] = useState<number | null>(null);
     const [stats, setStats] = useState({
         total_loaned: 0,
@@ -171,16 +173,19 @@ const Customers: React.FC = () => {
         const approvedMap: Record<number, Loan> = {};
         const disbursedMap: Record<number, Loan> = {};
         const relevantCustomerIds = new Set<number>();
+        const historicalIds = new Set<number>();
         financeLoans.forEach((l: any) => {
             const cid = l.customer?.id;
             if (!cid) return;
             relevantCustomerIds.add(cid);
+            if (l.is_historical) historicalIds.add(cid);
             if (l.status === 'approved' && !approvedMap[cid]) approvedMap[cid] = l;
             if (l.status === 'disbursed' && !disbursedMap[cid]) disbursedMap[cid] = l;
         });
         setApprovedLoanByCustomer(approvedMap);
         setDisbursedLoanByCustomer(disbursedMap);
-        setPendingDisbursements(financeLoans.filter((l: any) => l.status === 'approved'));
+        setHistoricalCustomerIds(historicalIds);
+        setPendingDisbursements(financeLoans.filter((l: any) => l.status === 'approved' && !l.is_historical));
 
         // Only show customers that have at least one approved or disbursed loan
         const allCustomers: Customer[] = custRes.data.customers || [];
@@ -739,7 +744,13 @@ const Customers: React.FC = () => {
                                             <td>
                                                 <div className="client-info">
                                                     <div className="avatar">{customer.full_name.charAt(0)}</div>
-                                                    <span className="client-name">{customer.full_name}<HealthScoreBadge score={customer.risk_score} grade={customer.risk_grade} /></span>
+                                                    <span className="client-name">
+                                        {customer.full_name}
+                                        {historicalCustomerIds.has(customer.id) && (
+                                            <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, background: '#e8dcc8', color: '#7c5c2e', borderRadius: 5, padding: '1px 6px', letterSpacing: '0.04em', verticalAlign: 'middle' }}>ZAMANI</span>
+                                        )}
+                                        <HealthScoreBadge score={customer.risk_score} grade={customer.risk_grade} />
+                                    </span>
                                                 </div>
                                             </td>
                                             <td>{customer.phone_number}</td>
@@ -766,6 +777,7 @@ const Customers: React.FC = () => {
                                                 {isFinanceView ? (() => {
                                                     const approvedLoan = approvedLoanByCustomer[customer.id];
                                                     const disbursedLoan = disbursedLoanByCustomer[customer.id];
+                                                    const isHistorical = historicalCustomerIds.has(customer.id);
                                                     const isOpen = customerActionDropdown === customer.id;
                                                     return (
                                                         <div data-customer-dropdown style={{ display: 'inline-block', position: 'relative' }}>
@@ -784,7 +796,7 @@ const Customers: React.FC = () => {
                                                                     style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', background: '#fff', border: '1.5px solid #e8dcc8', borderRadius: 12, boxShadow: '0 8px 24px -6px rgba(92,61,17,0.18)', zIndex: 9999, minWidth: 170, overflow: 'hidden' }}
                                                                     onClick={e => e.stopPropagation()}
                                                                 >
-                                                                    {approvedLoan && (
+                                                                    {approvedLoan && !isHistorical && (
                                                                         <button
                                                                             onClick={() => { window.location.href = `/finance/disburse/${approvedLoan.id}`; }}
                                                                             style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '11px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#15803d', borderBottom: '1px solid #f0e8d8' }}

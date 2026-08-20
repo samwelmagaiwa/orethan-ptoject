@@ -12,22 +12,27 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    /** Only an admin may manage users. */
-    private function guardAdmin(Request $request)
+    private function guardManage(Request $request)
     {
         $u = $request->user();
-        return ($u && $u->isAdmin()) ? null : response()->json(['message' => 'Admin pekee ndiye anaweza kusimamia watumiaji'], 403);
+        return ($u && $u->canManageUsers()) ? null : response()->json(['message' => 'Huna ruhusa ya kusimamia watumiaji'], 403);
+    }
+
+    private function guardLock(Request $request)
+    {
+        $u = $request->user();
+        return ($u && $u->canLockUsers()) ? null : response()->json(['message' => 'Huna ruhusa ya kufunga/kufungua watumiaji'], 403);
     }
 
     public function index(Request $request)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardManage($request)) return $r;
         return User::select('id', 'name', 'email', 'phone', 'role', 'is_locked', 'locked_at', 'locked_reason', 'sidebar_permissions', 'full_sidebar_access')->get();
     }
 
     public function store(Request $request)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardManage($request)) return $r;
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -74,7 +79,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardManage($request)) return $r;
 
         $user = User::findOrFail($id);
 
@@ -136,7 +141,7 @@ class UserController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardManage($request)) return $r;
 
         $user = User::findOrFail($id);
         if ($user->id === $request->user()->id) {
@@ -151,7 +156,7 @@ class UserController extends Controller
     /** Lock a user out of the system and revoke their active sessions. */
     public function lock(Request $request, $id)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardLock($request)) return $r;
 
         $user = User::findOrFail($id);
         if ($user->id === $request->user()->id) {
@@ -171,7 +176,7 @@ class UserController extends Controller
 
     public function unlock(Request $request, $id)
     {
-        if ($r = $this->guardAdmin($request)) return $r;
+        if ($r = $this->guardLock($request)) return $r;
 
         $user = User::findOrFail($id);
         $user->is_locked = false;

@@ -32,6 +32,7 @@ const SIDEBAR_ITEMS: { key: string; label: string; hint?: string }[] = [
   { key: "loan_lifecycle", label: "Loan Restructuring" },
   { key: "disburse_payments", label: "Disburse & Payments" },
   { key: "cash_till", label: "Cashier Till" },
+  { key: "historical_loan", label: "🔒 Mikopo ya Zamani", hint: "Historical loan import page — also controlled by Global Settings lock" },
   { key: "profile", label: "My Signature" },
   { key: "logout", label: "Log Out", hint: "Sidebar link only -- the top user-menu logout always stays available" },
 ];
@@ -56,6 +57,7 @@ const SIDEBAR_ROLE_DEFAULTS: Record<string, "all" | string[]> = {
   loan_lifecycle: ["admin", "loan_manager", "general_manager", "managing_director"],
   disburse_payments: ["admin", "finance_officer"],
   cash_till: ["admin", "finance_officer"],
+  historical_loan: ["admin", "loan_officer", "loan_manager"],
 };
 
 const sidebarRoleDefault = (key: string, role: string) => {

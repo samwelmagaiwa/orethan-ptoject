@@ -172,9 +172,8 @@ const RepaymentTracker = () => {
 
   const { t } = useTranslation(["repaymentTracker", "common"]);
 
-  // LO and LM can view schedules and info but cannot collect repayments
-  const _userRole = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; } catch { return ""; } })();
-  const canCollect = !["loan_officer", "loan_manager"].includes(_userRole);
+  const [canCollect, setCanCollect] = useState(false);
+  const [submittingRepayment, setSubmittingRepayment] = useState(false);
 
   const tc = (key: string) => t(key, { ns: "common" });
 
@@ -280,13 +279,30 @@ const RepaymentTracker = () => {
 
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const [loansRes, summaryRes] = await Promise.all([
+      const [loansRes, summaryRes, settingsRes] = await Promise.all([
 
         axios.get(`${API_BASE}/loans/active`, { headers }),
 
         axios.get(`${API_BASE}/repayments/summary`, { headers }),
 
+        axios.get(`${API_BASE}/loan-settings`, { headers }).catch(() => ({ data: {} })),
+
       ]);
+
+      // Mirror backend User::canRecordRepayment() exactly:
+      // 1. Always-on roles  2. full_sidebar_access  3. per-user override  4. role-level matrix
+      (() => {
+        try {
+          const u = JSON.parse(localStorage.getItem("user") || "{}");
+          const role: string = u.role ?? "";
+          if (["admin", "finance_officer", "cashier"].includes(role)) { setCanCollect(true); return; }
+          if (u.full_sidebar_access) { setCanCollect(true); return; }
+          const perms = u.sidebar_permissions ?? {};
+          if (perms.can_record_repayment || perms.can_disburse) { setCanCollect(true); return; }
+          const matrixRoles: string[] = settingsRes.data?.record_repayment_roles ?? [];
+          setCanCollect(matrixRoles.includes(role));
+        } catch { setCanCollect(false); }
+      })();
 
       axios.get(`${API_BASE}/loans/stats`, { headers }).then(r => {
         setCustomersCount(r.data.customers_count || 0);
@@ -374,6 +390,9 @@ const RepaymentTracker = () => {
 
     }
 
+    if (submittingRepayment) return;
+    setSubmittingRepayment(true);
+
     try {
 
       const token = localStorage.getItem("token");
@@ -399,6 +418,10 @@ const RepaymentTracker = () => {
       console.error(e);
 
       showAlert(e.response?.data?.message || "Imeshindwa kufanya malipo. Tafadhali jaribu tena.", tc("modal.error"), "error");
+
+    } finally {
+
+      setSubmittingRepayment(false);
 
     }
 
@@ -455,31 +478,28 @@ const RepaymentTracker = () => {
 
 
   const [sendingReminderFor, setSendingReminderFor] = useState<number | null>(null);
+  const [reminderConfirm, setReminderConfirm] = useState<{ loanId: number; customer: string } | null>(null);
 
 
 
   const sendReminder = async (loanId: number, customer: string) => {
+    setReminderConfirm({ loanId, customer });
+  };
 
+  const confirmSendReminder = async () => {
+    if (!reminderConfirm) return;
+    const { loanId, customer } = reminderConfirm;
+    setReminderConfirm(null);
     setSendingReminderFor(loanId);
-
     try {
-
       const token = localStorage.getItem("token");
-
       const res = await axios.post(`${API_BASE}/overdue/loans/${loanId}/send-reminder-sms`, {}, { headers: { Authorization: `Bearer ${token}` } });
-
       showAlert(res.data?.message || t("alerts.smsSent", { customer }), tc("modal.success"), "success");
-
     } catch (e: any) {
-
       showAlert(e.response?.data?.message || t("alerts.smsFailed", { customer }), tc("modal.error"), "error");
-
     } finally {
-
       setSendingReminderFor(null);
-
     }
-
   };
 
 
@@ -859,10 +879,10 @@ const RepaymentTracker = () => {
               <span style={{ fontWeight: 800, fontSize: "1rem", color: "#102a43", flex: 1 }}>{t("todayCollection.title")}</span>
               <span style={{ background: "#1e5fae", color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800 }}>{t("todayCollection.dueBadge", { count: todayCollections.length })}</span>
             </div>
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: 300 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
                 <thead>
-                  <tr style={{ background: "#eff6ff" }}>
+                  <tr style={{ background: "#eff6ff", position: "sticky", top: 0, zIndex: 1 }}>
                     {[t("table.customer"), t("table.loanNo"), t("table.dueAmount"), t("table.dueDate"), t("table.action")].map((h, i) => (
                       <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0.6rem 0.75rem", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1e5fae", borderBottom: "2px solid #bfdbfe", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
@@ -901,34 +921,73 @@ const RepaymentTracker = () => {
               <span style={{ fontWeight: 800, fontSize: "1rem", color: "#7f1d1d", flex: 1 }}>{t("overdueManagement.title")}</span>
               <span style={{ background: "#dc2626", color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800 }}>{t("overdueManagement.lateBadge", { count: overdueList.length })}</span>
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+            <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: 300 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
                 <thead>
-                  <tr style={{ background: "#fff1f2" }}>
-                    {[t("table.customer"), t("table.daysLate"), t("table.amount"), t("table.penalty"), t("table.action")].map((h, i) => (
-                      <th key={h} style={{ textAlign: i === 4 ? "right" : "left", padding: "0.6rem 0.75rem", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#dc2626", borderBottom: "2px solid #fecaca", whiteSpace: "nowrap" }}>{h}</th>
+                  <tr style={{ background: "#fff1f2", position: "sticky", top: 0, zIndex: 1 }}>
+                    {[t("table.customer"), t("table.daysLate"), t("table.amount"), t("table.penalty"), "TOTAL", t("table.action")].map((h, i) => (
+                      <th key={h} style={{ textAlign: i === 5 ? "right" : i >= 2 ? "right" : "left", padding: "0.6rem 0.75rem", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#dc2626", borderBottom: "2px solid #fecaca", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {overdueList.map((row, idx) => (
-                    <tr key={row.schedule_id} style={{ background: idx % 2 === 0 ? "#fff" : "#fff5f5", borderBottom: "1px solid #fee2e2" }}>
-                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#7f1d1d", fontSize: "0.8rem" }}>{row.customer}</td>
-                      <td style={{ padding: "0.7rem 0.75rem" }}>
-                        <span style={{ background: "#fef2f2", color: "#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, border: "1px solid #fecaca" }}>{t("overdueManagement.daysLateValue", { count: row.days_late })}</span>
-                      </td>
-                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 800, color: "#102a43", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(row.amount)}</td>
-                      <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#dc2626", fontSize: "0.82rem", whiteSpace: "nowrap" }}>{fmt(row.penalty)}</td>
-                      <td style={{ padding: "0.7rem 0.75rem" }}>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
-                          <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.3rem 0.7rem", borderRadius: 7, background: "#fee2e2", border: "1px solid #fca5a5", color: "#991b1b", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Phone size={12} />{t("actions.contact")}</button>
-                          <button onClick={canCollect ? () => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty) : undefined} disabled={!canCollect} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: canCollect ? "#dc2626" : "#94a3b8", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: canCollect ? "pointer" : "not-allowed", opacity: canCollect ? 1 : 0.5 }}>{t("actions.collect")}</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // Group rows by customer name to compute subtotals
+                    const rows: React.ReactNode[] = [];
+                    let i = 0;
+                    while (i < overdueList.length) {
+                      const customerName = overdueList[i].customer;
+                      const customerLoanId = overdueList[i].loan_id;
+                      // Collect all consecutive rows for this customer (same loan_id)
+                      let j = i;
+                      while (j < overdueList.length && overdueList[j].loan_id === customerLoanId) j++;
+                      const group = overdueList.slice(i, j);
+                      const subtotalAmount = group.reduce((s, r) => s + r.amount, 0);
+                      const subtotalPenalty = group.reduce((s, r) => s + r.penalty, 0);
+                      const subtotalTotal = subtotalAmount + subtotalPenalty;
+
+                      group.forEach((row, gi) => {
+                        const rowBg = (i + gi) % 2 === 0 ? "#fff" : "#fff5f5";
+                        rows.push(
+                          <tr key={row.schedule_id} style={{ background: rowBg, borderBottom: "1px solid #fee2e2" }}>
+                            <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#7f1d1d", fontSize: "0.8rem" }}>{row.customer}</td>
+                            <td style={{ padding: "0.7rem 0.75rem" }}>
+                              <span style={{ background: "#fef2f2", color: "#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 800, border: "1px solid #fecaca" }}>
+                                {Math.floor(row.days_late)}d
+                              </span>
+                            </td>
+                            <td style={{ padding: "0.7rem 0.75rem", fontWeight: 800, color: "#102a43", fontSize: "0.82rem", whiteSpace: "nowrap", textAlign: "right" }}>{fmt(row.amount)}</td>
+                            <td style={{ padding: "0.7rem 0.75rem", fontWeight: 700, color: "#dc2626", fontSize: "0.82rem", whiteSpace: "nowrap", textAlign: "right" }}>{fmt(row.penalty)}</td>
+                            <td style={{ padding: "0.7rem 0.75rem", fontWeight: 800, color: "#7f1d1d", fontSize: "0.82rem", whiteSpace: "nowrap", textAlign: "right" }}>{fmt(row.amount + row.penalty)}</td>
+                            <td style={{ padding: "0.7rem 0.75rem" }}>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.3rem" }}>
+                                <button onClick={() => sendReminder(row.loan_id, row.customer)} disabled={sendingReminderFor === row.loan_id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.3rem 0.7rem", borderRadius: 7, background: "#fee2e2", border: "1px solid #fca5a5", color: "#991b1b", fontWeight: 700, fontSize: "0.62rem", cursor: "pointer", opacity: sendingReminderFor === row.loan_id ? 0.5 : 1 }}><Phone size={12} />{t("actions.contact")}</button>
+                                <button onClick={canCollect ? () => openCollect(row.loan_id, row.customer, row.amount + row.penalty, row.amount + row.penalty) : undefined} disabled={!canCollect} style={{ padding: "0.3rem 0.8rem", borderRadius: 7, background: canCollect ? "#dc2626" : "#94a3b8", border: "none", color: "#fff", fontWeight: 700, fontSize: "0.65rem", cursor: canCollect ? "pointer" : "not-allowed", opacity: canCollect ? 1 : 0.5 }}>{t("actions.collect")}</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      });
+
+                      // Subtotal row for this customer (only if >1 row, or always for clarity)
+                      rows.push(
+                        <tr key={`sub-${customerLoanId}`} style={{ background: "#fef2f2", borderBottom: "2px solid #fca5a5", borderTop: "1px solid #fca5a5" }}>
+                          <td colSpan={2} style={{ padding: "0.45rem 0.75rem", fontSize: "0.7rem", fontWeight: 800, color: "#991b1b", fontStyle: "italic" }}>
+                            Jumla — {customerName}
+                          </td>
+                          <td style={{ padding: "0.45rem 0.75rem", fontWeight: 800, color: "#102a43", fontSize: "0.75rem", textAlign: "right", whiteSpace: "nowrap" }}>{fmt(subtotalAmount)}</td>
+                          <td style={{ padding: "0.45rem 0.75rem", fontWeight: 800, color: "#dc2626", fontSize: "0.75rem", textAlign: "right", whiteSpace: "nowrap" }}>{fmt(subtotalPenalty)}</td>
+                          <td style={{ padding: "0.45rem 0.75rem", fontWeight: 900, color: "#7f1d1d", fontSize: "0.78rem", textAlign: "right", whiteSpace: "nowrap", background: "#fee2e2", borderRadius: 4 }}>{fmt(subtotalTotal)}</td>
+                          <td />
+                        </tr>
+                      );
+
+                      i = j;
+                    }
+                    return rows;
+                  })()}
                   {overdueList.length === 0 && (
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noOverduePayments")}</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#94a3b8", fontWeight: 600, fontSize: "0.82rem" }}>{t("empty.noOverduePayments")}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1003,7 +1062,7 @@ const RepaymentTracker = () => {
           </div>
 
           {/* TABLE */}
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: 420 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 780 }}>
 
               <colgroup>
@@ -1020,7 +1079,7 @@ const RepaymentTracker = () => {
               </colgroup>
 
               <thead>
-                <tr style={{ background: "#f8f9ff" }}>
+                <tr style={{ background: "#f8f9ff", position: "sticky", top: 0, zIndex: 1 }}>
                   {[t("table.number"), t("table.clientIdentity"), t("scheduleModal.installment"), t("table.dueDate"), t("table.principal"), t("scheduleModal.interest"), "TOTAL BALANCE", t("table.status"), "SMS", t("table.management")].map((h, i) => (
                     <th key={h} style={{ textAlign: i === 9 ? "right" : i >= 4 && i <= 6 ? "right" : "left", padding: "0.7rem 0.6rem", fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4f46e5", borderBottom: "2px solid #e0e7ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h}</th>
                   ))}
@@ -1303,7 +1362,7 @@ const RepaymentTracker = () => {
 
                   <button onClick={() => { setShowRepaymentModal(false); setRepaymentAmount(""); setTransactionId(""); setReceivedBy(""); setNotes(""); }} style={{ flex: 1, padding: "0.85rem", borderRadius: 14, background: "#1e293b", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "#94a3b8" }}>{t("actions.discard")}</button>
 
-                  <button onClick={submitRepayment} style={{ flex: 2, padding: "0.85rem", borderRadius: 14, background: "#6366f1", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", color: "white", boxShadow: "0 6px 20px rgba(99,102,241,0.35)" }}>{t("actions.confirmPayment")}</button>
+                  <button onClick={submitRepayment} disabled={submittingRepayment} style={{ flex: 2, padding: "0.85rem", borderRadius: 14, background: submittingRepayment ? "#94a3b8" : "#6366f1", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: submittingRepayment ? "not-allowed" : "pointer", color: "white", boxShadow: submittingRepayment ? "none" : "0 6px 20px rgba(99,102,241,0.35)" }}>{submittingRepayment ? "Inatuma…" : t("actions.confirmPayment")}</button>
 
                 </div>
 
@@ -1536,6 +1595,33 @@ const RepaymentTracker = () => {
         onClose={() => setAlertOpen(false)}
 
       />
+
+      {/* ── Guarantor SMS confirmation popup ─────────────────────────────── */}
+      {reminderConfirm && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 18, padding: "2rem 2rem 1.5rem", maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: "0.75rem" }}>📨</div>
+            <h3 style={{ margin: "0 0 0.6rem", fontSize: "1rem", fontWeight: 800, color: "#1e293b" }}>Tuma SMS kwa Wadhamini</h3>
+            <p style={{ margin: "0 0 1.5rem", fontSize: "0.88rem", color: "#475569", lineHeight: 1.5 }}>
+              Unataka kutuma SMS kwenda kwa wadhamini wa <strong style={{ color: "#1e5fae" }}>{reminderConfirm.customer}</strong>?
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setReminderConfirm(null)}
+                style={{ flex: 1, padding: "0.75rem", borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", color: "#64748b" }}
+              >
+                Hapana
+              </button>
+              <button
+                onClick={confirmSendReminder}
+                style={{ flex: 1, padding: "0.75rem", borderRadius: 12, border: "none", background: "#1e5fae", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", color: "#fff", boxShadow: "0 4px 14px rgba(30,95,174,0.35)" }}
+              >
+                Ndio, Tuma
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
 

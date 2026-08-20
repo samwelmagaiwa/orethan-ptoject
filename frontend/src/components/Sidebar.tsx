@@ -52,7 +52,14 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     try { return JSON.parse(localStorage.getItem("branch_report_roles") || "null") || ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; } catch { return ["loan_officer","loan_manager","finance_officer","general_manager","managing_director","admin"]; }
   });
   const [historicalLoanRoles, setHistoricalLoanRoles] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("historical_loan_roles") || "null") || ["loan_officer","loan_manager","admin"]; } catch { return ["loan_officer","loan_manager","admin"]; }
+    try {
+      const stored = localStorage.getItem("historical_loan_roles");
+      // null means "never synced from server" → use safe default
+      // "[]" (empty array) means "admin locked it" → respect that
+      if (stored === null) return ["loan_officer", "loan_manager", "admin"];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : ["loan_officer", "loan_manager", "admin"];
+    } catch { return ["loan_officer", "loan_manager", "admin"]; }
   });
   const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
 
@@ -79,7 +86,11 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         approve:  ["loan_manager","admin"],
         delete:   ["admin"],
       };
-      const histRoles: string[] = data.historical_loan_roles || ["loan_officer","loan_manager","admin"];
+      // Use the array exactly as stored — an empty array means "locked" (no access).
+      // Only fall back to defaults when the field has never been set (null/undefined).
+      const histRoles: string[] = Array.isArray(data.historical_loan_roles)
+        ? data.historical_loan_roles
+        : ["loan_officer", "loan_manager", "admin"];
       setComplianceRoles(compRoles);
       setPayrollRoles(payRoles);
       setBranchReportRoles(brRoles);
@@ -174,7 +185,14 @@ const Sidebar: FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const canAccessPayrollMgmt = !!userRole && (userRole === "admin" || payrollRoles.includes(userRole));
   const canSeePayroll = canAccessPayrollMgmt || hasEmployeeRecord;
   const canAccessBranchReport = isAllowed("branch_report", !!userRole && branchReportRoles.includes(userRole));
-  const canAccessHistoricalLoan = isAllowed("historical_loan", !!userRole && historicalLoanRoles.includes(userRole));
+  // Global lock (historicalLoanRoles = []) is an absolute block for non-admins —
+  // it must win over any per-user sidebar_permissions override.
+  // Only after confirming the global allows the user's role do we check per-user overrides.
+  const canAccessHistoricalLoan = (() => {
+    if (userRole === "admin" || user?.full_sidebar_access) return true;
+    if (historicalLoanRoles.length === 0) return false;            // globally locked
+    return isAllowed("historical_loan", !!userRole && historicalLoanRoles.includes(userRole));
+  })();
   const canAccessStaffPerformance = isAllowed("staff_performance", !!userRole && ['loan_officer','loan_manager','general_manager','managing_director','admin'].includes(userRole));
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "A";

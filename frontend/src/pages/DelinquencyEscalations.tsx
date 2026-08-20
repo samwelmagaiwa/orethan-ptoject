@@ -144,7 +144,7 @@ export default function DelinquencyEscalations() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                    {["#","Namba ya Mkopo","Mkopaji","Simu","Siku Zilizopita","Salio","Ngazi","Aliyepelekwa","Tarehe","Maelezo"].map(h => (
+                    {["#","Namba ya Mkopo","Mkopaji","Simu","Siku Zilizopita","Salio","Ngazi","Aliyepelekewa","Tarehe","Maelezo"].map(h => (
                       <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontWeight: 700, color: "#374151", whiteSpace: "nowrap", fontSize: 12 }}>{h}</th>
                     ))}
                   </tr>
@@ -169,7 +169,7 @@ export default function DelinquencyEscalations() {
                         </td>
                         <td style={{ padding: "10px 14px", color: "#374151" }}>{r.escalated_to}</td>
                         <td style={{ padding: "10px 14px", color: "#64748b", whiteSpace: "nowrap" }}>{r.escalation_date}</td>
-                        <td style={{ padding: "10px 14px", color: "#64748b", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes}</td>
+                        <td style={{ padding: "10px 14px", color: "#64748b", maxWidth: 300, wordBreak: "break-word" }}>{r.notes}</td>
                       </tr>
                     );
                   })}

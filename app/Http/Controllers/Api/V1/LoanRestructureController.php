@@ -18,11 +18,16 @@ class LoanRestructureController extends Controller
     {
     }
 
-    private function guard(Request $request)
+    private function guardAction(Request $request, string $action)
     {
-        return $request->user()->canManageLoanLifecycle()
-            ? null
-            : $this->error('You are not authorized to perform loan-lifecycle actions', 403);
+        $user = $request->user();
+        $allowed = match ($action) {
+            'reschedule' => $user->canRescheduleLoan(),
+            'writeoff'   => $user->canWriteOffLoan(),
+            'topup'      => $user->canTopUpLoan(),
+            default      => $user->canManageLoanLifecycle(),
+        };
+        return $allowed ? null : $this->error("You do not have permission to {$action} loans", 403);
     }
 
     /** History of lifecycle actions on a loan. */
@@ -38,7 +43,7 @@ class LoanRestructureController extends Controller
 
     public function reschedule(Request $request, $loanId)
     {
-        if ($r = $this->guard($request)) return $r;
+        if ($r = $this->guardAction($request, 'reschedule')) return $r;
         $data = $request->validate([
             'term_months' => 'required|integer|min:1|max:120',
             'frequency' => 'nullable|string',
@@ -51,7 +56,7 @@ class LoanRestructureController extends Controller
 
     public function topUp(Request $request, $loanId)
     {
-        if ($r = $this->guard($request)) return $r;
+        if ($r = $this->guardAction($request, 'topup')) return $r;
         $data = $request->validate([
             'amount' => 'required|numeric|min:1',
             'method' => 'nullable|string',
@@ -66,7 +71,7 @@ class LoanRestructureController extends Controller
 
     public function writeOff(Request $request, $loanId)
     {
-        if ($r = $this->guard($request)) return $r;
+        if ($r = $this->guardAction($request, 'writeoff')) return $r;
         $data = $request->validate([
             'reason' => 'required|string|max:1000',
             'date' => 'nullable|date',

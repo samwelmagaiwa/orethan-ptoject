@@ -60,6 +60,44 @@ class SmsService
         );
     }
 
+    /**
+     * Notify LM, GM, and MD that a repayment has been recorded.
+     * Fired after every successful repayment so management sees real-time cash flow.
+     */
+    public function sendRepaymentNoticeToStaff(array $receipt): void
+    {
+        $roleLabels = [
+            'loan_manager'      => 'Meneja wa Mikopo',
+            'general_manager'   => 'Mkurugenzi Mkuu',
+            'managing_director' => 'Mkurugenzi Mtendaji',
+        ];
+
+        $customerName = $receipt['customer_name'] ?? 'Mteja';
+        $loanNumber   = $receipt['loan_number'] ?? '--';
+        $amountPaid   = (float) ($receipt['amount_paid'] ?? 0);
+        $balanceAfter = (float) ($receipt['balance_after'] ?? 0);
+        $fullyPaid    = (bool) ($receipt['fully_paid'] ?? false);
+        $loanId       = $receipt['loan_id'] ?? null;
+        $customerId   = $receipt['customer_id'] ?? null;
+
+        foreach ($roleLabels as $role => $label) {
+            $users = \App\Models\User::where('role', $role)->whereNotNull('phone')->get();
+            foreach ($users as $staffUser) {
+                try {
+                    $this->dispatch(
+                        type: 'repayment_staff_notice',
+                        phone: $staffUser->phone,
+                        message: SmsTemplates::repaymentRecordedStaff($label, $customerName, $loanNumber, $amountPaid, $balanceAfter, $fullyPaid),
+                        customerId: $customerId,
+                        loanId: $loanId,
+                    );
+                } catch (\Throwable) {
+                    // Staff SMS failure must never affect the repayment flow
+                }
+            }
+        }
+    }
+
     public function sendLoanApproved(Loan $loan): SmsResult
     {
         $loan->loadMissing('customer');
@@ -118,16 +156,18 @@ class SmsService
      *
      * @return SmsResult[]
      */
-    public function sendGuarantorOverdueNotices(Loan $loan, float $penaltyPercentage): array
+    public function sendGuarantorOverdueNotices(Loan $loan, float $dailyPenaltyAmount): array
     {
         $loan->loadMissing('customer');
+
+        $remainingBalance = (float) $loan->remaining_balance;
 
         $results = [];
         foreach ($this->extractGuarantors($loan) as $guarantor) {
             $results[] = $this->dispatch(
                 type: 'guarantor_overdue',
                 phone: $guarantor['phone'],
-                message: SmsTemplates::guarantorOverdueNotice($guarantor['name'], $loan->name, $penaltyPercentage),
+                message: SmsTemplates::guarantorOverdueNotice($guarantor['name'], $loan->name, $dailyPenaltyAmount, $remainingBalance),
                 customerId: $loan->customer_id,
                 loanId: $loan->id,
             );
@@ -194,10 +234,16 @@ class SmsService
     /** SMS to the next approver when a payment request is submitted or advanced. */
     public function sendPaymentRequestPending(\App\Models\User $approver, \App\Models\PaymentRequest $pr): SmsResult
     {
+        $applicantRoleLabel = SmsTemplates::roleLabel($pr->applicant_role ?? 'loan_officer');
         return $this->dispatch(
             type: 'payment_request_pending',
             phone: $approver->phone ?? null,
-            message: SmsTemplates::paymentRequestPending($approver->name, $pr->applicant_name, (float) $pr->final_amount, $pr->payable_to),
+            message: SmsTemplates::paymentRequestPending(
+                SmsTemplates::roleLabel($approver->role),
+                $applicantRoleLabel,
+                (float) $pr->final_amount,
+                $pr->payable_to,
+            ),
             customerId: null,
             loanId: null,
             paymentRequestId: $pr->id,
@@ -210,7 +256,13 @@ class SmsService
         return $this->dispatch(
             type: 'payment_request_disbursed',
             phone: $applicant->phone ?? null,
-            message: SmsTemplates::paymentRequestDisbursed($applicant->name, (float) $pr->final_amount, $pr->payable_to),
+            message: SmsTemplates::paymentRequestDisbursed(
+                SmsTemplates::roleLabel($applicant->role),
+                (float) $pr->final_amount,
+                $pr->payable_to,
+                $pr->voucher_number ?? $pr->cashier_reference ?? null,
+                $pr->cashier_name ?? null,
+            ),
             customerId: null,
             loanId: null,
             paymentRequestId: $pr->id,
@@ -223,7 +275,11 @@ class SmsService
         return $this->dispatch(
             type: 'payment_request_rejected',
             phone: $applicant->phone ?? null,
-            message: SmsTemplates::paymentRequestRejected($applicant->name, (float) $pr->amount, $reason),
+            message: SmsTemplates::paymentRequestRejected(
+                SmsTemplates::roleLabel($applicant->role),
+                (float) $pr->amount,
+                $reason,
+            ),
             customerId: null,
             loanId: null,
             paymentRequestId: $pr->id,
@@ -235,10 +291,17 @@ class SmsService
     {
         $from = $lr->from_date instanceof \Carbon\Carbon ? $lr->from_date->format('d/m/Y') : (string) $lr->from_date;
         $to   = $lr->to_date instanceof \Carbon\Carbon   ? $lr->to_date->format('d/m/Y')   : (string) $lr->to_date;
+        $employeeRoleLabel = $lr->employee_role ? SmsTemplates::roleLabel($lr->employee_role) : ($lr->employee_name ?? 'Mwajiriwa');
         return $this->dispatch(
             type: 'leave_request_pending',
             phone: $approver->phone ?? null,
-            message: SmsTemplates::leaveRequestPending($approver->name, $lr->employee_name, $lr->absence_type, $from, $to),
+            message: SmsTemplates::leaveRequestPending(
+                SmsTemplates::roleLabel($approver->role),
+                $employeeRoleLabel,
+                $lr->absence_type,
+                $from,
+                $to,
+            ),
             customerId: null,
             loanId: null,
             leaveRequestId: $lr->id,
@@ -253,7 +316,7 @@ class SmsService
         return $this->dispatch(
             type: 'leave_request_authorized',
             phone: $applicant->phone ?? null,
-            message: SmsTemplates::leaveRequestAuthorized($applicant->name, $from, $to),
+            message: SmsTemplates::leaveRequestAuthorized(SmsTemplates::roleLabel($applicant->role), $from, $to),
             customerId: null,
             loanId: null,
             leaveRequestId: $lr->id,
@@ -266,7 +329,7 @@ class SmsService
         return $this->dispatch(
             type: 'leave_request_rejected',
             phone: $applicant->phone ?? null,
-            message: SmsTemplates::leaveRequestRejected($applicant->name, $reason),
+            message: SmsTemplates::leaveRequestRejected(SmsTemplates::roleLabel($applicant->role), $reason),
             customerId: null,
             loanId: null,
             leaveRequestId: $lr->id,
@@ -281,8 +344,8 @@ class SmsService
             type: 'branch_report_pending',
             phone: $lm->phone ?? null,
             message: SmsTemplates::branchReportPending(
-                $lm->name,
-                $submitter->name,
+                SmsTemplates::roleLabel($lm->role),
+                SmsTemplates::roleLabel($submitter->role),
                 $report->branch ?? '--',
                 $report->report_type,
                 $period,
@@ -294,18 +357,18 @@ class SmsService
     }
 
     /** SMS to the original submitter when their Branch Report is rejected. */
-    public function sendBranchReportRejected(\App\Models\User $submitter, \App\Models\BranchReport $report, string $rejectorName, string $reason): SmsResult
+    public function sendBranchReportRejected(\App\Models\User $submitter, \App\Models\BranchReport $report, \App\Models\User $rejector, string $reason): SmsResult
     {
         $period = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
         return $this->dispatch(
             type: 'branch_report_rejected',
             phone: $submitter->phone ?? null,
             message: SmsTemplates::branchReportRejected(
-                $submitter->name,
+                SmsTemplates::roleLabel($submitter->role),
                 $report->branch ?? '--',
                 $report->report_type,
                 $period,
-                $rejectorName,
+                SmsTemplates::roleLabel($rejector->role),
                 $reason,
             ),
             customerId: null,
@@ -315,18 +378,40 @@ class SmsService
     }
 
     /** SMS to the original submitter when their Branch Report is approved. */
-    public function sendBranchReportApproved(\App\Models\User $submitter, \App\Models\BranchReport $report, string $approverName): SmsResult
+    public function sendBranchReportApproved(\App\Models\User $submitter, \App\Models\BranchReport $report, \App\Models\User $approver): SmsResult
     {
         $period = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
         return $this->dispatch(
             type: 'branch_report_approved',
             phone: $submitter->phone ?? null,
             message: SmsTemplates::branchReportApproved(
-                $submitter->name,
+                SmsTemplates::roleLabel($submitter->role),
                 $report->branch ?? '--',
                 $report->report_type,
                 $period,
-                $approverName,
+                SmsTemplates::roleLabel($approver->role),
+            ),
+            customerId: null,
+            loanId: null,
+            branchReportId: $report->id,
+        );
+    }
+
+    /** SMS when GM/MD returns an approved report to LM or original submitter. */
+    public function sendBranchReportReturned(\App\Models\User $recipient, \App\Models\BranchReport $report, \App\Models\User $returner, string $stageLabel, string $reason): SmsResult
+    {
+        $period = \Carbon\Carbon::parse($report->period_start)->format('d/m/Y');
+        return $this->dispatch(
+            type: 'branch_report_returned',
+            phone: $recipient->phone ?? null,
+            message: SmsTemplates::branchReportReturned(
+                SmsTemplates::roleLabel($recipient->role),
+                $report->branch ?? '--',
+                $report->report_type,
+                $period,
+                SmsTemplates::roleLabel($returner->role),
+                $stageLabel,
+                $reason,
             ),
             customerId: null,
             loanId: null,
@@ -503,19 +588,19 @@ class SmsService
                 $this->dispatch(
                     type: 'loan_returned_to_staff',
                     phone: $officer->phone,
-                    message: SmsTemplates::loanReturnedToStaff($officer->name, $applicant, $loanNo, $reason),
+                    message: SmsTemplates::loanReturnedToStaff(SmsTemplates::roleLabel($officer->role), $applicant, $loanNo, $reason),
                     customerId: $loan->customer_id,
                     loanId: $loan->id,
                 );
             }
         } elseif ($statusBeforeReject === 'gm_review') {
             // Returned to all loan managers
-            $users = \App\Models\User::where('role', 'manager')->whereNotNull('phone')->get();
+            $users = \App\Models\User::where('role', 'loan_manager')->whereNotNull('phone')->get();
             foreach ($users as $u) {
                 $this->dispatch(
                     type: 'loan_returned_to_staff',
                     phone: $u->phone,
-                    message: SmsTemplates::loanReturnedToStaff($u->name, $applicant, $loanNo, $reason),
+                    message: SmsTemplates::loanReturnedToStaff(SmsTemplates::roleLabel($u->role), $applicant, $loanNo, $reason),
                     customerId: $loan->customer_id,
                     loanId: $loan->id,
                 );
@@ -527,7 +612,7 @@ class SmsService
                 $this->dispatch(
                     type: 'loan_returned_to_staff',
                     phone: $u->phone,
-                    message: SmsTemplates::loanReturnedToStaff($u->name, $applicant, $loanNo, $reason),
+                    message: SmsTemplates::loanReturnedToStaff(SmsTemplates::roleLabel($u->role), $applicant, $loanNo, $reason),
                     customerId: $loan->customer_id,
                     loanId: $loan->id,
                 );

@@ -42,11 +42,32 @@ const MATRIX_COLS: MatrixCol[] = [
   { key: "finance_cashier",  label: "Finance / Cashier",icon: "💰", roles: ["finance_officer", "cashier"] },
 ];
 
-const MATRIX_ROWS = [
-  { key: "compliance", label: "Compliance & Regulator Reports",   desc: "View BOT reports, loan lifecycle & write-off records.", field: "compliance_roles", src: "loan" },
-  { key: "payroll",    label: "Payroll Management",               desc: "Create, approve, post and pay salary runs. Employees outside this list see only their own salary slip.", field: "payroll_access_roles", src: "loan" },
-  { key: "bio_op",     label: "Biometric Scanner Operators",      desc: "Operate the fingerprint scanner during loan disbursement.", field: "allowed_roles", src: "bio" },
-  { key: "bio_ex",     label: "Biometric Exception Authorizers",  desc: "Authorize a biometric exception when scanner fails.", field: "exception_roles", src: "bio" },
+type MatrixRow = { key: string; label: string; desc: string; field: string; src: string; group?: string; sidebarKey?: string };
+const MATRIX_ROWS: MatrixRow[] = [
+  // ── Compliance & Payroll ────────────────────────────────────────────────────
+  { key: "compliance",             label: "Compliance & Regulator Reports", desc: "View BOT reports, loan lifecycle & write-off records.",                              field: "compliance_roles",         src: "loan", group: "Compliance & Reports",    sidebarKey: "regulator_reports" },
+  { key: "payroll",                label: "Payroll Management",             desc: "Create, approve, post and pay salary runs.",                                          field: "payroll_access_roles",     src: "loan", group: "Compliance & Reports" },
+  // ── Biometric ───────────────────────────────────────────────────────────────
+  { key: "bio_op",                 label: "Biometric Scanner Operators",    desc: "Operate the fingerprint scanner during loan disbursement.",                           field: "allowed_roles",            src: "bio",  group: "Biometric" },
+  { key: "bio_ex",                 label: "Biometric Exception Authorizers",desc: "Authorize a biometric exception when scanner fails.",                                 field: "exception_roles",          src: "bio",  group: "Biometric" },
+  // ── Finance Actions ─────────────────────────────────────────────────────────
+  { key: "disburse_loan",          label: "💸 Disburse Loans",             desc: "Release an approved loan to the customer. Finance Officer always granted.",           field: "disburse_loan_roles",      src: "loan", group: "Finance Actions",        sidebarKey: "disburse_payments" },
+  { key: "record_repayment",       label: "💰 Record Repayments",          desc: "Collect and post a customer's repayment installment. Finance Officer always granted.", field: "record_repayment_roles",   src: "loan", group: "Finance Actions",        sidebarKey: "disburse_payments" },
+  { key: "approve_payment",        label: "✅ Approve Payment Requests",   desc: "Approve cashier payment requests awaiting disbursement. GM and MD always granted.",   field: "approve_payment_roles",    src: "loan", group: "Finance Actions",        sidebarKey: "requests" },
+  // ── Loan Restructuring ──────────────────────────────────────────────────────
+  { key: "reschedule_loan",        label: "🔄 Reschedule Loans",           desc: "Change a loan's term, frequency or interest rate and rebuild the repayment schedule.", field: "reschedule_loan_roles",    src: "loan", group: "Loan Restructuring",     sidebarKey: "loan_lifecycle" },
+  { key: "topup_loan",             label: "➕ Top-up Loans",               desc: "Add additional funds to an existing active loan.",                                     field: "topup_loan_roles",         src: "loan", group: "Loan Restructuring",     sidebarKey: "loan_lifecycle" },
+  { key: "writeoff_loan",          label: "🗑️ Write-off Loans",           desc: "Mark an unrecoverable loan as written off. High-risk — restrict carefully.",          field: "writeoff_loan_roles",      src: "loan", group: "Loan Restructuring",     sidebarKey: "loan_lifecycle" },
+  // ── Users Management ────────────────────────────────────────────────────────
+  { key: "manage_users",           label: "👤 Create & Edit Users",        desc: "Add new users, edit profiles, roles and sidebar permissions.",                        field: "manage_users_roles",       src: "loan", group: "Users Management",       sidebarKey: "users" },
+  { key: "lock_users",             label: "🔒 Lock / Unlock Users",        desc: "Suspend or reinstate a user's access to the system.",                                 field: "lock_users_roles",         src: "loan", group: "Users Management",       sidebarKey: "users" },
+  // ── Global Settings ─────────────────────────────────────────────────────────
+  { key: "edit_loan_rates",        label: "📊 Edit Loan Rates & Penalties",desc: "Change the penalty rate, default interest rate and processing fee.",                  field: "edit_loan_rates_roles",    src: "loan", group: "Global Settings",        sidebarKey: "global_settings" },
+  { key: "edit_access_control",    label: "🛡️ Edit Access Control",       desc: "Change role permissions matrix and per-user sidebar access. Admin-sensitive.",        field: "edit_access_control_roles",src: "loan", group: "Global Settings",        sidebarKey: "global_settings" },
+  // ── Cashier Till ────────────────────────────────────────────────────────────
+  { key: "manage_till",            label: "🏧 Manage Cashier Till",        desc: "Open, close, and reconcile the daily cash till. Finance Officer always granted.",     field: "manage_till_roles",        src: "loan", group: "Cashier Till",           sidebarKey: "cash_till" },
+  // ── Mikopo ya Zamani ────────────────────────────────────────────────────────
+  { key: "add_historical_loan",    label: "🗂️ Add Historical Loans",      desc: "Import pre-system loans into the historical loan register.",                          field: "add_historical_loan_roles",src: "loan", group: "Mikopo ya Zamani",       sidebarKey: "historical_loan" },
 ];
 
 const SIDEBAR_KEYS = [
@@ -67,6 +88,7 @@ const SIDEBAR_KEYS = [
   { key: "disburse_payments",   label: "Disburse & Payments" },
   { key: "cash_till",           label: "Cashier Till" },
   { key: "can_disburse",        label: "💳 Finance Write Access", sub: "Allow this user to disburse loans, record repayments & approve payment requests — regardless of role" },
+  { key: "historical_loan",    label: "🔒 Mikopo ya Zamani",   sub: "Historical loan import page — lock or unlock per user (also controlled by Global Settings)" },
   { key: "profile",             label: "My Signature" },
   { key: "logout",              label: "Log Out",                sub: "Sidebar link only — the top user-menu logout always stays available" },
 ];
@@ -82,6 +104,18 @@ interface LoanCfg {
   salary_cash_account_code: string;
   paye_payable_account_code: string;
   nssf_payable_account_code: string;
+  disburse_loan_roles: string[];
+  record_repayment_roles: string[];
+  approve_payment_roles: string[];
+  reschedule_loan_roles: string[];
+  writeoff_loan_roles: string[];
+  topup_loan_roles: string[];
+  manage_users_roles: string[];
+  lock_users_roles: string[];
+  edit_loan_rates_roles: string[];
+  edit_access_control_roles: string[];
+  manage_till_roles: string[];
+  add_historical_loan_roles: string[];
 }
 
 interface OrgCfg {
@@ -126,6 +160,18 @@ const DEFAULT_LOAN: LoanCfg = {
   salary_cash_account_code: "1010",
   paye_payable_account_code: "2210",
   nssf_payable_account_code: "2220",
+  disburse_loan_roles: ["admin", "finance_officer"],
+  record_repayment_roles: ["admin", "finance_officer"],
+  approve_payment_roles: ["admin", "finance_officer", "general_manager", "managing_director"],
+  reschedule_loan_roles: ["admin", "loan_manager", "general_manager", "managing_director"],
+  writeoff_loan_roles: ["admin", "general_manager", "managing_director"],
+  topup_loan_roles: ["admin", "loan_manager", "general_manager", "managing_director"],
+  manage_users_roles: ["admin"],
+  lock_users_roles: ["admin"],
+  edit_loan_rates_roles: ["admin"],
+  edit_access_control_roles: ["admin"],
+  manage_till_roles: ["admin", "finance_officer"],
+  add_historical_loan_roles: ["admin", "loan_officer", "loan_manager"],
 };
 
 const DEFAULT_ORG: OrgCfg = {
@@ -248,6 +294,194 @@ const SectionCard = ({ title, icon, children }: { title: string; icon: string; c
   </div>
 );
 
+// ── Loading screen ────────────────────────────────────────────────────────────
+function CfgLoadingScreen() {
+  const [pct, setPct]     = useState(0);
+  const [msgIdx, setMsgIdx] = useState(0);
+
+  const MESSAGES = [
+    "Inapakia mipangilio ya mfumo…",
+    "Inasoma ruhusa za watumiaji…",
+    "Inapata orodha ya majukumu…",
+    "Inaunganisha data ya akaunti…",
+    "Karibu kukamilika…",
+  ];
+
+  // Count up 0→100 over ~1.8 s with a slight ease-out curve
+  useEffect(() => {
+    let frame = 0;
+    const TOTAL = 90; // animation frames
+    const id = setInterval(() => {
+      frame++;
+      // ease-out: fast start, slow finish
+      const t = frame / TOTAL;
+      const eased = 1 - Math.pow(1 - t, 2.8);
+      setPct(Math.min(100, Math.round(eased * 100)));
+      if (frame >= TOTAL) clearInterval(id);
+    }, 20);
+    return () => clearInterval(id);
+  }, []);
+
+  // Cycle through status messages
+  useEffect(() => {
+    const id = setInterval(() => setMsgIdx(i => (i + 1) % MESSAGES.length), 480);
+    return () => clearInterval(id);
+  }, []);
+
+  // SVG ring geometry
+  const R  = 72;
+  const CX = 90;
+  const CY = 90;
+  const CIRC = 2 * Math.PI * R;          // ~452.4
+  const dash = (pct / 100) * CIRC;
+  const gap  = CIRC - dash;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(135deg, #0b1d2e 0%, #102a43 55%, #0f3460 100%)",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      overflow: "hidden",
+    }}>
+      {/* Subtle animated background orbs */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        {[
+          { w: 420, h: 420, top: "-10%", left: "-8%",  color: "rgba(30,95,174,0.18)",  dur: "9s"  },
+          { w: 320, h: 320, top: "55%",  left: "70%",  color: "rgba(226,188,138,0.10)", dur: "12s" },
+          { w: 250, h: 250, top: "70%",  left: "-5%",  color: "rgba(99,102,241,0.12)",  dur: "7s"  },
+          { w: 180, h: 180, top: "10%",  left: "80%",  color: "rgba(30,95,174,0.14)",   dur: "10s" },
+        ].map((o, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            width: o.w, height: o.h,
+            top: o.top, left: o.left,
+            borderRadius: "50%",
+            background: o.color,
+            filter: "blur(60px)",
+            animation: `cfg-orb-pulse ${o.dur} ease-in-out infinite alternate`,
+            animationDelay: `${i * 1.3}s`,
+          }} />
+        ))}
+      </div>
+
+      {/* Card */}
+      <div style={{
+        position: "relative", zIndex: 1,
+        display: "flex", flexDirection: "column", alignItems: "center",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.10)",
+        backdropFilter: "blur(24px)",
+        borderRadius: 28, padding: "52px 60px 44px",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(226,188,138,0.08)",
+        minWidth: 340,
+      }}>
+
+        {/* Ring SVG */}
+        <div style={{ position: "relative", width: 180, height: 180 }}>
+          <svg viewBox="0 0 180 180" width={180} height={180} style={{ transform: "rotate(-90deg)" }}>
+            {/* Track */}
+            <circle cx={CX} cy={CY} r={R} fill="none"
+              stroke="rgba(255,255,255,0.08)" strokeWidth={10} />
+            {/* Glow ring behind */}
+            <circle cx={CX} cy={CY} r={R} fill="none"
+              stroke="rgba(30,95,174,0.25)" strokeWidth={14}
+              style={{ filter: "blur(6px)" }} />
+            {/* Progress arc — gold-to-blue gradient via linearGradient */}
+            <defs>
+              <linearGradient id="cfg-arc-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="#e2bc8a" />
+                <stop offset="50%"  stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+            <circle cx={CX} cy={CY} r={R} fill="none"
+              stroke="url(#cfg-arc-grad)" strokeWidth={10}
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${gap}`}
+              style={{ transition: "stroke-dasharray 0.04s linear", filter: "drop-shadow(0 0 8px rgba(99,102,241,0.7))" }}
+            />
+            {/* Trailing dot at the tip */}
+            {pct > 2 && (() => {
+              const angle = (pct / 100) * 2 * Math.PI - Math.PI / 2;
+              const tx = CX + R * Math.cos(angle);
+              const ty = CY + R * Math.sin(angle);
+              return (
+                <circle cx={tx} cy={ty} r={6} fill="#e2bc8a"
+                  style={{ filter: "drop-shadow(0 0 6px #e2bc8a)" }} />
+              );
+            })()}
+          </svg>
+
+          {/* Centre percentage readout */}
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{
+              fontSize: 38, fontWeight: 800, lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+              background: "linear-gradient(135deg, #e2bc8a, #f8fafc)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>{pct}</span>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", fontWeight: 600, marginTop: 2 }}>%</span>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div style={{ marginTop: 32, textAlign: "center" }}>
+          <p style={{
+            margin: 0, fontSize: 20, fontWeight: 800,
+            color: "#f8fafc", letterSpacing: "-0.3px",
+          }}>Configurations</p>
+          <p style={{
+            margin: "4px 0 0", fontSize: 12, fontWeight: 500,
+            color: "rgba(255,255,255,0.40)", letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}>Global System Settings</p>
+        </div>
+
+        {/* Status message — fades between messages */}
+        <div style={{
+          marginTop: 24, height: 20, overflow: "hidden",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <p key={msgIdx} style={{
+            margin: 0, fontSize: 12.5, fontWeight: 500,
+            color: "rgba(226,188,138,0.80)",
+            animation: "cfg-msg-in 0.35s ease-out both",
+            whiteSpace: "nowrap",
+          }}>{MESSAGES[msgIdx]}</p>
+        </div>
+
+        {/* Thin progress bar */}
+        <div style={{
+          marginTop: 22, width: "100%", height: 3,
+          background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden",
+        }}>
+          <div style={{
+            height: "100%", borderRadius: 4,
+            width: `${pct}%`,
+            background: "linear-gradient(90deg, #1e5fae, #e2bc8a)",
+            transition: "width 0.04s linear",
+            boxShadow: "0 0 8px rgba(226,188,138,0.5)",
+          }} />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes cfg-orb-pulse { from { opacity: 0.6; transform: scale(1); } to { opacity: 1; transform: scale(1.12); } }
+        @keyframes cfg-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 export default function Configurations() {
   const navigate = useNavigate();
@@ -284,6 +518,7 @@ export default function Configurations() {
   // Sidebar permissions per-user state
   type SidebarUser = { id: number; name: string; role: string; full_sidebar_access: boolean; sidebar_permissions: Record<string, boolean> };
   const [sidebarUsers, setSidebarUsers]     = useState<SidebarUser[]>([]);
+  const [loadingUsers, setLoadingUsers]     = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [userPerms, setUserPerms]           = useState<{ full_sidebar_access: boolean; sidebar_permissions: Record<string, boolean> }>({ full_sidebar_access: false, sidebar_permissions: {} });
   const [savingPerms, setSavingPerms]       = useState(false);
@@ -322,9 +557,11 @@ export default function Configurations() {
 
   // Load non-admin users for sidebar permission management
   useEffect(() => {
+    setLoadingUsers(true);
     axios.get(`${API}/users`, { headers: auth() })
       .then(r => setSidebarUsers((r.data as SidebarUser[]).filter(u => u.role !== "admin")))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false));
   }, []);
 
   const handleSelectUser = (id: number) => {
@@ -407,6 +644,18 @@ export default function Configurations() {
           // Access control
           compliance_roles:              loanCfg.compliance_roles,
           payroll_access_roles:          loanCfg.payroll_access_roles,
+          disburse_loan_roles:           loanCfg.disburse_loan_roles,
+          record_repayment_roles:        loanCfg.record_repayment_roles,
+          approve_payment_roles:         loanCfg.approve_payment_roles,
+          reschedule_loan_roles:         loanCfg.reschedule_loan_roles,
+          writeoff_loan_roles:           loanCfg.writeoff_loan_roles,
+          topup_loan_roles:              loanCfg.topup_loan_roles,
+          manage_users_roles:            loanCfg.manage_users_roles,
+          lock_users_roles:              loanCfg.lock_users_roles,
+          edit_loan_rates_roles:         loanCfg.edit_loan_rates_roles,
+          edit_access_control_roles:     loanCfg.edit_access_control_roles,
+          manage_till_roles:             loanCfg.manage_till_roles,
+          add_historical_loan_roles:     loanCfg.add_historical_loan_roles,
           // Payroll GL
           salary_bank_account_code:      loanCfg.salary_bank_account_code,
           salary_cash_account_code:      loanCfg.salary_cash_account_code,
@@ -462,12 +711,8 @@ export default function Configurations() {
     { key: "system",     label: "Organisation",   icon: "🏢" },
   ];
 
-  if (loading) return (
-    <div className="cfg-page">
-      <PageHeader icon="⚙️" title="Configurations" subtitle="Global system settings" />
-      <div className="cfg-loading"><div className="cfg-spinner" /><p>Loading configurations…</p></div>
-    </div>
-  );
+  if (loading) return <CfgLoadingScreen />;
+
 
   return (
     <div className="cfg-page">
@@ -551,10 +796,13 @@ export default function Configurations() {
             <div className="cfg-section-card" style={{ padding: 0, overflow: "hidden" }}>
               <div className="cfg-section-hd" style={{ padding: "16px 20px 14px", marginBottom: 0 }}>
                 <span className="cfg-section-icon">🔐</span>
-                <h3 className="cfg-section-title">Role Permissions Matrix</h3>
+                <div>
+                  <h3 className="cfg-section-title">Role Permissions Matrix</h3>
+                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b", fontWeight: 500 }}>What each role is allowed to DO — system-wide action permissions</p>
+                </div>
               </div>
               <p className="cfg-section-desc" style={{ padding: "0 20px 12px", marginBottom: 0 }}>
-                Click any cell to grant or revoke that permission for the role. Admin is always granted all permissions. Finance Officer and Cashier share the same access level.
+                Click any cell to grant or revoke that action for the role. These permissions apply to every user in that role. Admin is always granted all permissions. Finance Officer and Cashier share the same column.
               </p>
               <div className="cfg-matrix-wrap">
                 <table className="cfg-matrix">
@@ -571,37 +819,57 @@ export default function Configurations() {
                     </tr>
                   </thead>
                   <tbody>
-                    {MATRIX_ROWS.map((row, ri) => {
-                      const currentRoles = getMatrixRoles(row.field, row.src);
-                      return (
-                        <tr key={row.key} className={ri % 2 === 0 ? "cfg-matrix-row--even" : ""}>
-                          <td className="cfg-matrix-perm-cell">
-                            <div className="cfg-matrix-perm-name">{row.label}</div>
-                            <div className="cfg-matrix-perm-desc">{row.desc}</div>
-                          </td>
-                          {MATRIX_COLS.map(col => {
-                            const granted = col.roles.some(r => currentRoles.includes(r)) || !!col.locked;
-                            return (
-                              <td
-                                key={col.key}
-                                className={`cfg-matrix-tick-cell cfg-matrix-tick-cell--${granted ? "yes" : "no"}${col.locked ? " cfg-matrix-tick-cell--locked" : ""}`}
-                                onClick={() => !col.locked && toggleMatrixCell(row.field, row.src, [...col.roles])}
-                                title={col.locked ? "Admin always has this permission" : granted ? "Click to revoke" : "Click to grant"}
-                              >
-                                <div className="cfg-matrix-tick-inner">
-                                  <span className={`cfg-matrix-tick-sym cfg-matrix-tick-sym--${granted ? "yes" : (col.locked ? "no-locked" : "no")}`}>
-                                    {granted ? "✓" : "✗"}
-                                  </span>
-                                  <span className={`cfg-matrix-tick-label cfg-matrix-tick-label--${granted ? "yes" : "no"}`}>
-                                    {granted ? "Granted" : "Denied"}
-                                  </span>
-                                </div>
+                    {(() => {
+                      const rows: React.ReactNode[] = [];
+                      let lastGroup = "";
+                      MATRIX_ROWS.forEach((row, ri) => {
+                        if (row.group && row.group !== lastGroup) {
+                          lastGroup = row.group;
+                          rows.push(
+                            <tr key={`grp-${row.group}`}>
+                              <td colSpan={MATRIX_COLS.length + 1} style={{ background: "#f5efe6", padding: "7px 16px", fontSize: 11, fontWeight: 800, color: "#7c5c2e", letterSpacing: "0.07em", textTransform: "uppercase", borderTop: "2px solid #e8dcc8", borderBottom: "1px solid #e8dcc8" }}>
+                                {row.group}
                               </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
+                            </tr>
+                          );
+                        }
+                        const currentRoles = getMatrixRoles(row.field, row.src);
+                        rows.push(
+                          <tr key={row.key} className={ri % 2 === 0 ? "cfg-matrix-row--even" : ""}>
+                            <td className="cfg-matrix-perm-cell">
+                              <div className="cfg-matrix-perm-name">{row.label}</div>
+                              <div className="cfg-matrix-perm-desc">{row.desc}</div>
+                              {row.sidebarKey && (
+                                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
+                                  Sidebar: <span style={{ fontWeight: 700, color: "#64748b" }}>{SIDEBAR_KEYS.find(s => s.key === row.sidebarKey)?.label ?? row.sidebarKey}</span>
+                                </div>
+                              )}
+                            </td>
+                            {MATRIX_COLS.map(col => {
+                              const granted = col.roles.some(r => currentRoles.includes(r)) || !!col.locked;
+                              return (
+                                <td
+                                  key={col.key}
+                                  className={`cfg-matrix-tick-cell cfg-matrix-tick-cell--${granted ? "yes" : "no"}${col.locked ? " cfg-matrix-tick-cell--locked" : ""}`}
+                                  onClick={() => !col.locked && toggleMatrixCell(row.field, row.src, [...col.roles])}
+                                  title={col.locked ? "Admin always has this permission" : granted ? "Click to revoke" : "Click to grant"}
+                                >
+                                  <div className="cfg-matrix-tick-inner">
+                                    <span className={`cfg-matrix-tick-sym cfg-matrix-tick-sym--${granted ? "yes" : (col.locked ? "no-locked" : "no")}`}>
+                                      {granted ? "✓" : "✗"}
+                                    </span>
+                                    <span className={`cfg-matrix-tick-label cfg-matrix-tick-label--${granted ? "yes" : "no"}`}>
+                                      {granted ? "Granted" : "Denied"}
+                                    </span>
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      });
+                      return rows;
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -616,18 +884,22 @@ export default function Configurations() {
             <div className="cfg-section-card" style={{ padding: 0, overflow: "hidden" }}>
               <div className="cfg-section-hd" style={{ padding: "16px 20px 14px", marginBottom: 0 }}>
                 <span className="cfg-section-icon">🗂️</span>
-                <h3 className="cfg-section-title">Sidebar Access Control</h3>
+                <div>
+                  <h3 className="cfg-section-title">Per-User Sidebar Access</h3>
+                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b", fontWeight: 500 }}>What each individual user can SEE — override menu visibility per person</p>
+                </div>
               </div>
               <p className="cfg-section-desc" style={{ padding: "0 20px 14px", marginBottom: 0 }}>
-                Tick a box to let this user see that menu item, untick it to lock them out. Select a user below.
+                Select a user, then tick or untick each menu item to control exactly what they see in the sidebar. These are personal overrides on top of their role's default access.
               </p>
 
               {/* User picker bar */}
               <div className="cfg-sidebar-picker">
                 <select className="cfg-sidebar-user-sel"
                   value={selectedUserId ?? ""}
+                  disabled={loadingUsers}
                   onChange={e => e.target.value ? handleSelectUser(+e.target.value) : setSelectedUserId(null)}>
-                  <option value="">— Select a user —</option>
+                  <option value="">{loadingUsers ? "Inapakia watumiaji…" : "— Select a user —"}</option>
                   {sidebarUsers.map(u => (
                     <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g," ")})</option>
                   ))}
@@ -639,12 +911,21 @@ export default function Configurations() {
                 )}
               </div>
 
-              {selectedUserId ? (
+              {selectedUserId ? (() => {
+                // Compute matrix-derived role default for each sidebar key
+                const selectedUser = sidebarUsers.find(u => u.id === selectedUserId);
+                const userRole = selectedUser?.role ?? "";
+                const matrixDefaultBySidebarKey: Record<string, boolean> = {};
+                MATRIX_ROWS.forEach(row => {
+                  if (!row.sidebarKey) return;
+                  const roles = getMatrixRoles(row.field, row.src);
+                  if (roles.includes(userRole)) matrixDefaultBySidebarKey[row.sidebarKey] = true;
+                });
+                return (
                 <div className="cfg-sbm-wrap">
                   <table className="cfg-sbm-table">
                     <thead>
                       <tr className="cfg-sbm-head-row">
-                        {/* Full access column */}
                         <th className="cfg-sbm-th cfg-sbm-th--master">
                           <div className="cfg-sbm-th-label">Full Access</div>
                           <div className="cfg-sbm-th-hint">Grants all items below</div>
@@ -653,13 +934,17 @@ export default function Configurations() {
                           <th key={item.key} className="cfg-sbm-th">
                             <div className="cfg-sbm-th-label">{item.label}</div>
                             {item.sub && <div className="cfg-sbm-th-hint">{item.sub}</div>}
+                            {matrixDefaultBySidebarKey[item.key] !== undefined && (
+                              <div title="Role default from permissions matrix" style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: matrixDefaultBySidebarKey[item.key] ? "#15803d" : "#b91c1c", background: matrixDefaultBySidebarKey[item.key] ? "#dcfce7" : "#fee2e2", borderRadius: 4, padding: "1px 5px", display: "inline-block" }}>
+                                Matrix: {matrixDefaultBySidebarKey[item.key] ? "✓" : "✗"}
+                              </div>
+                            )}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="cfg-sbm-body-row">
-                        {/* Full access toggle */}
                         <td className="cfg-sbm-td cfg-sbm-td--master">
                           <label className="cfg-sw">
                             <input type="checkbox" checked={userPerms.full_sidebar_access}
@@ -687,7 +972,8 @@ export default function Configurations() {
                     </tbody>
                   </table>
                 </div>
-              ) : (
+                );
+              })() : (
                 <div className="cfg-sidebar-empty">
                   <div className="cfg-sidebar-empty-icon">🗂️</div>
                   <p>Select a user above to manage which sidebar menu items they can see.</p>

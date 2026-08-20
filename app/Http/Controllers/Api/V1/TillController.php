@@ -19,9 +19,9 @@ class TillController extends Controller
     private function guard(Request $request)
     {
         $u = $request->user();
-        return ($u->isFinanceOfficer() || $u->isAdmin())
+        return $u->canManageTill()
             ? null
-            : $this->error('Only cashiers (Finance Officers) and admins can manage a till', 403);
+            : $this->error('You do not have permission to manage a till', 403);
     }
 
     /** Current open session + live cash position for the signed-in cashier. */

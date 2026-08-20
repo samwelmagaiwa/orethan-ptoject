@@ -123,7 +123,6 @@ class LoanController extends Controller
     {
         $loans = Loan::with(['customer', 'approvals.user', 'user', 'disbursement'])
             ->whereIn('status', ['approved', 'disbursed'])
-            ->where(fn($q) => $q->whereNull('is_historical')->orWhere('is_historical', false))
             ->orderByRaw("FIELD(status, 'approved', 'disbursed')")
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -319,7 +318,7 @@ class LoanController extends Controller
     public function disbursementPreview(Request $request, $id)
     {
         $user = $request->user();
-        $canView = $user->canDisburse()
+        $canView = $user->canDisburseLoan()
             || $user->isLoanManager()
             || $user->isLoanOfficer()
             || $user->isGeneralManager()
@@ -357,7 +356,7 @@ class LoanController extends Controller
     public function disburse(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->canDisburse()) {
+        if (!$user->canDisburseLoan()) {
             return $this->error('You do not have permission to disburse loans', 403);
         }
 
@@ -673,7 +672,7 @@ class LoanController extends Controller
     public function recordRepayment(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->canDisburse()) {
+        if (!$user->canRecordRepayment()) {
             return $this->error('You do not have permission to record payments', 403);
         }
 
@@ -705,7 +704,7 @@ class LoanController extends Controller
     public function reverseRepayment(Request $request, $repaymentId)
     {
         $user = $request->user();
-        if (!$user->canDisburse()) {
+        if (!$user->canRecordRepayment()) {
             return $this->error('You do not have permission to reverse transactions', 403);
         }
 
@@ -843,32 +842,52 @@ class LoanController extends Controller
      */
     private function buildOverdueList(): array
     {
+        // Fetch oldest-first so penalty assignment always hits the oldest row first.
         $schedules = \App\Models\LoanSchedule::with('loan.customer')
             ->whereHas('loan', function ($q) {
                 $q->whereNotNull('disbursed_at');
             })
             ->where('status', '!=', 'paid')
             ->whereDate('due_date', '<', now()->toDateString())
-            ->orderBy('due_date')
+            ->orderBy('due_date', 'asc')
             ->get();
 
         $dailyPenalty = \App\Models\LoanSetting::current()->dailyPenaltyAmount();
 
-        return $schedules->map(function ($s) use ($dailyPenalty) {
-            $loan = $s->loan;
+        // Flat daily penalty shown per overdue installment row; subtotal sums them.
+        $rows = $schedules->map(function ($s) use ($dailyPenalty) {
+            $loan     = $s->loan;
+            $loanId   = $loan?->id;
             $amount   = round((float) $s->total_amount - (float) ($s->amount_paid ?? 0));
-            $daysLate = \Carbon\Carbon::parse($s->due_date)->diffInDays(now());
+            $daysLate = (int) \Carbon\Carbon::parse($s->due_date)->startOfDay()->diffInDays(now()->startOfDay());
+
+            $penalty = round($dailyPenalty);
+
             return [
-                'loan_id'      => $loan?->id,
+                'loan_id'      => $loanId,
                 'schedule_id'  => $s->id,
                 'customer'     => $loan?->name ?? $loan?->customer?->full_name ?? 'Unknown',
                 'loan_number'  => $loan?->loan_account_number,
                 'days_late'    => $daysLate,
                 'amount'       => $amount,
-                'penalty'      => round($dailyPenalty * $daysLate),
+                'penalty'      => $penalty,
                 'due_date'     => $s->due_date?->toDateString(),
             ];
-        })->toArray();
+        });
+
+        // Group by loan: clients with most overdue installments appear first.
+        // Within each client group, installments are sorted 1d → 2d → 3d (ascending).
+        $countByLoan = $rows->groupBy('loan_id')->map->count();
+
+        return $rows
+            ->sortBy([
+                // Primary: more overdue installments = higher priority (descending count)
+                fn($a, $b) => $countByLoan[$b['loan_id']] <=> $countByLoan[$a['loan_id']],
+                // Secondary: days_late ascending within each client
+                fn($a, $b) => $a['days_late'] <=> $b['days_late'],
+            ])
+            ->values()
+            ->toArray();
     }
 
     /**

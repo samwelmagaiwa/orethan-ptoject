@@ -39,6 +39,7 @@ interface Loan {
   };
   approvals?: Approval[];
   created_at?: string;
+  monthly_payment?: number | null;
 }
 
 const RedDash = () => <span style={{ color: '#ef4444', fontWeight: 'bold' }}>-</span>;
@@ -255,9 +256,9 @@ ${el.outerHTML}
                 <div className="pdf-item col-8 bg-highlight"><span>{t('loanDetails.section3.amountInWords')}</span><strong>{renderVal(loan.details?.kwaManeno)}</strong></div>
 
                 <div className="pdf-item col-3"><span>{t('loanDetails.section3.loanPurpose')}</span><strong>{renderVal(loan.details?.malengoMkopo || loan.details?.malengoYaMkopo)}</strong></div>
-                <div className="pdf-item col-3"><span>{t('loanDetails.section3.loanDuration')}</span><strong>{renderVal(loan.details?.mudaKulipaMkopo || loan.details?.mudaWaLipaMkopo)}</strong></div>
-                <div className="pdf-item col-3"><span>{t('loanDetails.section3.frequencySource')}</span><strong>{loan.details?.repaymentFrequency || t('loanDetails.section3.monthly')} / {renderVal(loan.details?.chanzoMapato || loan.details?.chanzoChaMapato)}</strong></div>
-                <div className="pdf-item col-3"><span>{t('loanDetails.section3.expectedRepayment')}</span><strong>{formatMoney(loan.details?.kiasiRejeshoBilaMatatizo || loan.details?.kiasiGaniChaRejesho)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.loanDuration')}</span><strong>{renderVal(loan.details?.mudaKulipaMkopo || loan.details?.mudaWaLipaMkopo || (loan.details?.kwaTarakimu ? `Miezi ${loan.details.kwaTarakimu}` : undefined))}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.frequencySource')}</span><strong>{loan.details?.repaymentFrequency || loan.details?.repayment_frequency || t('loanDetails.section3.monthly')} / {renderVal(loan.details?.chanzoMapato || loan.details?.chanzoChaMapato)}</strong></div>
+                <div className="pdf-item col-3"><span>{t('loanDetails.section3.expectedRepayment')}</span><strong>{formatMoney(loan.details?.kiasiRejeshoBilaMatatizo || loan.details?.kiasiGaniChaRejesho || loan.monthly_payment)}</strong></div>
               </div>
 
               {loan.details?.historia1JinaTaasisi && (
