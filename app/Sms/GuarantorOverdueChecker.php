@@ -56,35 +56,47 @@ class GuarantorOverdueChecker
 
         $processed = 0;
 
+        // Track which loan_ids already had their daily guarantor SMS sent this run
+        // so we fire at most ONE consolidated SMS per loan per day.
+        $smsSentForLoan = [];
+
         foreach ($schedules as $schedule) {
             $loan = $schedule->loan;
             if (!$loan) {
                 continue;
             }
 
-            // ── 1. FIRST-TIME GUARANTOR OVERDUE NOTICE (fires after 3 days overdue) ──
+            $loanId = $loan->id;
+
+            // ── 1. FIRST-TIME GUARANTOR OVERDUE NOTICE (fires after 3 days, once ever) ──
             $daysOverdue = \Carbon\Carbon::parse($schedule->due_date)->diffInDays($today);
             if (is_null($schedule->guarantor_notified_at) && $daysOverdue >= 3) {
                 $sms->sendGuarantorOverdueNotices($loan, $dailyPenaltyFlat);
                 $schedule->guarantor_notified_at = now();
             }
 
-            // ── 2. ACCRUE DAILY PENALTY (idempotent per calendar day) ────────
+            // ── 2. ACCRUE DAILY PENALTY (idempotent per calendar day per installment) ──
             $penaltyAlreadyAccruedToday = $schedule->penalty_accrued_date === $today;
             if (!$penaltyAlreadyAccruedToday) {
                 $overdueAmount = max(0.0, (float) $schedule->total_amount - (float) $schedule->amount_paid);
                 if ($overdueAmount > 0) {
-                    $schedule->penalty_amount    = (float) $schedule->penalty_amount + $dailyPenaltyFlat;
-                    $schedule->penalty_days      = (int) $schedule->penalty_days + 1;
+                    $schedule->penalty_amount       = (float) $schedule->penalty_amount + $dailyPenaltyFlat;
+                    $schedule->penalty_days         = (int) $schedule->penalty_days + 1;
                     $schedule->penalty_accrued_date = $today;
                 }
             }
 
-            // ── 3. DAILY GUARANTOR PENALTY-UPDATE SMS (idempotent per day) ──
+            // ── 3. DAILY GUARANTOR PENALTY-UPDATE SMS — ONE per loan per day ──
+            // Mark the schedule row as notified today regardless, so we don't
+            // revisit it in future runs. Only fire the actual SMS for the first
+            // (oldest) overdue installment per loan to avoid flooding guarantors.
             $smsSentToday = $schedule->guarantor_penalty_date === $today;
-            if (!$smsSentToday && (float) $schedule->penalty_amount > 0) {
-                $sms->sendGuarantorPenaltyUpdate($loan, $schedule);
+            if (!$smsSentToday) {
                 $schedule->guarantor_penalty_date = $today;
+                if ((float) $schedule->penalty_amount > 0 && !isset($smsSentForLoan[$loanId])) {
+                    $sms->sendGuarantorPenaltyUpdate($loan, $schedule);
+                    $smsSentForLoan[$loanId] = true;
+                }
             }
 
             $schedule->save();
