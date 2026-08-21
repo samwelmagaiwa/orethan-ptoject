@@ -68,7 +68,9 @@ export default function ParAging() {
         @media print {
           .no-print { display:none!important; }
           body { background:#fff; }
-          .par-card { break-inside:avoid; }
+          .par-cards-grid { display:none!important; }
+          .par-drill-table { box-shadow:none!important; border:1px solid #e2e8f0!important; }
+          .par-drill-row:hover { background:transparent!important; }
         }
         .par-card { transition:box-shadow .15s,transform .15s; }
         .par-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.13)!important; }
@@ -114,7 +116,7 @@ export default function ParAging() {
             </div>
 
             {/* Bucket cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 28 }}>
+            <div className="par-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 28 }}>
               {bucketKeys.map(key => {
                 const b = data.buckets[key];
                 const c = BUCKET_COLORS[key];
@@ -147,7 +149,7 @@ export default function ParAging() {
 
             {/* Drill-down table */}
             {drill && drillBucket && (
-              <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,.08)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div className="par-drill-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,.08)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                   <div>
                     <span style={{ fontWeight: 800, fontSize: 14, color: '#0f172a' }}>Mikopo: {drillBucket.label}</span>
