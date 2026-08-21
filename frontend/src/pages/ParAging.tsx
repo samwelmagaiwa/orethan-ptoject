@@ -66,38 +66,55 @@ export default function ParAging() {
     <div className="par-print-root" style={{ padding: '0', fontFamily: 'Inter,system-ui,sans-serif', background: '#f0f4f8', minHeight: '100%' }}>
       <style>{`
         @media print {
-          /* Hide all app chrome */
+          @page { size:A4 landscape; margin:12mm 14mm; }
+
+          /* Hide all app chrome — sidebar (sd-*), navbar (nb*), page header, cards */
           .no-print,
           .par-cards-grid,
           .par-summary-strip,
           .par-page-header,
-          [class^="sd-"], [class*=" sd-"],
-          nav, header { display:none!important; }
+          .nb, .nb__left, .nb__right, .nb__portal,
+          [class^="sd-"], [class*=" sd-"] { display:none!important; }
 
-          /* Reset layout so the report fills the page */
-          body, html { background:#fff!important; margin:0!important; padding:0!important; }
-          #root > div { flex-direction:column!important; }
-          .par-print-root { padding:0!important; background:#fff!important; }
+          /* Full-page reset */
+          html, body { background:#fff!important; margin:0!important; padding:0!important; width:100%!important; }
 
-          /* Print header */
-          .par-print-header { display:block!important; }
+          /* Make root flex row collapse to single column and fill full width */
+          #root { display:block!important; width:100%!important; }
+          #root > div { display:block!important; width:100%!important; }
 
-          /* Table: full width, no scroll, no shadows */
+          /* Report container fills the page */
+          .par-print-root {
+            display:block!important; width:100%!important;
+            padding:0!important; background:#fff!important;
+            margin:0!important; min-height:unset!important;
+          }
+
+          /* Print header visible */
+          .par-print-header { display:block!important; margin-bottom:14px!important; }
+
+          /* Content padding */
+          .par-print-root > div:last-child { padding:0!important; }
+
+          /* Table: full width, no horizontal scroll */
           .par-drill-table {
             box-shadow:none!important; border:1.5px solid #cbd5e1!important;
-            border-radius:0!important; width:100%!important;
+            border-radius:4px!important; width:100%!important; overflow:visible!important;
           }
+          .par-drill-table > div { overflow:visible!important; width:100%!important; }
           .par-drill-table table {
-            table-layout:auto!important; font-size:11px!important; width:100%!important;
+            table-layout:auto!important; font-size:10.5px!important;
+            width:100%!important; border-collapse:collapse!important;
           }
           .par-drill-table colgroup { display:none!important; }
-          .par-drill-table > div { overflow:visible!important; }
+          .par-drill-table td, .par-drill-table th {
+            white-space:normal!important; word-break:break-word!important;
+            padding:7px 10px!important;
+          }
           .par-drill-row:hover { background:transparent!important; }
-          td, th { white-space:normal!important; word-break:break-word!important; }
 
-          /* Page breaks */
+          /* Keep each row on one page */
           tr { break-inside:avoid; }
-          @page { margin:14mm 10mm; size:A4 landscape; }
         }
 
         /* Hidden on screen, shown on print */
