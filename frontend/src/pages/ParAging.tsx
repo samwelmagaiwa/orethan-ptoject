@@ -63,22 +63,68 @@ export default function ParAging() {
   );
 
   return (
-    <div style={{ padding: '0', fontFamily: 'Inter,system-ui,sans-serif', background: '#f0f4f8', minHeight: '100%' }}>
+    <div className="par-print-root" style={{ padding: '0', fontFamily: 'Inter,system-ui,sans-serif', background: '#f0f4f8', minHeight: '100%' }}>
       <style>{`
         @media print {
-          .no-print { display:none!important; }
-          body { background:#fff; }
-          .par-cards-grid { display:none!important; }
-          .par-drill-table { box-shadow:none!important; border:1px solid #e2e8f0!important; }
+          /* Hide all app chrome */
+          .no-print,
+          .par-cards-grid,
+          .par-summary-strip,
+          .par-page-header,
+          [class^="sd-"], [class*=" sd-"],
+          nav, header { display:none!important; }
+
+          /* Reset layout so the report fills the page */
+          body, html { background:#fff!important; margin:0!important; padding:0!important; }
+          #root > div { flex-direction:column!important; }
+          .par-print-root { padding:0!important; background:#fff!important; }
+
+          /* Print header */
+          .par-print-header { display:block!important; }
+
+          /* Table: full width, no scroll, no shadows */
+          .par-drill-table {
+            box-shadow:none!important; border:1.5px solid #cbd5e1!important;
+            border-radius:0!important; width:100%!important;
+          }
+          .par-drill-table table {
+            table-layout:auto!important; font-size:11px!important; width:100%!important;
+          }
+          .par-drill-table colgroup { display:none!important; }
+          .par-drill-table > div { overflow:visible!important; }
           .par-drill-row:hover { background:transparent!important; }
+          td, th { white-space:normal!important; word-break:break-word!important; }
+
+          /* Page breaks */
+          tr { break-inside:avoid; }
+          @page { margin:14mm 10mm; size:A4 landscape; }
         }
+
+        /* Hidden on screen, shown on print */
+        .par-print-header { display:none; }
+
         .par-card { transition:box-shadow .15s,transform .15s; }
         .par-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.13)!important; }
         .par-drill-row:hover { background:#f0f4ff!important; }
       `}</style>
 
+      {/* Print-only header */}
+      <div className="par-print-header" style={{ borderBottom: '2px solid #102a43', paddingBottom: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: '#102a43' }}>Orethan Microfinance</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: '#334155', marginTop: 2 }}>PAR Aging Ladder — Portfolio At Risk Report</div>
+            {drill && drillBucket && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Bucket: {drillBucket.label} · {drillBucket.count} mikopo · {fmt(drillBucket.outstanding)}</div>}
+          </div>
+          <div style={{ textAlign: 'right', fontSize: 11, color: '#64748b' }}>
+            <div>Kuhusu: {data?.as_of ?? '—'}</div>
+            <div>Imechapishwa: {new Date().toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
-      <div style={{ background: '#f1f5f9', display: 'flex', alignItems: 'stretch', borderBottom: '2px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10, minHeight: 50 }}>
+      <div className="par-page-header" style={{ background: '#f1f5f9', display: 'flex', alignItems: 'stretch', borderBottom: '2px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10, minHeight: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', flex: 1 }}>
           <span style={{ fontSize: 18 }}>📊</span>
           <div>
@@ -99,7 +145,7 @@ export default function ParAging() {
         {data && (
           <>
             {/* Summary strip */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+            <div className="par-summary-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
               {[
                 { label: 'Mkoba Wote', value: fmt(data.total_outstanding_portfolio), icon: '💼', color: '#102a43', bg: '#e0e7ef' },
                 { label: 'Yenye Hatari (PAR)', value: fmt(data.total_at_risk), icon: '⚠️', color: '#dc2626', bg: '#fee2e2' },
