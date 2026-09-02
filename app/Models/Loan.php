@@ -215,20 +215,30 @@ class Loan extends Model
         $interestPerInstallment = $totalInterest / $totalInstallments;
         $balance = $this->amount;
 
-        $dueDate = $startDate
+        // Start one period BEFORE startDate so that after the first advance inside
+        // the loop, installment #1 lands exactly on startDate (not startDate+1).
+        $base = $startDate
             ? \Carbon\Carbon::parse($startDate)
             : ($this->approved_at ? \Carbon\Carbon::parse($this->approved_at) : now());
+
+        $dueDate = match ($frequency) {
+            'Weekly'     => $base->copy()->subWeek(),
+            'Bi-Weekly'  => $base->copy()->subWeeks(2),
+            'Daily'      => $base->copy()->subDay(),
+            'Quarterly'  => $base->copy()->subMonths(3),
+            default      => $base->copy()->subMonth(),
+        };
 
         $rows = [];
         for ($i = 1; $i <= $totalInstallments; $i++) {
             $balance -= $principalPerInstallment;
 
             $dueDate = match ($frequency) {
-                'Weekly' => $dueDate->addWeek(),
+                'Weekly'    => $dueDate->addWeek(),
                 'Bi-Weekly' => $dueDate->addWeeks(2),
-                'Daily' => $dueDate->addDay(),
+                'Daily'     => $dueDate->addDay(),
                 'Quarterly' => $dueDate->addMonths(3),
-                default => $dueDate->addMonth(),
+                default     => $dueDate->addMonth(),
             };
 
             $rows[] = [
