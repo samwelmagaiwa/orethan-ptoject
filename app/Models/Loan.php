@@ -198,8 +198,8 @@ class Loan extends Model
         $interestRate ??= LoanSetting::current()->defaultInterestRateFraction();
 
         $installmentsPerMonth = match ($frequency) {
-            'Weekly' => 4.33,
-            'Bi-Weekly' => 2.165,
+            'Weekly' => 4.0,
+            'Bi-Weekly' => 2.0,
             'Daily' => 30.0,
             'Quarterly' => 1 / 3,
             default => 1.0,
