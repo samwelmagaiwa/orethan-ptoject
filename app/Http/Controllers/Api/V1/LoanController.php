@@ -680,7 +680,7 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:1',
             'payment_date' => 'required|date',
             'payment_method' => 'required|string|in:cash,bank_transfer,mobile_money,mpesa,airtel_money,mixx_by_yas,tigo_pesa,halopesa',
-            'transaction_id' => 'nullable|string',
+            'transaction_id' => 'required|string|max:100',
             'received_by' => 'nullable|string|max:120',
             'notes' => 'nullable|string',
         ]);

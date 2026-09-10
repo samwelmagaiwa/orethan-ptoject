@@ -390,6 +390,11 @@ const RepaymentTracker = () => {
 
     }
 
+    if (!transactionId.trim()) {
+      showAlert("Tafadhali ingiza Namba ya Muamala (Transaction Reference) kabla ya kutuma.", "", "warning");
+      return;
+    }
+
     if (submittingRepayment) return;
     setSubmittingRepayment(true);
 
@@ -1346,9 +1351,15 @@ const RepaymentTracker = () => {
 
                 </div>
 
-                <input type="text" placeholder={t("modal.transactionReference")} value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
-
-                  style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: "1px solid #1e293b", outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", marginTop: "0.8rem", boxSizing: "border-box" }} />
+                <div style={{ marginTop: "0.8rem" }}>
+                  <input type="text" placeholder={`${t("modal.transactionReference")} *`} value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
+                    style={{ width: "100%", padding: "0.8rem", borderRadius: 12, background: "#0b1120", border: `1.5px solid ${!transactionId.trim() ? "#ef4444" : "#1e293b"}`, outline: "none", fontWeight: 700, fontSize: "0.8rem", color: "#e2e8f0", boxSizing: "border-box" }} />
+                  {!transactionId.trim() && (
+                    <div style={{ color: "#ef4444", fontSize: "0.72rem", fontWeight: 600, marginTop: "0.3rem", paddingLeft: "0.2rem" }}>
+                      Namba ya Muamala inahitajika
+                    </div>
+                  )}
+                </div>
 
                 <input type="text" placeholder={t("modal.receivedBy")} value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)}
 
